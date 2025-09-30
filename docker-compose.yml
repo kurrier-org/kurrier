@@ -11,6 +11,7 @@ services:
 
   web:
     image: ghcr.io/kurrier-org/kurrier-web:latest
+    restart: unless-stopped
     ports:
       - "${WEB_PORT:-3000}:3000"
     depends_on:
@@ -39,6 +40,7 @@ services:
 
   worker:
     image: ghcr.io/kurrier-org/kurrier-worker:latest
+    restart: unless-stopped
     ports:
       - "${NITRO_PORT:-3001}:3001"
     depends_on:
@@ -66,6 +68,7 @@ services:
 
   redis:
     image: redis:latest
+    restart: unless-stopped
     command: [ "redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}" ]
     healthcheck:
       test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "PING" ]
