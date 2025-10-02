@@ -1,17 +1,22 @@
 {
 	"name": "kurrier",
 	"private": true,
+    "version": "0.0.3",
 	"scripts": {
 		"dev:web": "dotenvx run -f .env -- pnpm --prefix apps/web dev",
 		"dev:worker": "dotenvx run -f .env -- pnpm --prefix apps/worker dev",
 		"dev": "concurrently \"pnpm run dev:web\" \"pnpm run dev:worker\"",
 		"build": "dotenvx run -f .env -- pnpm --prefix apps/web build",
 		"lint": "biome check",
-		"format": "biome format --write"
-	},
+		"format": "biome format --write",
+        "changeset": "changeset",
+        "publish-packages": "changeset publish",
+        "version-packages": "changeset version && pnpm install -w --no-frozen-lockfile && git add -A"
+    },
 	"packageManager": "pnpm@8.14.0+sha1.bb42032ff80dba5f9245bc1b03470d2fa0b7fb2f",
 	"devDependencies": {
 		"@biomejs/biome": "2.2.4",
+		"@changesets/cli": "^2.29.7",
 		"@dotenvx/dotenvx": "^1.50.1",
 		"@types/node": "^24.5.2",
 		"@types/pg": "^8.15.5",

@@ -1,0 +1,28 @@
+# .github/workflows/tag-repo-version.yml
+name: tag-repo-version
+on:
+  push:
+    branches: [main]
+
+jobs:
+  tag:
+    if: "contains(github.event.head_commit.message, 'Version Packages')"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Read root version
+        id: v
+        run: echo "ver=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
+      - name: Create v tag if missing
+        run: |
+          TAG="v${{ steps.v.outputs.ver }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists"
+          else
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "$TAG"
+          fi

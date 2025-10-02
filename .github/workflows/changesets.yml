@@ -1,0 +1,35 @@
+name: changesets
+on:
+  push:
+    branches: [main]
+
+jobs:
+  create-release-pr:
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # This opens/updates a PR named “Version Packages”
+      - name: Create or update version PR
+        uses: changesets/action@v1
+        with:
+          version: pnpm version-packages
+          # We’re not publishing to npm, but we’ll run a small script after merge to create a repo tag.
+          publish: ""
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
