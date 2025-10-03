@@ -1,10 +1,11 @@
-name: tag-repo-version
+name: manual-tag-test
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'packages/repo-version/package.json'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to tag, e.g. 0.0.7'
+        required: true
 
 permissions:
   contents: write
@@ -17,16 +18,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Read repo version
-        id: ver
-        run: |
-          FILE=packages/repo-version/package.json
-          test -f "$FILE" || (echo "::error::$FILE not found" && exit 1)
-          V=$(jq -r .version "$FILE")
-          test -n "$V" -a "$V" != "null" || (echo "::error::version missing" && exit 1)
-          echo "ver=$V" >> "$GITHUB_OUTPUT"
-          echo "Resolved version: $V"
-
       - name: Create/update tag via API (with full error logging)
         uses: actions/github-script@v7
         with:
@@ -34,7 +25,7 @@ jobs:
           script: |
             const owner = context.repo.owner;
             const repo  = context.repo.repo;
-            const tag   = `v${{ steps.ver.outputs.ver }}`;
+            const tag   = `v${{ github.event.inputs.version }}`;
             const sha   = context.sha;
 
             async function logError(e) {
