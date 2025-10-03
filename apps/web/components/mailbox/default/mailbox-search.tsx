@@ -64,6 +64,7 @@ export default function MailboxSearch({
 						String(user?.id),
 						attach,
 						unread,
+                        1
 					)) as SearchThreadsResponse;
 
 					console.log("res", res);
