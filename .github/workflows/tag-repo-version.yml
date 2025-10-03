@@ -22,30 +22,87 @@ jobs:
         id: v
         run: |
           VER=$(jq -r .version packages/repo-version/package.json)
-          [ -n "$VER" ] && [ "$VER" != "null" ] || { echo "version missing"; exit 1; }
+          if [ -z "$VER" ] || [ "$VER" = "null" ]; then
+            echo "::error::version missing in repo-version/package.json"
+            exit 1
+          fi
           echo "ver=$VER" >> "$GITHUB_OUTPUT"
           echo "Resolved version: $VER"
 
-      - name: Configure git author (required to create tags)
+      - name: Configure git author
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Create tag if missing and push
+      - name: Create and push tag if missing
         run: |
           set -euo pipefail
           TAG="v${{ steps.v.outputs.ver }}"
           git fetch --tags --force
           if git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
-            echo "Tag $TAG already exists on origin; nothing to do."
-            exit 0
+            echo "✅ Tag $TAG already exists on origin; skipping."
+          else
+            echo "🏷️ Creating tag $TAG"
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "$TAG"
           fi
-          echo "Creating tag $TAG"
-          git tag -a "$TAG" -m "Release $TAG"
-          git push origin "$TAG"
 
-      # Optional: quick debug output
-      - name: Show latest tags
+      - name: "Debug: show last 10 tags"
         run: |
           git fetch --tags --force
+          echo "Last 10 tags on origin:"
           git ls-remote --tags origin | tail -n 10
+          
+
+
+#name: tag-repo-version
+#
+#on:
+#  push:
+#    branches: [main]
+#    paths:
+#      - packages/repo-version/package.json
+#
+#permissions:
+#  contents: write
+#
+#jobs:
+#  tag:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout (full history so tags work)
+#        uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 0
+#
+#      - name: Read version from repo-version package
+#        id: v
+#        run: |
+#          VER=$(jq -r .version packages/repo-version/package.json)
+#          [ -n "$VER" ] && [ "$VER" != "null" ] || { echo "version missing"; exit 1; }
+#          echo "ver=$VER" >> "$GITHUB_OUTPUT"
+#          echo "Resolved version: $VER"
+#
+#      - name: Configure git author (required to create tags)
+#        run: |
+#          git config user.name  "github-actions[bot]"
+#          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+#
+#      - name: Create tag if missing and push
+#        run: |
+#          set -euo pipefail
+#          TAG="v${{ steps.v.outputs.ver }}"
+#          git fetch --tags --force
+#          if git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
+#            echo "Tag $TAG already exists on origin; nothing to do."
+#            exit 0
+#          fi
+#          echo "Creating tag $TAG"
+#          git tag -a "$TAG" -m "Release $TAG"
+#          git push origin "$TAG"
+#
+#      # Optional: quick debug output
+#      - name: Show latest tags
+#        run: |
+#          git fetch --tags --force
+#          git ls-remote --tags origin | tail -n 10
