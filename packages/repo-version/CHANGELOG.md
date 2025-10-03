@@ -1,5 +1,15 @@
 # @kurrier/repo
 
+## 0.0.14
+
+### Patch Changes
+
+- [#53](https://github.com/kurrier-org/kurrier/pull/53) [`a148494`](https://github.com/kurrier-org/kurrier/commit/a1484942b7ff34f264239b0e88069ddbf31975a6) Thanks [@krokhale](https://github.com/krokhale)! - Web build
+
+- [#53](https://github.com/kurrier-org/kurrier/pull/53) [`a148494`](https://github.com/kurrier-org/kurrier/commit/a1484942b7ff34f264239b0e88069ddbf31975a6) Thanks [@krokhale](https://github.com/krokhale)! - Fixed web build
+
+- [#53](https://github.com/kurrier-org/kurrier/pull/53) [`a148494`](https://github.com/kurrier-org/kurrier/commit/a1484942b7ff34f264239b0e88069ddbf31975a6) Thanks [@krokhale](https://github.com/krokhale)! - Testing 22
+
 ## 0.0.13
 
 ### Patch Changes
