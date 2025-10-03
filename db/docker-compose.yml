@@ -80,6 +80,20 @@ services:
     ports:
       - "6379:6379"
 
+  typesense:
+    image: typesense/typesense:29.0
+    restart: on-failure
+    ports:
+      - "8108:8108"
+    volumes:
+      - ./typesense-data:/data
+    command: >
+      --data-dir /data
+      --api-key=${TYPESENSE_API_KEY}
+      --enable-cors
+    environment:
+      - TYPESENSE_API_KEY=${TYPESENSE_API_KEY}
+
   studio:
     container_name: supabase-studio
     image: supabase/studio:latest
