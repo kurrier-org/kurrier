@@ -1,5 +1,19 @@
 # @kurrier/repo
 
+## 0.0.16
+
+### Patch Changes
+
+- [#57](https://github.com/kurrier-org/kurrier/pull/57) [`64ab9c9`](https://github.com/kurrier-org/kurrier/commit/64ab9c912b8a6eddb680bd13a6d399116d0891f9) Thanks [@krokhale](https://github.com/krokhale)! - Github release test
+
+- [#57](https://github.com/kurrier-org/kurrier/pull/57) [`64ab9c9`](https://github.com/kurrier-org/kurrier/commit/64ab9c912b8a6eddb680bd13a6d399116d0891f9) Thanks [@krokhale](https://github.com/krokhale)! - added a release step
+
+## 0.0.15
+
+### Patch Changes
+
+- [#55](https://github.com/kurrier-org/kurrier/pull/55) [`b072e04`](https://github.com/kurrier-org/kurrier/commit/b072e0401a9f7780974938ae87f85e7b1a800a6e) Thanks [@krokhale](https://github.com/krokhale)! - Github release test
+
 ## 0.0.14
 
 ### Patch Changes
