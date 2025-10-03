@@ -1,24 +1,65 @@
 name: release-images
+
 on:
-  push:
-    tags: ['v*.*.*']  # build on release tags; adjust if you want main pushes too
+  # Run as soon as the tag workflow finishes
+  workflow_run:
+    workflows: ["tag-repo-version"]
+    types: [completed]
 
 jobs:
   build-and-push:
+    # Only run if the tag workflow succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+
+    env:
+      # The commit that tag-repo-version ran on (the tag points at this)
+      SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+
     strategy:
       matrix:
         service: [web, worker]
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout (full history for tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
+      - name: Fetch tags
+        run: git fetch --tags --force
 
-      - uses: docker/login-action@v3
+      - name: Resolve the tag that points at the workflow SHA
+        id: tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "SOURCE_SHA=${SOURCE_SHA}"
+          # Find tags that point at exactly this SHA; pick semver-ish vX.Y.Z
+          TAG=$(git tag --points-at "${SOURCE_SHA}" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n1 || true)
+          if [ -z "${TAG}" ]; then
+            echo "No vX.Y.Z tag found pointing at ${SOURCE_SHA}"
+            echo "Known tags for debugging:"
+            git tag --points-at "${SOURCE_SHA}" || true
+            exit 1
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Resolved tag: ${TAG}"
+
+      - name: Check out the exact tagged revision
+        run: git checkout ${{ steps.tag.outputs.tag }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -31,10 +72,53 @@ jobs:
           file: apps/${{ matrix.service }}/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
+          # Tag with the resolved vX.Y.Z + "latest"
           tags: |
-            ghcr.io/${{ github.repository_owner }}/kurrier-${{ matrix.service }}:${{ github.ref_name }}
+            ghcr.io/${{ github.repository_owner }}/kurrier-${{ matrix.service }}:${{ steps.tag.outputs.tag }}
             ghcr.io/${{ github.repository_owner }}/kurrier-${{ matrix.service }}:latest
           build-args: |
             NODE_ENV=production
           provenance: true
           sbom: true
+
+
+#name: release-images
+#on:
+#  push:
+#    tags: ['v*.*.*']  # build on release tags; adjust if you want main pushes too
+#
+#jobs:
+#  build-and-push:
+#    runs-on: ubuntu-latest
+#    permissions:
+#      contents: read
+#      packages: write
+#    strategy:
+#      matrix:
+#        service: [web, worker]
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - uses: docker/setup-qemu-action@v3
+#      - uses: docker/setup-buildx-action@v3
+#
+#      - uses: docker/login-action@v3
+#        with:
+#          registry: ghcr.io
+#          username: ${{ github.actor }}
+#          password: ${{ secrets.GITHUB_TOKEN }}
+#
+#      - name: Build & push ${{ matrix.service }}
+#        uses: docker/build-push-action@v6
+#        with:
+#          context: .
+#          file: apps/${{ matrix.service }}/Dockerfile
+#          push: true
+#          platforms: linux/amd64,linux/arm64
+#          tags: |
+#            ghcr.io/${{ github.repository_owner }}/kurrier-${{ matrix.service }}:${{ github.ref_name }}
+#            ghcr.io/${{ github.repository_owner }}/kurrier-${{ matrix.service }}:latest
+#          build-args: |
+#            NODE_ENV=production
+#          provenance: true
+#          sbom: true
