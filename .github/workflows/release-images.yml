@@ -2,6 +2,8 @@ name: release-images
 on:
   release:
     types: [published]
+  push:
+    tags: ['v*']
 
 jobs:
   build-and-push:
@@ -9,18 +11,34 @@ jobs:
     permissions:
       contents: read
       packages: write
+
     strategy:
       matrix:
         service: [web, worker]
+
     steps:
       - uses: actions/checkout@v4
+
+      # figure out the tag that triggered us
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "val=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            # push with ref like refs/tags/v1.2.3
+            echo "val=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          fi
+
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
+
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build & push ${{ matrix.service }}
         uses: docker/build-push-action@v6
         with:
@@ -29,7 +47,7 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ghcr.io/${{ github.repository_owner }}/kurrier-${{ matrix.service }}:${{ github.event.release.tag_name }}
+            ghcr.io/${{ github.repository_owner }}/kurrier-${{ matrix.service }}:${{ steps.tag.outputs.val }}
             ghcr.io/${{ github.repository_owner }}/kurrier-${{ matrix.service }}:latest
           build-args: |
             NODE_ENV=production
