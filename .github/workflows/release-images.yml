@@ -87,60 +87,17 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Read version from repo-version package
-        id: v
-        run: |
-          FILE=packages/repo-version/package.json
-          if [ ! -f "$FILE" ]; then
-            echo "::error::$FILE not found"; exit 1
-          fi
-          VER=$(jq -r .version "$FILE")
-          if [ -z "$VER" ] || [ "$VER" = "null" ]; then
-            echo "::error::version missing in $FILE"; exit 1
-          fi
-          echo "ver=$VER" >> "$GITHUB_OUTPUT"
-          echo "Resolved version: $VER"
-
-      - name:
-          Guard: version must be present
-        run: |
-          if [ -z "${{ steps.v.outputs.ver }}" ]; then
-            echo "::error::Empty version output"; exit 1
-          fi
-
-      # (Optional) Create the tag using the SAME id
-      - name: Create tag if missing and push
-        env:
-          VER: ${{ steps.v.outputs.ver }}
-        run: |
-          set -euo pipefail
-          TAG="v${VER}"
-          git fetch --tags --force
-          if git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
-            echo "Tag $TAG already exists on origin; nothing to do."
-            exit 0
-          fi
-          git tag -a "$TAG" -m "Release $TAG"
-          git push origin "$TAG"
-
-      # ✅ This will now evaluate to e.g. "v0.0.15" instead of plain "v"
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.v.outputs.ver }}
-          name: v${{ steps.v.outputs.ver }}
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+#          tag_name: ${{ github.ref_name }}
+#          name: ${{ github.ref_name }}
+          name: ${{ github.ref }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-#      - name: Create GitHub Release
-#        uses: softprops/action-gh-release@v2
-#        with:
-#          tag_name: ${{ github.ref_name }}
-#          name: ${{ github.ref_name }}
-#          generate_release_notes: true
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
 #name: release-images
