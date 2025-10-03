@@ -1,30 +1,48 @@
 name: tag-repo-version
+
 on:
   push:
-    branches: [main]
-    paths:
-      - 'packages/repo-version/package.json'   # <— key change
+    branches: [main]   # run after each merge to main
+
+permissions:
+  contents: write      # required to push tags
 
 jobs:
   tag:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
         with:
+          # tags need full history
           fetch-depth: 0
 
-      - name: Read repo version
-        id: v
-        run: echo "ver=$(jq -r .version packages/repo-version/package.json)" >> "$GITHUB_OUTPUT"
-
-      - name: Create v tag if missing
+      - name: Read repo version from packages/repo-version/package.json
+        id: version
         run: |
-          TAG="v${{ steps.v.outputs.ver }}"
+          if [ ! -f packages/repo-version/package.json ]; then
+            echo "repo-version package.json not found"; exit 1
+          fi
+          VER=$(jq -r .version packages/repo-version/package.json)
+          if [ -z "$VER" ] || [ "$VER" = "null" ]; then
+            echo "Version missing in repo-version"; exit 1
+          fi
+          echo "ver=$VER" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $VER"
+
+      - name: Configure git identity (for tagging)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Create tag if missing
+        run: |
+          TAG="v${{ steps.version.outputs.ver }}"
           if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG already exists"
+            echo "Tag $TAG already exists. Skipping."
           else
+            echo "Creating tag $TAG"
             git tag -a "$TAG" -m "Release $TAG"
             git push origin "$TAG"
           fi
