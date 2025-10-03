@@ -6,6 +6,7 @@
   ],
   "commit": true,
   "fixed": [],
+  "skipCI": false,
   "linked": [],
   "access": "restricted",
   "baseBranch": "main",
