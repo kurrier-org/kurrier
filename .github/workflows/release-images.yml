@@ -90,6 +90,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
 #          tag_name: v${{ steps.v.outputs.ver }}
 #          name: v${{ steps.v.outputs.ver }}
           generate_release_notes: true
