@@ -2,11 +2,11 @@ name: tag-repo-version
 on:
   push:
     branches: [main]
+    paths:
+      - 'packages/repo-version/package.json'   # <— key change
 
 jobs:
   tag:
-    # only run when the Version Packages commit lands
-    if: "contains(github.event.head_commit.message, 'Version Packages')"
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -15,9 +15,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Read repo version (from @kurrier/repo)
+      - name: Read repo version
         id: v
-        run: echo "ver=$(jq -r .version packages/repo-version/package.json)" >> $GITHUB_OUTPUT
+        run: echo "ver=$(jq -r .version packages/repo-version/package.json)" >> "$GITHUB_OUTPUT"
 
       - name: Create v tag if missing
         run: |
