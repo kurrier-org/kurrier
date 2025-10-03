@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.7
+
+### Patch Changes
+
+- [#39](https://github.com/kurrier-org/kurrier/pull/39) [`d39003e`](https://github.com/kurrier-org/kurrier/commit/d39003e021afd25885d1b8f8b1b7edd8174fee0a) Thanks [@krokhale](https://github.com/krokhale)! - Testing changeset 6
+
 ## 0.0.6
 
 ### Patch Changes
