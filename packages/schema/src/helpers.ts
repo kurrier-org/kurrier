@@ -43,3 +43,30 @@ export function sanitizeFilename(name: string): string {
 
 	return (cleanBase || "attachment") + ext.toLowerCase();
 }
+
+
+export const generateSnippet = async (text: string) => {
+    if (!text) return null;
+    text.toString()
+        .replace(/\s+/g, " ")
+        .slice(0, 100)
+};
+
+
+export function buildParticipantsSnapshot(msg: MessageEntity) {
+    const extract = (addrObj?: AddressObjectJSON | null) =>
+        (addrObj?.value ?? [])
+            .map((a) => ({
+                n: a?.name || null,
+                e: a?.address || null,
+            }))
+            .filter((x) => x.e)
+            .slice(0, 5);
+
+    return {
+        from: extract(msg.from),
+        to: extract(msg.to),
+        cc: extract(msg.cc),
+        bcc: extract(msg.bcc),
+    };
+}

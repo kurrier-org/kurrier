@@ -1,12 +1,12 @@
 import {
-	providers,
-	smtpAccounts,
-	identities,
-	mailboxes,
-	messages,
-	threads,
-	messageAttachments,
-	mailboxSync,
+    providers,
+    smtpAccounts,
+    identities,
+    mailboxes,
+    messages,
+    threads,
+    messageAttachments,
+    mailboxSync, threadsList,
 } from "./schema";
 import { decryptedSecrets } from "./supabase-schema";
 import { z } from "zod";
@@ -52,6 +52,8 @@ export const MessageAttachmentInsertSchema =
 export type MailboxSyncEntity = typeof mailboxSync.$inferSelect;
 export const MailboxSyncInsertSchema = createInsertSchema(mailboxSync);
 export type MailboxSyncCreate = typeof mailboxSync.$inferInsert;
+
+export const ThreadsListInsertSchema = createInsertSchema(threadsList);
 
 export type DecryptedEntity = typeof decryptedSecrets.$inferSelect;
 

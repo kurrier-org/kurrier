@@ -3,21 +3,20 @@
 import { cache } from "react";
 import { rlsClient } from "@/lib/actions/clients";
 import {
-	identities,
-	mailboxes,
-	MessageAttachmentInsertSchema,
-	messageAttachments,
-	MessageCreate,
-	MessageEntity,
-	MessageInsertSchema,
-	messages,
-	providers,
-	providerSecrets,
-	smtpAccounts,
-	smtpAccountSecrets,
-	threads,
+    identities,
+    mailboxes,
+    MessageAttachmentInsertSchema,
+    messageAttachments,
+    MessageCreate,
+    MessageInsertSchema,
+    messages,
+    providers,
+    providerSecrets,
+    smtpAccounts,
+    smtpAccountSecrets,
+    threads, threadsList,
 } from "@db";
-import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import {
 	ComposeMode,
@@ -35,18 +34,6 @@ import { fromAddress, fromName } from "@schema";
 import { createClient } from "@/lib/supabase/server";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Queue, QueueEvents } from "bullmq";
-// const {REDIS_PASSWORD, REDIS_HOST, REDIS_PORT} = getServerEnv()
-//
-// const redisConnection = {
-//     connection: {
-//         host: REDIS_HOST || 'redis',
-//         port: Number(REDIS_PORT || 6379),
-//         password: REDIS_PASSWORD
-//     }
-// };
-// const smtpQueue = new Queue('smtp-worker', redisConnection);
-// const smtpEvents = new QueueEvents('smtp-worker', redisConnection);
-// await smtpEvents.waitUntilReady();
 
 const getRedis = async () => {
 	const { REDIS_PASSWORD, REDIS_HOST, REDIS_PORT } = getServerEnv();
@@ -689,3 +676,107 @@ export const backfillAccount = async (identityId: string) => {
 	);
 	// await job.waitUntilFinished(smtpEvents);
 };
+
+
+export const fetchWebMailList = async (identityPublicId: string, mailboxSlug: string, page: number) => {
+    page = page && page > 0 ? page : 1;
+    const rls = await rlsClient();
+    const threads = await rls((tx) => {
+        return tx
+            .select()
+            .from(threadsList)
+            .where(and(
+                eq(threadsList.identityPublicId, identityPublicId),
+                eq(threadsList.mailboxSlug, mailboxSlug),
+            ))
+            .orderBy(desc(threadsList.lastActivityAt))
+            .offset((page - 1) * 50)
+            .limit(50)
+    })
+    return threads
+};
+
+
+export type FetchWebMailResult = Awaited<
+    ReturnType<typeof fetchWebMailList>
+>;
+
+export const fetchWebMailThreadDetail = cache(
+    async (
+        threadId: string
+    ) => {
+        const rls = await rlsClient();
+        const result = await rls(async (tx) => {
+            const rows = await tx
+                .select({
+                    thread: threads,
+                    message: messages,
+                })
+                .from(threads)
+                .innerJoin(messages, eq(messages.threadId, threads.id))
+                .where(eq(threads.id, threadId))
+                // .orderBy(desc(messages.date), desc(messages.createdAt));
+                .orderBy(desc(sql`coalesce(${messages.date}, ${messages.createdAt})`));
+
+            // // Collapse messages into an array
+            // const thread =
+            //     rows.length > 0 ? rows[0].thread : null;
+            // const msgs = rows
+            //     .filter((r) => r.message)
+            //     .map((r) => r.message);
+            //
+            // return { thread, messages: msgs };
+            if (rows.length === 0) {
+                return { thread: null, messages: [] as typeof rows[number]["message"][] };
+            }
+
+            const thread = rows[0].thread;
+            const msgs = rows.map((r) => r.message);
+            return { thread, messages: msgs };
+        });
+
+        console.log("thread detail", result);
+        return result
+
+        // const thread = await rls(async (tx) => {
+        //     // 1) Fetch the thread (guarded by mailboxId)
+        //     const [thread] = await tx
+        //         .select()
+        //         .from(threads)
+        //         .where(eq(threads.id, threadId))
+        //
+        //     return thread
+        //
+        // });
+        //
+        // console.log("threads", thread)
+
+        // return rls(async (tx) => {
+        //     // 1) Fetch the thread (guarded by mailboxId)
+        //     const [thread] = await tx
+        //         .select()
+        //         .from(threads)
+        //         .where(and(eq(threads.mailboxId, mailboxId), eq(threads.id, threadId)))
+        //         .limit(1);
+        //
+        //     if (!thread) return { thread: null, messages: [] };
+        //
+        //     const messageFields = messages;
+        //     delete messageFields.headersJson;
+        //     delete messageFields.rawStorageKey;
+        //
+        //     const msgs = await tx
+        //         .select(messageFields)
+        //         .from(messages)
+        //         .where(eq(messages.threadId, threadId))
+        //         .orderBy(desc(sql`coalesce(${messages.date}, ${messages.createdAt})`))
+        //         .limit(500); // or whatever cap you prefer
+        //
+        //     return { thread, messages: msgs };
+        // });
+    },
+);
+
+export type FetchWebMailThreadDetail = Awaited<
+    ReturnType<typeof fetchWebMailThreadDetail>
+>;
