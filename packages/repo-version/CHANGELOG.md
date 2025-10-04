@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.28
+
+### Patch Changes
+
+- [#81](https://github.com/kurrier-org/kurrier/pull/81) [`e205e05`](https://github.com/kurrier-org/kurrier/commit/e205e05ac227027914532646ef5e834fdb619371) Thanks [@krokhale](https://github.com/krokhale)! - faster loading schema for webmail
+
 ## 0.0.27
 
 ### Patch Changes
