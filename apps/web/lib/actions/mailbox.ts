@@ -136,82 +136,114 @@ export const fetchMailboxMessages = cache(async (mailboxId: string) => {
 	return { messages: messageList };
 });
 
+
 export const fetchMailboxThreadsList = cache(
-	async (
-		mailboxId: string,
-		threadIds: string[],
-	): Promise<{ threads: { thread: any; messages: any[] }[] }> => {
-		if (!threadIds || threadIds.length === 0) {
-			return { threads: [] };
-		}
+    async (
+        mailboxId: string,
+        threadIds: string[],
+    ) => {
+        if (!threadIds || threadIds.length === 0) {
+            return { threads: [] };
+        }
 
-		const rls = await rlsClient();
+        const rls = await rlsClient();
 
-		const conditions = [eq(threads.mailboxId, mailboxId)];
-		if (threadIds) {
-			conditions.push(inArray(threads.id, threadIds));
-		}
+        const conditions = [eq(threadsList.mailboxId, mailboxId)];
+        if (threadIds && threadIds.length > 0) {
+            conditions.push(inArray(threadsList.id, threadIds));
+        }
 
-		const rows = await rls(async (tx) => {
-			// Subquery: newest message timestamp per thread
-			const latestSub = tx
-				.select({
-					threadId: messages.threadId,
-					last: sql`max(coalesce(${messages.date}, ${messages.createdAt}))`.as(
-						"last",
-					),
-				})
-				.from(messages)
-				.groupBy(messages.threadId)
-				.as("latest");
-
-			const messageFields = messages;
-			delete messageFields.html;
-			delete messageFields.text;
-			delete messageFields.textAsHtml;
-			delete messageFields.headersJson;
-			delete messageFields.rawStorageKey;
-
-			return (
-				tx
-					.select({
-						thread: threads,
-						message: messages,
-					})
-					.from(threads)
-					// Join the per-thread latest timestamp
-					.leftJoin(latestSub, eq(latestSub.threadId, threads.id))
-					// Keep messages join so you can still collect per-thread messages
-					.leftJoin(messages, eq(messages.threadId, threads.id))
-					.where(and(...conditions))
-					.orderBy(
-						// Order threads by newest activity first
-						desc(
-							sql`coalesce(${latestSub.last}, ${threads.lastMessageDate}, ${threads.createdAt})`,
-						),
-						// Within a thread, prefer newer messages first (so first row is the newest of that thread)
-						desc(sql`coalesce(${messages.date}, ${messages.createdAt})`),
-					)
-					.limit(50)
-			);
-		});
-
-		// Collapse (thread × message) rows into one entry per thread
-		const byThread = new Map<string, { thread: any; messages: any[] }>();
-
-		for (const row of rows) {
-			const t = row.thread;
-			if (!byThread.has(t.id)) {
-				byThread.set(t.id, { thread: t, messages: [] });
-			}
-			if (row.message) {
-				byThread.get(t.id)!.messages.push(row.message);
-			}
-		}
-
-		return { threads: Array.from(byThread.values()) };
-	},
+        return await rls(async (tx) => {
+            return tx
+                .select()
+                .from(threadsList)
+                .where(and(...conditions))
+                .orderBy(
+                    desc(sql`coalesce(${threadsList.lastActivityAt}, ${threadsList.createdAt})`),
+                    desc(threadsList.id), // tie-breaker for stable order
+                )
+                .limit(50);
+        });
+    },
 );
+
+
+// export const fetchMailboxThreadsList = cache(
+// 	async (
+// 		mailboxId: string,
+// 		threadIds: string[],
+// 	): Promise<{ threads: { thread: any; messages: any[] }[] }> => {
+// 		if (!threadIds || threadIds.length === 0) {
+// 			return { threads: [] };
+// 		}
+//
+// 		const rls = await rlsClient();
+//
+// 		const conditions = [eq(threads.mailboxId, mailboxId)];
+// 		if (threadIds) {
+// 			conditions.push(inArray(threads.id, threadIds));
+// 		}
+//
+// 		const rows = await rls(async (tx) => {
+// 			// Subquery: newest message timestamp per thread
+// 			const latestSub = tx
+// 				.select({
+// 					threadId: messages.threadId,
+// 					last: sql`max(coalesce(${messages.date}, ${messages.createdAt}))`.as(
+// 						"last",
+// 					),
+// 				})
+// 				.from(messages)
+// 				.groupBy(messages.threadId)
+// 				.as("latest");
+//
+// 			const messageFields = messages;
+// 			delete messageFields.html;
+// 			delete messageFields.text;
+// 			delete messageFields.textAsHtml;
+// 			delete messageFields.headersJson;
+// 			delete messageFields.rawStorageKey;
+//
+// 			return (
+// 				tx
+// 					.select({
+// 						thread: threads,
+// 						message: messages,
+// 					})
+// 					.from(threads)
+// 					// Join the per-thread latest timestamp
+// 					.leftJoin(latestSub, eq(latestSub.threadId, threads.id))
+// 					// Keep messages join so you can still collect per-thread messages
+// 					.leftJoin(messages, eq(messages.threadId, threads.id))
+// 					.where(and(...conditions))
+// 					.orderBy(
+// 						// Order threads by newest activity first
+// 						desc(
+// 							sql`coalesce(${latestSub.last}, ${threads.lastMessageDate}, ${threads.createdAt})`,
+// 						),
+// 						// Within a thread, prefer newer messages first (so first row is the newest of that thread)
+// 						desc(sql`coalesce(${messages.date}, ${messages.createdAt})`),
+// 					)
+// 					.limit(50)
+// 			);
+// 		});
+//
+// 		// Collapse (thread × message) rows into one entry per thread
+// 		const byThread = new Map<string, { thread: any; messages: any[] }>();
+//
+// 		for (const row of rows) {
+// 			const t = row.thread;
+// 			if (!byThread.has(t.id)) {
+// 				byThread.set(t.id, { thread: t, messages: [] });
+// 			}
+// 			if (row.message) {
+// 				byThread.get(t.id)!.messages.push(row.message);
+// 			}
+// 		}
+//
+// 		return { threads: Array.from(byThread.values()) };
+// 	},
+// );
 
 export const fetchMailboxThreads = cache(
 	async (mailboxId: string, page?: number, threadId?: string) => {
