@@ -1,5 +1,11 @@
 # web
 
+## 0.1.4
+
+### Patch Changes
+
+- [#87](https://github.com/kurrier-org/kurrier/pull/87) [`e388408`](https://github.com/kurrier-org/kurrier/commit/e38840867f8ae5f9bbe9ef09b04cf2cba3eb6c7f) Thanks [@krokhale](https://github.com/krokhale)! - Faster search with threadlists support.
+
 ## 0.1.3
 
 ### Patch Changes
