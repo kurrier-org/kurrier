@@ -95,7 +95,9 @@ export type ComposeMode = "reply" | "forward" | "new";
 
 export type MailComposeInput = {
 	messageId: string; // original message (for reply/forward)
-	to: string[]; // ALWAYS an array internally
+	to: string[];
+	cc?: string[];
+	bcc?: string[];
 	subject?: string;
 	text?: string;
 	html?: string;
@@ -108,4 +110,19 @@ export type BackfillItem = {
 	path: string;
 	specialUse: string | null;
 	priority: number; // lower = sooner
+};
+
+
+export type MailerSendMailOptions = {
+    from: string;
+    subject: string;
+    text?: string;
+    html?: string;
+    inReplyTo?: string;
+    references?: string[];
+    attachments?: {
+        name: string;
+        content: Blob;
+        contentType?: string;
+    }[];
 };

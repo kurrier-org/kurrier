@@ -1,0 +1,17 @@
+{
+	"name": "@kurrier/common",
+	"private": true,
+	"version": "0.0.1",
+	"description": "",
+	"types": "src/index.ts",
+	"main": "src/index.ts",
+	"type": "module",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "Krishna Rokhale",
+	"license": "ISC",
+	"dependencies": {
+	}
+}

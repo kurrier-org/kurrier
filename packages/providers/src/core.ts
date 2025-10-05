@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { IdentityStatus } from "@schema";
+import {IdentityStatus} from "@schema";
 
 export type VerifyResult = {
 	ok: boolean;
@@ -151,14 +151,10 @@ export interface Mailer {
 	removeEmail(
 		email: string,
 		opts: Record<any, any>,
-		// ruleSetName: string,
-		// ruleName: string,
 	): Promise<{ removed: boolean }>;
 	removeDomain(domain: string): Promise<DomainIdentity>;
 	verifyDomain(
 		domain: string,
 		opts?: Record<any, any>,
 	): Promise<DomainIdentity>;
-	// send?(mail: Mail): Promise<SendResult>;
-	// close?(): Promise<void>;
 }

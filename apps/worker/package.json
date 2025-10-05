@@ -8,12 +8,14 @@
 		"start": "node .output/server/index.mjs"
 	},
 	"devDependencies": {
+		"@types/addressparser": "^1.0.3",
 		"@types/mailparser": "^3.4.6",
 		"h3": "^1.15.4",
 		"nitropack": "^2.12.6"
 	},
 	"dependencies": {
 		"@supabase/ssr": "^0.7.0",
+		"addressparser": "^1.0.1",
 		"imapflow": "^1.0.198",
 		"mailparser": "^3.7.4"
 	}

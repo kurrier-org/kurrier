@@ -7,10 +7,11 @@ import {
     MessageInsertSchema,
     MessageCreate,
     MessageAttachmentCreate,
-    MessageAttachmentInsertSchema, mailboxes, threadsList, ThreadsListInsertSchema, identities,
+    MessageAttachmentInsertSchema,
 } from "@db";
 import { createClient } from "@supabase/supabase-js";
-import {buildParticipantsSnapshot, generateSnippet, getPublicEnv, getServerEnv} from "@schema";
+import {getPublicEnv, getServerEnv} from "@schema";
+import {generateSnippet, upsertThreadsListItem} from "@common";
 import { randomUUID } from "crypto";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
@@ -104,69 +105,69 @@ export async function createOrInitializeThread(
 
 
 
-export async function upsertThreadsListItem(messageId: string) {
-    const [msg] = await db
-        .select()
-        .from(messages)
-        .where(eq(messages.id, messageId));
-
-    if (!msg) throw new Error(`Message ${messageId} not found`);
-
-    const [mailbox] = await db
-        .select()
-        .from(mailboxes)
-        .where(eq(mailboxes.id, msg.mailboxId));
-
-    const [identity] = await db
-        .select()
-        .from(identities)
-        .where(eq(identities.id, mailbox.identityId));
-
-    if (!mailbox) throw new Error(`Mailbox ${msg.mailboxId} not found`);
-
-    const subject = msg.subject?.trim() || "(no subject)";
-    const previewText = msg.snippet
-    const lastActivityAt = msg.date ?? msg.createdAt;
-
-    const participants = buildParticipantsSnapshot(msg);
-
-    const payload = {
-        id: msg.threadId,
-        ownerId: mailbox.ownerId,
-        identityId: mailbox.identityId,
-        mailboxId: mailbox.id,
-        identityPublicId: identity.publicId,
-        mailboxSlug: mailbox.slug,
-        subject,
-        previewText,
-        lastActivityAt,
-        firstMessageAt: lastActivityAt,
-        messageCount: 1,
-        unreadCount: msg.seen ? 0 : 1,
-        hasAttachments: msg.hasAttachments,
-        participants,
-    }
-
-    const parsedPayload = ThreadsListInsertSchema.parse(payload);
-    await db
-        .insert(threadsList)
-        .values(parsedPayload)
-        .onConflictDoUpdate({
-            target: threadsList.id,
-            set: {
-                subject: sql`COALESCE(EXCLUDED.subject, ${threadsList.subject})`,
-                previewText: sql`COALESCE(EXCLUDED.preview_text, ${threadsList.previewText})`,
-                lastActivityAt: sql`GREATEST(EXCLUDED.last_activity_at, ${threadsList.lastActivityAt})`,
-                messageCount: sql`${threadsList.messageCount} + 1`,
-                unreadCount: sql`${threadsList.unreadCount} + ${msg.seen ? 0 : 1}`,
-                hasAttachments: sql`${threadsList.hasAttachments} OR ${msg.hasAttachments}`,
-                participants: sql`jsonb_strip_nulls(${threadsList.participants} || EXCLUDED.participants)`,
-                updatedAt: sql`now()`,
-            },
-        });
-
-    return { threadId: msg.threadId, mailboxId: mailbox.id };
-}
+// export async function upsertThreadsListItem(messageId: string) {
+//     const [msg] = await db
+//         .select()
+//         .from(messages)
+//         .where(eq(messages.id, messageId));
+//
+//     if (!msg) throw new Error(`Message ${messageId} not found`);
+//
+//     const [mailbox] = await db
+//         .select()
+//         .from(mailboxes)
+//         .where(eq(mailboxes.id, msg.mailboxId));
+//
+//     const [identity] = await db
+//         .select()
+//         .from(identities)
+//         .where(eq(identities.id, mailbox.identityId));
+//
+//     if (!mailbox) throw new Error(`Mailbox ${msg.mailboxId} not found`);
+//
+//     const subject = msg.subject?.trim() || "(no subject)";
+//     const previewText = msg.snippet
+//     const lastActivityAt = msg.date ?? msg.createdAt;
+//
+//     const participants = buildParticipantsSnapshot(msg);
+//
+//     const payload = {
+//         id: msg.threadId,
+//         ownerId: mailbox.ownerId,
+//         identityId: mailbox.identityId,
+//         mailboxId: mailbox.id,
+//         identityPublicId: identity.publicId,
+//         mailboxSlug: mailbox.slug,
+//         subject,
+//         previewText,
+//         lastActivityAt,
+//         firstMessageAt: lastActivityAt,
+//         messageCount: 1,
+//         unreadCount: msg.seen ? 0 : 1,
+//         hasAttachments: msg.hasAttachments,
+//         participants,
+//     }
+//
+//     const parsedPayload = ThreadsListInsertSchema.parse(payload);
+//     await db
+//         .insert(threadsList)
+//         .values(parsedPayload)
+//         .onConflictDoUpdate({
+//             target: threadsList.id,
+//             set: {
+//                 subject: sql`COALESCE(EXCLUDED.subject, ${threadsList.subject})`,
+//                 previewText: sql`COALESCE(EXCLUDED.preview_text, ${threadsList.previewText})`,
+//                 lastActivityAt: sql`GREATEST(EXCLUDED.last_activity_at, ${threadsList.lastActivityAt})`,
+//                 messageCount: sql`${threadsList.messageCount} + 1`,
+//                 unreadCount: sql`${threadsList.unreadCount} + ${msg.seen ? 0 : 1}`,
+//                 hasAttachments: sql`${threadsList.hasAttachments} OR ${msg.hasAttachments}`,
+//                 participants: sql`jsonb_strip_nulls(${threadsList.participants} || EXCLUDED.participants)`,
+//                 updatedAt: sql`now()`,
+//             },
+//         });
+//
+//     return { threadId: msg.threadId, mailboxId: mailbox.id };
+// }
 
 
 // function buildParticipantsSnapshot(msg: any) {
@@ -263,7 +264,10 @@ export async function parseAndStoreEmail(
 	const [message] = await db
 		.insert(messages)
 		.values(messagePayload as MessageCreate)
-		.onConflictDoNothing()
+		// .onConflictDoNothing()
+        .onConflictDoNothing({
+            target: [messages.mailboxId, messages.messageId],
+        })
 		.returning();
 
 	if (!message) return null;

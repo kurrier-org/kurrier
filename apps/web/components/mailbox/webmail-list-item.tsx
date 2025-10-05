@@ -116,7 +116,7 @@ export default function WebmailListItem({
             <div className="flex min-w-0 items-center gap-1 pr-2">
                 <span className="truncate">{threadItem.subject}</span>
                 <span className="mx-1 text-muted-foreground">–</span>
-                <span className="truncate text-muted-foreground">{threadItem.previewText}</span>
+                <span className="truncate text-muted-foreground font-normal">{threadItem.previewText}</span>
                 {threadItem.hasAttachments && (
                     <Paperclip className="ml-1 hidden h-4 w-4 text-muted-foreground md:inline" />
                 )}

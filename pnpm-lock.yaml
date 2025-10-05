@@ -253,6 +253,9 @@ importers:
       '@supabase/ssr':
         specifier: ^0.7.0
         version: 0.7.0(@supabase/supabase-js@2.58.0)
+      addressparser:
+        specifier: ^1.0.1
+        version: 1.0.1
       imapflow:
         specifier: ^1.0.198
         version: 1.0.198
@@ -260,6 +263,9 @@ importers:
         specifier: ^3.7.4
         version: 3.7.4
     devDependencies:
+      '@types/addressparser':
+        specifier: ^1.0.3
+        version: 1.0.3
       '@types/mailparser':
         specifier: ^3.4.6
         version: 3.4.6
@@ -269,6 +275,8 @@ importers:
       nitropack:
         specifier: ^2.12.6
         version: 2.12.6(drizzle-orm@0.44.5(@types/pg@8.15.5)(pg@8.16.3)(postgres@3.4.7))
+
+  packages/common: {}
 
   packages/db:
     dependencies:
@@ -2530,6 +2538,9 @@ packages:
   '@tiptap/starter-kit@3.5.0':
     resolution: {integrity: sha512-upe/FBGTYjTavm7FTkDf7o/bgE7DpRC6NyKIg6ZRb+s+L6Sr0YmvpC0/DmmMnJFTn3AxGyz2WjWVGCteplj3cw==}
 
+  '@types/addressparser@1.0.3':
+    resolution: {integrity: sha512-h5MPV28/nHAXi3+wxjt7ZWKGtL2O6Z784eVKQwLo85VSo2YcPViTLR+CGJbx2bzd6DuOthiJX2sn54vqWfBseA==}
+
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
@@ -2614,6 +2625,9 @@ packages:
     resolution: {integrity: sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg==}
     engines: {node: '>=0.4.0'}
     hasBin: true
+
+  addressparser@1.0.1:
+    resolution: {integrity: sha512-aQX7AISOMM7HFE0iZ3+YnD07oIeJqWGVnJ+ZIKaBZAk03ftmVYVqsGas/rbXKR21n4D/hKCSHypvcyOkds/xzg==}
 
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
@@ -7777,6 +7791,10 @@ snapshots:
       '@tiptap/extensions': 3.5.0(@tiptap/core@3.5.0(@tiptap/pm@3.5.0))(@tiptap/pm@3.5.0)
       '@tiptap/pm': 3.5.0
 
+  '@types/addressparser@1.0.3':
+    dependencies:
+      '@types/node': 24.6.2
+
   '@types/estree@1.0.8': {}
 
   '@types/imapflow@1.0.23':
@@ -7840,7 +7858,7 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 24.5.2
+      '@types/node': 24.6.2
 
   '@vercel/nft@0.30.2(rollup@4.52.3)':
     dependencies:
@@ -7872,6 +7890,8 @@ snapshots:
       acorn: 8.15.0
 
   acorn@8.15.0: {}
+
+  addressparser@1.0.1: {}
 
   agent-base@7.1.4: {}
 

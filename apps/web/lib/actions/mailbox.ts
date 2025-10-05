@@ -47,10 +47,15 @@ const getRedis = async () => {
 	};
 	const smtpQueue = new Queue("smtp-worker", redisConnection);
 	const smtpEvents = new QueueEvents("smtp-worker", redisConnection);
+    const sendMailQueue = new Queue("send-mail", redisConnection);
+    const sendMailEvents = new QueueEvents("send-mail", redisConnection);
 	await smtpEvents.waitUntilReady();
+	await sendMailEvents.waitUntilReady();
 	return {
 		smtpQueue,
 		smtpEvents,
+        sendMailQueue,
+        sendMailEvents
 	};
 };
 
@@ -473,125 +478,13 @@ export async function sendMail(
 ): Promise<FormState> {
 	const decodedForm = decode(formData);
 
-	const data: MailComposeInput = {
-		messageId: String(decodedForm.messageId ?? ""),
-		to: toArray(decodedForm.to as any),
-		subject: (decodedForm.subject as string) || undefined,
-		text: (decodedForm.text as string) || undefined,
-		html: (decodedForm.html as string) || undefined,
-		mode: (decodedForm.mode as ComposeMode) || "new",
-	};
-
-	if (data.to.length === 0) {
-		return { error: "Please provide at least one recipient in the To field." };
-	}
-
-	const rls = await rlsClient();
-
-	const row = await rowForProvider(decodedForm);
-
-	if (!row) return { error: "Original message not found." };
-
-	const [secrets] = row.provider
-		? await fetchDecryptedSecrets({
-				linkTable: providerSecrets,
-				foreignCol: providerSecrets.providerId,
-				secretIdCol: providerSecrets.secretId,
-				parentId: row.provider.id,
-			})
-		: await fetchDecryptedSecrets({
-				linkTable: smtpAccountSecrets,
-				foreignCol: smtpAccountSecrets.accountId,
-				secretIdCol: smtpAccountSecrets.secretId,
-				parentId: row?.smtpAccount?.id,
-			});
-
-	const mailer = createMailer(
-		row.provider ? row.provider.type : "smtp",
-		secrets.parsedSecret,
-	);
-
-	const supabase = await createClient();
-	const attachmentBlobs = await fetchAttachmentBlobs(
-		supabase,
-		decodedForm.attachments as string,
-	);
-
-	const { subject, text, html } = await generateMailAttrs({ row, data });
-
-	const payload: {
-		to: string[]; // keep arrays internally
-		from: string; // your identity address
-		subject: string;
-		text?: string;
-		html?: string;
-	} = {
-		to: data.to,
-		from: row.identity.value,
-		subject,
-		text,
-		html,
-	};
-
-	const newMessageBody = MessageInsertSchema.parse({
-		mailboxId: row.message.mailboxId,
-		messageId: "PLACEHOLDER", // set by provider response
-		inReplyTo: row.message.messageId,
-		references: row?.message?.references
-			? [
-					...new Set([...row?.message?.references, row?.message.messageId]),
-				].slice(0, 30)
-			: [],
-		threadId: row.message.threadId,
-		...payload,
-		hasAttachments: attachmentBlobs?.length > 0,
-	});
-
-	// If your mailer expects a string, join:
-	const mailerResponse = await mailer.sendEmail(payload.to, {
-		from: payload.from,
-		subject: payload.subject,
-		text: String(payload.text),
-		html: String(payload.html),
-		inReplyTo: row.message.messageId,
-		references: newMessageBody.references || [],
-		attachments: attachmentBlobs.map((att) => {
-			return {
-				name: att.name,
-				content: att.blob,
-				contentType: String(att.item.contentType),
-			};
-		}),
-	});
-
-	if (mailerResponse.success) {
-		const parsedMessage = MessageInsertSchema.parse({
-			...newMessageBody,
-			messageId: String(mailerResponse.MessageId) || `msg-${Date.now()}`,
-		});
-		const [newMessage] = await rls((tx) =>
-			tx
-				.insert(messages)
-				.values(parsedMessage as MessageCreate)
-				.returning(),
-		);
-
-		for (const attachmentBlob of attachmentBlobs) {
-			await rls((tx) =>
-				tx.insert(messageAttachments).values({
-					...attachmentBlob.item,
-					messageId: newMessage.id,
-				}),
-			);
-		}
-	} else if (mailerResponse.error) {
-		return {
-			error: `Failed to send email: ${mailerResponse.error}`,
-			success: false,
-		};
-	}
-
-	return { success: true };
+    if (toArray(decodedForm.to as any).length === 0) {
+        return { error: "Please provide at least one recipient in the To field." };
+    }
+    const { sendMailQueue, sendMailEvents } = await getRedis();
+    const job = await sendMailQueue.add("send-and-reconcile", decodedForm);
+    const result = await job.waitUntilFinished(sendMailEvents);
+    return result
 }
 
 export const deltaFetch = async ({ identityId }: { identityId: string }) => {
@@ -734,8 +627,6 @@ export const fetchWebMailThreadDetail = cache(
             const msgs = rows.map((r) => r.message);
             return { thread, messages: msgs };
         });
-
-        console.log("thread detail", result);
         return result
 
         // const thread = await rls(async (tx) => {

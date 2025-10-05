@@ -13,8 +13,10 @@ export default defineNitroConfig({
 		"@schema/*": "../../packages/schema/src/*",
 		"@providers": "../../packages/providers/src/index.ts",
 		"@providers/*": "../../packages/providers/src/*",
+        "@common": "../../packages/common/src/index.ts",
+        "@common/*": "../../packages/common/src/*",
 	},
 	externals: {
-		inline: ["@db", "@schema", "@providers"],
+		inline: ["@db", "@schema", "@providers", "@common"],
 	},
 });

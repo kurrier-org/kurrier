@@ -35,7 +35,9 @@
 			"@schema": ["../../packages/schema/src/index.ts"],
 			"@schema/*": ["../../packages/schema/src/*"],
 			"@providers": ["../../packages/providers/src/index.ts"],
-			"@providers/*": ["../../packages/providers/src/*"]
+			"@providers/*": ["../../packages/providers/src/*"],
+            "@common": ["../../packages/common/src/index.ts"],
+            "@common/*": ["../../packages/common/src/*"]
 		}
 	}
 }

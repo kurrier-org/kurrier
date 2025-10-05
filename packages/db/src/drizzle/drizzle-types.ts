@@ -54,6 +54,8 @@ export const MailboxSyncInsertSchema = createInsertSchema(mailboxSync);
 export type MailboxSyncCreate = typeof mailboxSync.$inferInsert;
 
 export const ThreadsListInsertSchema = createInsertSchema(threadsList);
+export const ThreadsListUpdateSchema = createUpdateSchema(threadsList);
+export type ThreadsListCreate = typeof threadsList.$inferInsert;
 
 export type DecryptedEntity = typeof decryptedSecrets.$inferSelect;
 
