@@ -15,8 +15,9 @@ export default defineNitroConfig({
 		"@providers/*": "../../packages/providers/src/*",
         "@common": "../../packages/common/src/index.ts",
         "@common/*": "../../packages/common/src/*",
+        "@common/mail-client": "../../packages/common/src/mail-client.ts",
 	},
 	externals: {
-		inline: ["@db", "@schema", "@providers", "@common"],
+		inline: ["@db", "@schema", "@providers", "@common", "@common/mail-client"],
 	},
 });

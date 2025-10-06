@@ -11,7 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import { MailboxEntity } from "@db";
 import { FetchMailboxThreadsResult } from "@/lib/actions/mailbox";
-import { fromName, fromAddress } from "@schema";
+import { getMessageAddress, getMessageName } from "@common/mail-client";
 
 type Props = {
 	threadItem: FetchMailboxThreadsResult["threads"][number];
@@ -32,7 +32,7 @@ export default function ThreadListItem({
 	const last = messages[messages.length - 1];
 
 	const allNames = Array.from(
-		new Set(messages.map((m) => fromName(m) || fromAddress(m))),
+		new Set(messages.map((m) => getMessageName(m, "from") || getMessageAddress(m, "from"))),
 	).join(", ");
 
 	const subject = first.subject || "(no subject)";

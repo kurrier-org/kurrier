@@ -10,17 +10,19 @@ import {
 import { Forward, Reply } from "lucide-react";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { MessageEntity } from "@db";
-import { fromAddress } from "@schema";
+import {getMessageAddress} from "@common/mail-client"
 
 function EditorHeader() {
-	const [mode, setMode] = useState<"reply" | "forward">("reply");
+    const { state } = useDynamicContext<{
+        isPending: boolean;
+        message: MessageEntity;
+        showEditorMode: "reply" | "forward";
+    }>();
+
+	const [mode, setMode] = useState<"reply" | "forward">(state.showEditorMode);
 	const [ccActive, setCcActive] = useState(false);
 	const [bccActive, setBccActive] = useState(false);
 
-	const { state } = useDynamicContext<{
-		isPending: boolean;
-		message: MessageEntity;
-	}>();
 
 	const options = useMemo(
 		() => [
@@ -31,7 +33,7 @@ function EditorHeader() {
 	);
 
 	const toEmail = useMemo(() => {
-		return fromAddress(state.message) || "";
+		return getMessageAddress(state.message, "from") || "";
 	}, [state.message]);
 
 	const renderOption: SelectProps["renderOption"] = ({ option }) => {
@@ -77,6 +79,7 @@ function EditorHeader() {
 							<span className="text-sm text-muted-foreground">To</span>
 							<TagsInput
 								defaultValue={[toEmail]}
+                                maxTags={1}
 								name={"to"}
 								size="sm"
 								variant="unstyled"

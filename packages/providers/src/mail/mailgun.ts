@@ -7,7 +7,7 @@ import {
 	VerifyResult,
 } from "../core";
 import sgClient from "@sendgrid/client";
-import { sanitizeFilename } from "@schema";
+import { sanitizeFilename } from "@common/mail-client";
 import Mailgun from "mailgun.js";
 
 export class MailgunMailer implements Mailer {

@@ -1,12 +1,15 @@
 "use client";
 import React, { useRef, useState } from "react";
 import { MessageAttachmentEntity, MessageEntity } from "@db";
-import { fromAddress, fromName } from "@schema";
+import {
+    getMessageAddress,
+    getMessageName,
+} from "@common/mail-client";
 import slugify from "@sindresorhus/slugify";
-import { ChevronDown, EllipsisVertical, Reply, Star } from "lucide-react";
+import {EllipsisVertical, Forward, Reply, Star} from "lucide-react";
 import { Temporal } from "@js-temporal/polyfill";
 import dynamic from "next/dynamic";
-import { ActionIcon } from "@mantine/core";
+import {ActionIcon, Button} from "@mantine/core";
 import { EmailEditorHandle } from "@/components/mailbox/default/editor/email-editor";
 import EditorAttachmentItem from "@/components/mailbox/default/editor/editor-attachment-item";
 import { PublicConfig } from "@schema";
@@ -21,74 +24,67 @@ const EmailEditor = dynamic(
 );
 
 function getScrollParent(el: HTMLElement): HTMLElement {
-	let p: HTMLElement | null = el.parentElement;
-	while (p) {
-		const s = getComputedStyle(p);
-		const canScrollY =
-			(s.overflowY === "auto" || s.overflowY === "scroll") &&
-			p.scrollHeight > p.clientHeight;
-		if (canScrollY) return p;
-		p = p.parentElement;
-	}
-	// window/document scrolling element
-	return (document.scrollingElement || document.documentElement) as HTMLElement;
+    let p: HTMLElement | null = el.parentElement;
+    while (p) {
+        const s = getComputedStyle(p);
+        const overflowY = s.overflowY || s.overflow;
+        const canScrollY =
+            (overflowY === "auto" || overflowY === "scroll") &&
+            p.scrollHeight > p.clientHeight;
+        if (canScrollY) return p;
+        p = p.parentElement;
+    }
+    return (document.scrollingElement || document.documentElement) as HTMLElement;
 }
 
 function scrollToEditor(
-	el: HTMLElement,
-	{
-		offsetTop = 72, // sticky header height
-		extra = 200, // push it further down
-		retryDelay = 120, // ms
-	} = {},
+    el: HTMLElement,
+    {
+        offsetTop = 96,   // your sticky header + subject bar height
+        minBottomGap = 48 // ensure some space below the editor
+    } = {}
 ) {
-	const container = getScrollParent(el);
-	const isWindow = container === (document.scrollingElement as HTMLElement);
-	const cRect = isWindow ? { top: 0 } : container.getBoundingClientRect();
-	const eRect = el.getBoundingClientRect();
-	const currentTop = isWindow ? window.scrollY : container.scrollTop;
+    const container = getScrollParent(el);
+    const isWindow = container === (document.scrollingElement as HTMLElement);
 
-	// target so that the element top sits below the header, *plus* extra padding
-	const targetTop = eRect.top - cRect.top + currentTop - offsetTop + extra;
+    const cRect = isWindow ? { top: 10, height: window.innerHeight } as any
+        : container.getBoundingClientRect();
+    const eRect = el.getBoundingClientRect();
+    const currentTop = isWindow ? window.scrollY : container.scrollTop;
 
-	if (isWindow) {
-		window.scrollTo({ top: targetTop, behavior: "smooth" });
-	} else {
-		container.scrollTo({ top: targetTop, behavior: "smooth" });
-	}
+    // Place the editor top just below the sticky header
+    const targetTop = currentTop + (eRect.top - cRect.top) - offsetTop;
 
-	// Retry once after a short delay (accounts for late image/layout shifts)
-	setTimeout(() => {
-		const e2 = el.getBoundingClientRect();
-		const viewBottom = isWindow
-			? window.innerHeight
-			: (container as HTMLElement).clientHeight;
+    const doScroll = (top: number) => {
+        if (isWindow) window.scrollTo({ top, behavior: "smooth" });
+        else container.scrollTo({ top, behavior: "smooth" });
+    };
 
-		// If editor bottom is still hugging the bottom, push a bit more
-		const desiredBottomGap = extra; // same as extra
-		const bottomGap = viewBottom - e2.bottom;
-		if (bottomGap < desiredBottomGap) {
-			if (isWindow) {
-				window.scrollBy({
-					top: desiredBottomGap - bottomGap,
-					behavior: "smooth",
-				});
-			} else {
-				(container as HTMLElement).scrollBy({
-					top: desiredBottomGap - bottomGap,
-					behavior: "smooth",
-				});
-			}
-		}
-	}, retryDelay);
+    doScroll(targetTop);
+
+    // After layout settles (images/fonts), verify bottom gap once
+    setTimeout(() => {
+        const e2 = el.getBoundingClientRect();
+        const viewH = isWindow ? window.innerHeight : (container as HTMLElement).clientHeight;
+        const bottomGap = viewH - e2.bottom;
+        if (bottomGap < minBottomGap) {
+            const delta = minBottomGap - bottomGap;
+            if (isWindow) window.scrollBy({ top: delta, behavior: "smooth" });
+            else (container as HTMLElement).scrollBy({ top: delta, behavior: "smooth" });
+        }
+    }, 120);
 }
 
 function EmailRenderer({
+    threadIndex,
+    numberOfMessages,
 	message,
 	attachments,
 	publicConfig,
 	children,
 }: {
+    threadIndex: number
+    numberOfMessages: number
 	message: MessageEntity;
 	attachments: MessageAttachmentEntity[];
 	publicConfig: PublicConfig;
@@ -106,27 +102,27 @@ function EmailRenderer({
 		});
 
 	const [showEditor, setShowEditor] = useState<boolean>(false);
+	const [showEditorMode, setShowEditorMode] = useState<string>("reply");
 	const editorRef = useRef<EmailEditorHandle>(null);
 
 	return (
 		<>
 			<div className="flex flex-col">
-				<h1 className="text-xl font-base">{message.subject || "No Subject"}</h1>
+                {threadIndex === 0 && <h1 className="text-xl font-base">{message.subject || "No Subject"}</h1>}
 
 				<div className={"flex justify-between"}>
 					<div>
 						<div className={"mt-4 flex gap-1 items-center"}>
 							<div className={"text-sm font-semibold capitalize"}>
-								{fromName(message) ??
-									slugify(String(fromAddress(message)), { separator: " " })}
+								{getMessageName(message, "from") ??
+									slugify(String(getMessageAddress(message, "from")), { separator: " " })}
 							</div>
 							<div
 								className={"text-xs"}
-							>{`<${fromAddress(message) ?? fromName(message)}>`}</div>
+							>{`<${getMessageAddress(message, "from") ?? getMessageName(message, "from")}>`}</div>
 						</div>
 						<div className={"flex gap-1 items-center"}>
-							<div className={"text-xs"}>to support</div>
-							<ChevronDown size={12} />
+							<div className={"text-xs"}>to {`<${getMessageAddress(message, "to") ?? getMessageName(message, "to")}>`}</div>
 						</div>
 					</div>
 
@@ -138,11 +134,6 @@ function EmailRenderer({
 							variant={"transparent"}
 							onClick={() => {
 								setShowEditor(!showEditor);
-								// scroll to editor
-								window.scrollTo({
-									top: document.body.scrollHeight,
-									behavior: "smooth",
-								});
 							}}
 						>
 							<Reply size={18} />
@@ -173,6 +164,17 @@ function EmailRenderer({
 				</div>
 			)}
 
+            {threadIndex === (numberOfMessages-1) && !showEditor && <div className={"flex gap-6"}>
+                <Button onClick={() => {
+                    setShowEditor(!showEditor);
+                    setShowEditorMode("reply");
+                }} leftSection={<Reply />} variant={"outline"} radius={"xl"}>Reply</Button>
+                <Button onClick={() => {
+                    setShowEditor(!showEditor);
+                    setShowEditorMode("forward");
+                }} rightSection={<Forward />} variant={"outline"} radius={"xl"}>Forward</Button>
+            </div>}
+
 			{showEditor && (
 				<div>
 					<EmailEditor
@@ -180,11 +182,11 @@ function EmailRenderer({
 						publicConfig={publicConfig}
 						message={message}
 						onReady={(el) => {
-							scrollToEditor(el, { offsetTop: 72, extra: 240 }); // bump extra if you want more space
+                            scrollToEditor(el, { offsetTop: 96, minBottomGap: 64 });
 							requestAnimationFrame(() => editorRef.current?.focus());
 						}}
+                        showEditorMode={showEditorMode}
 					/>
-					<div className="h-40" /> {/* Spacer for comfortable scroll */}
 				</div>
 			)}
 		</>

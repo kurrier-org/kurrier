@@ -8,7 +8,7 @@ import {
 } from "../core";
 import sgClient from "@sendgrid/client";
 import sgMail from "@sendgrid/mail";
-import { sanitizeFilename } from "@schema";
+import { sanitizeFilename } from "@common/mail-client";
 
 export class SendgridMailer implements Mailer {
 	private client: sgClient.Client;

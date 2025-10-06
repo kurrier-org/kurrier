@@ -121,8 +121,6 @@ export async function upsertThreadsListItem(messageId: string, tx?: PgTransactio
     }
 
 
-    console.log("participants", participants)
-
 
     const parsedPayload = ThreadsListInsertSchema.parse({
         id: msg.threadId,

@@ -8,7 +8,7 @@ import {
 	VerifyResult,
 } from "../core";
 import postmark from "postmark";
-import { sanitizeFilename } from "@schema";
+import { sanitizeFilename } from "@common/mail-client";
 
 export class PostmarkMailer implements Mailer {
 	private accountClient: postmark.AccountClient;

@@ -5,7 +5,6 @@ import React, {
 	forwardRef,
 	useImperativeHandle,
 	useActionState,
-	useState,
 } from "react";
 import { MessageEntity } from "@db";
 import {
@@ -28,10 +27,11 @@ type Props = {
 	onReady?: (el: HTMLElement) => void;
 	message: MessageEntity;
 	publicConfig: PublicConfig;
+    showEditorMode: string;
 };
 
 const EmailEditor = forwardRef<EmailEditorHandle, Props>(
-	({ onReady, message, publicConfig }, ref) => {
+	({ onReady, message, publicConfig, showEditorMode }, ref) => {
 		const textEditorRef = useRef<TextEditorHandle>(null);
 
 		useImperativeHandle(
@@ -71,7 +71,7 @@ const EmailEditor = forwardRef<EmailEditorHandle, Props>(
 				<Toaster theme={mode} expand={true} />
 				<div className="mt-4" tabIndex={-1}>
 					<DynamicContextProvider
-						initialState={{ isPending, message, publicConfig }}
+						initialState={{ isPending, message, publicConfig, showEditorMode }}
 					>
 						<Form action={formAction}>
 							<input

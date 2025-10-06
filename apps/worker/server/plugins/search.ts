@@ -1,6 +1,7 @@
 import { defineNitroPlugin } from "nitropack/runtime";
 import { db, messages, threadsList } from "@db";
-import { fromAddress, fromName, ToSearchDocInput } from "@schema";
+import { ToSearchDocInput } from "@schema";
+import { getMessageAddress, getMessageName } from "@common/mail-client";
 import Typesense from "typesense";
 import { getServerEnv, messagesSearchSchema } from "@schema";
 import { eq } from "drizzle-orm";
@@ -208,8 +209,8 @@ export default defineNitroPlugin(async () => {
                 text: m.text,
                 html: m.html,
 
-                fromName: fromName(m),
-                fromEmail: fromAddress(m),
+                fromName: getMessageName(m, "from"),
+                fromEmail: getMessageAddress(m, "from"),
 
                 from: m.from,
                 to: m.to,

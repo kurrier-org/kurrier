@@ -8,7 +8,6 @@ import Image from "@tiptap/extension-image";
 import React, {
 	forwardRef,
 	useImperativeHandle,
-	useMemo,
 	useRef,
 	useState,
 } from "react";
@@ -42,22 +41,6 @@ function formatWhen(d: Date) {
 		});
 }
 
-// function buildQuotedHtml(msg: MessageEntity, extraTopHtml = "") {
-// 	const from = msg?.from?.value[0]?.name ||
-//         msg?.from?.value[0]?.address || "Unknown sender";
-// 	const when = msg.date ? formatWhen(new Date(msg.date)) : "";
-// 	// const raw = msg.html || msg.textAsHtml || (msg.text ? `<pre>${msg.text}</pre>` : "");
-// 	// const raw = msg.html
-// 	// const raw = msg.textAsHtml
-// 	const raw = "";
-// 	const safeBody = DOMPurify.sanitize(raw, { USE_PROFILES: { html: true } });
-//
-// 	return `
-// ${extraTopHtml || "<p><br></p>"}
-// <p class="reply-preamble">On ${when}, ${from} wrote:</p>
-// <blockquote class="quoted-email">${safeBody}</blockquote>
-// `;
-// }
 
 export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(
 	({ name, defaultValue = "", onChange }, ref) => {
@@ -65,27 +48,13 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(
 		const [value, setValue] = useState(defaultValue);
 		const [textValue, setTextValue] = useState("");
 
-		// const initialHtml = useMemo(
-		// 	() => buildQuotedHtml(message, defaultValue),
-		// 	[message, defaultValue],
-		// );
-
 		const editor = useEditor({
 			immediatelyRender: false,
 			parseOptions: { preserveWhitespace: "full" },
 			extensions: [StarterKit, Link, Image],
-			// content: value,
-			// content: initialHtml,
-			// content: '<div class="text-3xl text-red-600">yay</div>',                        // set initial content
 			onUpdate: ({ editor }) => {
 				setTextValue(editor.getText().trim());
 				setValue(editor.getHTML().trim());
-				// const html = editor.getText().trim().length
-				// 	? editor.getHTML().trim()
-				// 	: "";
-				// console.log("html", html)
-				// setValue(html);
-				// onChange?.(html);
 			},
 		});
 
@@ -116,7 +85,6 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(
 				<span className="text-xs text-neutral-500">
 					Press Shift + Enter for a line break
 				</span>
-				{/* keep a hidden input if you need form submit compatibility */}
 				{name ? (
 					<>
 						<input type="hidden" name={name} value={value} readOnly />

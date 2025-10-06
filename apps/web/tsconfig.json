@@ -25,7 +25,9 @@
 			"@db": ["../../packages/db/src/index.ts"],
 			"@db/*": ["../../packages/db/src/*"],
 			"@providers": ["../../packages/providers/src/index.ts"],
-			"@providers/*": ["../../packages/providers/src/*"]
+			"@providers/*": ["../../packages/providers/src/*"],
+            "@common": ["../../packages/common/src/index.ts"],
+            "@common/*": ["../../packages/common/src/*"]
 		}
 	},
 	"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

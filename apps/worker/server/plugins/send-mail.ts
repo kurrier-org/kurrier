@@ -2,12 +2,11 @@ import { defineNitroPlugin } from "nitropack/runtime";
 import {
     AddressObjectJSON,
     ComposeMode,
-    fromAddress,
-    fromName,
     getPublicEnv,
     getServerEnv,
     MailComposeInput,
 } from "@schema";
+import {getMessageAddress, getMessageName} from "@common/mail-client"
 import {generateSnippet, upsertThreadsListItem} from "@common";
 const serverConfig = getServerEnv();
 const publicConfig = getPublicEnv();
@@ -288,8 +287,8 @@ export default defineNitroPlugin(async (nitroApp) => {
 
         const origMsg = orig?.message ?? null;
 
-        const fromNameStr = hasOrig ? (fromName(origMsg!) || "") : "";
-        const fromAddrStr = hasOrig ? (fromAddress(origMsg!) || "") : "";
+        const fromNameStr = hasOrig ? (getMessageName(origMsg!, "from") || "") : "";
+        const fromAddrStr = hasOrig ? (getMessageAddress(origMsg!, "from") || "") : "";
 
         // Prefer RFC822 Date, then createdAt, else empty
         const rawDate: Date | null =

@@ -10,7 +10,7 @@ import {
 	Trash2,
 } from "lucide-react";
 import { MailboxEntity, MessageEntity } from "@db";
-import { fromAddress, fromName } from "@schema";
+import { getMessageAddress, getMessageName } from "@common/mail-client";
 import { useRouter } from "next/navigation";
 
 function MailListItem({
@@ -75,7 +75,7 @@ function MailListItem({
 					].join(" ")}
 					// onClick={() => onOpenMail?.(m.id)}
 				>
-					{fromName(message)}
+					{getMessageName(message, 'from')}
 				</div>
 
 				{/* Subject + snippet + chips */}

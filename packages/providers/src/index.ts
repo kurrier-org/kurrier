@@ -27,4 +27,3 @@ export function createMailer(provider: Providers, config: unknown): Mailer {
 }
 
 export * from "./core";
-export * from "./mail/map";
