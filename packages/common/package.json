@@ -1,7 +1,7 @@
 {
 	"name": "@kurrier/common",
 	"private": true,
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "",
 	"types": "src/index.ts",
 	"main": "src/index.ts",
@@ -12,6 +12,5 @@
 	"keywords": [],
 	"author": "Krishna Rokhale",
 	"license": "ISC",
-	"dependencies": {
-	}
+	"dependencies": {}
 }
