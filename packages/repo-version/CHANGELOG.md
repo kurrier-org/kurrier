@@ -1,5 +1,13 @@
 # @kurrier/repo
 
+## 0.0.32
+
+### Patch Changes
+
+- [#100](https://github.com/kurrier-org/kurrier/pull/100) [`9b24b1b`](https://github.com/kurrier-org/kurrier/commit/9b24b1bfa53a89234bd3c21fadcfecea785f81b6) Thanks [@krokhale](https://github.com/krokhale)! - updated date labels on webmail
+
+- [#100](https://github.com/kurrier-org/kurrier/pull/100) [`9b24b1b`](https://github.com/kurrier-org/kurrier/commit/9b24b1bfa53a89234bd3c21fadcfecea785f81b6) Thanks [@krokhale](https://github.com/krokhale)! - Adding repo package update
+
 ## 0.0.31
 
 ### Patch Changes

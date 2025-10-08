@@ -1,5 +1,17 @@
 # web
 
+## 0.1.7
+
+### Patch Changes
+
+- [#100](https://github.com/kurrier-org/kurrier/pull/100) [`9b24b1b`](https://github.com/kurrier-org/kurrier/commit/9b24b1bfa53a89234bd3c21fadcfecea785f81b6) Thanks [@krokhale](https://github.com/krokhale)! - updated date labels on webmail
+
+- [#100](https://github.com/kurrier-org/kurrier/pull/100) [`9b24b1b`](https://github.com/kurrier-org/kurrier/commit/9b24b1bfa53a89234bd3c21fadcfecea785f81b6) Thanks [@krokhale](https://github.com/krokhale)! - Adding repo package update
+
+- [#100](https://github.com/kurrier-org/kurrier/pull/100) [`9b24b1b`](https://github.com/kurrier-org/kurrier/commit/9b24b1bfa53a89234bd3c21fadcfecea785f81b6) Thanks [@krokhale](https://github.com/krokhale)! - Add suspense boundaries for webmail
+
+- [#100](https://github.com/kurrier-org/kurrier/pull/100) [`9b24b1b`](https://github.com/kurrier-org/kurrier/commit/9b24b1bfa53a89234bd3c21fadcfecea785f81b6) Thanks [@krokhale](https://github.com/krokhale)! - Introducing MailboxThreads and newer solid approach to webmail and worker management. Added Compose UI.
+
 ## 0.1.6
 
 ### Patch Changes
