@@ -105,91 +105,6 @@ export async function createOrInitializeThread(
 
 
 
-// export async function upsertThreadsListItem(messageId: string) {
-//     const [msg] = await db
-//         .select()
-//         .from(messages)
-//         .where(eq(messages.id, messageId));
-//
-//     if (!msg) throw new Error(`Message ${messageId} not found`);
-//
-//     const [mailbox] = await db
-//         .select()
-//         .from(mailboxes)
-//         .where(eq(mailboxes.id, msg.mailboxId));
-//
-//     const [identity] = await db
-//         .select()
-//         .from(identities)
-//         .where(eq(identities.id, mailbox.identityId));
-//
-//     if (!mailbox) throw new Error(`Mailbox ${msg.mailboxId} not found`);
-//
-//     const subject = msg.subject?.trim() || "(no subject)";
-//     const previewText = msg.snippet
-//     const lastActivityAt = msg.date ?? msg.createdAt;
-//
-//     const participants = buildParticipantsSnapshot(msg);
-//
-//     const payload = {
-//         id: msg.threadId,
-//         ownerId: mailbox.ownerId,
-//         identityId: mailbox.identityId,
-//         mailboxId: mailbox.id,
-//         identityPublicId: identity.publicId,
-//         mailboxSlug: mailbox.slug,
-//         subject,
-//         previewText,
-//         lastActivityAt,
-//         firstMessageAt: lastActivityAt,
-//         messageCount: 1,
-//         unreadCount: msg.seen ? 0 : 1,
-//         hasAttachments: msg.hasAttachments,
-//         participants,
-//     }
-//
-//     const parsedPayload = ThreadsListInsertSchema.parse(payload);
-//     await db
-//         .insert(threadsList)
-//         .values(parsedPayload)
-//         .onConflictDoUpdate({
-//             target: threadsList.id,
-//             set: {
-//                 subject: sql`COALESCE(EXCLUDED.subject, ${threadsList.subject})`,
-//                 previewText: sql`COALESCE(EXCLUDED.preview_text, ${threadsList.previewText})`,
-//                 lastActivityAt: sql`GREATEST(EXCLUDED.last_activity_at, ${threadsList.lastActivityAt})`,
-//                 messageCount: sql`${threadsList.messageCount} + 1`,
-//                 unreadCount: sql`${threadsList.unreadCount} + ${msg.seen ? 0 : 1}`,
-//                 hasAttachments: sql`${threadsList.hasAttachments} OR ${msg.hasAttachments}`,
-//                 participants: sql`jsonb_strip_nulls(${threadsList.participants} || EXCLUDED.participants)`,
-//                 updatedAt: sql`now()`,
-//             },
-//         });
-//
-//     return { threadId: msg.threadId, mailboxId: mailbox.id };
-// }
-
-
-// function buildParticipantsSnapshot(msg: any) {
-//     const extract = (addrObj?: AddressObjectJSON | null) =>
-//         (addrObj?.value ?? [])
-//             .map((a) => ({
-//                 n: a?.name || null,
-//                 e: a?.address || null,
-//             }))
-//             .filter((x) => x.e)
-//             .slice(0, 5);
-//
-//     return {
-//         from: extract(msg.from),
-//         to: extract(msg.to),
-//         cc: extract(msg.cc),
-//         bcc: extract(msg.bcc),
-//     };
-// }
-
-
-
 /**
  * Parse raw email, create thread, insert message + attachments.
  */
@@ -200,6 +115,10 @@ export async function parseAndStoreEmail(
 		mailboxId: string;
 		rawStorageKey: string;
 		emlKey: string;
+        metaData?: Record<string, any>;
+        seen?: boolean,
+        answered?: boolean,
+        flagged?: boolean,
 	},
 ) {
 	const { ownerId, mailboxId, rawStorageKey } = opts;
@@ -219,8 +138,6 @@ export async function parseAndStoreEmail(
 
 	const messageId =
 		parsed.messageId || String(headers.get("message-id") || "").trim();
-
-	// if (!messageId) throw new Error("Missing message-id");
 
 	if (!messageId) {
 		console.warn(
@@ -254,11 +171,20 @@ export async function parseAndStoreEmail(
 		draft: false,
 		html: parsed.html || "",
         snippet: generateSnippet((parsed.text || parsed.html || ""))
-		// snippet: (parsed.text || parsed.html || "")
-		// 	.toString()
-		// 	.replace(/\s+/g, " ")
-		// 	.slice(0, 100),
 	} as MessageCreate | ParsedMail;
+
+    if (opts.metaData) {
+        (decoratedParsed as any).metaData = opts.metaData;
+    }
+    if (opts.seen) {
+        (decoratedParsed as any).seen = opts.seen;
+    }
+    if (opts.answered) {
+        (decoratedParsed as any).answered = opts.answered;
+    }
+    if (opts.flagged) {
+        (decoratedParsed as any).flagged = opts.flagged;
+    }
 
 	const messagePayload = MessageInsertSchema.parse(decoratedParsed);
 	const [message] = await db

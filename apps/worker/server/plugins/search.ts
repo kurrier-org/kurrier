@@ -13,7 +13,7 @@ const {
     TYPESENSE_HOST,
 } = getServerEnv();
 
-const REBUILD_COLLECTION = false;
+const REBUILD_COLLECTION = true;
 const BATCH_SIZE = 2000;
 
 const client = new Typesense.Client({

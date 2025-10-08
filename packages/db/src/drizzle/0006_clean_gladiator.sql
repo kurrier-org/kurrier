@@ -1,0 +1,1 @@
+CREATE INDEX "ix_messages_thread_flagged" ON "messages" USING btree ("thread_id","flagged");

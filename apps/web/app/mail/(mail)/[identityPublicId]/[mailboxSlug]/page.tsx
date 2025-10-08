@@ -1,6 +1,5 @@
-import {fetchMailbox, fetchMailboxThreads, fetchWebMailList} from "@/lib/actions/mailbox";
+import {deltaFetch, fetchMailbox, fetchWebMailList} from "@/lib/actions/mailbox";
 import { getPublicEnv } from "@schema";
-import ThreadList from "@/components/mailbox/default/thread-list";
 import MailPagination from "@/components/mailbox/default/mail-pagination";
 import WebmailList from "@/components/mailbox/default/webmail-list";
 
@@ -17,19 +16,16 @@ async function Page({
 		identityPublicId,
 		mailboxSlug,
 	);
+    await deltaFetch({identityId: activeMailbox.identityId})
+
 	const publicConfig = getPublicEnv();
-    const mailList = await fetchWebMailList(identityPublicId, String(mailboxSlug), Number(page))
+    const mailList =
+        await fetchWebMailList(identityPublicId, String(mailboxSlug), Number(page))
+
 
 	return (
 		<>
 			<div className="flex flex-1 flex-col gap-4 p-4 mb-12">
-				{/*<ThreadList*/}
-				{/*	threads={threads}*/}
-				{/*	publicConfig={publicConfig}*/}
-				{/*	activeMailbox={activeMailbox}*/}
-				{/*	identityPublicId={identityPublicId}*/}
-				{/*/>*/}
-
                 <WebmailList threads={mailList}
                              publicConfig={publicConfig}
                              activeMailbox={activeMailbox}

@@ -32,8 +32,10 @@ const getRedis = async () => {
 	};
 	const smtpQueue = new Queue("smtp-worker", redisConnection);
 	const smtpEvents = new QueueEvents("smtp-worker", redisConnection);
+
     const sendMailQueue = new Queue("send-mail", redisConnection);
     const sendMailEvents = new QueueEvents("send-mail", redisConnection);
+
 	await smtpEvents.waitUntilReady();
 	await sendMailEvents.waitUntilReady();
 	return {
@@ -109,18 +111,6 @@ export const fetchMailbox = cache(
 	},
 );
 
-// export const fetchMailboxMessages = cache(async (mailboxId: string) => {
-// 	const rls = await rlsClient();
-// 	const messageList = await rls((tx) =>
-// 		tx
-// 			.select()
-// 			.from(messages)
-// 			.where(eq(messages.mailboxId, mailboxId))
-// 			.orderBy(desc(messages.date)),
-// 	);
-// 	return { messages: messageList };
-// });
-
 
 export const fetchMailboxThreadsList = cache(
     async (
@@ -153,114 +143,6 @@ export const fetchMailboxThreadsList = cache(
 );
 
 
-export const fetchMailboxThreads = cache(
-	async (mailboxId: string, page?: number, threadId?: string) => {
-		const rls = await rlsClient();
-		page = page && page > 0 ? page : 1;
-
-		const conditions = [eq(threads.mailboxId, mailboxId)];
-		if (threadId) {
-			conditions.push(eq(threads.id, threadId));
-		}
-
-		const rows = await rls(async (tx) => {
-			// Subquery: newest message timestamp per thread
-			const latestSub = tx
-				.select({
-					threadId: messages.threadId,
-					last: sql`max(coalesce(${messages.date}, ${messages.createdAt}))`.as(
-						"last",
-					),
-				})
-				.from(messages)
-				.groupBy(messages.threadId)
-				.as("latest");
-
-			const messageFields = messages;
-			delete messageFields.html;
-			delete messageFields.text;
-			delete messageFields.textAsHtml;
-			delete messageFields.headersJson;
-			delete messageFields.rawStorageKey;
-
-			return (
-				tx
-					.select({
-						thread: threads,
-						message: messageFields,
-					})
-					.from(threads)
-					// Join the per-thread latest timestamp
-					.leftJoin(latestSub, eq(latestSub.threadId, threads.id))
-					// Keep messages join so you can still collect per-thread messages
-					.leftJoin(messages, eq(messages.threadId, threads.id))
-					.where(and(...conditions))
-					.orderBy(
-						// Order threads by newest activity first
-						desc(
-							sql`coalesce(${latestSub.last}, ${threads.lastMessageDate}, ${threads.createdAt})`,
-						),
-						// Within a thread, prefer newer messages first (so first row is the newest of that thread)
-						desc(sql`coalesce(${messages.date}, ${messages.createdAt})`),
-					)
-					.offset(threadId ? 0 : (page - 1) * 50)
-					.limit(50)
-			);
-		});
-
-		// Collapse (thread × message) rows into one entry per thread
-		const byThread = new Map<string, { thread: any; messages: any[] }>();
-
-		for (const row of rows) {
-			const t = row.thread;
-			if (!byThread.has(t.id)) {
-				byThread.set(t.id, { thread: t, messages: [] });
-			}
-			if (row.message) {
-				byThread.get(t.id)!.messages.push(row.message);
-			}
-		}
-
-		return { threads: Array.from(byThread.values()) };
-	},
-);
-
-// export const fetchThreadDetail = cache(
-// 	async (
-// 		mailboxId: string,
-// 		threadId: string,
-// 	): Promise<{ thread: any | null; messages: any[] }> => {
-// 		const rls = await rlsClient();
-//
-// 		return rls(async (tx) => {
-// 			// 1) Fetch the thread (guarded by mailboxId)
-// 			const [thread] = await tx
-// 				.select()
-// 				.from(threads)
-// 				.where(and(eq(threads.mailboxId, mailboxId), eq(threads.id, threadId)))
-// 				.limit(1);
-//
-// 			if (!thread) return { thread: null, messages: [] };
-//
-// 			const messageFields = messages;
-// 			delete messageFields.headersJson;
-// 			delete messageFields.rawStorageKey;
-//
-// 			const msgs = await tx
-// 				.select(messageFields)
-// 				.from(messages)
-// 				.where(eq(messages.threadId, threadId))
-// 				.orderBy(desc(sql`coalesce(${messages.date}, ${messages.createdAt})`))
-// 				.limit(500); // or whatever cap you prefer
-//
-// 			return { thread, messages: msgs };
-// 		});
-// 	},
-// );
-
-export type FetchMailboxThreadsResult = Awaited<
-	ReturnType<typeof fetchMailboxThreads>
->;
 
 export const fetchMessageAttachments = cache(async (messageId: string) => {
 	const rls = await rlsClient();
@@ -278,139 +160,6 @@ export const revalidateMailbox = async (path: string) => {
 	revalidatePath(path);
 };
 
-// type AttachmentDownload = {
-// 	item: ReturnType<typeof MessageAttachmentInsertSchema.parse>;
-// 	blob: Blob;
-// 	name: string;
-// 	sizeBytes: number;
-// 	contentType?: string;
-// };
-
-// export async function fetchAttachmentBlobs(
-// 	supabase: SupabaseClient,
-// 	attachmentsString: string,
-// ): Promise<AttachmentDownload[]> {
-// 	// Parse safely
-// 	let attachments: unknown = [];
-// 	try {
-// 		attachments = attachmentsString ? JSON.parse(attachmentsString) : [];
-// 	} catch {
-// 		// bad JSON -> no attachments
-// 		return [];
-// 	}
-//
-// 	// Normalize & filter
-// 	const list = Array.isArray(attachments) ? attachments : [];
-// 	const candidates = list.filter((a: any) => a && a.bucketId && a.path);
-//
-// 	if (candidates.length === 0) return [];
-//
-// 	try {
-// 		const downloads = await Promise.all(
-// 			candidates.map(async (attachment: any): Promise<AttachmentDownload> => {
-// 				const { data: blob, error } = await supabase.storage
-// 					.from(String(attachment.bucketId))
-// 					.download(String(attachment.path));
-//
-// 				if (error || !blob) {
-// 					throw new Error(
-// 						`Failed to download "${attachment.path}": ${error?.message ?? "unknown error"}`,
-// 					);
-// 				}
-//
-// 				const sizeBytes = Number(attachment.sizeBytes ?? blob.size);
-//
-// 				const item = MessageAttachmentInsertSchema.parse(attachment);
-//
-// 				return {
-// 					item,
-// 					blob,
-// 					name: String(attachment.filenameOriginal || "attachment"),
-// 					sizeBytes,
-// 					// contentType,
-// 				};
-// 			}),
-// 		);
-//
-// 		return downloads;
-// 	} catch (e) {
-// 		console.error("fetchAttachmentBlobs error:", e);
-// 		return [];
-// 	}
-// }
-
-// const generateMailAttrs = async ({
-// 	row,
-// 	data,
-// }: {
-// 	row: RowForProviderResult;
-// 	data: MailComposeInput;
-// }) => {
-// 	const fromNameStr = fromName(row.message);
-// 	const fromAddrStr = fromAddress(row.message);
-// 	const origHtml = row.message.html || row.message.textAsHtml || "";
-// 	const origText = row.message.text || "";
-//
-// 	const subject =
-// 		data.mode === "reply"
-// 			? row.message.subject?.startsWith("Re:")
-// 				? row.message.subject
-// 				: `Re: ${row.message.subject ?? ""}`
-// 			: data.mode === "forward"
-// 				? row.message.subject?.startsWith("Fwd:")
-// 					? row.message.subject
-// 					: `Fwd: ${row.message.subject ?? ""}`
-// 				: (data.subject ?? "");
-//
-// 	const quotedText = `On ${row.message.date?.toISOString()}, ${fromNameStr} <${fromAddrStr}> wrote:
-// ${origText}`;
-//
-// 	const quotedHtml = `<hr>
-// <p>On ${row.message.date?.toISOString()}, ${fromNameStr} &lt;${fromAddrStr}&gt; wrote:</p>
-// <blockquote style="border-left:2px solid #ccc;margin:0;padding-left:8px;">
-//   ${origHtml || `<pre style="white-space:pre-wrap;margin:0;">${origText}</pre>`}
-// </blockquote>`;
-//
-// 	const text =
-// 		data.mode === "reply"
-// 			? `${data.text ?? ""}\n\n${quotedText}`
-// 			: data.mode === "forward"
-// 				? `${data.text ?? ""}\n\nForwarded message:\n${quotedText}`
-// 				: (data.text ?? "");
-//
-// 	const html =
-// 		data.mode === "reply"
-// 			? `${data.html ?? ""}${quotedHtml}`
-// 			: data.mode === "forward"
-// 				? `${data.html ?? ""}<p>Forwarded message:</p>${quotedHtml}`
-// 				: (data.html ?? row.message.html ?? "");
-//
-// 	return { subject, text, html };
-// };
-
-// const rowForProvider = async (decodedForm: Record<any, any>) => {
-// 	const rls = await rlsClient();
-// 	const [row] = await rls((tx) =>
-// 		tx
-// 			.select({
-// 				message: messages,
-// 				mailbox: mailboxes,
-// 				identity: identities,
-// 				provider: providers,
-// 				smtpAccount: smtpAccounts,
-// 			})
-// 			.from(messages)
-// 			.leftJoin(mailboxes, eq(messages.mailboxId, mailboxes.id))
-// 			.leftJoin(identities, eq(mailboxes.identityId, identities.id))
-// 			.leftJoin(providers, eq(identities.providerId, providers.id))
-// 			.leftJoin(smtpAccounts, eq(identities.smtpAccountId, smtpAccounts.id))
-// 			.where(eq(messages.id, String(decodedForm.originalMessageId))),
-// 	);
-//
-// 	return row;
-// };
-
-// type RowForProviderResult = Awaited<ReturnType<typeof rowForProvider>>;
 
 export async function sendMail(
 	_prev: FormState,
@@ -429,9 +178,8 @@ export async function sendMail(
 
 export const deltaFetch = async ({ identityId }: { identityId: string }) => {
 	const { smtpQueue, smtpEvents } = await getRedis();
-	// await deltaQueue.add("delta-fetch", { identityId }, { jobId: `delta-fetch-${identityId}` });
 	const job = await smtpQueue.add("delta-fetch", { identityId });
-	const result = await job.waitUntilFinished(smtpEvents);
+	await job.waitUntilFinished(smtpEvents);
 };
 
 export const initSearch = async (
@@ -564,4 +312,132 @@ export const fetchWebMailThreadDetail = cache(
     },
 );
 
-export type FetchWebMailThreadDetail = Awaited<ReturnType<typeof fetchWebMailThreadDetail>>;
+
+export const markAsRead = cache(
+    async (threadListId: string, refresh=true) => {
+        if (!threadListId) return;
+
+        const rls = await rlsClient();
+
+        await rls(async (tx) => {
+            await tx
+                .update(messages)
+                .set({ seen: true, updatedAt: new Date() })
+                .where(eq(messages.threadId, threadListId));
+
+            await tx
+                .update(threadsList)
+                .set({ unreadCount: 0, updatedAt: new Date() })
+                .where(eq(threadsList.id, threadListId))
+                .returning();
+        });
+
+        if (refresh){
+            revalidatePath("/mail")
+        }
+
+        const { smtpQueue } = await getRedis();
+        await smtpQueue.add("mail:set-flags",
+            {
+                threadListId: threadListId,
+                op: "read"
+            },
+            {
+                attempts: 3,
+                backoff: { type: "exponential", delay: 1500 },
+                removeOnComplete: true,
+                removeOnFail: false
+            }
+        );
+
+
+    }
+);
+
+
+export const markAsUnread = cache(
+    async (threadListId: string) => {
+        if (!threadListId) return;
+
+        const rls = await rlsClient();
+
+        await rls(async (tx) => {
+            await tx
+                .update(messages)
+                .set({ seen: false, updatedAt: new Date() })
+                .where(eq(messages.threadId, threadListId));
+
+            const [{ count }] = await tx
+                .select({ count: sql<number>`count(*)` })
+                .from(messages)
+                .where(and(eq(messages.threadId, threadListId), eq(messages.seen, false)));
+
+            await tx
+                .update(threadsList)
+                .set({
+                    unreadCount: count ?? 1, // fallback to 1 if uncertain
+                    updatedAt: new Date(),
+                })
+                .where(eq(threadsList.id, threadListId));
+        });
+
+        const { smtpQueue } = await getRedis();
+        await smtpQueue.add("mail:set-flags",
+            {
+                threadListId: threadListId,
+                op: "unread"
+            },
+            {
+                attempts: 3,
+                backoff: { type: "exponential", delay: 1500 },
+                removeOnComplete: true,
+                removeOnFail: false
+            }
+        );
+
+        revalidatePath("/mail");
+    }
+);
+
+export const moveToTrash = async (threadListId: string) => {
+        if (!threadListId) return;
+
+        const { smtpQueue } = await getRedis();
+        await smtpQueue.add("mail:move",
+            {
+                threadListId: threadListId,
+                op: "trash",
+            },
+            {
+                attempts: 3,
+                backoff: { type: "exponential", delay: 1500 },
+                removeOnComplete: true,
+                removeOnFail: false
+            }
+        );
+
+        revalidatePath("/mail");
+}
+
+
+
+export const toggleStar = async (threadListId: string, starred: boolean) => {
+    if (!threadListId) return;
+
+    const { smtpQueue } = await getRedis();
+    await smtpQueue.add("mail:set-flags",
+        {
+            threadListId: threadListId,
+            op: starred ? "unflag" : "flag",
+        },
+        {
+            attempts: 3,
+            backoff: { type: "exponential", delay: 1500 },
+            removeOnComplete: true,
+            removeOnFail: true
+        }
+    );
+
+    revalidatePath("/mail");
+}
+

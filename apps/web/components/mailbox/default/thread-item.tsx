@@ -22,7 +22,7 @@ export default async function ThreadItem({
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-4">
 			<div className={"flex gap-4"}>
-				<div className={"flex-shrink flex flex-col items-center pt-12"}>
+				<div className={`flex-shrink flex flex-col items-center ${threadIndex === 0 ? 'pt-12' : 'pt-4'}`}>
 					<Avatar
 						name={getMessageName(message, "from") || getMessageAddress(message, "from") || ""}
 						color="initials"

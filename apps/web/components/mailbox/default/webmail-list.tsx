@@ -1,13 +1,12 @@
 "use client";
 import * as React from "react";
 import { MailboxEntity } from "@db";
-import { useEffect } from "react";
 import { PublicConfig } from "@schema";
-import {
-    deltaFetch, FetchWebMailResult
-} from "@/lib/actions/mailbox";
+import {FetchWebMailResult, revalidateMailbox} from "@/lib/actions/mailbox";
 import MailListHeader from "@/components/mailbox/default/mail-list-header";
-import WebmailListItem from "@/components/mailbox/webmail-list-item";
+import WebmailListItem from "@/components/mailbox/default/webmail-list-item";
+import {useEffect} from "react";
+import {usePathname, useRouter, useSearchParams} from "next/navigation";
 
 
 type WebListProps = {
@@ -20,9 +19,13 @@ type WebListProps = {
 export default function WebmailList({ threads, publicConfig, activeMailbox, identityPublicId}: WebListProps) {
 
 
+    const pathname = usePathname()
+    const searchParams = useSearchParams()
+
     useEffect(() => {
-        deltaFetch({identityId: activeMailbox.identityId})
-    }, []);
+        const url = `${pathname}?${searchParams.toString()}`
+        revalidateMailbox(url)
+    }, [pathname, searchParams])
 
 
     return (
@@ -38,7 +41,10 @@ export default function WebmailList({ threads, publicConfig, activeMailbox, iden
 
                     <ul role="list" className="divide-y">
                         {threads.map((threadItem) => (
-                            <WebmailListItem key={threadItem.id} threadItem={threadItem} activeMailbox={activeMailbox} identityPublicId={identityPublicId} />
+                            <WebmailListItem key={threadItem.id}
+                                             threadItem={threadItem}
+                                             activeMailbox={activeMailbox}
+                                             identityPublicId={identityPublicId} />
                         ))}
                     </ul>
                 </div>

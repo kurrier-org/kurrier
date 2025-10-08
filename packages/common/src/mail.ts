@@ -72,7 +72,11 @@ export async function upsertThreadsListItem(messageId: string, tx?: PgTransactio
             subject: messages.subject,
             text: messages.text,
             html: messages.html,
+
             seen: messages.seen,
+            answered: messages.answered,
+            flagged: messages.flagged,
+
             hasAttachments: messages.hasAttachments,
             from: messages.from,
             to: messages.to,
@@ -121,7 +125,7 @@ export async function upsertThreadsListItem(messageId: string, tx?: PgTransactio
     }
 
 
-
+    const anyStarred = allMessagesInThread.some(m => m.flagged);
     const parsedPayload = ThreadsListInsertSchema.parse({
         id: msg.threadId,
         ownerId: mailbox.ownerId,
@@ -137,6 +141,7 @@ export async function upsertThreadsListItem(messageId: string, tx?: PgTransactio
         unreadCount: msg.seen ? 0 : 1,
         hasAttachments: msg.hasAttachments,
         participants,
+        starred: anyStarred
     });
 
     await txDb
@@ -152,6 +157,7 @@ export async function upsertThreadsListItem(messageId: string, tx?: PgTransactio
                 unreadCount: sql`${threadsList.unreadCount} + ${msg.seen ? 0 : 1}`,
                 hasAttachments: sql`${threadsList.hasAttachments} OR ${msg.hasAttachments}`,
                 participants: sql`jsonb_strip_nulls(${threadsList.participants} || EXCLUDED.participants)`,
+                starred: sql`${threadsList.starred} OR EXCLUDED.starred`,
                 updatedAt: sql`now()`,
             },
         });

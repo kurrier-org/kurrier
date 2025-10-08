@@ -22,6 +22,34 @@
       "when": 1759592861833,
       "tag": "0002_oval_wild_pack",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1759770067293,
+      "tag": "0003_chemical_phalanx",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1759847537857,
+      "tag": "0004_elite_guardian",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1759847581004,
+      "tag": "0005_quiet_black_bolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1759849500425,
+      "tag": "0006_clean_gladiator",
+      "breakpoints": true
     }
   ]
 }

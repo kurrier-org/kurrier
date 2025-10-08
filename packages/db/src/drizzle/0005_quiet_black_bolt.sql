@@ -1,0 +1,1 @@
+CREATE INDEX "ix_threads_list_mailbox_starred" ON "threads_list" USING btree ("mailbox_id","starred");

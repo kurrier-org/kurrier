@@ -599,9 +599,11 @@ export const messages = pgTable(
 
 		date: timestamp("date", { withTimezone: true }),
 		sizeBytes: integer("size_bytes"),
-		seen: boolean("seen").notNull().default(false),
+
+        seen: boolean("seen").notNull().default(false),
 		answered: boolean("answered").notNull().default(false),
 		flagged: boolean("flagged").notNull().default(false),
+
 		draft: boolean("draft").notNull().default(false),
 		hasAttachments: boolean("has_attachments").notNull().default(false),
 		state: MessageStateEnum("state").notNull().default("normal"),
@@ -609,6 +611,9 @@ export const messages = pgTable(
 			.$type<Record<string, string> | null>()
 			.default(null),
 		rawStorageKey: text("raw_storage_key"),
+
+        metaData: jsonb("meta").$type<Record<string, any> | null>().default(null),
+
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),
@@ -624,7 +629,10 @@ export const messages = pgTable(
 		// index("idx_messages_thread_date").on(t.threadId, t.date),
 		index("idx_messages_in_reply_to").on(t.inReplyTo),
 
-		index("idx_messages_mailbox_date").on(t.mailboxId, t.date),
+        index("ix_messages_thread_flagged").on(t.threadId, t.flagged),
+
+
+        index("idx_messages_mailbox_date").on(t.mailboxId, t.date),
 		index("idx_messages_mailbox_seen_date").on(t.mailboxId, t.seen, t.date),
 
 		pgPolicy("messages_select_own", {
@@ -752,6 +760,8 @@ export const threadsList = pgTable(
 
         hasAttachments: boolean("has_attachments").notNull().default(false),
 
+        starred: boolean("starred").notNull().default(false),
+
         participants: jsonb("participants").$type<{
             from?: { n?: string; e: string }[];
             to?: { n?: string; e: string }[];
@@ -773,6 +783,8 @@ export const threadsList = pgTable(
 
         // fast “Unread” tab
         index("ix_threads_list_mailbox_unread").on(t.mailboxId, t.unreadCount),
+
+        index("ix_threads_list_mailbox_starred").on(t.mailboxId, t.starred),
 
         // guarantee row belongs to the same mailbox as the parent thread (defensive)
         uniqueIndex("ux_threads_list_thread_mailbox").on(t.id, t.mailboxId),

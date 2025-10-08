@@ -5,12 +5,13 @@ import {
     Mail,
     MailOpen,
     MoreHorizontal,
-    Paperclip,
+    Paperclip, Star,
     Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { MailboxEntity } from "@db";
-import {FetchWebMailResult} from "@/lib/actions/mailbox";
+import {FetchWebMailResult, markAsRead, markAsUnread, moveToTrash, toggleStar} from "@/lib/actions/mailbox";
+import {IconStar, IconStarFilled} from "@tabler/icons-react";
 
 type Props = {
     threadItem: FetchWebMailResult[number];
@@ -72,19 +73,25 @@ export default function WebmailListItem({
 
     const allNames = getAllNames(threadItem.participants);
 
+    const canMarkAsRead   = threadItem.unreadCount > 0;
+    const canMarkAsUnread = threadItem.messageCount > 0 && threadItem.unreadCount === 0;
+
+    const isUnread = threadItem.unreadCount > 0;
+    const isRead = threadItem.unreadCount === 0;
+
     return (
         <li
             key={threadItem.id}
-            onClick={openThread}
+            // onClick={openThread}
             className={[
                 "relative group grid cursor-pointer", // relative → for absolute overlay
                 "grid-cols-[auto_auto_minmax(16rem,1fr)_minmax(10rem,2fr)_auto]",
                 "items-center gap-3 px-3 py-2 transition-colors hover:bg-muted/50",
-                threadItem.unreadCount > 0 ? "font-semibold" : "",
+                isRead ? "bg-muted/50" : "font-semibold",
+                // threadItem.unreadCount > 0 ? "font-semibold" : "",
                 `pr-[${ACTIONS_W}]`, // reserve space for overlay
             ].join(" ")}
         >
-            {/* Select */}
             <div className="flex items-center">
                 <input
                     type="checkbox"
@@ -94,16 +101,16 @@ export default function WebmailListItem({
                 />
             </div>
 
-            {/* Star placeholder (keeps column alignment with single-message rows) */}
             <button
                 type="button"
                 aria-label="Star"
                 className="text-muted-foreground hover:text-foreground"
-                onClick={(e) => e.stopPropagation()}
-            />
+                onClick={() => toggleStar(threadItem.id, threadItem.starred)}
+            >
+                {threadItem.starred ? <IconStarFilled className={"text-yellow-400"} size={12} /> : <IconStar className="h-3 w-3" />}
+            </button>
 
-            {/* Participants + count */}
-            <div className="truncate pr-2">
+            <div onClick={openThread} className="truncate pr-2">
                 <span className="truncate">{allNames}</span>{" "}
                 {threadItem.messageCount > 1 && (
                     <span className="text-xs text-muted-foreground font-normal">
@@ -113,7 +120,7 @@ export default function WebmailListItem({
             </div>
 
             {/* Subject + snippet + attachments */}
-            <div className="flex min-w-0 items-center gap-1 pr-2">
+            <div onClick={openThread} className="flex min-w-0 items-center gap-1 pr-2">
                 <span className="truncate">{threadItem.subject}</span>
                 <span className="mx-1 text-muted-foreground">–</span>
                 <span className="truncate text-muted-foreground font-normal">{threadItem.previewText}</span>
@@ -144,15 +151,20 @@ export default function WebmailListItem({
                 ].join(" ")}
                 onClick={(e) => e.stopPropagation()}
             >
-                <button className="rounded p-1 hover:bg-muted" title="Archive">
-                    <Archive className="h-4 w-4" />
-                </button>
-                <button className="rounded p-1 hover:bg-muted" title="Delete">
+                {canMarkAsUnread && <button onClick={async () => {
+                    return await markAsUnread(threadItem.id)
+                }} className="rounded p-1 hover:bg-muted" title="Mark as unread">
+                    <Mail className="h-4 w-4" />
+                </button>}
+                {canMarkAsRead && <button onClick={() => markAsRead(threadItem.id)} className="rounded p-1 hover:bg-muted" title="Mark as read">
+                    <MailOpen className="h-4 w-4" />
+                </button>}
+                <button onClick={() => moveToTrash(threadItem.id)} className="rounded p-1 hover:bg-muted" title="Delete">
                     <Trash2 className="h-4 w-4" />
                 </button>
-                <button className="rounded p-1 hover:bg-muted" title="More">
-                    <MoreHorizontal className="h-4 w-4" />
-                </button>
+                {/*<button className="rounded p-1 hover:bg-muted" title="More">*/}
+                {/*    <MoreHorizontal className="h-4 w-4" />*/}
+                {/*</button>*/}
             </div>
         </li>
     );
