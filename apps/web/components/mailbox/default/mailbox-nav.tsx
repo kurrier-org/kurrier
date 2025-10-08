@@ -114,19 +114,19 @@ export function MailboxNav({
 			</div>
 
 			{/* Labels header */}
-			<div className="flex items-center justify-between px-2">
-				<span className="text-xs font-medium text-muted-foreground">
-					Labels
-				</span>
-				<button
-					onClick={onCreateLabel}
-					className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs hover:bg-muted"
-					title="Create label"
-				>
-					<Plus className="h-3.5 w-3.5" />
-					New
-				</button>
-			</div>
+			{/*<div className="flex items-center justify-between px-2">*/}
+			{/*	<span className="text-xs font-medium text-muted-foreground">*/}
+			{/*		Labels*/}
+			{/*	</span>*/}
+			{/*	<button*/}
+			{/*		onClick={onCreateLabel}*/}
+			{/*		className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs hover:bg-muted"*/}
+			{/*		title="Create label"*/}
+			{/*	>*/}
+			{/*		<Plus className="h-3.5 w-3.5" />*/}
+			{/*		New*/}
+			{/*	</button>*/}
+			{/*</div>*/}
 
 			{/* Custom labels */}
 			<div className="space-y-1">

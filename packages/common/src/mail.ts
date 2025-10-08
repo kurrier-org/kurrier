@@ -2,7 +2,7 @@
 import {
     db,
     identities,
-    mailboxes,
+    mailboxes, mailboxThreads,
     MessageEntity,
     messages,
     threadsList,
@@ -12,22 +12,17 @@ import {and, desc, eq, sql} from "drizzle-orm";
 import {AddressObjectJSON} from "@schema";
 import {PgTransaction} from "drizzle-orm/pg-core";
 
+
+
 type Mini = { n?: string | null; e: string | null };
-export const generateSnippet = (text: string) => {
-    if (!text) return null;
-    return text.toString()
-        .replace(/\s+/g, " ")
-        .slice(0, 100)
-};
 
+export const generateSnippet = (text: string) =>
+    text ? text.toString().replace(/\s+/g, " ").slice(0, 100) : null;
 
-export function buildParticipantsSnapshot(msg: MessageEntity) {
+export function buildParticipantsSnapshot(msg: typeof messages.$inferSelect) {
     const extract = (addrObj?: AddressObjectJSON | null) =>
         (addrObj?.value ?? [])
-            .map((a) => ({
-                n: a?.name || null,
-                e: a?.address || null,
-            }))
+            .map((a) => ({ n: a?.name || null, e: a?.address || null }))
             .filter((x) => x.e)
             .slice(0, 5);
 
@@ -39,44 +34,41 @@ export function buildParticipantsSnapshot(msg: MessageEntity) {
     };
 }
 
+/**
+ * Upsert (thread_id, mailbox_id) summary into mailbox_threads.
+ * Aggregation is **scoped to this mailbox** so Inbox and Sent can each
+ * have their own row linked to the same thread_id.
+ */
+export async function upsertMailboxThreadItem(
+    messageId: string,
+    tx?: PgTransaction
+) {
+    const dbh = tx ?? db;
 
-export async function upsertThreadsListItem(messageId: string, tx?: PgTransaction) {
-
-    const txDb = tx || db;
-    const [msg] = await txDb
-        .select()
-        .from(messages)
-        .where(eq(messages.id, messageId));
-
+    // 1) Load the message + its mailbox/identity
+    const [msg] = await dbh.select().from(messages).where(eq(messages.id, messageId));
     if (!msg) throw new Error(`Message ${messageId} not found`);
 
-    const [mailbox] = await txDb
-        .select()
-        .from(mailboxes)
-        .where(eq(mailboxes.id, msg.mailboxId));
+    const [mbx] = await dbh.select().from(mailboxes).where(eq(mailboxes.id, msg.mailboxId));
+    if (!mbx) throw new Error(`Mailbox ${msg.mailboxId} not found`);
 
-    const [identity] = await txDb
+    const [ident] = await dbh
         .select()
         .from(identities)
-        .where(eq(identities.id, mailbox.identityId));
+        .where(eq(identities.id, mbx.identityId));
+    if (!ident) throw new Error(`Identity ${mbx.identityId} not found`);
 
-    if (!mailbox) throw new Error(`Mailbox ${msg.mailboxId} not found`);
-
-    const subject = msg.subject?.trim() || "(no subject)";
-    const previewText = msg.snippet
-    const lastActivityAt = msg.date ?? msg.createdAt;
-
-    const allMessagesInThread = await txDb
+    // 2) Pull all messages of this thread that **belong to this mailbox**
+    const rows = await dbh
         .select({
             id: messages.id,
             subject: messages.subject,
             text: messages.text,
             html: messages.html,
-
+            snippet: messages.snippet,
             seen: messages.seen,
             answered: messages.answered,
             flagged: messages.flagged,
-
             hasAttachments: messages.hasAttachments,
             from: messages.from,
             to: messages.to,
@@ -86,81 +78,153 @@ export async function upsertThreadsListItem(messageId: string, tx?: PgTransactio
             createdAt: messages.createdAt,
         })
         .from(messages)
-        .where(and(eq(messages.ownerId, msg.ownerId), eq(messages.threadId, msg.threadId)))
+        .where(
+            and(
+                eq(messages.ownerId, msg.ownerId),
+                eq(messages.threadId, msg.threadId),
+                eq(messages.mailboxId, mbx.id) // mailbox-scoped summary
+            )
+        )
         .orderBy(desc(sql`coalesce(${messages.date}, ${messages.createdAt})`));
 
+    // There should be at least the triggering message
+    if (rows.length === 0) {
+        // Defensive: if nothing found (race?), create a degenerate row based on the single msg
+        rows.push({
+            id: msg.id,
+            subject: msg.subject,
+            text: msg.text,
+            html: msg.html,
+            snippet: msg.snippet,
+            seen: msg.seen,
+            answered: msg.answered,
+            flagged: msg.flagged,
+            hasAttachments: msg.hasAttachments,
+            from: msg.from,
+            to: msg.to,
+            cc: msg.cc,
+            bcc: msg.bcc,
+            date: msg.date,
+            createdAt: msg.createdAt,
+        } as any);
+    }
 
+    // 3) Compute mailbox-scoped rollup
+    const newest = rows[0];
+    const oldest = rows[rows.length - 1];
+
+    const subject = (newest.subject ?? "").trim() || "(no subject)";
+    const previewText =
+        newest.snippet ??
+        generateSnippet(newest.text || newest.html || "") ??
+        null;
+
+    const coalesceDate = (r: typeof newest) => r.date ?? r.createdAt;
+    const lastActivityAt = coalesceDate(newest);
+    const firstMessageAt = coalesceDate(oldest);
+
+    const messageCount = rows.length;
+    const unreadCount = rows.reduce((acc, r) => acc + (r.seen ? 0 : 1), 0);
+    const hasAttachments = rows.some((r) => r.hasAttachments);
+    const starred = rows.some((r) => r.flagged);
+
+    // participants: take first 5 per bucket from *this mailbox's* messages (recent-first)
     const participants: {
-        from: Mini[]; to: Mini[]; cc: Mini[]; bcc: Mini[];
+        from: Mini[];
+        to: Mini[];
+        cc: Mini[];
+        bcc: Mini[];
     } = { from: [], to: [], cc: [], bcc: [] };
 
-    const seen = {
+    const seenAddr = {
         from: new Set<string>(),
-        to:   new Set<string>(),
-        cc:   new Set<string>(),
-        bcc:  new Set<string>(),
+        to: new Set<string>(),
+        cc: new Set<string>(),
+        bcc: new Set<string>(),
     };
 
-    for (const row of allMessagesInThread) {
-        const snap = buildParticipantsSnapshot(row as MessageEntity);
-
-        (["from","to","cc","bcc"] as const).forEach((k) => {
+    for (const r of rows) {
+        const snap = buildParticipantsSnapshot(r as any);
+        (["from", "to", "cc", "bcc"] as const).forEach((k) => {
             if (participants[k].length >= 5) return;
             for (const p of snap[k]) {
                 const email = (p.e || "").toLowerCase();
-                if (!email || seen[k].has(email)) continue;
-                seen[k].add(email);
+                if (!email || seenAddr[k].has(email)) continue;
+                seenAddr[k].add(email);
                 participants[k].push({ n: p.n ?? null, e: p.e ?? null });
                 if (participants[k].length >= 5) break;
             }
         });
-
-        // Early exit if all buckets filled
         if (
             participants.from.length >= 5 &&
-            participants.to.length   >= 5 &&
-            participants.cc.length   >= 5 &&
-            participants.bcc.length  >= 5
-        ) break;
+            participants.to.length >= 5 &&
+            participants.cc.length >= 5 &&
+            participants.bcc.length >= 5
+        )
+            break;
     }
 
+    // 4) Build row for mailbox_threads
+    const payload = {
+        threadId: msg.threadId,
+        mailboxId: mbx.id,
 
-    const anyStarred = allMessagesInThread.some(m => m.flagged);
-    const parsedPayload = ThreadsListInsertSchema.parse({
-        id: msg.threadId,
-        ownerId: mailbox.ownerId,
-        identityId: mailbox.identityId,
-        mailboxId: mailbox.id,
-        identityPublicId: identity.publicId,
-        mailboxSlug: mailbox.slug,
+        ownerId: mbx.ownerId,
+        identityId: mbx.identityId,
+
+        identityPublicId: ident.publicId,
+        mailboxSlug: mbx.slug,
+
         subject,
         previewText,
-        lastActivityAt,
-        firstMessageAt: lastActivityAt,
-        messageCount: 1,
-        unreadCount: msg.seen ? 0 : 1,
-        hasAttachments: msg.hasAttachments,
-        participants,
-        starred: anyStarred
-    });
 
-    await txDb
-        .insert(threadsList)
-        .values(parsedPayload)
+        lastActivityAt,
+        firstMessageAt,
+
+        messageCount,
+        unreadCount,
+
+        hasAttachments,
+        starred,
+
+        participants, // JSONB
+        updatedAt: new Date(),
+    };
+
+    // 5) Upsert on (thread_id, mailbox_id)
+    await dbh
+        .insert(mailboxThreads)
+        .values(payload as any)
         .onConflictDoUpdate({
-            target: threadsList.id,
+            target: [mailboxThreads.threadId, mailboxThreads.mailboxId],
             set: {
-                subject: sql`COALESCE(EXCLUDED.subject, ${threadsList.subject})`,
-                previewText: sql`COALESCE(EXCLUDED.preview_text, ${threadsList.previewText})`,
-                lastActivityAt: sql`GREATEST(EXCLUDED.last_activity_at, ${threadsList.lastActivityAt})`,
-                messageCount: sql`${threadsList.messageCount} + 1`,
-                unreadCount: sql`${threadsList.unreadCount} + ${msg.seen ? 0 : 1}`,
-                hasAttachments: sql`${threadsList.hasAttachments} OR ${msg.hasAttachments}`,
-                participants: sql`jsonb_strip_nulls(${threadsList.participants} || EXCLUDED.participants)`,
-                starred: sql`${threadsList.starred} OR EXCLUDED.starred`,
+                // prefer new subject/preview if supplied
+                subject: sql`COALESCE(EXCLUDED.subject, ${mailboxThreads.subject})`,
+                previewText: sql`COALESCE(EXCLUDED.preview_text, ${mailboxThreads.previewText})`,
+
+                // timeline
+                lastActivityAt: sql`GREATEST(EXCLUDED.last_activity_at, ${mailboxThreads.lastActivityAt})`,
+                firstMessageAt: sql`LEAST(COALESCE(EXCLUDED.first_message_at, ${mailboxThreads.firstMessageAt}), ${mailboxThreads.firstMessageAt})`,
+
+                // counts from fresh aggregation
+                messageCount: sql`EXCLUDED.message_count`,
+                unreadCount: sql`EXCLUDED.unread_count`,
+
+                // booleans accumulate
+                hasAttachments: sql`${mailboxThreads.hasAttachments} OR EXCLUDED.has_attachments`,
+                starred: sql`${mailboxThreads.starred} OR EXCLUDED.starred`,
+
+                // shallow-merge participants (keeps existing keys, fills new)
+                participants: sql`jsonb_strip_nulls(${mailboxThreads.participants} || EXCLUDED.participants)`,
+
+                // ids/slugs are stable but keep them consistent
+                identityId: sql`EXCLUDED.identity_id`,
+                identityPublicId: sql`EXCLUDED.identity_public_id`,
+                mailboxSlug: sql`EXCLUDED.mailbox_slug`,
+
                 updatedAt: sql`now()`,
             },
         });
 
-    return { threadId: msg.threadId, mailboxId: mailbox.id };
+    return { threadId: msg.threadId, mailboxId: mbx.id };
 }

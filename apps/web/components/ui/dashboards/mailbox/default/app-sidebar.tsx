@@ -30,6 +30,8 @@ import { Switch } from "@/components/ui/switch";
 import { IdentityEntity, MailboxEntity } from "@db";
 import { MailboxNav } from "@/components/mailbox/default/mailbox-nav";
 import { Button } from "@/components/ui/button";
+import ComposeMail from "@/components/mailbox/default/compose-mail";
+import {PublicConfig} from "@schema";
 // import {Button} from "@mantine/core";
 
 // This is sample data
@@ -159,11 +161,13 @@ export function AppSidebar({
 	activeMailbox,
 	mailboxList,
 	identity,
+    publicConfig,
 	...rest
 }: React.ComponentProps<typeof Sidebar> & {
 	activeMailbox: MailboxEntity;
 	mailboxList: MailboxEntity[];
 	identity: IdentityEntity;
+    publicConfig: PublicConfig;
 }) {
 	// Note: I'm using state to show active item.
 	// IRL you should use the url/router.
@@ -250,10 +254,7 @@ export function AppSidebar({
 						<span className="text-lg font-semibold">urrier.org</span>
 					</div>
 					<div className={"-mt-1"}>
-						<Button size={"lg"}>
-							<MailPlus />
-							Compose
-						</Button>
+						<ComposeMail publicConfig={publicConfig} />
 						{/*<Button*/}
 						{/*    size="lg"*/}
 						{/*    className="w-[140px] justify-start gap-3 rounded-2xl bg-white text-brand shadow hover:bg-gray-50"*/}

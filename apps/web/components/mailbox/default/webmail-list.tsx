@@ -2,21 +2,21 @@
 import * as React from "react";
 import { MailboxEntity } from "@db";
 import { PublicConfig } from "@schema";
-import {FetchWebMailResult, revalidateMailbox} from "@/lib/actions/mailbox";
+import {FetchMailboxThreadsResult, revalidateMailbox} from "@/lib/actions/mailbox";
 import MailListHeader from "@/components/mailbox/default/mail-list-header";
 import WebmailListItem from "@/components/mailbox/default/webmail-list-item";
 import {useEffect} from "react";
-import {usePathname, useRouter, useSearchParams} from "next/navigation";
+import {usePathname, useSearchParams} from "next/navigation";
 
 
 type WebListProps = {
-    threads: FetchWebMailResult;
+    mailboxThreads: FetchMailboxThreadsResult;
     publicConfig: PublicConfig;
     activeMailbox: MailboxEntity;
     identityPublicId: string;
 };
 
-export default function WebmailList({ threads, publicConfig, activeMailbox, identityPublicId}: WebListProps) {
+export default function WebmailList({ mailboxThreads, activeMailbox, identityPublicId}: WebListProps) {
 
 
     const pathname = usePathname()
@@ -30,7 +30,7 @@ export default function WebmailList({ threads, publicConfig, activeMailbox, iden
 
     return (
         <>
-            {threads.length === 0 ? (
+            {mailboxThreads.length === 0 ? (
                 <div className="p-4 text-center text-base text-muted-foreground">
                     No messages in{" "}
                     <span className={"lowercase"}>{activeMailbox.name}</span>
@@ -40,9 +40,9 @@ export default function WebmailList({ threads, publicConfig, activeMailbox, iden
                     <MailListHeader />
 
                     <ul role="list" className="divide-y">
-                        {threads.map((threadItem) => (
-                            <WebmailListItem key={threadItem.id}
-                                             threadItem={threadItem}
+                        {mailboxThreads.map((mailboxThreadItem) => (
+                            <WebmailListItem key={mailboxThreadItem.threadId+mailboxThreadItem.mailboxId}
+                                             mailboxThreadItem={mailboxThreadItem}
                                              activeMailbox={activeMailbox}
                                              identityPublicId={identityPublicId} />
                         ))}

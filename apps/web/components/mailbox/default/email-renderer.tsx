@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState } from "react";
+import React, {useEffect, useRef, useState} from "react";
 import { MessageAttachmentEntity, MessageEntity } from "@db";
 import {
     getMessageAddress,
@@ -13,6 +13,8 @@ import {ActionIcon, Button} from "@mantine/core";
 import { EmailEditorHandle } from "@/components/mailbox/default/editor/email-editor";
 import EditorAttachmentItem from "@/components/mailbox/default/editor/editor-attachment-item";
 import { PublicConfig } from "@schema";
+import {fetchMailbox} from "@/lib/actions/mailbox";
+import {useParams} from "next/navigation";
 const EmailEditor = dynamic(
 	() => import("@/components/mailbox/default/editor/email-editor"),
 	{
@@ -37,7 +39,7 @@ function getScrollParent(el: HTMLElement): HTMLElement {
     return (document.scrollingElement || document.documentElement) as HTMLElement;
 }
 
-function scrollToEditor(
+export function scrollToEditor(
     el: HTMLElement,
     {
         offsetTop = 96,   // your sticky header + subject bar height
@@ -104,6 +106,19 @@ function EmailRenderer({
 	const [showEditor, setShowEditor] = useState<boolean>(false);
 	const [showEditorMode, setShowEditorMode] = useState<string>("reply");
 	const editorRef = useRef<EmailEditorHandle>(null);
+
+    const [sentMailboxId, setSentMailboxId] = useState<string | undefined>(undefined);
+    const params = useParams()
+    const fetchSentMailbox = async () => {
+        const {activeMailbox} = await fetchMailbox(String(params.identityPublicId), "sent");
+        setSentMailboxId(String(activeMailbox.id))
+    };
+
+    useEffect(() => {
+        if (!sentMailboxId){
+            fetchSentMailbox()
+        }
+    }, [])
 
 	return (
 		<>
@@ -178,6 +193,7 @@ function EmailRenderer({
 			{showEditor && (
 				<div>
 					<EmailEditor
+                        sentMailboxId={String(sentMailboxId)}
 						ref={editorRef}
 						publicConfig={publicConfig}
 						message={message}

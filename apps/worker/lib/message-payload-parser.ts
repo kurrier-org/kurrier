@@ -11,7 +11,7 @@ import {
 } from "@db";
 import { createClient } from "@supabase/supabase-js";
 import {getPublicEnv, getServerEnv} from "@schema";
-import {generateSnippet, upsertThreadsListItem} from "@common";
+import {generateSnippet, upsertMailboxThreadItem} from "@common";
 import { randomUUID } from "crypto";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
@@ -30,78 +30,68 @@ function generateFileName(att: Attachment) {
 	return `${randomUUID()}.${ext}`;
 }
 
+
+
 export async function createOrInitializeThread(
-	parsed: ParsedMail & { ownerId: string; mailboxId: string },
+    parsed: ParsedMail & { ownerId: string }
 ) {
-	const { ownerId, mailboxId } = parsed;
-	const inReplyTo = parsed.inReplyTo?.trim() || null;
-	const referencesArr = Array.isArray(parsed.references)
-		? parsed.references
-		: parsed.references
-			? [parsed.references]
-			: [];
+    const { ownerId } = parsed;
+    const inReplyTo = parsed.inReplyTo?.trim() || null;
+    const refs = Array.isArray(parsed.references)
+        ? parsed.references
+        : parsed.references
+            ? [parsed.references]
+            : [];
+    // const candidates = Array.from(new Set([inReplyTo, ...refs].filter(Boolean)));
+    const candidates = Array.from(
+        new Set(
+            [inReplyTo, ...refs].filter(Boolean).map((s) => String(s)),
+        ),
+    );
 
-	const candidates = Array.from(
-		new Set(
-			[inReplyTo, ...referencesArr].filter(Boolean).map((s) => String(s)),
-		),
-	);
+    return db.transaction(async (tx) => {
+        let existingThread = null;
 
-	return db.transaction(async (tx) => {
-		let existingThread = null as null | typeof threads.$inferSelect;
+        if (candidates.length > 0) {
+            const parentMsgs = await tx
+                .select({
+                    id: messages.id,
+                    threadId: messages.threadId,
+                    messageId: messages.messageId,
+                    date: messages.date,
+                })
+                .from(messages)
+                .where(
+                    and(eq(messages.ownerId, ownerId), inArray(messages.messageId, candidates))
+                )
+                .orderBy(desc(messages.date ?? sql`now()`));
 
-		if (candidates.length > 0) {
-			const parentMsgs = await tx
-				.select({
-					id: messages.id,
-					threadId: messages.threadId,
-					messageId: messages.messageId,
-					date: messages.date,
-				})
-				.from(messages)
-				.where(
-					and(
-						eq(messages.mailboxId, mailboxId),
-						inArray(messages.messageId, candidates),
-					),
-				)
-				.orderBy(desc(messages.date ?? sql`now()`));
+            if (parentMsgs.length) {
+                const chosen = inReplyTo
+                    ? parentMsgs.find((m) => m.messageId === inReplyTo)
+                    : parentMsgs[0];
 
-			if (parentMsgs.length) {
-				const direct = inReplyTo
-					? parentMsgs.find((m) => m.messageId === inReplyTo)
-					: null;
-				const chosen = direct ?? parentMsgs[0];
+                if (chosen?.threadId) {
+                    const [t] = await tx.select().from(threads).where(eq(threads.id, chosen.threadId));
+                    if (t) existingThread = t;
+                }
+            }
+        }
 
-				if (chosen.threadId) {
-					const [t] = await tx
-						.select()
-						.from(threads)
-						.where(
-							and(
-								eq(threads.id, chosen.threadId),
-								eq(threads.mailboxId, mailboxId),
-							),
-						);
-					if (t) existingThread = t;
-				}
-			}
-		}
+        if (existingThread) return existingThread;
 
-		if (existingThread) return existingThread;
+        const [newThread] = await tx
+            .insert(threads)
+            .values({
+                ownerId,
+                lastMessageDate: parsed.date ?? new Date(),
+            })
+            .returning();
 
-		const [newThread] = await tx
-			.insert(threads)
-			.values({
-				ownerId,
-				mailboxId,
-				lastMessageDate: parsed.date ?? new Date(),
-			})
-			.returning();
-
-		return newThread;
-	});
+        return newThread;
+    });
 }
+
 
 
 
@@ -149,7 +139,7 @@ export async function parseAndStoreEmail(
 	const thread = await createOrInitializeThread({
 		...parsed,
 		ownerId,
-		mailboxId,
+		// mailboxId,
 	});
 
 	const decoratedParsed = {
@@ -198,7 +188,7 @@ export async function parseAndStoreEmail(
 
 	if (!message) return null;
 
-    await upsertThreadsListItem(message.id);
+    await upsertMailboxThreadItem(message.id);
 
 	const msgDate = message.createdAt ?? new Date();
 	const [t] = await db

@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from "react";
 import {
-	ActionIcon,
-	Select,
-	SelectProps,
-	TagsInput,
-	Group,
-	Text,
+    ActionIcon,
+    Select,
+    SelectProps,
+    TagsInput,
+    Group,
+    Text, Input,
 } from "@mantine/core";
 import { Forward, Reply } from "lucide-react";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
@@ -16,10 +16,10 @@ function EditorHeader() {
     const { state } = useDynamicContext<{
         isPending: boolean;
         message: MessageEntity;
-        showEditorMode: "reply" | "forward";
+        showEditorMode: "reply" | "forward" | "compose";
     }>();
 
-	const [mode, setMode] = useState<"reply" | "forward">(state.showEditorMode);
+	const [mode, setMode] = useState<"reply" | "forward" | "compose">(state.showEditorMode);
 	const [ccActive, setCcActive] = useState(false);
 	const [bccActive, setBccActive] = useState(false);
 
@@ -33,7 +33,7 @@ function EditorHeader() {
 	);
 
 	const toEmail = useMemo(() => {
-		return getMessageAddress(state.message, "from") || "";
+		return getMessageAddress(state?.message, "from") || "";
 	}, [state.message]);
 
 	const renderOption: SelectProps["renderOption"] = ({ option }) => {
@@ -53,7 +53,7 @@ function EditorHeader() {
 	return (
 		<>
 			<div className="border-b p-2 flex gap-2">
-				<div className="flex-shrink-0">
+                {state.message ? <div className="flex-shrink-0">
 					<Select
 						value={mode}
 						name={"mode"}
@@ -71,14 +71,14 @@ function EditorHeader() {
 							zIndex: 2000,
 						}}
 					/>
-				</div>
+				</div> : <input type={"hidden"} name={"mode"} value={mode}/>}
 
 				<div className="flex-grow flex justify-between">
 					<div className="flex gap- items-stretch flex-col justify-start">
 						<div className="flex items-center gap-2">
 							<span className="text-sm text-muted-foreground">To</span>
 							<TagsInput
-								defaultValue={[toEmail]}
+								defaultValue={toEmail ? [toEmail] : []}
                                 maxTags={1}
 								name={"to"}
 								size="sm"
@@ -121,6 +121,10 @@ function EditorHeader() {
 					</div>
 				</div>
 			</div>
+            <div className={"border-b flex justify-start items-center px-2 gap-2"}>
+                <span className="text-sm text-muted-foreground">Subject</span>
+                <Input variant={"unstyled"} name={'subject'} />
+            </div>
 		</>
 	);
 }

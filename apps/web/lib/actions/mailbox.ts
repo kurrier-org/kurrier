@@ -4,7 +4,7 @@ import { cache } from "react";
 import { rlsClient } from "@/lib/actions/clients";
 import {
     identities,
-    mailboxes,
+    mailboxes, mailboxThreads,
     messageAttachments,
     messages,
     threads, threadsList,
@@ -314,130 +314,175 @@ export const fetchWebMailThreadDetail = cache(
 
 
 export const markAsRead = cache(
-    async (threadListId: string, refresh=true) => {
-        if (!threadListId) return;
+    async (threadId: string, mailboxId: string, refresh = true) => {
+        if (!threadId || !mailboxId) return;
 
         const rls = await rlsClient();
 
         await rls(async (tx) => {
+            // mark all messages in THIS mailbox for this thread as seen
             await tx
                 .update(messages)
                 .set({ seen: true, updatedAt: new Date() })
-                .where(eq(messages.threadId, threadListId));
+                .where(and(eq(messages.threadId, threadId), eq(messages.mailboxId, mailboxId)));
 
+            // set unreadCount → 0 in the per-mailbox projection row
             await tx
-                .update(threadsList)
+                .update(mailboxThreads) // <— use your new table
                 .set({ unreadCount: 0, updatedAt: new Date() })
-                .where(eq(threadsList.id, threadListId))
-                .returning();
+                .where(and(eq(mailboxThreads.threadId, threadId), eq(mailboxThreads.mailboxId, mailboxId)));
         });
 
-        if (refresh){
-            revalidatePath("/mail")
+        if (refresh) {
+            revalidatePath("/mail");
         }
 
         const { smtpQueue } = await getRedis();
-        await smtpQueue.add("mail:set-flags",
+        await smtpQueue.add(
+            "mail:set-flags",
             {
-                threadListId: threadListId,
-                op: "read"
+                threadId,
+                mailboxId,
+                op: "read",
             },
             {
                 attempts: 3,
                 backoff: { type: "exponential", delay: 1500 },
                 removeOnComplete: true,
-                removeOnFail: false
+                removeOnFail: false,
             }
         );
-
-
     }
 );
 
 
 export const markAsUnread = cache(
-    async (threadListId: string) => {
-        if (!threadListId) return;
+    async (threadId: string, mailboxId: string) => {
+        if (!threadId || !mailboxId) return;
 
         const rls = await rlsClient();
 
         await rls(async (tx) => {
+            // 1️⃣ Mark only messages in this mailbox as unread
             await tx
                 .update(messages)
                 .set({ seen: false, updatedAt: new Date() })
-                .where(eq(messages.threadId, threadListId));
+                .where(and(eq(messages.threadId, threadId), eq(messages.mailboxId, mailboxId)));
 
+            // 2️⃣ Recalculate unread count for this mailbox/thread combo
             const [{ count }] = await tx
                 .select({ count: sql<number>`count(*)` })
                 .from(messages)
-                .where(and(eq(messages.threadId, threadListId), eq(messages.seen, false)));
+                .where(
+                    and(
+                        eq(messages.threadId, threadId),
+                        eq(messages.mailboxId, mailboxId),
+                        eq(messages.seen, false)
+                    )
+                );
 
             await tx
-                .update(threadsList)
+                .update(mailboxThreads)
                 .set({
                     unreadCount: count ?? 1, // fallback to 1 if uncertain
                     updatedAt: new Date(),
                 })
-                .where(eq(threadsList.id, threadListId));
+                .where(and(eq(mailboxThreads.threadId, threadId), eq(mailboxThreads.mailboxId, mailboxId)));
         });
 
+        // 3️⃣ Queue IMAP flag update job
         const { smtpQueue } = await getRedis();
-        await smtpQueue.add("mail:set-flags",
+        await smtpQueue.add(
+            "mail:set-flags",
             {
-                threadListId: threadListId,
-                op: "unread"
+                threadId,
+                mailboxId,
+                op: "unread",
             },
             {
                 attempts: 3,
                 backoff: { type: "exponential", delay: 1500 },
                 removeOnComplete: true,
-                removeOnFail: false
+                removeOnFail: false,
             }
         );
 
+        // 4️⃣ Trigger UI refresh
         revalidatePath("/mail");
     }
 );
 
-export const moveToTrash = async (threadListId: string) => {
-        if (!threadListId) return;
-
-        const { smtpQueue } = await getRedis();
-        await smtpQueue.add("mail:move",
-            {
-                threadListId: threadListId,
-                op: "trash",
-            },
-            {
-                attempts: 3,
-                backoff: { type: "exponential", delay: 1500 },
-                removeOnComplete: true,
-                removeOnFail: false
-            }
-        );
-
-        revalidatePath("/mail");
-}
 
 
-
-export const toggleStar = async (threadListId: string, starred: boolean) => {
-    if (!threadListId) return;
+export const moveToTrash = async (threadId: string, mailboxId: string) => {
+    if (!threadId || !mailboxId) return;
 
     const { smtpQueue } = await getRedis();
-    await smtpQueue.add("mail:set-flags",
+
+    await smtpQueue.add(
+        "mail:move",
         {
-            threadListId: threadListId,
+            threadId,
+            mailboxId,
+            op: "trash",
+        },
+        {
+            attempts: 3,
+            backoff: { type: "exponential", delay: 1500 },
+            removeOnComplete: true,
+            removeOnFail: false,
+        }
+    );
+
+    revalidatePath("/mail");
+};
+
+
+
+
+
+export const toggleStar = async (threadId: string, mailboxId: string, starred: boolean) => {
+    if (!threadId || !mailboxId) return;
+
+    const { smtpQueue } = await getRedis();
+
+    await smtpQueue.add(
+        "mail:set-flags",
+        {
+            threadId,
+            mailboxId,
             op: starred ? "unflag" : "flag",
         },
         {
             attempts: 3,
             backoff: { type: "exponential", delay: 1500 },
             removeOnComplete: true,
-            removeOnFail: true
+            removeOnFail: true,
         }
     );
 
     revalidatePath("/mail");
-}
+};
 
+
+export const fetchMailboxThreads = async (identityPublicId: string, mailboxSlug: string, page: number) => {
+    page = page && page > 0 ? page : 1;
+    const rls = await rlsClient();
+    const threads = await rls((tx) => {
+        return tx
+            .select()
+            .from(mailboxThreads)
+            .where(and(
+                eq(mailboxThreads.identityPublicId, identityPublicId),
+                eq(mailboxThreads.mailboxSlug, mailboxSlug),
+            ))
+            .orderBy(desc(mailboxThreads.lastActivityAt))
+            .offset((page - 1) * 50)
+            .limit(50)
+    })
+    return threads
+};
+
+export type FetchMailboxThreadsResult = Awaited<
+    ReturnType<typeof fetchMailboxThreads>
+>;

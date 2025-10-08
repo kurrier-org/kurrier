@@ -27,6 +27,8 @@ type TextEditorProps = {
 import { Temporal } from "@js-temporal/polyfill";
 import EditorHeader from "@/components/mailbox/default/editor/editor-header";
 import EditorFooter from "@/components/mailbox/default/editor/editor-footer";
+import {useDynamicContext} from "@/hooks/use-dynamic-context";
+import {MessageEntity} from "@db";
 
 function formatWhen(d: Date) {
 	return Temporal.Instant.from(d.toISOString())
@@ -71,20 +73,26 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(
 			[editor, value],
 		);
 
+        const { state } = useDynamicContext<{
+            isPending: boolean;
+            message: MessageEntity;
+            showEditorMode: "reply" | "forward" | "compose";
+        }>();
+
 		return (
-			<div ref={containerRef} className="scroll-mt-[72px] mb-40">
+			<div ref={containerRef} className="scroll-mt-[72px]">
 				<RichTextEditor
 					editor={editor}
-					className={"!border !rounded-t-md !border-neutral-200"}
+					className={!state.message ? "!border-0 -mt-4" : "!border !rounded-t-md !border-neutral-200"}
 				>
 					<EditorHeader />
 					<RichTextEditor.Content className="prose min-h-52 text-sm p-2 leading-5" />
 					<EditorFooter />
 				</RichTextEditor>
 
-				<span className="text-xs text-neutral-500">
-					Press Shift + Enter for a line break
-				</span>
+				{/*<span className="text-xs text-neutral-500">*/}
+				{/*	Press Shift + Enter for a line break*/}
+				{/*</span>*/}
 				{name ? (
 					<>
 						<input type="hidden" name={name} value={value} readOnly />

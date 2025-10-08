@@ -25,13 +25,14 @@ export type EmailEditorHandle = {
 
 type Props = {
 	onReady?: (el: HTMLElement) => void;
-	message: MessageEntity;
+	message: MessageEntity | null;
 	publicConfig: PublicConfig;
     showEditorMode: string;
+    sentMailboxId: string;
 };
 
 const EmailEditor = forwardRef<EmailEditorHandle, Props>(
-	({ onReady, message, publicConfig, showEditorMode }, ref) => {
+	({ onReady, message, publicConfig, showEditorMode, sentMailboxId }, ref) => {
 		const textEditorRef = useRef<TextEditorHandle>(null);
 
 		useImperativeHandle(
@@ -74,11 +75,27 @@ const EmailEditor = forwardRef<EmailEditorHandle, Props>(
 						initialState={{ isPending, message, publicConfig, showEditorMode }}
 					>
 						<Form action={formAction}>
+                            <input
+                                type={"hidden"}
+                                name={"messageMailboxId"}
+                                value={message?.mailboxId}
+                            />
+                            <input
+                                type={"hidden"}
+                                name={"sentMailboxId"}
+                                value={sentMailboxId}
+                            />
+
 							<input
 								type={"hidden"}
 								name={"mailboxId"}
-								value={message.mailboxId}
+								value={sentMailboxId ? sentMailboxId : (message?.mailboxId ? message?.mailboxId : "")}
 							/>
+                            {/*{sentMailboxId && <input*/}
+                            {/*    type={"hidden"}*/}
+                            {/*    name={"mode"}*/}
+                            {/*    value={"new"}*/}
+                            {/*/>}*/}
 							<TextEditor name={"html"} ref={textEditorRef} />
 						</Form>
 					</DynamicContextProvider>

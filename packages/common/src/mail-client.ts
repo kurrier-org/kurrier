@@ -52,6 +52,9 @@ export const getMessageAddress = (
     message: MessageEntity,
     field: "from" | "to" | "cc" | "bcc",
 ): string | null => {
+    if (!message){
+        return "";
+    }
     const value: AddressObjectJSON | string | null = (message as any)[field];
 
     if (!value) return null;

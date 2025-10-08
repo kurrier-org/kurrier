@@ -247,7 +247,7 @@ export default function EditorFooter() {
 			)}
 
 			{/* Footer bar */}
-			<div className="border-t items-center flex py-2">
+			<div className="border-t items-center flex py-2 px-2">
 				<div className="mx-2">
 					<Button
 						loading={!!state.isPending}
@@ -301,11 +301,11 @@ export default function EditorFooter() {
 					<Paperclip size={18} />
 				</ActionIcon>
 
-				<input
+                {state?.message && <input
 					type={"hidden"}
 					name={"originalMessageId"}
-					value={state.message.id}
-				/>
+					value={state.message?.id}
+				/>}
 				<input
 					type={"hidden"}
 					name={"newMessageId"}

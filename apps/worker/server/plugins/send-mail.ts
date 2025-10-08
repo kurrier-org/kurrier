@@ -7,7 +7,7 @@ import {
     MailComposeInput,
 } from "@schema";
 import {getMessageAddress, getMessageName} from "@common/mail-client"
-import {generateSnippet, upsertThreadsListItem} from "@common";
+import {generateSnippet, upsertMailboxThreadItem} from "@common";
 const serverConfig = getServerEnv();
 const publicConfig = getPublicEnv();
 import IORedis from "ioredis";
@@ -19,7 +19,7 @@ import {
     MessageInsertSchema,
     messages, providers,
     providerSecrets, smtpAccounts,
-    smtpAccountSecrets, ThreadInsertSchema, threads,
+    smtpAccountSecrets, threads,
 } from "@db";
 import {createMailer} from "@providers";
 import {toArray} from "drizzle-orm/mysql-core";
@@ -28,7 +28,6 @@ import {createClient, SupabaseClient} from "@supabase/supabase-js";
 const supabase = createClient(publicConfig.SUPABASE_DOMAIN, serverConfig.SUPABASE_SERVICE_ROLE_KEY);
 import addressparser from 'addressparser';
 import {PgTransaction} from "drizzle-orm/pg-core";
-// const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const connection = new IORedis({
     maxRetriesPerRequest: null,
     password: serverConfig.REDIS_PASSWORD,
@@ -87,16 +86,14 @@ export default defineNitroPlugin(async (nitroApp) => {
 
     type GetOriginalMessageType = Awaited<ReturnType<typeof getOriginalMessage>>;
 
-    async function ensureThreadId(mailboxId: string, ownerId: string, tx: PgTransaction<any>) {
-        const payload = ThreadInsertSchema.parse({
-            ownerId,
-            mailboxId,
-            messageCount: 0,
-            lastMessageDate: new Date()
-        })
+
+    async function ensureThreadId(ownerId: string, tx: PgTransaction<any>) {
         const [t] = await tx
             .insert(threads)
-            .values(payload)
+            .values({
+                ownerId,
+                lastMessageDate: new Date(),
+            })
             .returning({ id: threads.id });
         return t.id;
     }
@@ -118,7 +115,10 @@ export default defineNitroPlugin(async (nitroApp) => {
 
     const send = async (decodedForm: Record<any, unknown>) => {
 
+        console.log("decodedForm", decodedForm)
+
         return await db.transaction(async (tx) => {
+
             const [mailbox] = await tx
                 .select({
                     mailbox: mailboxes,
@@ -130,7 +130,7 @@ export default defineNitroPlugin(async (nitroApp) => {
                 .leftJoin(identities, eq(mailboxes.identityId, identities.id))
                 .leftJoin(providers, eq(identities.providerId, providers.id))
                 .leftJoin(smtpAccounts, eq(identities.smtpAccountId, smtpAccounts.id))
-                .where(eq(mailboxes.id, decodedForm.mailboxId as string));
+                .where(eq(mailboxes.id, String(decodedForm.sentMailboxId)));
 
             if (!mailbox) {
                 throw new Error("Mailbox not found");
@@ -186,30 +186,32 @@ export default defineNitroPlugin(async (nitroApp) => {
 
             const { subject, text, html } = await generateMailAttrs({ data, orig: origRow});
 
-            const isReply = data.mode === "reply";
-            const isForward = data.mode === "forward";
+            const mailboxIdForMessage = String(decodedForm.sentMailboxId);
 
-            const mailboxIdForMessage =
-                origRow?.message?.mailboxId ?? mailbox.mailbox.id;
+            let threadIdForMessage: string;
+
+            if (data.mode === "reply") {
+                if (!origRow?.message) throw new Error("Original message not found");
+                threadIdForMessage = origRow.message.threadId;
+            } else {
+                threadIdForMessage = await ensureThreadId(mailbox.identity.ownerId, tx as PgTransaction<any>);
+            }
 
 
+            const inReplyTo =
+                data.mode === "reply" && origRow?.message
+                    ? origRow.message.messageId
+                    : null;
 
-            const threadIdForMessage =
-                origRow?.message?.threadId ??
-                (await ensureThreadId(mailboxIdForMessage, mailbox.identity.ownerId, tx as PgTransaction<any>));
-
-            const inReplyTo = isReply || isForward ? (origRow?.message?.messageId ?? null) : null;
             const references =
-                (isReply || isForward) && origRow?.message
+                data.mode === "reply" && origRow?.message
                     ? Array.from(
-                        new Set(
-                            [
-                                ...(Array.isArray(origRow.message.references)
-                                    ? origRow.message.references
-                                    : []),
-                                origRow.message.messageId ?? null,
-                            ].filter(Boolean) as string[]
-                        )
+                        new Set([
+                            ...(Array.isArray(origRow.message.references)
+                                ? origRow.message.references
+                                : []),
+                            origRow.message.messageId ?? null,
+                        ].filter(Boolean))
                     ).slice(-30)
                     : [];
 
@@ -219,19 +221,19 @@ export default defineNitroPlugin(async (nitroApp) => {
                 threadId: threadIdForMessage,
                 messageId: "PLACEHOLDER",
                 inReplyTo: inReplyTo ?? undefined,
-                references: references,
+                references,
                 hasAttachments: attachmentBlobs.length > 0,
                 to: toAddressObj(data.to || []),
                 from: mailbox.identity.value,
                 cc: toAddressObj(data?.cc || []),
                 bcc: toAddressObj(data.bcc || []),
-                snippet: generateSnippet((text || html || "")),
+                snippet: generateSnippet(text || html || ""),
                 subject,
                 text,
                 html,
                 ownerId: mailbox.identity.ownerId,
+                seen: true,
             });
-
 
 
             const mailerResponse = await mailer.sendEmail(data.to, {
@@ -267,7 +269,7 @@ export default defineNitroPlugin(async (nitroApp) => {
                     });
                 }
 
-                await upsertThreadsListItem(newMessage.id, tx)
+                await upsertMailboxThreadItem(newMessage.id, tx)
 
             } else if (mailerResponse.error) {
                 return { success: false, error: `Failed to send email: ${mailerResponse.error}` };
@@ -281,6 +283,9 @@ export default defineNitroPlugin(async (nitroApp) => {
         data: MailComposeInput;
         orig: GetOriginalMessageType | null;
     }) => {
+        if (!orig){
+            return { subject: data.subject ?? "(no subject)", text: data.text ?? "", html: data.html ?? "" };
+        }
         const isReply = data.mode === "reply";
         const isForward = data.mode === "forward";
         const hasOrig = Boolean(orig?.message);

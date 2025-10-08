@@ -1,36 +1,53 @@
-import {db, mailboxes, messages, threadsList} from "@db";
-import {and, eq, sql} from "drizzle-orm";
-import {MailboxKind} from "@schema";
-import {ImapFlow} from "imapflow";
-import {initSmtpClient} from "./imap-client";
+import { db, mailboxes, messages, mailboxThreads } from "@db";
+import { and, eq, sql } from "drizzle-orm";
+import { MailboxKind } from "@schema";
+import { ImapFlow } from "imapflow";
+import { initSmtpClient } from "./imap-client";
 
-export const moveMail = async (data: {threadListId: string, op: string}, imapInstances: Map<string, ImapFlow>) => {
-    console.log("data", data)
-    const [thread] = await db.select().from(threadsList).where(eq(
-        threadsList.id, data.threadListId
-    ))
-    if (!thread) return;
-    const [trashMailbox] = await db.select().from(mailboxes).where(and(
-        eq(mailboxes.identityId, thread.identityId),
-        eq(mailboxes.kind, data.op as MailboxKind),
-    ));
-    if (!trashMailbox) {
-        console.warn(`[mail:move] No Trash mailbox for identity=${thread.identityId}`);
+export const moveMail = async (
+    data: { threadId: string; mailboxId: string; op: string },
+    imapInstances: Map<string, ImapFlow>
+) => {
+    const { threadId, mailboxId, op } = data;
+
+    // 1️⃣ Find source mailbox and owning identity
+    const [srcMailbox] = await db
+        .select()
+        .from(mailboxes)
+        .where(eq(mailboxes.id, mailboxId));
+    if (!srcMailbox) return;
+
+    // 2️⃣ Find destination mailbox (e.g., "trash")
+    const [destMailbox] = await db
+        .select()
+        .from(mailboxes)
+        .where(
+            and(
+                eq(mailboxes.identityId, srcMailbox.identityId),
+                eq(mailboxes.kind, op as MailboxKind)
+            )
+        );
+
+    if (!destMailbox) {
+        console.warn(`[mail:move] No ${op} mailbox for identity=${srcMailbox.identityId}`);
         return;
     }
-    const trashPath: string = (trashMailbox.metaData as any)?.imap?.path || trashMailbox.name;
 
-    console.log("trashPath", trashPath)
+    const destPath: string =
+        (destMailbox.metaData as any)?.imap?.path || destMailbox.name;
 
+    // 3️⃣ Get all messages for this thread + mailbox
     const threadMsgs = await db
         .select({
             id: messages.id,
             meta: messages.metaData,
         })
         .from(messages)
-        .where(eq(messages.threadId, data.threadListId));
+        .where(and(eq(messages.threadId, threadId), eq(messages.mailboxId, mailboxId)));
 
-    // Group by source mailboxPath and gather UIDs
+    if (threadMsgs.length === 0) return;
+
+    // 4️⃣ Group messages by mailboxPath and gather UIDs
     type Group = { path: string; uids: number[]; messageIds: string[] };
     const byPath = new Map<string, Group>();
 
@@ -47,58 +64,47 @@ export const moveMail = async (data: {threadListId: string, op: string}, imapIns
         byPath.set(srcPath, g);
     }
 
+    if (byPath.size === 0) return;
 
-
-    console.log("byPath", byPath);
-    console.log("trashPath", trashPath)
-
-    const client: ImapFlow = await initSmtpClient(thread.identityId, imapInstances);
+    // 5️⃣ Connect to IMAP for this identity
+    const client: ImapFlow = await initSmtpClient(srcMailbox.identityId, imapInstances);
     if (!client?.authenticated || !client.usable) return;
 
-    // for await (const mbx of await client.list()) {
-    //     console.log(mbx);
-    // }
-
+    // 6️⃣ Perform IMAP move per source folder
     try {
         for (const { path: srcPath, uids } of byPath.values()) {
             if (!uids.length) continue;
 
-            // Open source and move to Trash by UIDs
-            await client.mailboxOpen(srcPath, { readOnly: false });
-            // NOTE: ImapFlow supports array-of-UIDs or sequence string; with {uid:true}
-            await client.messageMove(uids, trashPath, { uid: true });
+            const lock = await client.getMailboxLock(srcPath);
+            try {
+                await client.messageMove(uids, destPath, { uid: true });
+            } finally {
+                lock.release();
+            }
         }
     } catch (err) {
         console.error("[mail:move] IMAP move failed:", err);
-        // Do not throw—let delta sync repair if needed.
-    } finally {
-        // try {
-        //     await client.logout();
-        // } catch {}
+        // allow delta sync to fix if needed
     }
 
-    // 5) Update database to reflect Trash locally
+    // 7️⃣ Update local DB: mark moved messages + mailboxThreads
     await db.transaction(async (tx) => {
-        // Update messages mailboxes and their meta.imap.mailboxPath
         await tx
             .update(messages)
             .set({
-                mailboxId: trashMailbox.id,
-                metaData: sql`jsonb_set(coalesce(${messages.metaData}, '{}'::jsonb), '{imap,mailboxPath}', to_jsonb(${trashPath}::text), true)`,
+                mailboxId: destMailbox.id,
+                metaData: sql`jsonb_set(coalesce(${messages.metaData}, '{}'::jsonb), '{imap,mailboxPath}', to_jsonb(${destPath}::text), true)`,
                 updatedAt: new Date(),
             })
-            .where(eq(messages.threadId, data.threadListId));
+            .where(and(eq(messages.threadId, threadId), eq(messages.mailboxId, mailboxId)));
 
-        // For the thread row: mark as in "trash"
         await tx
-            .update(threadsList)
+            .update(mailboxThreads)
             .set({
-                mailboxId: trashMailbox.id,
-                mailboxSlug: "trash",
+                mailboxId: destMailbox.id,
+                mailboxSlug: op,
                 updatedAt: new Date(),
             })
-            .where(eq(threadsList.id, data.threadListId));
+            .where(and(eq(mailboxThreads.threadId, threadId), eq(mailboxThreads.mailboxId, mailboxId)));
     });
-
-
 };

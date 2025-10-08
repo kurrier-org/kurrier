@@ -1,13 +1,19 @@
 import React from "react";
 import {
+    fetchMailbox,
     fetchWebMailThreadDetail, markAsRead,
 } from "@/lib/actions/mailbox";
 import ThreadItem from "@/components/mailbox/default/thread-item";
 import { Divider } from "@mantine/core";
 
 async function Page({ params }: { params: Promise<{ identityPublicId: string; mailboxSlug: string; threadId: string }> }) {
-	const { threadId } = await params;
-    await markAsRead(threadId, false);
+
+    const { threadId, identityPublicId, mailboxSlug } = await params;
+    const { activeMailbox } = await fetchMailbox(
+        identityPublicId,
+        mailboxSlug,
+    );
+    await markAsRead(threadId, activeMailbox.id, false);
     const activeThread = await fetchWebMailThreadDetail(threadId);
 
 	return (

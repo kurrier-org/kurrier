@@ -1,28 +1,32 @@
-import {db, messages, threadsList} from "@db";
-import {desc, eq, sql} from "drizzle-orm";
-import {initSmtpClient} from "./imap-client";
-import {ImapFlow} from "imapflow";
+import { db, messages, mailboxThreads, mailboxes } from "@db";
+import { and, desc, eq, sql } from "drizzle-orm";
+import { initSmtpClient } from "./imap-client";
+import { ImapFlow } from "imapflow";
 
-export async function mailSetFlags(data: {threadListId: string, op: string}, imapInstances: Map<string, ImapFlow>) {
-    const [thread] = await db.select().from(threadsList).where(eq(
-        threadsList.id, data.threadListId
-    ))
-    if (!thread) return;
+export async function mailSetFlags(
+    data: { threadId: string; mailboxId: string; op: string },
+    imapInstances: Map<string, ImapFlow>
+) {
+    const { threadId, mailboxId, op } = data;
 
-    const client = await initSmtpClient(thread.identityId, imapInstances);
+    // 1️⃣ Load mailbox info (we need identityId for IMAP connection)
+    const [mailbox] = await db.select().from(mailboxes).where(eq(mailboxes.id, mailboxId));
+    if (!mailbox) return;
+
+    const client = await initSmtpClient(mailbox.identityId, imapInstances);
     if (!client?.authenticated || !client?.usable) return;
-    const threadMessages = await db.select()
+
+    // 2️⃣ Fetch all messages in this mailbox + thread
+    const threadMessages = await db
+        .select()
         .from(messages)
-        .where(eq(messages.threadId, thread.id))
-        .orderBy(desc(sql`coalesce(${messages.date}, ${messages.createdAt})`))
+        .where(and(eq(messages.threadId, threadId), eq(messages.mailboxId, mailboxId)))
+        .orderBy(desc(sql`coalesce(${messages.date}, ${messages.createdAt})`));
 
     const newest = threadMessages[0];
     if (!newest) return;
 
-
-
-
-
+    // 3️⃣ Map op → IMAP flag and add/remove behavior
     const opToAction = (op: string):
         | { fn: "add" | "del"; flag: "\\Seen" | "\\Flagged" | "\\Answered" }
         | null => {
@@ -44,102 +48,29 @@ export async function mailSetFlags(data: {threadListId: string, op: string}, ima
         }
     };
 
+    const action = opToAction(op);
+    if (!action) return;
 
-
-    const isFlagging = data.op === "flag";
-    const isUnflagging = data.op === "unflag";
-
-    if (isFlagging || isUnflagging) {
-
-        const imap = (newest.metaData as any)?.imap ?? {};
-        const uid = Number(imap.uid);
-        const mailboxPath: string | undefined = imap.mailboxPath;
-
-
-        if (uid && mailboxPath) {
-            try {
-                const lock = await client.getMailboxLock(mailboxPath);
-                try {
-                    if (isFlagging) {
-                        await client.messageFlagsAdd([uid], ["\\Flagged"], { uid: true });
-                    } else {
-                        await client.messageFlagsRemove([uid], ["\\Flagged"], { uid: true });
-                    }
-                } finally {
-                    lock.release();
-                }
-            } catch (err) {
-                console.error(`[mail:set-flags] toggle \\Flagged mailbox=${mailboxPath} uid=${uid}`, err);
-                // continue to DB update so UI stays consistent even if IMAP failed
-            }
-            // try {
-            //     await client.mailboxOpen(mailboxPath, { readOnly: false });
-            //     if (isFlagging) {
-            //         await client.messageFlagsAdd([uid], ['\\Flagged'], { uid: true });
-            //     } else {
-            //         await client.messageFlagsRemove([uid], ['\\Flagged'], { uid: true });
-            //     }
-            // } catch (err) {
-            //     console.error(`[mail:set-flags] toggle \\Flagged mailbox=${mailboxPath} uid=${uid}`, err);
-            //     // continue to DB update so UI stays consistent even if IMAP failed
-            // }
-        }
-
-        await db.transaction(async (tx) => {
-            await tx
-                .update(messages)
-                .set({ flagged: isFlagging })
-                .where(eq(messages.id, newest.id));
-
-            const [agg] = await tx.select({
-                anyOtherFlagged: sql<boolean>`exists(
-                  select 1 from ${messages}
-                  where ${messages.threadId} = ${thread.id}
-                    and ${messages.flagged} = true
-                    and ${messages.id} <> ${newest.id}
-                )`,
-            }).from(messages).limit(1);
-
-            const starred = isFlagging || agg.anyOtherFlagged;
-
-            await tx.update(threadsList)
-                .set({ starred, updatedAt: new Date() })
-                .where(eq(threadsList.id, thread.id));
-        });
-
-        return
-    }
-
-    const byMailbox = new Map<
-        string,
-        Array<{ id: string; uid: number }>
-    >();
-
+    // 4️⃣ Group messages by mailboxPath (IMAP folder)
+    const byMailbox = new Map<string, Array<{ id: string; uid: number }>>();
     for (const m of threadMessages) {
         const imap = (m.metaData as any)?.imap;
         const uid = Number(imap?.uid);
         const mailboxPath = imap?.mailboxPath as string | undefined;
-
         if (!uid || !mailboxPath) continue;
 
         if (!byMailbox.has(mailboxPath)) byMailbox.set(mailboxPath, []);
         byMailbox.get(mailboxPath)!.push({ id: m.id, uid });
     }
 
-
-
-    const action = opToAction(data.op);
-    if (!action) return;
-
+    // 5️⃣ Perform IMAP updates
     for (const [mailboxPath, list] of byMailbox.entries()) {
-        try {
+        const uids = list.map((x) => x.uid).sort((a, b) => a - b);
+        if (!uids.length) continue;
 
+        try {
             const lock = await client.getMailboxLock(mailboxPath);
             try {
-                const uids: number[] = list.map((x) => x.uid).sort((a, b) => a - b);
-
-                if (uids.length === 0) continue;
-
                 if (action.fn === "add") {
                     await client.messageFlagsAdd(uids, [action.flag], { uid: true });
                 } else {
@@ -148,25 +79,40 @@ export async function mailSetFlags(data: {threadListId: string, op: string}, ima
             } finally {
                 lock.release();
             }
-
-            // await client.mailboxOpen(mailboxPath, { readOnly: false });
-
-
-            // const uids: number[] = list.map((x) => x.uid).sort((a, b) => a - b);
-            //
-            // if (uids.length === 0) continue;
-            //
-            // if (action.fn === "add") {
-            //     await client.messageFlagsAdd(uids, [action.flag], { uid: true });
-            // } else {
-            //     await client.messageFlagsRemove(uids, [action.flag], { uid: true });
-            // }
         } catch (err) {
-            // Log & continue — don't fail the whole job for a single mailbox
             console.error(`[mail:set-flags] mailbox=${mailboxPath} error`, err);
         }
     }
 
+    // 6️⃣ Reflect locally in DB (messages + mailboxThreads)
+    await db.transaction(async (tx) => {
+        const update: Record<string, any> = { updatedAt: new Date() };
+        if (op === "read") update.seen = true;
+        if (op === "unread") update.seen = false;
+        if (op === "flag") update.flagged = true;
+        if (op === "unflag") update.flagged = false;
 
+        await tx
+            .update(messages)
+            .set(update)
+            .where(and(eq(messages.threadId, threadId), eq(messages.mailboxId, mailboxId)));
 
+        // Compute unread count and starred status
+        const [agg] = await tx
+            .select({
+                unreadCount: sql<number>`count(*) filter (where ${messages.seen} = false)`,
+                anyFlagged: sql<boolean>`bool_or(${messages.flagged})`,
+            })
+            .from(messages)
+            .where(and(eq(messages.threadId, threadId), eq(messages.mailboxId, mailboxId)));
+
+        await tx
+            .update(mailboxThreads)
+            .set({
+                unreadCount: agg.unreadCount ?? 0,
+                starred: agg.anyFlagged ?? false,
+                updatedAt: new Date(),
+            })
+            .where(and(eq(mailboxThreads.threadId, threadId), eq(mailboxThreads.mailboxId, mailboxId)));
+    });
 }

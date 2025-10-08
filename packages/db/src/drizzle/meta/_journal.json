@@ -50,6 +50,20 @@
       "when": 1759849500425,
       "tag": "0006_clean_gladiator",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1759934269287,
+      "tag": "0007_condemned_tinkerer",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1759952844129,
+      "tag": "0008_graceful_human_cannonball",
+      "breakpoints": true
     }
   ]
 }

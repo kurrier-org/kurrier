@@ -29,7 +29,6 @@ export default defineNitroPlugin(async (nitroApp) => {
 			} else if (job.name === "mail:delete-permanent") {
 			} else if (job.name === "smtp:append:sent") {
 			} else if (job.name === "backfill") {
-			// } else {
 				const identityId = job.data.identityId;
 				const client = await initSmtpClient(identityId, imapInstances);
 				if (client?.authenticated && client?.usable) {
