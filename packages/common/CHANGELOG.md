@@ -1,5 +1,11 @@
 # @kurrier/common
 
+## 0.0.3
+
+### Patch Changes
+
+- [#96](https://github.com/kurrier-org/kurrier/pull/96) [`4d2582f`](https://github.com/kurrier-org/kurrier/commit/4d2582fa3a6f569449ffc17b8b98df7553175f0e) Thanks [@krokhale](https://github.com/krokhale)! - Added support for SMTP operations and refactored SMTP flow. Updates and cleanup for the webmail UI. Polish for the editor.
+
 ## 0.0.2
 
 ### Patch Changes
