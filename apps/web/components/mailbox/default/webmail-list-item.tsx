@@ -31,9 +31,9 @@ import { Temporal } from "@js-temporal/polyfill";
 
 export default function WebmailListItem({
                                             mailboxThreadItem,
-                                           activeMailbox,
-                                           identityPublicId,
-                                       }: Props) {
+                                            activeMailbox,
+                                            identityPublicId,
+                                        }: Props) {
 
 
     function formatDateLabel(input?: string | number | Date) {
@@ -131,8 +131,6 @@ export default function WebmailListItem({
 
     return (
         <li
-            // key={threadItem.id}
-            // onClick={openThread}
             className={[
                 "relative group grid cursor-pointer", // relative → for absolute overlay
                 "grid-cols-[auto_auto_minmax(16rem,1fr)_minmax(10rem,2fr)_auto]",
@@ -179,7 +177,7 @@ export default function WebmailListItem({
                 )}
             </div>
 
-            {/* Date (stays in flow; overlay is separate) */}
+
             <div className="ml-auto flex items-center gap-2 pl-2">
                 {mailboxThreadItem.unreadCount > 0 ? (
                     <Mail className="h-4 w-4 text-primary md:hidden" />

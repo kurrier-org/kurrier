@@ -12,11 +12,14 @@ async function Page({
 }) {
 	const { page } = await searchParams;
 	const { identityPublicId, mailboxSlug } = await params;
-	const { activeMailbox, count } = await fetchMailbox(
+	const { activeMailbox, count, identity } = await fetchMailbox(
 		identityPublicId,
 		mailboxSlug,
 	);
-    await deltaFetch({identityId: activeMailbox.identityId})
+    if (identity.smtpAccountId){
+        await deltaFetch({identityId: activeMailbox.identityId})
+    }
+
 	const publicConfig = getPublicEnv();
     const mailboxThreads =
         await fetchMailboxThreads(identityPublicId, String(mailboxSlug), Number(page))

@@ -1,10 +1,11 @@
 import { defineNitroPlugin } from "nitropack/runtime";
-import { db, messages, threadsList } from "@db";
+import { db, messages, mailboxThreads } from "@db"; // ✅ replaced threadsList
 import { ToSearchDocInput } from "@schema";
 import { getMessageAddress, getMessageName } from "@common/mail-client";
 import Typesense from "typesense";
 import { getServerEnv, messagesSearchSchema } from "@schema";
 import { eq } from "drizzle-orm";
+import type { AddressObjectJSON, EmailAddressJSON } from "@schema";
 
 const {
     TYPESENSE_API_KEY,
@@ -26,8 +27,6 @@ const client = new Typesense.Client({
     ],
     apiKey: TYPESENSE_API_KEY,
 });
-
-import type { AddressObjectJSON, EmailAddressJSON } from "@schema";
 
 const uniq = <T>(arr: T[]) => [...new Set(arr)];
 
@@ -51,12 +50,11 @@ function emailsFromAddressObj(obj?: AddressObjectJSON | null): string[] {
     return flattenEmails(obj.value);
 }
 
-/** Collects *all* participant email addresses from from/to/cc/bcc (message-level fallback) */
 export function collectParticipants(
     from: AddressObjectJSON | null,
     to: AddressObjectJSON | null,
     cc: AddressObjectJSON | null,
-    bcc: AddressObjectJSON | null,
+    bcc: AddressObjectJSON | null
 ): string[] {
     const candidates = [
         ...emailsFromAddressObj(from),
@@ -75,11 +73,6 @@ export function emailDomain(email?: string | null) {
     return m?.[1] ?? "";
 }
 
-/**
- * Note: we accept optional thread-level hints (preview, last activity, participants)
- * and use them to populate existing fields (snippet, lastInThreadAt, participants).
- * No new Typesense fields are introduced.
- */
 function toSearchDoc(
     msg: ToSearchDocInput & {
         threadPreview?: string | null;
@@ -90,9 +83,9 @@ function toSearchDoc(
             cc?: { n?: string | null; e: string }[];
             bcc?: { n?: string | null; e: string }[];
         } | null;
-    },
+        threadStarred?: boolean | null;
+    }
 ) {
-    // Prefer thread participants if present; else derive from message
     const participantsFromThread =
         msg.threadParticipants
             ? uniq(
@@ -101,7 +94,7 @@ function toSearchDoc(
                     ...(msg.threadParticipants.to ?? []).map((x) => normalizeEmail(x.e)),
                     ...(msg.threadParticipants.cc ?? []).map((x) => normalizeEmail(x.e)),
                     ...(msg.threadParticipants.bcc ?? []).map((x) => normalizeEmail(x.e)),
-                ].filter(Boolean) as string[],
+                ].filter(Boolean) as string[]
             )
             : null;
 
@@ -111,15 +104,13 @@ function toSearchDoc(
             : collectParticipants(msg.from ?? null, msg.to ?? null, msg.cc ?? null, msg.bcc ?? null);
 
     const fromEmail = (msg.fromEmail ?? "").toLowerCase();
-
     const createdAtMs = msg.createdAt ? new Date(msg.createdAt).getTime() : Date.now();
-
-    // Prefer thread last activity if available
     const lastInThreadAtMs = msg.threadLastActivityAt
         ? new Date(msg.threadLastActivityAt).getTime()
-        : (msg.lastInThreadAt ? new Date(msg.lastInThreadAt).getTime() : createdAtMs);
+        : msg.lastInThreadAt
+            ? new Date(msg.lastInThreadAt).getTime()
+            : createdAtMs;
 
-    // Prefer thread preview for the snippet, fallback to message text
     const snippet =
         (msg.threadPreview ?? "").trim() ||
         (msg.text ?? "").slice(0, 200);
@@ -139,13 +130,15 @@ function toSearchDoc(
         fromEmail,
         fromDomain: emailDomain(fromEmail),
 
-        participants, // string[]
+        participants,
         labels: (msg.labels ?? []).map((l) => l.toLowerCase()),
 
         hasAttachment: msg.hasAttachments ? 1 : 0,
         unread: msg.seen ? 0 : 1,
 
         sizeBytes: Number(msg.sizeBytes ?? 0),
+
+        starred: (msg.threadStarred ? 1 : 0),
 
         createdAt: createdAtMs,
         lastInThreadAt: lastInThreadAtMs,
@@ -174,20 +167,20 @@ export default defineNitroPlugin(async () => {
     let imported = 0;
 
     while (true) {
-        // JOIN thread-level context
         const batch = await db
             .select({
                 m: messages,
-                tl_subject: threadsList.subject,
-                tl_preview: threadsList.previewText,
-                tl_lastActivityAt: threadsList.lastActivityAt,
-                tl_messageCount: threadsList.messageCount,
-                tl_unreadCount: threadsList.unreadCount,
-                tl_hasAttachments: threadsList.hasAttachments,
-                tl_participants: threadsList.participants,
+                mt_subject: mailboxThreads.subject,
+                mt_preview: mailboxThreads.previewText,
+                mt_lastActivityAt: mailboxThreads.lastActivityAt,
+                mt_messageCount: mailboxThreads.messageCount,
+                mt_unreadCount: mailboxThreads.unreadCount,
+                mt_hasAttachments: mailboxThreads.hasAttachments,
+                mt_participants: mailboxThreads.participants,
+                mt_starred: mailboxThreads.starred,
             })
             .from(messages)
-            .leftJoin(threadsList, eq(messages.threadId, threadsList.id))
+            .leftJoin(mailboxThreads, eq(messages.threadId, mailboxThreads.threadId))
             .limit(BATCH_SIZE)
             .offset(offset);
 
@@ -195,17 +188,13 @@ export default defineNitroPlugin(async () => {
 
         const docs = batch.map((row) => {
             const m = row.m;
-
             return toSearchDoc({
                 id: m.id,
                 ownerId: m.ownerId,
                 mailboxId: m.mailboxId,
                 threadId: m.threadId,
 
-                // keep message subject (threads_list.subject is already used to build preview/snippet—if you want,
-                // you can also prefer tl_subject here)
-                subject: m.subject ?? row.tl_subject ?? "",
-
+                subject: m.subject ?? row.mt_subject ?? "",
                 text: m.text,
                 html: m.html,
 
@@ -217,17 +206,17 @@ export default defineNitroPlugin(async () => {
                 cc: m.cc,
                 bcc: m.bcc,
 
-                hasAttachments: m.hasAttachments || !!row.tl_hasAttachments,
+                hasAttachments: m.hasAttachments || !!row.mt_hasAttachments,
                 seen: m.seen,
                 sizeBytes: m.sizeBytes,
 
                 createdAt: m.date,
-                lastInThreadAt: m.date, // will be overridden by threadLastActivityAt below, if present
+                lastInThreadAt: m.date,
 
-                // thread-level hints (used to compute existing fields)
-                threadPreview: row.tl_preview ?? null,
-                threadLastActivityAt: row.tl_lastActivityAt ?? null,
-                threadParticipants: (row.tl_participants as any) ?? null,
+                threadPreview: row.mt_preview ?? null,
+                threadLastActivityAt: row.mt_lastActivityAt ?? null,
+                threadParticipants: (row.mt_participants as any) ?? null,
+                threadStarred: !!row.mt_starred,
 
                 labels: [],
             });
