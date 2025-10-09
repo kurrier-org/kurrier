@@ -22,6 +22,7 @@ export default async function SearchPage({
     const q = (resolvedSearchParams.q as string) ?? "";
     const has = (resolvedSearchParams.has as string) === "1";
     const unread = (resolvedSearchParams.unread as string) === "1";
+    const starred = (resolvedSearchParams.starred as string) === "1";
     const page = Math.max(1, Number((resolvedSearchParams.page as string) ?? 1));
 
     const { activeMailbox } = await fetchMailbox(identityPublicId, mailboxSlug);
@@ -33,7 +34,7 @@ export default async function SearchPage({
 
     if (q.trim()) {
         const user = await isSignedIn();
-        const res = await initSearch(q, String(user?.id), has, unread, page);
+        const res = await initSearch(q, String(user?.id), has, unread, starred, page);
         items = res.items ?? [];
         totalThreads = res.totalThreads ?? items.length;
         totalMessages = res.totalMessages ?? items.length;
@@ -44,12 +45,6 @@ export default async function SearchPage({
 
     // DO NOT slice here—items are already page-scoped
     const pageItems = items;
-
-    // const threadIds = pageItems.map((i) => i.threadId);
-    // const threads =
-    // 	threadIds.length > 0
-    // 		? await fetchMailboxThreadsList(activeMailbox.id, threadIds)
-    // 		: { threads: [] };
 
     const threadIds = pageItems.map((i) => i.threadId);
     const {threads} =
@@ -72,7 +67,9 @@ export default async function SearchPage({
                 <span className="font-medium">Query:</span> “{q || "—"}” ·{" "}
                 <span className="font-medium">Has attachment:</span>{" "}
                 {has ? "Yes" : "No"} · <span className="font-medium">Unread only:</span>{" "}
-                {unread ? "Yes" : "No"}
+                {unread ? "Yes" : "No"}{" "}
+                · <span className="font-medium">Starred only:</span> {starred ? "Yes" : "No"}
+
             </div>
 
             {!q.trim() ? (
@@ -98,6 +95,7 @@ export default async function SearchPage({
                     q={q}
                     has={has}
                     unread={unread}
+                    starred={starred}
                 />
             )}
         </div>

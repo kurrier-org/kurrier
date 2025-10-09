@@ -15,6 +15,7 @@ type Props = {
 	q: string;
 	has: boolean;
 	unread: boolean;
+	starred: boolean;
 };
 
 export default function SearchPagination({
@@ -26,6 +27,7 @@ export default function SearchPagination({
 	q,
 	has,
 	unread,
+	starred,
 }: Props) {
 	const [activePage, setPage] = useState(page);
 	const router = useRouter();
@@ -37,6 +39,7 @@ export default function SearchPagination({
 			if (q) params.set("q", q);
 			params.set("has", has ? "1" : "0");
 			params.set("unread", unread ? "1" : "0");
+			params.set("starred", starred ? "1" : "0");
 			params.set("page", String(activePage));
 
 			router.push(
