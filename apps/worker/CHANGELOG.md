@@ -1,5 +1,13 @@
 # @kurrier/worker
 
+## 0.1.8
+
+### Patch Changes
+
+- [#102](https://github.com/kurrier-org/kurrier/pull/102) [`53ffcee`](https://github.com/kurrier-org/kurrier/commit/53ffceeb6f442cb0b9e4ffb2f8252777f861dd0e) Thanks [@krokhale](https://github.com/krokhale)! - Added support for starred messages in search
+
+- [#102](https://github.com/kurrier-org/kurrier/pull/102) [`53ffcee`](https://github.com/kurrier-org/kurrier/commit/53ffceeb6f442cb0b9e4ffb2f8252777f861dd0e) Thanks [@krokhale](https://github.com/krokhale)! - Updated UI for the starred search support
+
 ## 0.1.7
 
 ### Patch Changes
