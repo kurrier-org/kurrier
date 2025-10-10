@@ -62,7 +62,7 @@ export const startBackfill = async (client: ImapFlow, identityId: string) => {
                     await parseAndStoreEmail(raw, {
                         ownerId,
                         mailboxId,
-                        rawStorageKey: `eml/${ownerId}/${mailboxId}/${msg.uid}.eml`,
+                        rawStorageKey: `eml/${ownerId}/${mailboxId}/${msg.id}.eml`,
                         emlKey: String(msg.id),
                         metaData: {
                             imap: {

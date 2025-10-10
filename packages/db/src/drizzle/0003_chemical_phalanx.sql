@@ -1,1 +1,0 @@
-ALTER TABLE "messages" ADD COLUMN "meta" jsonb DEFAULT 'null'::jsonb;

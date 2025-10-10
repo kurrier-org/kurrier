@@ -38,6 +38,28 @@ CREATE TABLE "mailbox_sync" (
 	"updated_at" timestamp with time zone DEFAULT now()
 );
 --> statement-breakpoint
+CREATE TABLE "mailbox_threads" (
+	"thread_id" uuid NOT NULL,
+	"mailbox_id" uuid NOT NULL,
+	"owner_id" uuid DEFAULT auth.uid() NOT NULL,
+	"identity_id" uuid NOT NULL,
+	"identity_public_id" text NOT NULL,
+	"mailbox_slug" text,
+	"subject" text,
+	"preview_text" text,
+	"last_activity_at" timestamp with time zone NOT NULL,
+	"first_message_at" timestamp with time zone,
+	"message_count" integer DEFAULT 0 NOT NULL,
+	"unread_count" integer DEFAULT 0 NOT NULL,
+	"has_attachments" boolean DEFAULT false NOT NULL,
+	"starred" boolean DEFAULT false NOT NULL,
+	"participants" jsonb,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "pk_mailbox_threads" PRIMARY KEY("thread_id","mailbox_id")
+);
+--> statement-breakpoint
+ALTER TABLE "mailbox_threads" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "mailboxes" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"owner_id" uuid DEFAULT auth.uid() NOT NULL,
@@ -101,6 +123,7 @@ CREATE TABLE "messages" (
 	"state" "message_state" DEFAULT 'normal' NOT NULL,
 	"headers_json" jsonb DEFAULT 'null'::jsonb,
 	"raw_storage_key" text,
+	"meta" jsonb DEFAULT 'null'::jsonb,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -154,7 +177,6 @@ ALTER TABLE "smtp_accounts" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "threads" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"owner_id" uuid DEFAULT auth.uid() NOT NULL,
-	"mailbox_id" uuid NOT NULL,
 	"last_message_date" timestamp with time zone,
 	"last_message_id" uuid DEFAULT null,
 	"message_count" integer DEFAULT 0 NOT NULL,
@@ -169,6 +191,10 @@ ALTER TABLE "identities" ADD CONSTRAINT "identities_provider_id_providers_id_fk"
 ALTER TABLE "identities" ADD CONSTRAINT "identities_smtp_account_id_smtp_accounts_id_fk" FOREIGN KEY ("smtp_account_id") REFERENCES "public"."smtp_accounts"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "mailbox_sync" ADD CONSTRAINT "mailbox_sync_identity_id_identities_id_fk" FOREIGN KEY ("identity_id") REFERENCES "public"."identities"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "mailbox_sync" ADD CONSTRAINT "mailbox_sync_mailbox_id_mailboxes_id_fk" FOREIGN KEY ("mailbox_id") REFERENCES "public"."mailboxes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "mailbox_threads" ADD CONSTRAINT "mailbox_threads_thread_id_threads_id_fk" FOREIGN KEY ("thread_id") REFERENCES "public"."threads"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "mailbox_threads" ADD CONSTRAINT "mailbox_threads_mailbox_id_mailboxes_id_fk" FOREIGN KEY ("mailbox_id") REFERENCES "public"."mailboxes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "mailbox_threads" ADD CONSTRAINT "mailbox_threads_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "auth"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "mailbox_threads" ADD CONSTRAINT "mailbox_threads_identity_id_identities_id_fk" FOREIGN KEY ("identity_id") REFERENCES "public"."identities"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "mailboxes" ADD CONSTRAINT "mailboxes_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "auth"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "mailboxes" ADD CONSTRAINT "mailboxes_identity_id_identities_id_fk" FOREIGN KEY ("identity_id") REFERENCES "public"."identities"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "message_attachments" ADD CONSTRAINT "message_attachments_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "auth"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -184,13 +210,18 @@ ALTER TABLE "smtp_account_secrets" ADD CONSTRAINT "smtp_account_secrets_account_
 ALTER TABLE "smtp_account_secrets" ADD CONSTRAINT "smtp_account_secrets_secret_id_secrets_meta_id_fk" FOREIGN KEY ("secret_id") REFERENCES "public"."secrets_meta"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "smtp_accounts" ADD CONSTRAINT "smtp_accounts_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "auth"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "threads" ADD CONSTRAINT "threads_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "auth"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "threads" ADD CONSTRAINT "threads_mailbox_id_mailboxes_id_fk" FOREIGN KEY ("mailbox_id") REFERENCES "public"."mailboxes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "threads" ADD CONSTRAINT "threads_last_message_id_messages_id_fk" FOREIGN KEY ("last_message_id") REFERENCES "public"."messages"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE UNIQUE INDEX "uniq_identity_per_user" ON "identities" USING btree ("owner_id","kind","value");--> statement-breakpoint
 CREATE UNIQUE INDEX "uniq_identity_public_id" ON "identities" USING btree ("public_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "ux_mailbox_sync_mailbox" ON "mailbox_sync" USING btree ("mailbox_id");--> statement-breakpoint
 CREATE INDEX "ix_mailbox_sync_identity" ON "mailbox_sync" USING btree ("identity_id");--> statement-breakpoint
 CREATE INDEX "ix_mailbox_sync_phase" ON "mailbox_sync" USING btree ("phase");--> statement-breakpoint
+CREATE INDEX "ix_mbth_mailbox_activity" ON "mailbox_threads" USING btree ("mailbox_id","last_activity_at","thread_id");--> statement-breakpoint
+CREATE INDEX "ix_mbth_identity_slug" ON "mailbox_threads" USING btree ("identity_id","mailbox_slug");--> statement-breakpoint
+CREATE INDEX "ix_mbth_identity_public_id" ON "mailbox_threads" USING btree ("identity_public_id");--> statement-breakpoint
+CREATE INDEX "ix_mbth_mailbox_unread" ON "mailbox_threads" USING btree ("mailbox_id","unread_count");--> statement-breakpoint
+CREATE INDEX "ix_mbth_mailbox_starred" ON "mailbox_threads" USING btree ("mailbox_id","starred");--> statement-breakpoint
+CREATE UNIQUE INDEX "ux_mbth_thread_mailbox" ON "mailbox_threads" USING btree ("thread_id","mailbox_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "uniq_mailbox_public_id" ON "mailboxes" USING btree ("public_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "uniq_default_mailbox_per_kind" ON "mailboxes" USING btree ("identity_id","kind") WHERE "mailboxes"."is_default" IS TRUE;--> statement-breakpoint
 CREATE UNIQUE INDEX "uniq_mailbox_slug_per_identity" ON "mailboxes" USING btree ("identity_id","slug") WHERE "mailboxes"."slug" IS NOT NULL;--> statement-breakpoint
@@ -201,15 +232,20 @@ CREATE UNIQUE INDEX "uniq_message_public_id" ON "messages" USING btree ("public_
 CREATE INDEX "idx_messages_priority" ON "messages" USING btree ("priority");--> statement-breakpoint
 CREATE UNIQUE INDEX "uniq_mailbox_message_id" ON "messages" USING btree ("mailbox_id","message_id");--> statement-breakpoint
 CREATE INDEX "idx_messages_in_reply_to" ON "messages" USING btree ("in_reply_to");--> statement-breakpoint
+CREATE INDEX "ix_messages_thread_flagged" ON "messages" USING btree ("thread_id","flagged");--> statement-breakpoint
 CREATE INDEX "idx_messages_mailbox_date" ON "messages" USING btree ("mailbox_id","date");--> statement-breakpoint
 CREATE INDEX "idx_messages_mailbox_seen_date" ON "messages" USING btree ("mailbox_id","seen","date");--> statement-breakpoint
 CREATE UNIQUE INDEX "uniq_provider_per_user" ON "providers" USING btree ("owner_id","type");--> statement-breakpoint
-CREATE INDEX "idx_threads_mailbox_lastdate" ON "threads" USING btree ("mailbox_id","last_message_date","id");--> statement-breakpoint
-CREATE INDEX "idx_threads_mailbox_updated" ON "threads" USING btree ("mailbox_id","updated_at");--> statement-breakpoint
+CREATE INDEX "idx_threads_owner_lastdate" ON "threads" USING btree ("owner_id","last_message_date","id");--> statement-breakpoint
+CREATE INDEX "idx_threads_owner_id" ON "threads" USING btree ("owner_id","id");--> statement-breakpoint
 CREATE POLICY "identities_select_own" ON "identities" AS PERMISSIVE FOR SELECT TO "authenticated" USING ("identities"."owner_id" = (select auth.uid()));--> statement-breakpoint
 CREATE POLICY "identities_insert_own" ON "identities" AS PERMISSIVE FOR INSERT TO "authenticated" WITH CHECK ("identities"."owner_id" = (select auth.uid()));--> statement-breakpoint
 CREATE POLICY "identities_update_own" ON "identities" AS PERMISSIVE FOR UPDATE TO "authenticated" USING ("identities"."owner_id" = (select auth.uid())) WITH CHECK ("identities"."owner_id" = (select auth.uid()));--> statement-breakpoint
 CREATE POLICY "identities_delete_own" ON "identities" AS PERMISSIVE FOR DELETE TO "authenticated" USING ("identities"."owner_id" = (select auth.uid()));--> statement-breakpoint
+CREATE POLICY "mbth_select_own" ON "mailbox_threads" AS PERMISSIVE FOR SELECT TO "authenticated" USING ("mailbox_threads"."owner_id" = (select auth.uid()));--> statement-breakpoint
+CREATE POLICY "mbth_insert_own" ON "mailbox_threads" AS PERMISSIVE FOR INSERT TO "authenticated" WITH CHECK ("mailbox_threads"."owner_id" = (select auth.uid()));--> statement-breakpoint
+CREATE POLICY "mbth_update_own" ON "mailbox_threads" AS PERMISSIVE FOR UPDATE TO "authenticated" USING ("mailbox_threads"."owner_id" = (select auth.uid())) WITH CHECK ("mailbox_threads"."owner_id" = (select auth.uid()));--> statement-breakpoint
+CREATE POLICY "mbth_delete_own" ON "mailbox_threads" AS PERMISSIVE FOR DELETE TO "authenticated" USING ("mailbox_threads"."owner_id" = (select auth.uid()));--> statement-breakpoint
 CREATE POLICY "mailboxes_select_own" ON "mailboxes" AS PERMISSIVE FOR SELECT TO "authenticated" USING ("mailboxes"."owner_id" = (select auth.uid()));--> statement-breakpoint
 CREATE POLICY "mailboxes_insert_own" ON "mailboxes" AS PERMISSIVE FOR INSERT TO "authenticated" WITH CHECK ("mailboxes"."owner_id" = (select auth.uid()));--> statement-breakpoint
 CREATE POLICY "mailboxes_update_own" ON "mailboxes" AS PERMISSIVE FOR UPDATE TO "authenticated" USING ("mailboxes"."owner_id" = (select auth.uid())) WITH CHECK ("mailboxes"."owner_id" = (select auth.uid()));--> statement-breakpoint

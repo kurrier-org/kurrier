@@ -15,8 +15,7 @@ import Form from "next/form";
 import { sendMail } from "@/lib/actions/mailbox";
 import type { FormState, PublicConfig } from "@schema";
 import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
-import { toast, Toaster } from "sonner";
-import { useAppearance } from "@/components/providers/appearance-provider";
+import { toast } from "sonner";
 
 export type EmailEditorHandle = {
 	focus: () => void;
@@ -66,10 +65,8 @@ const EmailEditor = forwardRef<EmailEditorHandle, Props>(
 			}
 		}, [formState]);
 
-		const { mode } = useAppearance();
 		return (
 			<>
-				<Toaster theme={mode} expand={true} />
 				<div className="mt-4" tabIndex={-1}>
 					<DynamicContextProvider
 						initialState={{ isPending, message, publicConfig, showEditorMode }}

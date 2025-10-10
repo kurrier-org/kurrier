@@ -28,6 +28,7 @@ import {createClient, SupabaseClient} from "@supabase/supabase-js";
 const supabase = createClient(publicConfig.SUPABASE_DOMAIN, serverConfig.SUPABASE_SERVICE_ROLE_KEY);
 import addressparser from 'addressparser';
 import {PgTransaction} from "drizzle-orm/pg-core";
+import {getRedis} from "../../lib/get-redis";
 const connection = new IORedis({
     maxRetriesPerRequest: null,
     password: serverConfig.REDIS_PASSWORD,
@@ -114,8 +115,6 @@ export default defineNitroPlugin(async (nitroApp) => {
 
 
     const send = async (decodedForm: Record<any, unknown>) => {
-
-        console.log("decodedForm", decodedForm)
 
         return await db.transaction(async (tx) => {
 
@@ -270,6 +269,9 @@ export default defineNitroPlugin(async (nitroApp) => {
                 }
 
                 await upsertMailboxThreadItem(newMessage.id, tx)
+
+                const { searchIngestQueue } = await getRedis();
+                await searchIngestQueue.add("add", { messageId: newMessage.id }, { removeOnComplete: true });
 
             } else if (mailerResponse.error) {
                 return { success: false, error: `Failed to send email: ${mailerResponse.error}` };

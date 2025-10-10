@@ -7,6 +7,7 @@ import MailListHeader from "@/components/mailbox/default/mail-list-header";
 import WebmailListItem from "@/components/mailbox/default/webmail-list-item";
 import {useEffect} from "react";
 import {usePathname, useSearchParams} from "next/navigation";
+import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
 
 
 type WebListProps = {
@@ -28,27 +29,34 @@ export default function WebmailList({ mailboxThreads, activeMailbox, identityPub
     }, [pathname, searchParams])
 
 
+
     return (
         <>
-            {mailboxThreads.length === 0 ? (
-                <div className="p-4 text-center text-base text-muted-foreground">
-                    No messages in{" "}
-                    <span className={"lowercase"}>{activeMailbox.name}</span>
-                </div>
-            ) : (
-                <div className="rounded-xl border bg-background/50 p-1">
-                    <MailListHeader />
+            <DynamicContextProvider
+                initialState={{ selectedThreadIds: new Set(), activeMailbox, identityPublicId }}
+            >
+                {mailboxThreads.length === 0 ? (
+                    <div className="p-4 text-center text-base text-muted-foreground">
+                        No messages in{" "}
+                        <span className={"lowercase"}>{activeMailbox.name}</span>
+                    </div>
+                ) : (
+                    <div className="rounded-xl border bg-background/50">
+                        <MailListHeader mailboxThreads={mailboxThreads} />
 
-                    <ul role="list" className="divide-y">
-                        {mailboxThreads.map((mailboxThreadItem) => (
-                            <WebmailListItem key={mailboxThreadItem.threadId+mailboxThreadItem.mailboxId}
-                                             mailboxThreadItem={mailboxThreadItem}
-                                             activeMailbox={activeMailbox}
-                                             identityPublicId={identityPublicId} />
-                        ))}
-                    </ul>
-                </div>
-            )}
+                        <ul role="list" className="divide-y">
+                            {mailboxThreads.map((mailboxThreadItem) => (
+                                <WebmailListItem key={mailboxThreadItem.threadId+mailboxThreadItem.mailboxId}
+                                                 mailboxThreadItem={mailboxThreadItem}
+                                                 activeMailbox={activeMailbox}
+                                                 identityPublicId={identityPublicId} />
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
+            </DynamicContextProvider>
+
         </>
     );
 }

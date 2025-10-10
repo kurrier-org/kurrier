@@ -143,7 +143,6 @@ export default function EditorFooter() {
 		const bucket = "attachments";
 
 		for (const file of Array.from(files)) {
-			console.log(extension(file.type));
 			const path = `private/${userId}/${newMessageId.current}/${uuidv4()}.${extension(file.type)}`;
 
 			setUploads((prev) => [

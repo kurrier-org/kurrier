@@ -14,6 +14,7 @@ import {getPublicEnv, getServerEnv} from "@schema";
 import {generateSnippet, upsertMailboxThreadItem} from "@common";
 import { randomUUID } from "crypto";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { getRedis } from "./get-redis";
 
 const publicConfig = getPublicEnv();
 const serverConfig = getServerEnv();
@@ -119,9 +120,11 @@ export async function parseAndStoreEmail(
 	const encoder = new TextEncoder();
 	const emailBuffer = encoder.encode(rawEmail);
 
+    console.dir(opts, { depth: 10 })
+
 	await supabase.storage
 		.from("attachments")
-		.upload(`eml/${ownerId}/${opts.emlKey}`, emailBuffer, {
+		.upload(opts.rawStorageKey, emailBuffer, {
 			contentType: "message/rfc822",
             upsert: true
 		});
@@ -236,5 +239,9 @@ export async function parseAndStoreEmail(
 		await db.insert(messageAttachments).values(parsedRow).returning();
 	}
 
+    const { searchIngestQueue } = await getRedis();
+    await searchIngestQueue.add("add", { messageId: message.id }, { removeOnComplete: true });
+
 	return message;
 }
+

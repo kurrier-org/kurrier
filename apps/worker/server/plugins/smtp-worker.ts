@@ -15,6 +15,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 
     const imapInstances = new Map<string, ImapFlow>();
     const connection = (await getRedis()).connection;
+    const { searchIngestQueue } = await getRedis();
 
 	const worker = new Worker(
 		"smtp-worker",
@@ -24,8 +25,22 @@ export default defineNitroPlugin(async (nitroApp) => {
 				await deltaFetch(identityId, imapInstances);
 			} else if (job.name === "mail:move") {
                 await moveMail(job.data, imapInstances);
+                await searchIngestQueue.add("refresh-thread", { threadId: job.data.threadId }, {
+                    jobId: `refresh-${job.data.threadId}`,    // collapses duplicates
+                    removeOnComplete: true,
+                    removeOnFail: false,
+                    attempts: 3,
+                    backoff: { type: "exponential", delay: 1500 },
+                });
 			} else if (job.name === "mail:set-flags") {
                 await mailSetFlags(job.data, imapInstances);
+                await searchIngestQueue.add("refresh-thread", { threadId: job.data.threadId }, {
+                    jobId: `refresh-${job.data.threadId}`,    // collapses duplicates
+                    removeOnComplete: true,
+                    removeOnFail: false,
+                    attempts: 3,
+                    backoff: { type: "exponential", delay: 1500 },
+                });
 			} else if (job.name === "mail:delete-permanent") {
 			} else if (job.name === "smtp:append:sent") {
 			} else if (job.name === "backfill") {

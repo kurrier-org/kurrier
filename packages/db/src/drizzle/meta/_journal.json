@@ -5,64 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1759001755949,
-      "tag": "0000_redundant_selene",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1759577833597,
-      "tag": "0001_concerned_maelstrom",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1759592861833,
-      "tag": "0002_oval_wild_pack",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1759770067293,
-      "tag": "0003_chemical_phalanx",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1759847537857,
-      "tag": "0004_elite_guardian",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1759847581004,
-      "tag": "0005_quiet_black_bolt",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1759849500425,
-      "tag": "0006_clean_gladiator",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1759934269287,
-      "tag": "0007_condemned_tinkerer",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1759952844129,
-      "tag": "0008_graceful_human_cannonball",
+      "when": 1760087441442,
+      "tag": "0000_chubby_dorian_gray",
       "breakpoints": true
     }
   ]

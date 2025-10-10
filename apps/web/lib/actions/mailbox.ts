@@ -7,9 +7,9 @@ import {
     mailboxes, mailboxThreads,
     messageAttachments,
     messages,
-    threads, threadsList,
+    threads,
 } from "@db";
-import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
+import {and, asc, count, desc, eq, inArray, sql} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import {
     FormState,
@@ -36,13 +36,19 @@ const getRedis = async () => {
     const sendMailQueue = new Queue("send-mail", redisConnection);
     const sendMailEvents = new QueueEvents("send-mail", redisConnection);
 
+    const searchIngestQueue = new Queue("search-ingest", redisConnection);
+    const searchIngestEvents = new QueueEvents("search-ingest", redisConnection);
+
     await smtpEvents.waitUntilReady();
     await sendMailEvents.waitUntilReady();
+    await searchIngestEvents.waitUntilReady();
     return {
         smtpQueue,
         smtpEvents,
         sendMailQueue,
-        sendMailEvents
+        sendMailEvents,
+        searchIngestQueue,
+        searchIngestEvents
     };
 };
 
@@ -112,36 +118,6 @@ export const fetchMailbox = cache(
 );
 
 
-// export const fetchMailboxThreadsList = cache(
-//     async (
-//         mailboxId: string,
-//         threadIds: string[],
-//     ) => {
-//         if (!threadIds || threadIds.length === 0) {
-//             return { threads: [] };
-//         }
-//
-//         const rls = await rlsClient();
-//
-//         const conditions = [eq(threadsList.mailboxId, mailboxId)];
-//         if (threadIds && threadIds.length > 0) {
-//             conditions.push(inArray(threadsList.id, threadIds));
-//         }
-//
-//         return await rls(async (tx) => {
-//             return tx
-//                 .select()
-//                 .from(threadsList)
-//                 .where(and(...conditions))
-//                 .orderBy(
-//                     desc(sql`coalesce(${threadsList.lastActivityAt}, ${threadsList.createdAt})`),
-//                     desc(threadsList.id), // tie-breaker for stable order
-//                 )
-//                 .limit(50);
-//         });
-//     },
-// );
-
 
 
 export const fetchMessageAttachments = cache(async (messageId: string) => {
@@ -182,65 +158,6 @@ export const deltaFetch = async ({ identityId }: { identityId: string }) => {
     await job.waitUntilFinished(smtpEvents);
 };
 
-// export const initSearch = async (
-// 	query: string,
-// 	ownerId: string,
-// 	hasAttachment: boolean,
-// 	onlyUnread: boolean,
-// 	page: number,
-// ): Promise<SearchThreadsResponse> => {
-// 	const client = getTypeSenseClient();
-//
-// 	const filters = [`ownerId:=${JSON.stringify(ownerId)}`];
-// 	if (hasAttachment) filters.push("hasAttachment:=1");
-// 	if (onlyUnread) filters.push("unread:=1");
-// 	if (onlyUnread) filters.push("unread:=1");
-//
-// 	const result = (await client
-// 		.collections("messages")
-// 		.documents()
-// 		.search({
-// 			q: query,
-// 			query_by: "subject,html,text,fromName,fromEmail,participants",
-// 			filter_by: filters.join(" && "),
-// 			sort_by: "createdAt:desc",
-// 			group_by: "threadId",
-// 			group_limit: 1,
-// 			per_page: 50,
-// 			page: page,
-// 		})) as any;
-//
-// 	const groups = result?.grouped_hits as
-// 		| Array<{ group_key: string[]; hits: Array<{ document: any }> }>
-// 		| undefined;
-//
-// 	const sourceHits = groups?.length
-// 		? groups.map((g) => g.hits[0]?.document ?? {})
-// 		: (result?.hits ?? []).map((h: any) => h.document ?? {});
-//
-// 	return {
-// 		items: sourceHits.map((d: any) => ({
-// 			id: d.id ?? "",
-// 			threadId: d.threadId ?? "",
-// 			subject: d.subject ?? null,
-// 			snippet: (d.snippet ?? d.text ?? "").slice(0, 200),
-// 			// snippet: (d.text || d.textAsHtml || "")
-// 			//     .toString()
-// 			//     .replace(/\s+/g, " ")
-// 			//     .slice(0, 100),
-// 			fromName: d.fromName ?? null,
-// 			fromEmail: d.fromEmail ?? null,
-// 			participants: Array.isArray(d.participants) ? d.participants : [],
-// 			labels: Array.isArray(d.labels) ? d.labels : [],
-// 			hasAttachment: Number(d.hasAttachment) === 1,
-// 			unread: Number(d.unread) === 1,
-// 			createdAt: d.createdAt ?? 0,
-// 			lastInThreadAt: d.lastInThreadAt ?? d.createdAt ?? 0,
-// 		})),
-// 		totalThreads: result?.found ?? sourceHits.length,
-// 		totalMessages: result?.found_docs ?? sourceHits.length,
-// 	};
-// };
 
 export const initSearch = async (
     query: string,
@@ -318,28 +235,6 @@ export const backfillAccount = async (identityId: string) => {
 };
 
 
-export const fetchWebMailList = async (identityPublicId: string, mailboxSlug: string, page: number) => {
-    page = page && page > 0 ? page : 1;
-    const rls = await rlsClient();
-    const threads = await rls((tx) => {
-        return tx
-            .select()
-            .from(threadsList)
-            .where(and(
-                eq(threadsList.identityPublicId, identityPublicId),
-                eq(threadsList.mailboxSlug, mailboxSlug),
-            ))
-            .orderBy(desc(threadsList.lastActivityAt))
-            .offset((page - 1) * 50)
-            .limit(50)
-    })
-    return threads
-};
-
-
-export type FetchWebMailResult = Awaited<
-    ReturnType<typeof fetchWebMailList>
->;
 
 export const fetchWebMailThreadDetail = cache(
     async (
@@ -355,7 +250,7 @@ export const fetchWebMailThreadDetail = cache(
                 .from(threads)
                 .innerJoin(messages, eq(messages.threadId, threads.id))
                 .where(eq(threads.id, threadId))
-                .orderBy(desc(sql`coalesce(${messages.date}, ${messages.createdAt})`));
+                .orderBy(asc(sql`coalesce(${messages.date}, ${messages.createdAt})`));
 
 
             if (rows.length === 0) {
@@ -372,128 +267,372 @@ export const fetchWebMailThreadDetail = cache(
 );
 
 
-export const markAsRead = cache(
-    async (threadId: string, mailboxId: string, refresh = true) => {
-        if (!threadId || !mailboxId) return;
 
+export const markAsRead = cache(
+    async (
+        threadIds: string | string[],
+        mailboxId: string,
+        refresh = true
+    ) => {
+        const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
+            .map(String)
+            .filter(Boolean);
+
+        if (!ids.length || !mailboxId) return;
+
+        const now = new Date();
+        const rls = await rlsClient();
+
+        // 1) DB updates (one trip)
+        await rls(async (tx) => {
+            // Mark all messages in THESE threads (for THIS mailbox) as seen
+            await tx
+                .update(messages)
+                .set({ seen: true, updatedAt: now })
+                .where(and(inArray(messages.threadId, ids), eq(messages.mailboxId, mailboxId)));
+
+            // Set unreadCount -> 0 for each mailboxThreads row
+            await tx
+                .update(mailboxThreads)
+                .set({ unreadCount: 0, updatedAt: now })
+                .where(and(inArray(mailboxThreads.threadId, ids), eq(mailboxThreads.mailboxId, mailboxId)));
+        });
+
+        // 2) UI refresh (once)
+        if (refresh) {
+            revalidatePath("/mail");
+        }
+
+        // 3) Side effects: IMAP flags + search refresh (per-thread)
+        const { smtpQueue, searchIngestQueue } = await getRedis();
+
+        await Promise.all(
+            ids.map((threadId) =>
+                smtpQueue.add(
+                    "mail:set-flags",
+                    { threadId, mailboxId, op: "read" },
+                    {
+                        attempts: 3,
+                        backoff: { type: "exponential", delay: 1500 },
+                        removeOnComplete: true,
+                        removeOnFail: false,
+                    }
+                )
+            )
+        );
+
+        await Promise.all(
+            ids.map((threadId) =>
+                searchIngestQueue.add(
+                    "refresh-thread",
+                    { threadId },
+                    {
+                        jobId: `refresh-${threadId}`, // collapse dupes
+                        removeOnComplete: true,
+                        removeOnFail: false,
+                        attempts: 3,
+                        backoff: { type: "exponential", delay: 1500 },
+                    }
+                )
+            )
+        );
+    }
+);
+
+
+// export const markAsRead = cache(
+//     async (threadId: string, mailboxId: string, refresh = true) => {
+//         if (!threadId || !mailboxId) return;
+//
+//         const rls = await rlsClient();
+//
+//         await rls(async (tx) => {
+//             // mark all messages in THIS mailbox for this thread as seen
+//             await tx
+//                 .update(messages)
+//                 .set({ seen: true, updatedAt: new Date() })
+//                 .where(and(eq(messages.threadId, threadId), eq(messages.mailboxId, mailboxId)));
+//
+//             // set unreadCount → 0 in the per-mailbox projection row
+//             await tx
+//                 .update(mailboxThreads) // <— use your new table
+//                 .set({ unreadCount: 0, updatedAt: new Date() })
+//                 .where(and(eq(mailboxThreads.threadId, threadId), eq(mailboxThreads.mailboxId, mailboxId)));
+//         });
+//
+//         if (refresh) {
+//             revalidatePath("/mail");
+//         }
+//
+//         const { smtpQueue, searchIngestQueue } = await getRedis();
+//         await smtpQueue.add(
+//             "mail:set-flags",
+//             {
+//                 threadId,
+//                 mailboxId,
+//                 op: "read",
+//             },
+//             {
+//                 attempts: 3,
+//                 backoff: { type: "exponential", delay: 1500 },
+//                 removeOnComplete: true,
+//                 removeOnFail: false,
+//             }
+//         );
+//
+//         await searchIngestQueue.add("refresh-thread", { threadId: threadId }, {
+//             jobId: `refresh-${threadId}`,    // collapses duplicates
+//             removeOnComplete: true,
+//             removeOnFail: false,
+//             attempts: 3,
+//             backoff: { type: "exponential", delay: 1500 },
+//         });
+//     }
+// );
+
+
+// export const markAsUnread = cache(
+//     async (threadId: string, mailboxId: string) => {
+//         if (!threadId || !mailboxId) return;
+//
+//         const rls = await rlsClient();
+//
+//         await rls(async (tx) => {
+//             // 1️⃣ Mark only messages in this mailbox as unread
+//             await tx
+//                 .update(messages)
+//                 .set({ seen: false, updatedAt: new Date() })
+//                 .where(and(eq(messages.threadId, threadId), eq(messages.mailboxId, mailboxId)));
+//
+//             // 2️⃣ Recalculate unread count for this mailbox/thread combo
+//             const [{ count }] = await tx
+//                 .select({ count: sql<number>`count(*)` })
+//                 .from(messages)
+//                 .where(
+//                     and(
+//                         eq(messages.threadId, threadId),
+//                         eq(messages.mailboxId, mailboxId),
+//                         eq(messages.seen, false)
+//                     )
+//                 );
+//
+//             await tx
+//                 .update(mailboxThreads)
+//                 .set({
+//                     unreadCount: count ?? 1, // fallback to 1 if uncertain
+//                     updatedAt: new Date(),
+//                 })
+//                 .where(and(eq(mailboxThreads.threadId, threadId), eq(mailboxThreads.mailboxId, mailboxId)));
+//         });
+//
+//         // 3️⃣ Queue IMAP flag update job
+//         const { smtpQueue, searchIngestQueue } = await getRedis();
+//         await smtpQueue.add(
+//             "mail:set-flags",
+//             {
+//                 threadId,
+//                 mailboxId,
+//                 op: "unread",
+//             },
+//             {
+//                 attempts: 3,
+//                 backoff: { type: "exponential", delay: 1500 },
+//                 removeOnComplete: true,
+//                 removeOnFail: false,
+//             }
+//         );
+//
+//         await searchIngestQueue.add("refresh-thread", { threadId: threadId }, {
+//             jobId: `refresh-${threadId}`,    // collapses duplicates
+//             removeOnComplete: true,
+//             removeOnFail: false,
+//             attempts: 3,
+//             backoff: { type: "exponential", delay: 1500 },
+//         });
+//
+//         // 4️⃣ Trigger UI refresh
+//         revalidatePath("/mail");
+//     }
+// );
+
+
+export const markAsUnread = cache(
+    async (threadIds: string | string[], mailboxId: string, refresh: boolean) => {
+        const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
+            .map(String)
+            .filter(Boolean);
+
+        if (!ids.length || !mailboxId) return;
+
+        const now = new Date();
         const rls = await rlsClient();
 
         await rls(async (tx) => {
-            // mark all messages in THIS mailbox for this thread as seen
+            // 1) Flip seen=false for all messages in THESE threads for THIS mailbox
             await tx
                 .update(messages)
-                .set({ seen: true, updatedAt: new Date() })
-                .where(and(eq(messages.threadId, threadId), eq(messages.mailboxId, mailboxId)));
+                .set({ seen: false, updatedAt: now })
+                .where(and(inArray(messages.threadId, ids), eq(messages.mailboxId, mailboxId)));
 
-            // set unreadCount → 0 in the per-mailbox projection row
-            await tx
-                .update(mailboxThreads) // <— use your new table
-                .set({ unreadCount: 0, updatedAt: new Date() })
-                .where(and(eq(mailboxThreads.threadId, threadId), eq(mailboxThreads.mailboxId, mailboxId)));
+            // 2) Recompute unread counts per thread (grouped)
+            const grouped = await tx
+                .select({
+                    threadId: messages.threadId,
+                    count: sql<number>`count(*)`,
+                })
+                .from(messages)
+                .where(
+                    and(
+                        inArray(messages.threadId, ids),
+                        eq(messages.mailboxId, mailboxId),
+                        eq(messages.seen, false)
+                    )
+                )
+                .groupBy(messages.threadId);
+
+            const countMap = new Map<string, number>();
+            for (const g of grouped) countMap.set(String(g.threadId), Number(g.count));
+
+            // 3) Update mailboxThreads per thread with recomputed unreadCount
+            for (const tid of ids) {
+                const unread = countMap.get(tid);
+                await tx
+                    .update(mailboxThreads)
+                    .set({
+                        unreadCount: unread ?? 1, // fallback to 1 so it surfaces in UI if uncertain
+                        updatedAt: now,
+                    })
+                    .where(and(eq(mailboxThreads.threadId, tid), eq(mailboxThreads.mailboxId, mailboxId)));
+            }
         });
 
         if (refresh) {
             revalidatePath("/mail");
         }
 
-        const { smtpQueue } = await getRedis();
-        await smtpQueue.add(
-            "mail:set-flags",
-            {
-                threadId,
-                mailboxId,
-                op: "read",
-            },
-            {
-                attempts: 3,
-                backoff: { type: "exponential", delay: 1500 },
-                removeOnComplete: true,
-                removeOnFail: false,
-            }
-        );
-    }
-);
+        // 4) IMAP + search refresh (per thread)
+        const { smtpQueue, searchIngestQueue } = await getRedis();
 
-
-export const markAsUnread = cache(
-    async (threadId: string, mailboxId: string) => {
-        if (!threadId || !mailboxId) return;
-
-        const rls = await rlsClient();
-
-        await rls(async (tx) => {
-            // 1️⃣ Mark only messages in this mailbox as unread
-            await tx
-                .update(messages)
-                .set({ seen: false, updatedAt: new Date() })
-                .where(and(eq(messages.threadId, threadId), eq(messages.mailboxId, mailboxId)));
-
-            // 2️⃣ Recalculate unread count for this mailbox/thread combo
-            const [{ count }] = await tx
-                .select({ count: sql<number>`count(*)` })
-                .from(messages)
-                .where(
-                    and(
-                        eq(messages.threadId, threadId),
-                        eq(messages.mailboxId, mailboxId),
-                        eq(messages.seen, false)
-                    )
-                );
-
-            await tx
-                .update(mailboxThreads)
-                .set({
-                    unreadCount: count ?? 1, // fallback to 1 if uncertain
-                    updatedAt: new Date(),
-                })
-                .where(and(eq(mailboxThreads.threadId, threadId), eq(mailboxThreads.mailboxId, mailboxId)));
-        });
-
-        // 3️⃣ Queue IMAP flag update job
-        const { smtpQueue } = await getRedis();
-        await smtpQueue.add(
-            "mail:set-flags",
-            {
-                threadId,
-                mailboxId,
-                op: "unread",
-            },
-            {
-                attempts: 3,
-                backoff: { type: "exponential", delay: 1500 },
-                removeOnComplete: true,
-                removeOnFail: false,
-            }
+        await Promise.all(
+            ids.map((threadId) =>
+                smtpQueue.add(
+                    "mail:set-flags",
+                    { threadId, mailboxId, op: "unread" },
+                    {
+                        attempts: 3,
+                        backoff: { type: "exponential", delay: 1500 },
+                        removeOnComplete: true,
+                        removeOnFail: false,
+                    }
+                )
+            )
         );
 
-        // 4️⃣ Trigger UI refresh
-        revalidatePath("/mail");
+        await Promise.all(
+            ids.map((threadId) =>
+                searchIngestQueue.add(
+                    "refresh-thread",
+                    { threadId },
+                    {
+                        jobId: `refresh-${threadId}`, // collapse dupes across callers
+                        removeOnComplete: true,
+                        removeOnFail: false,
+                        attempts: 3,
+                        backoff: { type: "exponential", delay: 1500 },
+                    }
+                )
+            )
+        );
+
+        // if (refresh) {
+        //     revalidatePath("/mail");
+        // }
     }
 );
 
 
 
-export const moveToTrash = async (threadId: string, mailboxId: string) => {
-    if (!threadId || !mailboxId) return;
+// export const moveToTrash = async (threadId: string, mailboxId: string) => {
+//     if (!threadId || !mailboxId) return;
+//
+//     const { smtpQueue, searchIngestQueue } = await getRedis();
+//
+//     await smtpQueue.add(
+//         "mail:move",
+//         {
+//             threadId,
+//             mailboxId,
+//             op: "trash",
+//         },
+//         {
+//             attempts: 3,
+//             backoff: { type: "exponential", delay: 1500 },
+//             removeOnComplete: true,
+//             removeOnFail: false,
+//         }
+//     );
+//
+//     await searchIngestQueue.add("refresh-thread", { threadId: threadId }, {
+//         jobId: `refresh-${threadId}`,    // collapses duplicates
+//         removeOnComplete: true,
+//         removeOnFail: false,
+//         attempts: 3,
+//         backoff: { type: "exponential", delay: 1500 },
+//     });
+//
+//     revalidatePath("/mail");
+// };
 
-    const { smtpQueue } = await getRedis();
+export const moveToTrash = async (
+    threadIds: string | string[],
+    mailboxId: string,
+    refresh: boolean,
+    messageId?: string,
+) => {
+    const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
+        .map(String)
+        .filter(Boolean);
 
-    await smtpQueue.add(
-        "mail:move",
-        {
-            threadId,
-            mailboxId,
-            op: "trash",
-        },
-        {
-            attempts: 3,
-            backoff: { type: "exponential", delay: 1500 },
-            removeOnComplete: true,
-            removeOnFail: false,
-        }
+    if (!ids.length || !mailboxId) return;
+
+    const { smtpQueue, searchIngestQueue } = await getRedis();
+
+    // 1) Queue IMAP move for each thread
+    await Promise.all(
+        ids.map((threadId) =>
+            smtpQueue.add(
+                "mail:move",
+                { threadId, mailboxId, op: "trash", messageId },
+                {
+                    attempts: 3,
+                    backoff: { type: "exponential", delay: 1500 },
+                    removeOnComplete: true,
+                    removeOnFail: false,
+                }
+            )
+        )
     );
 
-    revalidatePath("/mail");
+    // 2) Refresh search docs for each thread (collapse dupes via jobId)
+    await Promise.all(
+        ids.map((threadId) =>
+            searchIngestQueue.add(
+                "refresh-thread",
+                { threadId },
+                {
+                    jobId: `refresh-${threadId}`,
+                    removeOnComplete: true,
+                    removeOnFail: false,
+                    attempts: 3,
+                    backoff: { type: "exponential", delay: 1500 },
+                }
+            )
+        )
+    );
+
+    if (refresh) {
+        revalidatePath("/mail");
+    }
 };
 
 
@@ -503,7 +642,7 @@ export const moveToTrash = async (threadId: string, mailboxId: string) => {
 export const toggleStar = async (threadId: string, mailboxId: string, starred: boolean) => {
     if (!threadId || !mailboxId) return;
 
-    const { smtpQueue } = await getRedis();
+    const { smtpQueue, searchIngestQueue } = await getRedis();
 
     await smtpQueue.add(
         "mail:set-flags",
@@ -519,6 +658,14 @@ export const toggleStar = async (threadId: string, mailboxId: string, starred: b
             removeOnFail: true,
         }
     );
+
+    await searchIngestQueue.add("refresh-thread", { threadId: threadId }, {
+        jobId: `refresh-${threadId}`,    // collapses duplicates
+        removeOnComplete: true,
+        removeOnFail: false,
+        attempts: 3,
+        backoff: { type: "exponential", delay: 1500 },
+    });
 
     revalidatePath("/mail");
 };

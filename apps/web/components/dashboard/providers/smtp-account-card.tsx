@@ -9,8 +9,7 @@ import NewSmtpAccountForm from "@/components/dashboard/providers/new-smtp-accoun
 import { cn, parseSecret } from "@/lib/utils";
 import { Lock, Mail, Pencil, Play, ShieldCheck, Trash2 } from "lucide-react";
 import { ActionIcon, Button } from "@mantine/core";
-import { Toaster, toast } from "sonner";
-import { useAppearance } from "@/components/providers/appearance-provider";
+import { toast } from "sonner";
 import IsVerifiedStatus from "@/components/dashboard/providers/is-verified-status";
 import { VerifyResult } from "@providers";
 
@@ -122,8 +121,6 @@ function SmtpAccountCard({
 		}
 	};
 
-	const { mode } = useAppearance();
-
 	return (
 		<>
 			<div
@@ -132,7 +129,6 @@ function SmtpAccountCard({
 					"rounded-lg border text-brand-foreground p-5 bg-card border-border",
 				)}
 			>
-				<Toaster theme={mode} expand={true} />
 				<div className="flex items-start justify-between gap-3">
 					<div>
 						<div className="text-base font-medium">

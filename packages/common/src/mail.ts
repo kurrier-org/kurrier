@@ -3,10 +3,7 @@ import {
     db,
     identities,
     mailboxes, mailboxThreads,
-    MessageEntity,
-    messages,
-    threadsList,
-    ThreadsListInsertSchema
+    messages
 } from "@db";
 import {and, desc, eq, sql} from "drizzle-orm";
 import {AddressObjectJSON} from "@schema";

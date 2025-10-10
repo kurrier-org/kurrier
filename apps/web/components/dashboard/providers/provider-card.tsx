@@ -23,8 +23,6 @@ import { VerifyResult } from "@providers";
 import { toast } from "sonner";
 import { parseSecret } from "@/lib/utils";
 import IsVerifiedStatus from "@/components/dashboard/providers/is-verified-status";
-import { Toaster } from "@/components/ui/sonner";
-import { useAppearance } from "@/components/providers/appearance-provider";
 
 export default function ProviderCard({
 	spec,
@@ -154,11 +152,8 @@ export default function ProviderCard({
 		}
 	};
 
-	const { mode } = useAppearance();
-
 	return (
 		<div>
-			<Toaster theme={mode} expand={true} />
 			<Card className="shadow-none relative">
 				<CardHeader className="gap-3">
 					<div className="flex flex-col gap-3">

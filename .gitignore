@@ -45,4 +45,4 @@ db/volumes
 apps/worker/dist
 .output
 .nitro
-db/local
+db/local*

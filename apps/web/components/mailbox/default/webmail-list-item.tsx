@@ -12,7 +12,6 @@ import { useRouter } from "next/navigation";
 import { MailboxEntity } from "@db";
 import {
     FetchMailboxThreadsResult,
-    FetchWebMailResult,
     markAsRead,
     markAsUnread,
     moveToTrash,
@@ -21,12 +20,13 @@ import {
 import {IconStar, IconStarFilled} from "@tabler/icons-react";
 
 type Props = {
-    // threadItem: FetchWebMailResult[number];
     mailboxThreadItem: FetchMailboxThreadsResult[number];
     activeMailbox: MailboxEntity;
     identityPublicId: string;
 };
 import { Temporal } from "@js-temporal/polyfill";
+import {useDynamicContext} from "@/hooks/use-dynamic-context";
+import { toast } from "sonner";
 
 
 export default function WebmailListItem({
@@ -78,9 +78,6 @@ export default function WebmailListItem({
 
     const date = new Date(mailboxThreadItem.lastActivityAt || Date.now());
     const dateLabel = formatDateLabel(date)
-    // const dateLabel = isNaN(date.getTime())
-    //     ? ""
-    //     : date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 
     const openThread = () => {
         router.push(
@@ -129,7 +126,11 @@ export default function WebmailListItem({
     const isUnread = mailboxThreadItem.unreadCount > 0;
     const isRead = mailboxThreadItem.unreadCount === 0;
 
-    return (
+    const {state, setState} = useDynamicContext<
+        { selectedThreadIds: Set<string> }
+    >()
+
+    return <>
         <li
             className={[
                 "relative group grid cursor-pointer", // relative → for absolute overlay
@@ -143,6 +144,16 @@ export default function WebmailListItem({
             <div className="flex items-center">
                 <input
                     type="checkbox"
+                    onChange={(e) => {
+                        const newSet = new Set(state?.selectedThreadIds)
+                        if (e.target.checked) {
+                            newSet.add(mailboxThreadItem.threadId)
+                        } else {
+                            newSet.delete(mailboxThreadItem.threadId)
+                        }
+                        setState({selectedThreadIds: newSet})
+                    }}
+                    checked={state?.selectedThreadIds?.has(mailboxThreadItem.threadId)}
                     aria-label={`Select thread ${mailboxThreadItem.subject}`}
                     className="h-4 w-4 rounded border-muted-foreground/40"
                     onClick={(e) => e.stopPropagation()}
@@ -167,7 +178,6 @@ export default function WebmailListItem({
                 )}
             </div>
 
-            {/* Subject + snippet + attachments */}
             <div onClick={openThread} className="flex min-w-0 items-center gap-1 pr-2">
                 <span className="truncate">{mailboxThreadItem.subject}</span>
                 <span className="mx-1 text-muted-foreground">–</span>
@@ -200,20 +210,22 @@ export default function WebmailListItem({
                 onClick={(e) => e.stopPropagation()}
             >
                 {canMarkAsUnread && <button onClick={async () => {
-                    return await markAsUnread(mailboxThreadItem.threadId, activeMailbox.id)
+                    return await markAsUnread(mailboxThreadItem.threadId, activeMailbox.id, true)
                 }} className="rounded p-1 hover:bg-muted" title="Mark as unread">
                     <Mail className="h-4 w-4" />
                 </button>}
                 {canMarkAsRead && <button onClick={() => markAsRead(mailboxThreadItem.threadId, activeMailbox.id)} className="rounded p-1 hover:bg-muted" title="Mark as read">
                     <MailOpen className="h-4 w-4" />
                 </button>}
-                <button onClick={() => moveToTrash(mailboxThreadItem.threadId, activeMailbox.id)} className="rounded p-1 hover:bg-muted" title="Delete">
+                <button onClick={async () => {
+                    await moveToTrash(mailboxThreadItem.threadId, activeMailbox.id, true)
+                    toast.success("Messages moved to Trash", {
+                        position: "bottom-left"
+                    });
+                }} className="rounded p-1 hover:bg-muted" title="Delete">
                     <Trash2 className="h-4 w-4" />
                 </button>
-                {/*<button className="rounded p-1 hover:bg-muted" title="More">*/}
-                {/*    <MoreHorizontal className="h-4 w-4" />*/}
-                {/*</button>*/}
             </div>
         </li>
-    );
+    </>
 }

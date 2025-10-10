@@ -36,14 +36,13 @@ import {
 	FetchDecryptedSecretsResult,
 	FetchUserIdentitiesResult,
 	testSendingEmail,
-	triggerWorker,
 	verifyDomainIdentity,
 } from "@/lib/actions/dashboard";
 import ProviderBadge from "@/components/dashboard/identities/provider-badge";
 import IsVerifiedStatus from "@/components/dashboard/providers/is-verified-status";
 import { IconCheck, IconCopy, IconSend } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import AddDomainIdentityForm from "@/components/dashboard/identities/add-domain-identity-form";
 import { FormState, IdentityStatusMeta, Providers } from "@schema";
 import EmailIdentityStatus from "@/components/dashboard/identities/email-identity-status";
@@ -483,11 +482,9 @@ export default function MailIdentities({
 
 	const [verifyingDomainIdentity, setVerifyingDomainIdentity] = useState(false);
 
-	const { mode } = useAppearance();
 
 	return (
 		<Container variant="wide">
-			<Toaster theme={mode} expand={true} />
 
 			<div className="flex items-center justify-between my-4">
 				<h1 className="text-xl font-bold text-foreground">Mail Identities</h1>

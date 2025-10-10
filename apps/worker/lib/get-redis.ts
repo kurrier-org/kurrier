@@ -26,11 +26,15 @@ const sendMailQueue = new Queue("send-mail", redisConnection);
 const sendMailEvents = new QueueEvents("send-mail", redisConnection);
 
 
+const searchIngestQueue = new Queue("search-ingest", redisConnection);
+const searchIngestEvents = new QueueEvents("search-ingest", redisConnection);
+
 export async function getRedis() {
 
     await Promise.all([
         smtpEvents.waitUntilReady(),
         sendMailEvents.waitUntilReady(),
+        searchIngestEvents.waitUntilReady()
     ]);
     return {
         connection: redis,
@@ -38,5 +42,7 @@ export async function getRedis() {
         smtpEvents,
         sendMailQueue,
         sendMailEvents,
+        searchIngestQueue,
+        searchIngestEvents
     };
 }
