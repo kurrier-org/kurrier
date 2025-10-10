@@ -15,6 +15,7 @@
 		"@mantine/hooks": "^8.3.1",
 		"@mantine/modals": "^8.3.1",
 		"@mantine/tiptap": "^8.3.1",
+		"@radix-ui/react-alert-dialog": "^1.1.15",
 		"@radix-ui/react-avatar": "^1.1.10",
 		"@radix-ui/react-collapsible": "^1.1.12",
 		"@radix-ui/react-dialog": "^1.1.15",

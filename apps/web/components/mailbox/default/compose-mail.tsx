@@ -76,9 +76,9 @@ export default function ComposeMail({publicConfig}: {publicConfig: PublicConfig}
                             <IconBtn label={minimized ? "Restore" : "Minimize"} onClick={() => setMinimized(v => !v)}>
                                 <Minus className="h-4 w-4" />
                             </IconBtn>
-                            <IconBtn label={expanded ? "Restore size" : "Expand"} onClick={() => setExpanded(v => !v)}>
-                                <Maximize2 className="h-4 w-4" />
-                            </IconBtn>
+                            {/*<IconBtn label={expanded ? "Restore size" : "Expand"} onClick={() => setExpanded(v => !v)}>*/}
+                            {/*    <Maximize2 className="h-4 w-4" />*/}
+                            {/*</IconBtn>*/}
                             <IconBtn label="Close" onClick={handleClose}>
                                 <X className="h-4 w-4" />
                             </IconBtn>

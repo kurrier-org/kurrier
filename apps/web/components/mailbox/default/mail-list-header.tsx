@@ -2,16 +2,24 @@ import React, { useRef, useEffect, useState } from "react";
 import { MailOpen, RotateCw, Trash2 } from "lucide-react";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import {
+    deleteForever,
     deltaFetch,
     FetchMailboxThreadsResult,
     markAsRead,
     moveToTrash,
     revalidateMailbox,
 } from "@/lib/actions/mailbox";
-import { ActionIcon, Tooltip } from "@mantine/core";
+import {ActionIcon, Button, Tooltip} from "@mantine/core";
 import type { MailboxEntity } from "@db";
 import { toast } from "sonner";
 import clsx from "clsx";
+import {
+    AlertDialog, AlertDialogAction, AlertDialogCancel,
+    AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 
 function MailListHeader({ mailboxThreads }: { mailboxThreads: FetchMailboxThreadsResult }) {
     const { state, setState } = useDynamicContext<{
@@ -22,6 +30,7 @@ function MailListHeader({ mailboxThreads }: { mailboxThreads: FetchMailboxThread
 
     const identityIdRef = useRef<string | undefined>(state?.activeMailbox?.identityId);
     const mailboxIdRef  = useRef<string | undefined>(state?.activeMailbox?.id);
+    const mailboxKind  = useRef<string | undefined>(state?.activeMailbox?.kind);
     useEffect(() => {
         if (state?.activeMailbox?.identityId) identityIdRef.current = state.activeMailbox.identityId;
         if (state?.activeMailbox?.id)         mailboxIdRef.current  = state.activeMailbox.id;
@@ -50,13 +59,28 @@ function MailListHeader({ mailboxThreads }: { mailboxThreads: FetchMailboxThread
     };
 
     const deleteThreads = async () => {
+        if (mailboxKind.current === "trash"){
+            await removeTrash()
+            return
+        }
         await moveToTrash(Array.from(state?.selectedThreadIds ?? []), String(mailboxIdRef.current), true);
         toast.success("Messages moved to Trash", { position: "bottom-left" });
     };
 
-    return (
+    const removeTrash = async () => {
+        await deleteForever(Array.from(state?.selectedThreadIds ?? []), String(mailboxIdRef.current), true);
+        toast.success("Thread deleted forever", { position: "bottom-left" });
+    };
+
+    const emptyTrash = async () => {
+        await deleteForever(null, String(mailboxIdRef.current), true, { emptyAll: true });
+        toast.success("Trash removed successfully", { position: "bottom-left" });
+    };
+
+    return <>
         <div className="sticky top-0 z-10 flex items-center gap-2 bg-background/95 px-3 py-2 backdrop-blur rounded-t-2xl">
             {/* Select all */}
+
             <input
                 type="checkbox"
                 onChange={(e) => {
@@ -73,9 +97,7 @@ function MailListHeader({ mailboxThreads }: { mailboxThreads: FetchMailboxThread
                 className="h-4 w-4 rounded border-muted-foreground/40"
             />
 
-            {/* Fixed-width action slot to prevent layout shift */}
-            <div className="relative h-7 min-w-[140px]"> {/* keep width stable */}
-                {/* Layer 1: Reload (shown when nothing selected) */}
+            <div className="relative h-7 min-w-[140px]">
                 <div
                     className={clsx(
                         "absolute inset-0 flex items-center gap-2 transition-opacity",
@@ -121,10 +143,35 @@ function MailListHeader({ mailboxThreads }: { mailboxThreads: FetchMailboxThread
                 </div>
             </div>
 
+
             {/* Spacer */}
             <div className="flex-1" />
         </div>
-    );
+
+
+
+        {mailboxKind.current === "trash" && <div className={"flex p-2 text-sm text-muted-foreground justify-center mb-3 bg-neutral-100 mx-2 rounded items-center"}>
+            <span>Messages that have been in the Trash for more than 30 days will be deleted automatically.</span>
+            <AlertDialog>
+                <AlertDialogTrigger asChild={true} className={"-mx-2"}>
+                    <Button variant={"transparent"}>Empty Bin Now</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete your account
+                            and remove your data from our servers.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={emptyTrash}>Continue</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>}
+    </>
 }
 
 export default MailListHeader;

@@ -41,10 +41,10 @@ export default function WebmailList({ mailboxThreads, activeMailbox, identityPub
                         <span className={"lowercase"}>{activeMailbox.name}</span>
                     </div>
                 ) : (
-                    <div className="rounded-xl border bg-background/50">
+                    <div className="rounded-xl border bg-background/50 z-[50]">
                         <MailListHeader mailboxThreads={mailboxThreads} />
 
-                        <ul role="list" className="divide-y">
+                        <ul role="list" className="divide-y bg-white rounded-4xl">
                             {mailboxThreads.map((mailboxThreadItem) => (
                                 <WebmailListItem key={mailboxThreadItem.threadId+mailboxThreadItem.mailboxId}
                                                  mailboxThreadItem={mailboxThreadItem}

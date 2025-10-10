@@ -735,3 +735,114 @@ export async function fetchMailboxThreadsList(
 
     return { threads: rows, missing };
 }
+
+
+
+// export async function deleteForever(
+//     threadIds: string | string[],
+//     mailboxId: string,
+//     refresh: boolean = true
+// ) {
+//     const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
+//         .map(String)
+//         .filter(Boolean);
+//
+//     if (!ids.length || !mailboxId) return;
+//
+//     const { smtpQueue, searchIngestQueue } = await getRedis();
+//
+//     await Promise.all(
+//         ids.map(async (threadId) => {
+//             // IMAP + DB hard-delete
+//             await smtpQueue.add(
+//                 "mail:delete-permanent",
+//                 { threadId, mailboxId },
+//                 {
+//                     attempts: 3,
+//                     backoff: { type: "exponential", delay: 1500 },
+//                     removeOnComplete: true,
+//                     removeOnFail: true,
+//                 }
+//             );
+//
+//             // Keep Typesense fresh (collapse dupes by jobId)
+//             await searchIngestQueue.add(
+//                 "refresh-thread",
+//                 { threadId },
+//                 {
+//                     jobId: `refresh-${threadId}`,
+//                     removeOnComplete: true,
+//                     removeOnFail: false,
+//                     attempts: 3,
+//                     backoff: { type: "exponential", delay: 1500 },
+//                 }
+//             );
+//         })
+//     );
+//
+//     if (refresh) revalidatePath("/mail");
+// }
+
+
+
+
+export async function deleteForever(
+    threadIds: string | string[] | null,
+    mailboxId: string,
+    refresh = true,
+    opts?: { emptyAll?: boolean }   // NEW
+) {
+    const { emptyAll = false } = opts ?? {};
+    const { smtpQueue, searchIngestQueue } = await getRedis();
+
+    if (emptyAll) {
+        await smtpQueue.add(
+            "mail:delete-permanent",
+            { mailboxId, emptyAll: true },
+            {
+                attempts: 3,
+                backoff: { type: "exponential", delay: 1500 },
+                removeOnComplete: true,
+                removeOnFail: true,
+            }
+        );
+        // no per-thread refresh here; your rebuild/refresh-thread will catch up
+        if (refresh) revalidatePath("/mail");
+        return;
+    }
+
+    const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
+        .filter(Boolean)
+        .map(String);
+
+    if (!ids.length || !mailboxId) return;
+
+    await Promise.all(
+        ids.map(async (threadId) => {
+            await smtpQueue.add(
+                "mail:delete-permanent",
+                { threadId, mailboxId },
+                {
+                    attempts: 3,
+                    backoff: { type: "exponential", delay: 1500 },
+                    removeOnComplete: true,
+                    removeOnFail: true,
+                }
+            );
+
+            await searchIngestQueue.add(
+                "refresh-thread",
+                { threadId },
+                {
+                    jobId: `refresh-${threadId}`,
+                    removeOnComplete: true,
+                    removeOnFail: false,
+                    attempts: 3,
+                    backoff: { type: "exponential", delay: 1500 },
+                }
+            );
+        })
+    );
+
+    if (refresh) revalidatePath("/mail");
+}

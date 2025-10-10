@@ -127,7 +127,7 @@ function EmailRenderer({
         const { data } = await supabase
             .storage
             .from('attachments')
-            .createSignedUrl(message.rawStorageKey, 3600, {
+            .createSignedUrl(String(message.rawStorageKey), 3600, {
                 download: true,
             })
         if (data?.signedUrl) {
@@ -144,7 +144,7 @@ function EmailRenderer({
             supabase
                 .storage
                 .from('attachments')
-                .download(message.rawStorageKey)
+                .download(String(message.rawStorageKey))
                 .then(({ data, error }) => {
                     if (error) {
                         console.error("Error downloading original message:", error);
@@ -203,7 +203,7 @@ function EmailRenderer({
                             From
                         </div>
                         {/*<div className="px-3 py-2">Google Payments &lt;payments-noreply@google.com&gt;</div>*/}
-                        <div className="px-3 py-2">{message.headersJson.from.text}</div>
+                        <div className="px-3 py-2">{String(message?.headersJson?.from?.text)}</div>
                     </div>
 
                     <div className="grid grid-cols-[160px_1fr] border-b">
@@ -211,7 +211,7 @@ function EmailRenderer({
                             To
                         </div>
                         {/*<div className="px-3 py-2">suisse@dinebot.io</div>*/}
-                        <div className="px-3 py-2">{message.headersJson.to.text}</div>
+                        <div className="px-3 py-2">{String(message?.headersJson?.to?.text)}</div>
                     </div>
 
                     <div className="grid grid-cols-[160px_1fr] border-b">
@@ -220,7 +220,7 @@ function EmailRenderer({
                         </div>
                         <div className="px-3 py-2">
                             {/*Google Workspace: Your invoice is available for dinebot.io*/}
-                            {message.headersJson.subject}
+                            {message?.headersJson?.subject}
                         </div>
                     </div>
 

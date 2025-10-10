@@ -9,6 +9,7 @@ import {mailSetFlags} from "../../lib/imap/imap-flags";
 import {moveMail} from "../../lib/imap/imap-move";
 
 import { getRedis } from "../../lib/get-redis";
+import {deleteMail} from "../../lib/imap/imap-delete";
 
 export default defineNitroPlugin(async (nitroApp) => {
 	console.log("**********************SMTP-WORKER***************************");
@@ -42,6 +43,7 @@ export default defineNitroPlugin(async (nitroApp) => {
                     backoff: { type: "exponential", delay: 1500 },
                 });
 			} else if (job.name === "mail:delete-permanent") {
+                await deleteMail(job.data, imapInstances);
 			} else if (job.name === "smtp:append:sent") {
 			} else if (job.name === "backfill") {
 				const identityId = job.data.identityId;

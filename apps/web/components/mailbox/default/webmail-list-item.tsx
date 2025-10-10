@@ -199,13 +199,12 @@ export default function WebmailListItem({
                 </time>
             </div>
 
-            {/* ABSOLUTE OVERLAY ACTIONS — no layout shift, fade in on hover */}
             <div
                 className={[
                     "pointer-events-none absolute inset-y-0 right-3 flex items-center justify-end gap-1 bg-muted",
                     `w-[${ACTIONS_W}]`,
                     "opacity-0 transition-opacity duration-150",
-                    "group-hover:opacity-100 group-hover:pointer-events-auto",
+                    "group-hover:opacity-100 group-hover:pointer-events-auto px-3 rounded-l-4xl",
                 ].join(" ")}
                 onClick={(e) => e.stopPropagation()}
             >
