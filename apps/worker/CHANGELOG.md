@@ -1,5 +1,13 @@
 # @kurrier/worker
 
+## 0.1.9
+
+### Patch Changes
+
+- [#107](https://github.com/kurrier-org/kurrier/pull/107) [`9880651`](https://github.com/kurrier-org/kurrier/commit/9880651b4beae1b7046fafb14aafc762c2c6e6e4) Thanks [@krokhale](https://github.com/krokhale)! - Adding UI/UX change for the header for the webmail. Support for more SMTP operations.
+
+- [#107](https://github.com/kurrier-org/kurrier/pull/107) [`9880651`](https://github.com/kurrier-org/kurrier/commit/9880651b4beae1b7046fafb14aafc762c2c6e6e4) Thanks [@krokhale](https://github.com/krokhale)! - Added support for search ingest queue for messages
+
 ## 0.1.8
 
 ### Patch Changes
