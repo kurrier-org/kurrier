@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.35
+
+### Patch Changes
+
+- [#115](https://github.com/kurrier-org/kurrier/pull/115) [`3d6ff76`](https://github.com/kurrier-org/kurrier/commit/3d6ff76c71b65a9276eecee5813ada8c5e5d20b6) Thanks [@krokhale](https://github.com/krokhale)! - Added support for emptying trash and individuals threads.
+
 ## 0.0.34
 
 ### Patch Changes
