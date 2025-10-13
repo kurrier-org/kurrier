@@ -68,7 +68,6 @@ services:
 
   redis:
     image: redis:latest
-    restart: unless-stopped
     command: [ "redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}" ]
     healthcheck:
       test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "PING" ]
@@ -94,9 +93,10 @@ services:
     environment:
       - TYPESENSE_API_KEY=${TYPESENSE_API_KEY}
 
+
   studio:
     container_name: supabase-studio
-    image: supabase/studio:latest
+    image: supabase/studio:2025.10.01-sha-8460121
     restart: unless-stopped
     healthcheck:
       test:
@@ -113,8 +113,12 @@ services:
       analytics:
         condition: service_healthy
     environment:
+      # Binds nestjs listener to both IPv4 and IPv6 network interfaces
+      HOSTNAME: "::"
+
       STUDIO_PG_META_URL: http://meta:8080
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PG_META_CRYPTO_KEY: ${PG_META_CRYPTO_KEY}
 
       DEFAULT_ORGANIZATION_NAME: ${STUDIO_DEFAULT_ORGANIZATION}
       DEFAULT_PROJECT_NAME: ${STUDIO_DEFAULT_PROJECT}
@@ -164,7 +168,7 @@ services:
 
   auth:
     container_name: supabase-auth
-    image: supabase/gotrue:v2.181.0-rc.5
+    image: supabase/gotrue:v2.180.0
     restart: unless-stopped
     healthcheck:
       test:
@@ -247,7 +251,7 @@ services:
 
   rest:
     container_name: supabase-rest
-    image: postgrest/postgrest:latest
+    image: postgrest/postgrest:v13.0.7
     restart: unless-stopped
     depends_on:
       db:
@@ -271,7 +275,7 @@ services:
   realtime:
     # This container name looks inconsistent but is correct because realtime constructs tenant id by parsing the subdomain
     container_name: realtime-dev.supabase-realtime
-    image: supabase/realtime:latest
+    image: supabase/realtime:v2.51.11
     restart: unless-stopped
     depends_on:
       db:
@@ -316,7 +320,7 @@ services:
   # To use S3 backed storage: docker compose -f docker-compose.yml -f docker-compose.s3.yml up
   storage:
     container_name: supabase-storage
-    image: supabase/storage-api:latest
+    image: supabase/storage-api:v1.28.0
     restart: unless-stopped
     volumes:
       - ./volumes/storage:/var/lib/storage:z
@@ -359,7 +363,7 @@ services:
 
   imgproxy:
     container_name: supabase-imgproxy
-    image: darthsim/imgproxy:latest
+    image: darthsim/imgproxy:v3.8.0
     restart: unless-stopped
     volumes:
       - ./volumes/storage:/var/lib/storage:z
@@ -381,7 +385,7 @@ services:
 
   meta:
     container_name: supabase-meta
-    image: supabase/postgres-meta:v0.91.0
+    image: supabase/postgres-meta:v0.91.6
     restart: unless-stopped
     depends_on:
       db:
@@ -396,10 +400,11 @@ services:
       PG_META_DB_NAME: ${POSTGRES_DB}
       PG_META_DB_USER: supabase_admin
       PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      CRYPTO_KEY: ${PG_META_CRYPTO_KEY}
 
   functions:
     container_name: supabase-edge-functions
-    image: supabase/edge-runtime:v1.69.12
+    image: supabase/edge-runtime:v1.69.6
     restart: unless-stopped
     volumes:
       - ./volumes/functions:/home/deno/functions:Z
@@ -423,7 +428,7 @@ services:
 
   analytics:
     container_name: supabase-analytics
-    image: supabase/logflare:latest
+    image: supabase/logflare:1.22.4
     restart: unless-stopped
     ports:
       - 4000:4000
@@ -472,7 +477,7 @@ services:
   # Comment out everything below this point if you are using an external Postgres database
   db:
     container_name: supabase-db
-    image: supabase/postgres:15.8.1.060
+    image: supabase/postgres:15.8.1.085
     restart: unless-stopped
     volumes:
       - ./volumes/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:Z
@@ -495,12 +500,12 @@ services:
     healthcheck:
       test:
         [
-        "CMD",
-        "pg_isready",
-        "-U",
-        "postgres",
-        "-h",
-        "localhost"
+          "CMD",
+          "pg_isready",
+          "-U",
+          "postgres",
+          "-h",
+          "localhost"
         ]
       interval: 5s
       timeout: 5s
@@ -518,6 +523,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXP: ${JWT_EXPIRY}
+      RLS_CLIENT_PASSWORD: ${RLS_CLIENT_PASSWORD}
     command:
       [
         "postgres",
@@ -526,6 +532,25 @@ services:
         "-c",
         "log_min_messages=fatal" # prevents Realtime polling queries from appearing in logs
       ]
+
+  db-bootstrap:
+    image: postgres:15
+    depends_on:
+      - db
+      - storage
+    environment:
+      PGHOST: db
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PGDATABASE: postgres
+      RLS_CLIENT_PASSWORD: ${RLS_CLIENT_PASSWORD}
+    volumes:
+      - ./init:/scripts
+    entrypoint: [ "/bin/bash", "/scripts/db-bootstrap.sh" ]
+    restart: "no"
 
   vector:
     container_name: supabase-vector
