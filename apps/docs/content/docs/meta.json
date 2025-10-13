@@ -1,8 +1,3 @@
 {
-  "pages": [
-    "index",
-    "installation",
-    "getting-started",
-    "providers"
-  ]
+	"pages": ["index", "installation", "getting-started", "providers"]
 }

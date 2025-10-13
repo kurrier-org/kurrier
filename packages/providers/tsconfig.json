@@ -7,8 +7,8 @@
 			"@schema/*": ["../../packages/schema/src/*"],
 			"@db": ["../../packages/db/src/index.ts"],
 			"@db/*": ["../../packages/db/src/*"],
-            "@common": ["../../packages/common/src/index.ts"],
-            "@common/*": ["../../packages/common/src/*"]
+			"@common": ["../../packages/common/src/index.ts"],
+			"@common/*": ["../../packages/common/src/*"]
 		}
 	},
 	"exclude": ["node_modules"]

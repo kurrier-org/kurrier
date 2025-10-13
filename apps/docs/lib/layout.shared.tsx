@@ -1,4 +1,4 @@
-import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
+import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 import KurrierLogo from "@/components/kurrier/kurrier-logo";
 
 /**
@@ -9,16 +9,16 @@ import KurrierLogo from "@/components/kurrier/kurrier-logo";
  * Docs Layout: app/docs/layout.tsx
  */
 export function baseOptions(): BaseLayoutProps {
-  return {
-    nav: {
-      title: (
-        <>
-          <KurrierLogo size={42} />
-          <span className={"text-blue-500 text-2xl"}>kurrier</span>
-        </>
-      ),
-    },
-    // see https://fumadocs.dev/docs/ui/navigation/links
-    links: [],
-  };
+	return {
+		nav: {
+			title: (
+				<>
+					<KurrierLogo size={42} />
+					<span className={"text-blue-500 text-2xl"}>kurrier</span>
+				</>
+			),
+		},
+		// see https://fumadocs.dev/docs/ui/navigation/links
+		links: [],
+	};
 }

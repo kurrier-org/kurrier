@@ -9,12 +9,12 @@ import { getMessageAddress, getMessageName } from "@common/mail-client";
 
 export default async function ThreadItem({
 	message,
-    threadIndex,
-    numberOfMessages
+	threadIndex,
+	numberOfMessages,
 }: {
 	message: MessageEntity;
-    threadIndex: number
-    numberOfMessages: number
+	threadIndex: number;
+	numberOfMessages: number;
 }) {
 	const { attachments } = await fetchMessageAttachments(message.id);
 	const publicConfig = getPublicEnv();
@@ -22,16 +22,22 @@ export default async function ThreadItem({
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-4">
 			<div className={"flex gap-4"}>
-				<div className={`flex-shrink flex flex-col items-center ${threadIndex === 0 ? 'pt-12' : 'pt-4'}`}>
+				<div
+					className={`flex-shrink flex flex-col items-center ${threadIndex === 0 ? "pt-12" : "pt-4"}`}
+				>
 					<Avatar
-						name={getMessageName(message, "from") || getMessageAddress(message, "from") || ""}
+						name={
+							getMessageName(message, "from") ||
+							getMessageAddress(message, "from") ||
+							""
+						}
 						color="initials"
 					/>
 				</div>
 				<div className={"flex-grow flex flex-col gap-2"}>
 					<EmailRenderer
-                        threadIndex={threadIndex}
-                        numberOfMessages={numberOfMessages}
+						threadIndex={threadIndex}
+						numberOfMessages={numberOfMessages}
 						message={message}
 						attachments={attachments}
 						publicConfig={publicConfig}

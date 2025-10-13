@@ -97,68 +97,74 @@ div[style*="border-left"][style*="solid"] blockquote {
 `;
 
 export default function EmailViewer({ message }: { message: MessageEntity }) {
-    const hostRef = useRef<HTMLDivElement>(null);
-    const [hideQuotes, setHideQuotes] = useState(true);
+	const hostRef = useRef<HTMLDivElement>(null);
+	const [hideQuotes, setHideQuotes] = useState(true);
 
-    // Heuristic: does the message contain typical quoted markers?
-    const hasQuotes = useMemo(() => {
-        const html = message.html || "";
-        if (!html.trim()) return false;
-        return /<blockquote\b|class=["']gmail_quote|blockquote\s+type=["']cite|class=["']moz-cite-prefix/i.test(html);
-    }, [message.html]);
+	// Heuristic: does the message contain typical quoted markers?
+	const hasQuotes = useMemo(() => {
+		const html = message.html || "";
+		if (!html.trim()) return false;
+		return /<blockquote\b|class=["']gmail_quote|blockquote\s+type=["']cite|class=["']moz-cite-prefix/i.test(
+			html,
+		);
+	}, [message.html]);
 
-    useEffect(() => {
-        if (!hostRef.current) return;
+	useEffect(() => {
+		if (!hostRef.current) return;
 
-        let shadow = hostRef.current.shadowRoot;
-        if (!shadow) shadow = hostRef.current.attachShadow({ mode: "open" });
+		let shadow = hostRef.current.shadowRoot;
+		if (!shadow) shadow = hostRef.current.attachShadow({ mode: "open" });
 
-        // Prefer HTML; fall back to text (escaped) with basic <pre>-like formatting
-        const rawHtml =
-            message.html && message.html.trim()
-                ? message.html
-                : `<div style="white-space: pre-wrap">${(message.text || "No content")
-                    .toString()
-                    .replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c] as string))}</div>`;
+		// Prefer HTML; fall back to text (escaped) with basic <pre>-like formatting
+		const rawHtml =
+			message.html && message.html.trim()
+				? message.html
+				: `<div style="white-space: pre-wrap">${(message.text || "No content")
+						.toString()
+						.replace(
+							/[<>&]/g,
+							(c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c] as string,
+						)}</div>`;
 
-        const safeHtml = DOMPurify.sanitize(rawHtml, { USE_PROFILES: { html: true } });
+		const safeHtml = DOMPurify.sanitize(rawHtml, {
+			USE_PROFILES: { html: true },
+		});
 
-        // Inject styles + content
-        shadow.innerHTML = `
+		// Inject styles + content
+		shadow.innerHTML = `
       <style>${BASE_CSS}${hideQuotes ? QUOTE_HIDE_CSS : ""}</style>
       <article class="email-root">${safeHtml}</article>
     `;
 
-        // Post-process links for safety
-        const root = shadow.querySelector(".email-root") as HTMLElement | null;
-        if (root) {
-            const links = root.querySelectorAll<HTMLAnchorElement>("a[href]");
-            links.forEach((a) => {
-                a.target = "_blank";
-                a.rel = "nofollow noopener noreferrer";
-            });
-        }
-    }, [message.html, message.text, hideQuotes]);
+		// Post-process links for safety
+		const root = shadow.querySelector(".email-root") as HTMLElement | null;
+		if (root) {
+			const links = root.querySelectorAll<HTMLAnchorElement>("a[href]");
+			links.forEach((a) => {
+				a.target = "_blank";
+				a.rel = "nofollow noopener noreferrer";
+			});
+		}
+	}, [message.html, message.text, hideQuotes]);
 
-    return (
-        <div className="mb-24 mt-6">
-            <div ref={hostRef} style={{ display: "block", width: "100%" }} />
-            {hasQuotes && (
-                <ActionIcon
-                    type="button"
-                    variant="light"
-                    size="xs"
-                    onClick={() => setHideQuotes((v) => !v)}
-                    className="my-2 px-2 py-1 rounded border text-[12px] text-gray-600 hover:bg-gray-50"
-                    title={hideQuotes ? "Show previous emails" : "Hide previous emails"}
-                >
-                    <Ellipsis size={16} />
-                </ActionIcon>
-            )}
-        </div>
-    );
+	return (
+		<div className="mb-24 mt-6">
+			<div ref={hostRef} style={{ display: "block", width: "100%" }} />
+			{hasQuotes && (
+				<ActionIcon
+					type="button"
+					variant="light"
+					size="xs"
+					onClick={() => setHideQuotes((v) => !v)}
+					className="my-2 px-2 py-1 rounded border text-[12px] text-gray-600 hover:bg-gray-50"
+					title={hideQuotes ? "Show previous emails" : "Hide previous emails"}
+				>
+					<Ellipsis size={16} />
+				</ActionIcon>
+			)}
+		</div>
+	);
 }
-
 
 // // @ts-nocheck
 // "use client";

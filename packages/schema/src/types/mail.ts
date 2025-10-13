@@ -42,7 +42,6 @@ export const messagePriorityList = ["low", "medium", "high"] as const;
 export const MessageStateEnum = z.enum(messageStatesList);
 export type MessageState = z.infer<typeof MessageStateEnum>;
 
-
 export const MessageStateDisplay: Record<MessageState, string> = {
 	normal: "Normal",
 	bounced: "Bounced",
@@ -101,17 +100,16 @@ export type BackfillItem = {
 	priority: number; // lower = sooner
 };
 
-
 export type MailerSendMailOptions = {
-    from: string;
-    subject: string;
-    text?: string;
-    html?: string;
-    inReplyTo?: string;
-    references?: string[];
-    attachments?: {
-        name: string;
-        content: Blob;
-        contentType?: string;
-    }[];
+	from: string;
+	subject: string;
+	text?: string;
+	html?: string;
+	inReplyTo?: string;
+	references?: string[];
+	attachments?: {
+		name: string;
+		content: Blob;
+		contentType?: string;
+	}[];
 };

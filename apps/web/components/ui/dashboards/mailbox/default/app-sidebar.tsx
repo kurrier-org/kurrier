@@ -31,7 +31,7 @@ import { IdentityEntity, MailboxEntity } from "@db";
 import { MailboxNav } from "@/components/mailbox/default/mailbox-nav";
 import { Button } from "@/components/ui/button";
 import ComposeMail from "@/components/mailbox/default/compose-mail";
-import {PublicConfig} from "@schema";
+import { PublicConfig } from "@schema";
 import KurrierLogo from "@/components/common/kurrier-logo";
 // import {Button} from "@mantine/core";
 
@@ -162,13 +162,13 @@ export function AppSidebar({
 	activeMailbox,
 	mailboxList,
 	identity,
-    publicConfig,
+	publicConfig,
 	...rest
 }: React.ComponentProps<typeof Sidebar> & {
 	activeMailbox: MailboxEntity;
 	mailboxList: MailboxEntity[];
 	identity: IdentityEntity;
-    publicConfig: PublicConfig;
+	publicConfig: PublicConfig;
 }) {
 	// Note: I'm using state to show active item.
 	// IRL you should use the url/router.
@@ -251,7 +251,7 @@ export function AppSidebar({
 			<Sidebar collapsible="none" className="hidden flex-1 md:flex">
 				<SidebarHeader className="gap-3.5 border-b p-4">
 					<div className="text-left text-brand font-sans flex items-center gap-1">
-                        <KurrierLogo size={36} />
+						<KurrierLogo size={36} />
 						<span className="text-lg font-semibold">kurrier</span>
 					</div>
 					<div className={"-mt-1"}>

@@ -1,32 +1,40 @@
 import React from "react";
 import {
-    fetchMailbox,
-    fetchWebMailThreadDetail, markAsRead,
+	fetchMailbox,
+	fetchWebMailThreadDetail,
+	markAsRead,
 } from "@/lib/actions/mailbox";
 import ThreadItem from "@/components/mailbox/default/thread-item";
 import { Divider } from "@mantine/core";
 
-async function Page({ params }: { params: Promise<{ identityPublicId: string; mailboxSlug: string; threadId: string }> }) {
-
-    const { threadId, identityPublicId, mailboxSlug } = await params;
-    const { activeMailbox } = await fetchMailbox(
-        identityPublicId,
-        mailboxSlug,
-    );
-    await markAsRead(threadId, activeMailbox.id, false);
-    const activeThread = await fetchWebMailThreadDetail(threadId);
+async function Page({
+	params,
+}: {
+	params: Promise<{
+		identityPublicId: string;
+		mailboxSlug: string;
+		threadId: string;
+	}>;
+}) {
+	const { threadId, identityPublicId, mailboxSlug } = await params;
+	const { activeMailbox } = await fetchMailbox(identityPublicId, mailboxSlug);
+	await markAsRead(threadId, activeMailbox.id, false);
+	const activeThread = await fetchWebMailThreadDetail(threadId);
 
 	return (
 		<>
-
-            {activeThread?.messages.map((message, threadIndex) => {
-                return (
-                    <div key={message.id}>
-                        <ThreadItem message={message} threadIndex={threadIndex} numberOfMessages={activeThread.messages.length} />
-                        <Divider className={"opacity-50 mb-6"} ml={"xl"} mr={"xl"} />
-                    </div>
-                );
-            })}
+			{activeThread?.messages.map((message, threadIndex) => {
+				return (
+					<div key={message.id}>
+						<ThreadItem
+							message={message}
+							threadIndex={threadIndex}
+							numberOfMessages={activeThread.messages.length}
+						/>
+						<Divider className={"opacity-50 mb-6"} ml={"xl"} mr={"xl"} />
+					</div>
+				);
+			})}
 		</>
 	);
 }

@@ -24,7 +24,7 @@ export const ZServerConfig = z.object({
 	TYPESENSE_PORT: z.string("TYPESENSE_PORT must be present"),
 	TYPESENSE_PROTOCOL: z.string("TYPESENSE_PROTOCOL must be present"),
 	TYPESENSE_HOST: z.string("TYPESENSE_HOST must be present"),
-    SEARCH_REBUILD_ON_BOOT: z.string("SEARCH_REBUILD_ON_BOOT must be present"),
+	SEARCH_REBUILD_ON_BOOT: z.string("SEARCH_REBUILD_ON_BOOT must be present"),
 });
 
 /** Safe to expose to the browser */

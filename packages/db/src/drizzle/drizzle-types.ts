@@ -1,19 +1,20 @@
 import {
-    providers,
-    smtpAccounts,
-    identities,
-    mailboxes,
-    messages,
-    threads,
-    messageAttachments,
-    mailboxSync, mailboxThreads,
+	providers,
+	smtpAccounts,
+	identities,
+	mailboxes,
+	messages,
+	threads,
+	messageAttachments,
+	mailboxSync,
+	mailboxThreads,
 } from "./schema";
 import { decryptedSecrets } from "./supabase-schema";
 import { z } from "zod";
 import {
-    createInsertSchema,
-    createSelectSchema,
-    createUpdateSchema,
+	createInsertSchema,
+	createSelectSchema,
+	createUpdateSchema,
 } from "drizzle-zod";
 
 export type ProviderEntity = typeof providers.$inferSelect;
@@ -47,7 +48,7 @@ export type MessageAttachmentEntity = typeof messageAttachments.$inferSelect;
 export type ThreadEntity = typeof threads.$inferSelect;
 export const ThreadInsertSchema = createInsertSchema(threads);
 export const MessageAttachmentInsertSchema =
-    createInsertSchema(messageAttachments);
+	createInsertSchema(messageAttachments);
 
 export type MailboxSyncEntity = typeof mailboxSync.$inferSelect;
 export const MailboxSyncInsertSchema = createInsertSchema(mailboxSync);
@@ -61,7 +62,7 @@ export const ProviderSchema = createSelectSchema(providers);
 export const SMTPAccountSchema = createSelectSchema(smtpAccounts);
 
 export const CommonProviderEntitySchema = z.union([
-    ProviderSchema,
-    SMTPAccountSchema,
+	ProviderSchema,
+	SMTPAccountSchema,
 ]);
 export type CommonProviderEntity = z.infer<typeof CommonProviderEntitySchema>;

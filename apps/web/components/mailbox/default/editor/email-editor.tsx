@@ -26,8 +26,8 @@ type Props = {
 	onReady?: (el: HTMLElement) => void;
 	message: MessageEntity | null;
 	publicConfig: PublicConfig;
-    showEditorMode: string;
-    sentMailboxId: string;
+	showEditorMode: string;
+	sentMailboxId: string;
 };
 
 const EmailEditor = forwardRef<EmailEditorHandle, Props>(
@@ -72,27 +72,33 @@ const EmailEditor = forwardRef<EmailEditorHandle, Props>(
 						initialState={{ isPending, message, publicConfig, showEditorMode }}
 					>
 						<Form action={formAction}>
-                            <input
-                                type={"hidden"}
-                                name={"messageMailboxId"}
-                                value={message?.mailboxId}
-                            />
-                            <input
-                                type={"hidden"}
-                                name={"sentMailboxId"}
-                                value={sentMailboxId}
-                            />
+							<input
+								type={"hidden"}
+								name={"messageMailboxId"}
+								value={message?.mailboxId}
+							/>
+							<input
+								type={"hidden"}
+								name={"sentMailboxId"}
+								value={sentMailboxId}
+							/>
 
 							<input
 								type={"hidden"}
 								name={"mailboxId"}
-								value={sentMailboxId ? sentMailboxId : (message?.mailboxId ? message?.mailboxId : "")}
+								value={
+									sentMailboxId
+										? sentMailboxId
+										: message?.mailboxId
+											? message?.mailboxId
+											: ""
+								}
 							/>
-                            {/*{sentMailboxId && <input*/}
-                            {/*    type={"hidden"}*/}
-                            {/*    name={"mode"}*/}
-                            {/*    value={"new"}*/}
-                            {/*/>}*/}
+							{/*{sentMailboxId && <input*/}
+							{/*    type={"hidden"}*/}
+							{/*    name={"mode"}*/}
+							{/*    value={"new"}*/}
+							{/*/>}*/}
 							<TextEditor name={"html"} ref={textEditorRef} />
 						</Form>
 					</DynamicContextProvider>

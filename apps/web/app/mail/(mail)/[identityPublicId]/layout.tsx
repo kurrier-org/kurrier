@@ -3,7 +3,7 @@
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/ui/dashboards/mailbox/default/app-sidebar";
 import { fetchMailbox } from "@/lib/actions/mailbox";
-import {getPublicEnv} from "@schema";
+import { getPublicEnv } from "@schema";
 
 export default async function DashboardLayout({
 	children,
@@ -17,7 +17,7 @@ export default async function DashboardLayout({
 		identityPublicId,
 		mailboxSlug,
 	);
-    const publicConfig = await getPublicEnv()
+	const publicConfig = await getPublicEnv();
 
 	return (
 		<SidebarProvider
@@ -31,7 +31,7 @@ export default async function DashboardLayout({
 				activeMailbox={activeMailbox}
 				mailboxList={mailboxList}
 				identity={identity}
-                publicConfig={publicConfig}
+				publicConfig={publicConfig}
 			/>
 			<SidebarInset>
 				{/*{breadcrumb}*/}

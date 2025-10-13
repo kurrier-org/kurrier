@@ -300,11 +300,13 @@ export default function EditorFooter() {
 					<Paperclip size={18} />
 				</ActionIcon>
 
-                {state?.message && <input
-					type={"hidden"}
-					name={"originalMessageId"}
-					value={state.message?.id}
-				/>}
+				{state?.message && (
+					<input
+						type={"hidden"}
+						name={"originalMessageId"}
+						value={state.message?.id}
+					/>
+				)}
 				<input
 					type={"hidden"}
 					name={"newMessageId"}

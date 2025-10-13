@@ -1,13 +1,13 @@
 {
-  "version": "7",
-  "dialect": "postgresql",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "7",
-      "when": 1760293374438,
-      "tag": "0000_ambiguous_inertia",
-      "breakpoints": true
-    }
-  ]
+	"version": "7",
+	"dialect": "postgresql",
+	"entries": [
+		{
+			"idx": 0,
+			"version": "7",
+			"when": 1760293374438,
+			"tag": "0000_ambiguous_inertia",
+			"breakpoints": true
+		}
+	]
 }

@@ -2,21 +2,21 @@ import { defineNitroPlugin } from "nitropack/runtime";
 import { ImapFlow } from "imapflow";
 
 import { Worker } from "bullmq";
-import {deltaFetch} from "../../lib/imap/imap-delta-fetch";
-import {initSmtpClient} from "../../lib/imap/imap-client";
-import {startBackfill} from "../../lib/imap/imap-backfill";
-import {mailSetFlags} from "../../lib/imap/imap-flags";
-import {moveMail} from "../../lib/imap/imap-move";
+import { deltaFetch } from "../../lib/imap/imap-delta-fetch";
+import { initSmtpClient } from "../../lib/imap/imap-client";
+import { startBackfill } from "../../lib/imap/imap-backfill";
+import { mailSetFlags } from "../../lib/imap/imap-flags";
+import { moveMail } from "../../lib/imap/imap-move";
 
 import { getRedis } from "../../lib/get-redis";
-import {deleteMail} from "../../lib/imap/imap-delete";
+import { deleteMail } from "../../lib/imap/imap-delete";
 
 export default defineNitroPlugin(async (nitroApp) => {
 	console.log("**********************SMTP-WORKER***************************");
 
-    const imapInstances = new Map<string, ImapFlow>();
-    const connection = (await getRedis()).connection;
-    const { searchIngestQueue } = await getRedis();
+	const imapInstances = new Map<string, ImapFlow>();
+	const connection = (await getRedis()).connection;
+	const { searchIngestQueue } = await getRedis();
 
 	const worker = new Worker(
 		"smtp-worker",
@@ -25,25 +25,33 @@ export default defineNitroPlugin(async (nitroApp) => {
 				const identityId = job.data.identityId;
 				await deltaFetch(identityId, imapInstances);
 			} else if (job.name === "mail:move") {
-                await moveMail(job.data, imapInstances);
-                await searchIngestQueue.add("refresh-thread", { threadId: job.data.threadId }, {
-                    jobId: `refresh-${job.data.threadId}`,    // collapses duplicates
-                    removeOnComplete: true,
-                    removeOnFail: false,
-                    attempts: 3,
-                    backoff: { type: "exponential", delay: 1500 },
-                });
+				await moveMail(job.data, imapInstances);
+				await searchIngestQueue.add(
+					"refresh-thread",
+					{ threadId: job.data.threadId },
+					{
+						jobId: `refresh-${job.data.threadId}`, // collapses duplicates
+						removeOnComplete: true,
+						removeOnFail: false,
+						attempts: 3,
+						backoff: { type: "exponential", delay: 1500 },
+					},
+				);
 			} else if (job.name === "mail:set-flags") {
-                await mailSetFlags(job.data, imapInstances);
-                await searchIngestQueue.add("refresh-thread", { threadId: job.data.threadId }, {
-                    jobId: `refresh-${job.data.threadId}`,    // collapses duplicates
-                    removeOnComplete: true,
-                    removeOnFail: false,
-                    attempts: 3,
-                    backoff: { type: "exponential", delay: 1500 },
-                });
+				await mailSetFlags(job.data, imapInstances);
+				await searchIngestQueue.add(
+					"refresh-thread",
+					{ threadId: job.data.threadId },
+					{
+						jobId: `refresh-${job.data.threadId}`, // collapses duplicates
+						removeOnComplete: true,
+						removeOnFail: false,
+						attempts: 3,
+						backoff: { type: "exponential", delay: 1500 },
+					},
+				);
 			} else if (job.name === "mail:delete-permanent") {
-                await deleteMail(job.data, imapInstances);
+				await deleteMail(job.data, imapInstances);
 			} else if (job.name === "smtp:append:sent") {
 			} else if (job.name === "backfill") {
 				const identityId = job.data.identityId;
@@ -65,10 +73,6 @@ export default defineNitroPlugin(async (nitroApp) => {
 		console.log(`${job?.id} has failed with ${err.message}`);
 	});
 
-
-
-
-
 	nitroApp.hooks.hookOnce("close", async () => {
 		console.log("Closing nitro server...");
 		try {
@@ -85,7 +89,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 					);
 				}
 			}
-            imapInstances.clear();
+			imapInstances.clear();
 			console.log("Logged out from IMAP server");
 		} catch (err) {
 			console.error("Failed to logout cleanly", err);

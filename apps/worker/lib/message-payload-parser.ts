@@ -1,17 +1,17 @@
 import { simpleParser, ParsedMail, Attachment } from "mailparser";
 import {
-    db,
-    messages,
-    messageAttachments,
-    threads,
-    MessageInsertSchema,
-    MessageCreate,
-    MessageAttachmentCreate,
-    MessageAttachmentInsertSchema,
+	db,
+	messages,
+	messageAttachments,
+	threads,
+	MessageInsertSchema,
+	MessageCreate,
+	MessageAttachmentCreate,
+	MessageAttachmentInsertSchema,
 } from "@db";
 import { createClient } from "@supabase/supabase-js";
-import {getPublicEnv, getServerEnv} from "@schema";
-import {generateSnippet, upsertMailboxThreadItem} from "@common";
+import { getPublicEnv, getServerEnv } from "@schema";
+import { generateSnippet, upsertMailboxThreadItem } from "@common";
 import { randomUUID } from "crypto";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { getRedis } from "./get-redis";
@@ -19,8 +19,8 @@ import { getRedis } from "./get-redis";
 const publicConfig = getPublicEnv();
 const serverConfig = getServerEnv();
 const supabase = createClient(
-    publicConfig.SUPABASE_DOMAIN,
-    serverConfig.SUPABASE_SERVICE_ROLE_KEY,
+	publicConfig.SUPABASE_DOMAIN,
+	serverConfig.SUPABASE_SERVICE_ROLE_KEY,
 );
 
 function generateFileName(att: Attachment) {
@@ -31,70 +31,69 @@ function generateFileName(att: Attachment) {
 	return `${randomUUID()}.${ext}`;
 }
 
-
-
 export async function createOrInitializeThread(
-    parsed: ParsedMail & { ownerId: string }
+	parsed: ParsedMail & { ownerId: string },
 ) {
-    const { ownerId } = parsed;
-    const inReplyTo = parsed.inReplyTo?.trim() || null;
-    const refs = Array.isArray(parsed.references)
-        ? parsed.references
-        : parsed.references
-            ? [parsed.references]
-            : [];
-    // const candidates = Array.from(new Set([inReplyTo, ...refs].filter(Boolean)));
-    const candidates = Array.from(
-        new Set(
-            [inReplyTo, ...refs].filter(Boolean).map((s) => String(s)),
-        ),
-    );
+	const { ownerId } = parsed;
+	const inReplyTo = parsed.inReplyTo?.trim() || null;
+	const refs = Array.isArray(parsed.references)
+		? parsed.references
+		: parsed.references
+			? [parsed.references]
+			: [];
+	// const candidates = Array.from(new Set([inReplyTo, ...refs].filter(Boolean)));
+	const candidates = Array.from(
+		new Set([inReplyTo, ...refs].filter(Boolean).map((s) => String(s))),
+	);
 
-    return db.transaction(async (tx) => {
-        let existingThread = null;
+	return db.transaction(async (tx) => {
+		let existingThread = null;
 
-        if (candidates.length > 0) {
-            const parentMsgs = await tx
-                .select({
-                    id: messages.id,
-                    threadId: messages.threadId,
-                    messageId: messages.messageId,
-                    date: messages.date,
-                })
-                .from(messages)
-                .where(
-                    and(eq(messages.ownerId, ownerId), inArray(messages.messageId, candidates))
-                )
-                .orderBy(desc(messages.date ?? sql`now()`));
+		if (candidates.length > 0) {
+			const parentMsgs = await tx
+				.select({
+					id: messages.id,
+					threadId: messages.threadId,
+					messageId: messages.messageId,
+					date: messages.date,
+				})
+				.from(messages)
+				.where(
+					and(
+						eq(messages.ownerId, ownerId),
+						inArray(messages.messageId, candidates),
+					),
+				)
+				.orderBy(desc(messages.date ?? sql`now()`));
 
-            if (parentMsgs.length) {
-                const chosen = inReplyTo
-                    ? parentMsgs.find((m) => m.messageId === inReplyTo)
-                    : parentMsgs[0];
+			if (parentMsgs.length) {
+				const chosen = inReplyTo
+					? parentMsgs.find((m) => m.messageId === inReplyTo)
+					: parentMsgs[0];
 
-                if (chosen?.threadId) {
-                    const [t] = await tx.select().from(threads).where(eq(threads.id, chosen.threadId));
-                    if (t) existingThread = t;
-                }
-            }
-        }
+				if (chosen?.threadId) {
+					const [t] = await tx
+						.select()
+						.from(threads)
+						.where(eq(threads.id, chosen.threadId));
+					if (t) existingThread = t;
+				}
+			}
+		}
 
-        if (existingThread) return existingThread;
+		if (existingThread) return existingThread;
 
-        const [newThread] = await tx
-            .insert(threads)
-            .values({
-                ownerId,
-                lastMessageDate: parsed.date ?? new Date(),
-            })
-            .returning();
+		const [newThread] = await tx
+			.insert(threads)
+			.values({
+				ownerId,
+				lastMessageDate: parsed.date ?? new Date(),
+			})
+			.returning();
 
-        return newThread;
-    });
+		return newThread;
+	});
 }
-
-
-
 
 /**
  * Parse raw email, create thread, insert message + attachments.
@@ -106,10 +105,10 @@ export async function parseAndStoreEmail(
 		mailboxId: string;
 		rawStorageKey: string;
 		emlKey: string;
-        metaData?: Record<string, any>;
-        seen?: boolean,
-        answered?: boolean,
-        flagged?: boolean,
+		metaData?: Record<string, any>;
+		seen?: boolean;
+		answered?: boolean;
+		flagged?: boolean;
 	},
 ) {
 	const { ownerId, mailboxId, rawStorageKey } = opts;
@@ -120,13 +119,13 @@ export async function parseAndStoreEmail(
 	const encoder = new TextEncoder();
 	const emailBuffer = encoder.encode(rawEmail);
 
-    console.dir(opts, { depth: 10 })
+	console.dir(opts, { depth: 10 });
 
 	await supabase.storage
 		.from("attachments")
 		.upload(opts.rawStorageKey, emailBuffer, {
 			contentType: "message/rfc822",
-            upsert: true
+			upsert: true,
 		});
 
 	const messageId =
@@ -163,35 +162,35 @@ export async function parseAndStoreEmail(
 		flagged: false,
 		draft: false,
 		html: parsed.html || "",
-        snippet: generateSnippet((parsed.text || parsed.html || ""))
+		snippet: generateSnippet(parsed.text || parsed.html || ""),
 	} as MessageCreate | ParsedMail;
 
-    if (opts.metaData) {
-        (decoratedParsed as any).metaData = opts.metaData;
-    }
-    if (opts.seen) {
-        (decoratedParsed as any).seen = opts.seen;
-    }
-    if (opts.answered) {
-        (decoratedParsed as any).answered = opts.answered;
-    }
-    if (opts.flagged) {
-        (decoratedParsed as any).flagged = opts.flagged;
-    }
+	if (opts.metaData) {
+		(decoratedParsed as any).metaData = opts.metaData;
+	}
+	if (opts.seen) {
+		(decoratedParsed as any).seen = opts.seen;
+	}
+	if (opts.answered) {
+		(decoratedParsed as any).answered = opts.answered;
+	}
+	if (opts.flagged) {
+		(decoratedParsed as any).flagged = opts.flagged;
+	}
 
 	const messagePayload = MessageInsertSchema.parse(decoratedParsed);
 	const [message] = await db
 		.insert(messages)
 		.values(messagePayload as MessageCreate)
 		// .onConflictDoNothing()
-        .onConflictDoNothing({
-            target: [messages.mailboxId, messages.messageId],
-        })
+		.onConflictDoNothing({
+			target: [messages.mailboxId, messages.messageId],
+		})
 		.returning();
 
 	if (!message) return null;
 
-    await upsertMailboxThreadItem(message.id);
+	await upsertMailboxThreadItem(message.id);
 
 	const msgDate = message.createdAt ?? new Date();
 	const [t] = await db
@@ -239,9 +238,12 @@ export async function parseAndStoreEmail(
 		await db.insert(messageAttachments).values(parsedRow).returning();
 	}
 
-    const { searchIngestQueue } = await getRedis();
-    await searchIngestQueue.add("add", { messageId: message.id }, { removeOnComplete: true });
+	const { searchIngestQueue } = await getRedis();
+	await searchIngestQueue.add(
+		"add",
+		{ messageId: message.id },
+		{ removeOnComplete: true },
+	);
 
 	return message;
 }
-

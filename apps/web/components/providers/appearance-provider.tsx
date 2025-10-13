@@ -16,7 +16,7 @@ import {
 	setResolvedServer,
 	setThemeServer,
 } from "@/lib/actions/appearance";
-import {Toaster} from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/sonner";
 // import {MantineProvider} from "@mantine/core";
 // import {createMantineTheme} from "@/lib/mantine-theme";
 
@@ -133,10 +133,12 @@ export function AppearanceProvider({
 		[theme, mode, pending],
 	);
 
-	return <Ctx.Provider value={value}>
-        <Toaster theme={mode} expand={true} />
-        {children}
-    </Ctx.Provider>;
+	return (
+		<Ctx.Provider value={value}>
+			<Toaster theme={mode} expand={true} />
+			{children}
+		</Ctx.Provider>
+	);
 }
 
 export function useAppearance() {

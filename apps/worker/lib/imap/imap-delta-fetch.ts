@@ -1,4 +1,12 @@
-import { db, identities, mailboxes, mailboxSync, messages, threads, mailboxThreads } from "@db";
+import {
+	db,
+	identities,
+	mailboxes,
+	mailboxSync,
+	messages,
+	threads,
+	mailboxThreads,
+} from "@db";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { parseAndStoreEmail } from "../message-payload-parser";
 import { initSmtpClient } from "./imap-client";
@@ -18,149 +26,180 @@ import { getRedis } from "../../lib/get-redis";
  *     * search index (refresh-thread)
  */
 export const deltaFetch = async (
-    identityId: string,
-    imapInstances: Map<string, ImapFlow>
+	identityId: string,
+	imapInstances: Map<string, ImapFlow>,
 ) => {
-    const client = await initSmtpClient(identityId, imapInstances);
-    if (!client?.authenticated || !client?.usable) return;
+	const client = await initSmtpClient(identityId, imapInstances);
+	if (!client?.authenticated || !client?.usable) return;
 
-    const [identity] = await db.select().from(identities).where(eq(identities.id, identityId));
-    const ownerId = identity?.ownerId;
-    if (!ownerId) return;
+	const [identity] = await db
+		.select()
+		.from(identities)
+		.where(eq(identities.id, identityId));
+	const ownerId = identity?.ownerId;
+	if (!ownerId) return;
 
-    const mailboxRows = await db.select().from(mailboxes).where(eq(mailboxes.identityId, identityId));
+	const mailboxRows = await db
+		.select()
+		.from(mailboxes)
+		.where(eq(mailboxes.identityId, identityId));
 
-    for (const row of mailboxRows) {
-        // only when fully idle
-        const [syncRow] = await db
-            .select()
-            .from(mailboxSync)
-            .where(and(eq(mailboxSync.identityId, identityId), eq(mailboxSync.mailboxId, row.id)));
+	for (const row of mailboxRows) {
+		// only when fully idle
+		const [syncRow] = await db
+			.select()
+			.from(mailboxSync)
+			.where(
+				and(
+					eq(mailboxSync.identityId, identityId),
+					eq(mailboxSync.mailboxId, row.id),
+				),
+			);
 
-        if (!syncRow) continue;
-        if (syncRow.phase !== "IDLE" || Number(syncRow.backfillCursorUid || 0) > 0) continue;
+		if (!syncRow) continue;
+		if (syncRow.phase !== "IDLE" || Number(syncRow.backfillCursorUid || 0) > 0)
+			continue;
 
-        await syncMailbox({
-            client,
-            identityId,
-            mailboxId: row.id,
-            path: String((row?.metaData as any)?.imap?.path ?? row.name),
-            window: 500,
-            onMessage: async (msg, path: string) => {
-                // Helpful while stabilizing
-                // console.dir(msg, { depth: 6 });
+		await syncMailbox({
+			client,
+			identityId,
+			mailboxId: row.id,
+			path: String((row?.metaData as any)?.imap?.path ?? row.name),
+			window: 500,
+			onMessage: async (msg, path: string) => {
+				// Helpful while stabilizing
+				// console.dir(msg, { depth: 6 });
 
-                const messageId = msg.envelope?.messageId?.trim() || null;
-                const uid = msg.uid;
-                const raw = (await msg.source?.toString()) || "";
+				const messageId = msg.envelope?.messageId?.trim() || null;
+				const uid = msg.uid;
+				const raw = (await msg.source?.toString()) || "";
 
-                // If no Message-ID, still persist (rare but happens)
-                if (!messageId) {
-                    console.warn(`[deltaFetch] Missing Message-ID — path=${path} uid=${uid}`);
-                    return await parseAndStoreEmail(raw, {
-                        ownerId,
-                        mailboxId: row.id,
-                        rawStorageKey: `eml/${ownerId}/${row.id}/${uid}.eml`,
-                        emlKey: String(msg.id),
-                        metaData: { imap: { uid, mailboxPath: path } },
-                    });
-                }
+				// If no Message-ID, still persist (rare but happens)
+				if (!messageId) {
+					console.warn(
+						`[deltaFetch] Missing Message-ID — path=${path} uid=${uid}`,
+					);
+					return await parseAndStoreEmail(raw, {
+						ownerId,
+						mailboxId: row.id,
+						rawStorageKey: `eml/${ownerId}/${row.id}/${uid}.eml`,
+						emlKey: String(msg.id),
+						metaData: { imap: { uid, mailboxPath: path } },
+					});
+				}
 
-                // Check if we already have this message anywhere for this owner
-                const [existing] = await db
-                    .select({ id: messages.id, mailboxId: messages.mailboxId, threadId: messages.threadId })
-                    .from(messages)
-                    .where(and(eq(messages.ownerId, ownerId), eq(messages.messageId, messageId)));
+				// Check if we already have this message anywhere for this owner
+				const [existing] = await db
+					.select({
+						id: messages.id,
+						mailboxId: messages.mailboxId,
+						threadId: messages.threadId,
+					})
+					.from(messages)
+					.where(
+						and(
+							eq(messages.ownerId, ownerId),
+							eq(messages.messageId, messageId),
+						),
+					);
 
-                if (existing) {
-                    // Cross-mailbox move: update *all* messages in the thread + thread record
-                    if (existing.mailboxId !== row.id) {
-                        console.log(
-                            `[deltaFetch] Move detected for ${messageId}: ${existing.mailboxId} → ${row.id}`
-                        );
+				if (existing) {
+					// Cross-mailbox move: update *all* messages in the thread + thread record
+					if (existing.mailboxId !== row.id) {
+						console.log(
+							`[deltaFetch] Move detected for ${messageId}: ${existing.mailboxId} → ${row.id}`,
+						);
 
-                        // Update every message in the thread to the new mailbox & IMAP path
-                        const all = await db.select().from(messages).where(eq(messages.threadId, existing.threadId));
-                        for (const m of all) {
-                            const updatedMeta = {
-                                ...(m.metaData as any),
-                                imap: {
-                                    ...((m.metaData as any)?.imap || {}),
-                                    mailboxPath: path,
-                                },
-                            };
-                            await db
-                                .update(messages)
-                                .set({ mailboxId: row.id, metaData: updatedMeta })
-                                .where(eq(messages.id, m.id))
-                                .catch((e) => console.error("[deltaFetch] failed message move update", e));
-                        }
+						// Update every message in the thread to the new mailbox & IMAP path
+						const all = await db
+							.select()
+							.from(messages)
+							.where(eq(messages.threadId, existing.threadId));
+						for (const m of all) {
+							const updatedMeta = {
+								...(m.metaData as any),
+								imap: {
+									...((m.metaData as any)?.imap || {}),
+									mailboxPath: path,
+								},
+							};
+							await db
+								.update(messages)
+								.set({ mailboxId: row.id, metaData: updatedMeta })
+								.where(eq(messages.id, m.id))
+								.catch((e) =>
+									console.error("[deltaFetch] failed message move update", e),
+								);
+						}
 
-                        // Canonical thread mailbox follows the newest message’s mailbox
-                        await db
-                            .update(threads)
-                            .set({ mailboxId: row.id })
-                            .where(eq(threads.id, existing.threadId))
-                            .catch((e) => console.error("[deltaFetch] failed thread mailbox update", e));
+						// Canonical thread mailbox follows the newest message’s mailbox
+						await db
+							.update(threads)
+							.set({ mailboxId: row.id })
+							.where(eq(threads.id, existing.threadId))
+							.catch((e) =>
+								console.error("[deltaFetch] failed thread mailbox update", e),
+							);
 
-                        // Rebuild mailboxThreads for this thread
-                        await db.delete(mailboxThreads).where(eq(mailboxThreads.threadId, existing.threadId));
+						// Rebuild mailboxThreads for this thread
+						await db
+							.delete(mailboxThreads)
+							.where(eq(mailboxThreads.threadId, existing.threadId));
 
-                        const [newest] = await db
-                            .select({ id: messages.id })
-                            .from(messages)
-                            .where(eq(messages.threadId, existing.threadId))
-                            .orderBy(desc(sql`coalesce(${messages.date}, ${messages.createdAt})`))
-                            .limit(1);
+						const [newest] = await db
+							.select({ id: messages.id })
+							.from(messages)
+							.where(eq(messages.threadId, existing.threadId))
+							.orderBy(
+								desc(sql`coalesce(${messages.date}, ${messages.createdAt})`),
+							)
+							.limit(1);
 
-                        if (newest?.id) {
-                            await upsertMailboxThreadItem(newest.id).catch((e) =>
-                                console.error("[deltaFetch] upsertMailboxThreadItem failed", e)
-                            );
-                        }
+						if (newest?.id) {
+							await upsertMailboxThreadItem(newest.id).catch((e) =>
+								console.error("[deltaFetch] upsertMailboxThreadItem failed", e),
+							);
+						}
 
-                        // Ask Typesense to refresh the whole thread grouping
-                        try {
-                            const { searchIngestQueue } = await getRedis();
-                            await searchIngestQueue.add(
-                                "refresh-thread",
-                                { threadId: existing.threadId },
-                                {
-                                    jobId: `refresh-${existing.threadId}`,
-                                    attempts: 3,
-                                    backoff: { type: "exponential", delay: 1500 },
-                                    removeOnComplete: true,
-                                    removeOnFail: false,
-                                }
-                            );
-                        } catch (e) {
-                            console.warn("[deltaFetch] enqueue refresh-thread failed", e);
-                        }
+						// Ask Typesense to refresh the whole thread grouping
+						try {
+							const { searchIngestQueue } = await getRedis();
+							await searchIngestQueue.add(
+								"refresh-thread",
+								{ threadId: existing.threadId },
+								{
+									jobId: `refresh-${existing.threadId}`,
+									attempts: 3,
+									backoff: { type: "exponential", delay: 1500 },
+									removeOnComplete: true,
+									removeOnFail: false,
+								},
+							);
+						} catch (e) {
+							console.warn("[deltaFetch] enqueue refresh-thread failed", e);
+						}
 
-                        return;
-                    }
+						return;
+					}
 
-                    // Already present in the same mailbox — nothing to do
-                    return;
-                }
+					// Already present in the same mailbox — nothing to do
+					return;
+				}
 
-                // New message → parse & store
-                await parseAndStoreEmail(raw, {
-                    ownerId,
-                    mailboxId: row.id,
-                    rawStorageKey: `eml/${ownerId}/${row.id}/${uid}.eml`,
-                    emlKey: String(msg.id),
-                    metaData: { imap: { uid, mailboxPath: path } },
-                });
+				// New message → parse & store
+				await parseAndStoreEmail(raw, {
+					ownerId,
+					mailboxId: row.id,
+					rawStorageKey: `eml/${ownerId}/${row.id}/${uid}.eml`,
+					emlKey: String(msg.id),
+					metaData: { imap: { uid, mailboxPath: path } },
+				});
 
-                return undefined as any;
-            },
-        });
-    }
+				return undefined as any;
+			},
+		});
+	}
 };
-
-
-
 
 // import {db, identities, mailboxes, mailboxSync, messages, threads, threadsList} from "@db";
 // import {and, eq} from "drizzle-orm";

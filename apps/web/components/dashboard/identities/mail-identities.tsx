@@ -482,10 +482,8 @@ export default function MailIdentities({
 
 	const [verifyingDomainIdentity, setVerifyingDomainIdentity] = useState(false);
 
-
 	return (
 		<Container variant="wide">
-
 			<div className="flex items-center justify-between my-4">
 				<h1 className="text-xl font-bold text-foreground">Mail Identities</h1>
 			</div>
