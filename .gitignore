@@ -41,7 +41,6 @@ yarn-error.log*
 next-env.d.ts
 .idea
 supabase/volumes
-db/volumes
 apps/worker/dist
 .output
 .nitro

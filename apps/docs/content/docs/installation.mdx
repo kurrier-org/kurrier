@@ -1,0 +1,115 @@
+---
+title: Installation
+description: How to install and run Kurrier on your own server.
+---
+
+Kurrier can be self-hosted on any modern Linux, macOS, or ARM device (including Raspberry Pi).
+It’s distributed as a Docker setup for convenience, but you can also run it manually from source if you prefer.
+
+> 🧱 **Kurrier’s core stack:**
+> Next.js + Nitro (API worker) + Postgres + Redis + IMAP/SMTP connectors
+
+---
+
+## Prerequisites
+
+Before you start, make sure you have:
+
+- **Docker** and **Docker Compose** installed
+→ [Install Docker](https://docs.docker.com/get-docker/)
+- **Git** (for cloning the repository)
+- **At least 1 GB RAM** and **1 vCPU** for testing (2 GB+ recommended for production)
+- Optional: a domain name (for `mail.yourdomain.com` or similar)
+
+---
+
+## Quick start (Docker)
+
+Clone the repository and copy the example environment file:
+
+```bash
+git clone git@github.com:kurrier-org/kurrier.git
+cd kurrier/db
+cp .env.example .env
+```
+
+Open the .env file and set your environment variables:
+
+```bash
+WEB_PORT=3000
+WEB_URL=http://localhost:3000
+NITRO_PORT=3001
+
+REDIS_PASSWORD=your-redis-password
+REDIS_HOST=redis
+REDIS_PORT=6379
+RLS_CLIENT_PASSWORD=your-rls-password
+
+TYPESENSE_API_KEY=supersecretkey
+TYPESENSE_PORT=8108
+TYPESENSE_PROTOCOL=http
+TYPESENSE_HOST=typesense
+
+
+POSTGRES_PASSWORD=your-postgres-password
+JWT_SECRET=your-jwt-secret
+ANON_KEY=your-anon-key
+SERVICE_ROLE_KEY=your-service-role-key
+DASHBOARD_USERNAME=kurrier
+DASHBOARD_PASSWORD=kurrier
+SECRET_KEY_BASE=your-secret-key-base
+VAULT_ENC_KEY=your-encryption-key-32-chars-min
+PG_META_CRYPTO_KEY=your-encryption-key-32-chars-min
+```
+
+### 🔐 Generate Secrets Automatically
+
+If you don’t want to manually craft all the passwords and JWT keys, you can generate them instantly using the built-in generator below.
+It creates a secure, production-ready .env block with everything filled in — including the compatible JWT keys.
+
+<Card>
+    <SecretsGenerator />
+</Card>
+
+---
+
+## 🚀 Start Kurrier
+
+Once your `.env` file is ready, you can start all services with Docker Compose:
+
+```bash
+docker compose up -d
+```
+
+This command will:
+- Start Postgres, Redis, db services, and the Kurrier web interface.
+- Run the initial database bootstrap.
+- Expose the web UI and API worker locally.
+
+<Card>
+    ✅ You can re-run <code>docker compose up -d</code> anytime to restart Kurrier after a system reboot.
+</Card>
+
+---
+
+### 🧭 Access the Dashboards
+
+Once Docker finishes starting up, open the following URLs in your browser:
+
+| Service | URL | Description |
+|----------|-----|-------------|
+| **Kurrier Web Dashboard** | [http://localhost:3000](http://localhost:3000) | Manage your mailboxes, messages, and settings |
+| **Studio** | [http://localhost:8000](http://localhost:8000) | View and manage the Postgres database |
+| **Nitro Worker (API)** | [http://localhost:3001](http://localhost:3001) | API background service and job runner |
+
+
+<Callout type="info">
+    To access Kurrier dashboard, signup and create your user account
+</Callout>
+
+<Callout type="info">
+    To access Studio, log in with the credentials you defined in your `.env` file DASHBOARD_USERNAME
+    and DASHBOARD_PASSWORD
+</Callout>
+
+

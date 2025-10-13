@@ -4,8 +4,9 @@
 	"version": "0.0.3",
 	"scripts": {
 		"dev:web": "dotenvx run -f .env -- pnpm --prefix apps/web dev",
+		"dev:docs": "dotenvx run -f .env -- pnpm --prefix apps/docs dev",
 		"dev:worker": "dotenvx run -f .env -- pnpm --prefix apps/worker dev",
-		"dev": "concurrently \"pnpm run dev:web\" \"pnpm run dev:worker\"",
+		"dev": "concurrently \"pnpm run dev:web\" \"pnpm run dev:worker\" \"pnpm run dev:docs\"",
 		"build": "dotenvx run -f .env -- pnpm --prefix apps/web build",
 		"lint": "biome check",
 		"format": "biome format --write",
@@ -22,7 +23,7 @@
 		"@types/node": "^24.5.2",
 		"@types/pg": "^8.15.5",
 		"concurrently": "^9.2.1",
-		"drizzle-kit": "^0.31.4",
+		"drizzle-kit": "^0.31.5",
 		"tsx": "^4.20.5"
 	},
 	"dependencies": {
@@ -34,7 +35,7 @@
 		"@sindresorhus/slugify": "^3.0.0",
 		"@supabase/supabase-js": "^2.57.4",
 		"bullmq": "^5.58.9",
-		"drizzle-orm": "^0.44.5",
+		"drizzle-orm": "^0.44.6",
 		"drizzle-zod": "^0.8.3",
 		"ioredis": "^5.8.0",
 		"nanoid": "^5.1.5",

@@ -1,0 +1,91 @@
+---
+title: Getting Started
+description: Learn how to use Kurrier after installation.
+---
+
+Once Kurrier is up and running, you can start exploring the web dashboard and connecting your email providers.
+
+---
+
+## 📨 Configure Your First Provider
+
+Kurrier supports multiple email providers out of the box.
+You can verify and connect them from **Settings → Providers** in the dashboard.
+
+1. Open [http://localhost:3000](http://localhost:3000)
+2. Navigate to **Settings → Providers**
+3. Choose a provider —
+[Mailgun](/docs/providers/mailgun),
+[Postmark](/docs/providers/postmark),
+[SendGrid](/docs/providers/sendgrid),
+[AWS SES](/docs/providers/ses),
+or [SMTP/IMAP](/docs/providers/smtp)
+4. Enter your credentials or domain details
+5. Kurrier will automatically create the necessary configurations to send and receive emails through that provider
+
+
+![Dashboard Screenshot](/doc-providers.png)
+
+
+---
+
+Once your provider is connected, you can start creating **email** and **domain identities** under the **Identities** section.
+These identities are linked to your provider and enable sending and receiving mail through Kurrier including accessing a webmail for each email.
+
+---
+
+## 🗂️ Add an Identity
+
+An **identity** in Kurrier can be either a **domain** or an **email address**.
+To keep things consistent across providers, you’ll first add and verify a **domain**, then create email identities under it.
+
+For example, if you add `mydomain.com`, you can later create emails like
+`support@mydomain.com`, `tim@mydomain.com`, or `martha@mydomain.com`.
+
+Once verified, each email identity gets its own webmail dashboard.
+
+---
+
+### Steps
+
+1. Go to **Identities → Add Domain**
+2. Choose a verified provider (e.g., Mailgun, SES, SMTP)
+3. Kurrier will display the required **DNS records** — add them to your DNS host
+4. Click **Verify Domain** once the records are live
+5. After verification, create email identities like `support@mydomain.com`
+
+
+![Dashboard Screenshot](/doc-identities.png)
+
+---
+
+## 📬 Sending a Test Email
+
+You can send test emails to check if the email identities are working as expected by pressing the send test email button besides each email identity.
+
+---
+
+## 🔄 Background Sync
+
+Kurrier continuously syncs mailboxes and processes inbound mail.
+The background service (Nitro Worker) handles:
+
+- IMAP message polling and connection persistence
+- Webhook setup and processing
+- Delivery retries
+- Attachments indexing
+
+> 🧠 You can monitor the worker logs using:
+>
+> ```bash
+> docker compose logs -f worker
+> ```
+
+---
+
+
+
+<Callout type="info">
+    Need help? Visit the community discussions or open an issue on GitHub.
+    👉 [Kurrier on GitHub](https://github.com/kurrier-org/kurrier)
+</Callout>
