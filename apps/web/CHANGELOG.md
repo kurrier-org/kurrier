@@ -1,5 +1,11 @@
 # web
 
+## 0.1.12
+
+### Patch Changes
+
+- [#120](https://github.com/kurrier-org/kurrier/pull/120) [`5a4e705`](https://github.com/kurrier-org/kurrier/commit/5a4e7053f98c2a52d38c7e23fc8e167c05fc2366) Thanks [@krokhale](https://github.com/krokhale)! - fixed the build
+
 ## 0.1.11
 
 ### Patch Changes
