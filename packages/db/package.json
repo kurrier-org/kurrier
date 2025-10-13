@@ -1,7 +1,7 @@
 {
 	"name": "@kurrier/db",
 	"private": true,
-	"version": "1.0.6",
+	"version": "1.0.7",
 	"description": "",
 	"types": "src/index.ts",
 	"main": "src/index.ts",

@@ -1,5 +1,11 @@
 # @kurrier/providers
 
+## 1.0.3
+
+### Patch Changes
+
+- [#117](https://github.com/kurrier-org/kurrier/pull/117) [`4b75c25`](https://github.com/kurrier-org/kurrier/commit/4b75c2590dd8dbb6815a2a6470142a70f56783e5) Thanks [@krokhale](https://github.com/krokhale)! - Cleanup and formatting
+
 ## 1.0.2
 
 ### Patch Changes
