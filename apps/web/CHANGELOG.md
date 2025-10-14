@@ -1,5 +1,11 @@
 # web
 
+## 0.1.18
+
+### Patch Changes
+
+- [#141](https://github.com/kurrier-org/kurrier/pull/141) [`28c6be8`](https://github.com/kurrier-org/kurrier/commit/28c6be8a5e3e418ce93b314571521ef6bcff01b1) Thanks [@krokhale](https://github.com/krokhale)! - Added current user and cleaned up auth pages
+
 ## 0.1.17
 
 ### Patch Changes
