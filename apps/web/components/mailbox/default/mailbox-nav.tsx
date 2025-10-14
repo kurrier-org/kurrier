@@ -129,15 +129,15 @@ export function MailboxNav({
 			{/*</div>*/}
 
 			{/* Custom labels */}
-			<div className="space-y-1">
-				{custom.length ? (
-					custom.map((m) => <Item key={m.slug ?? m.name ?? "label"} m={m} />)
-				) : (
-					<div className="px-2 text-xs text-muted-foreground">
-						No labels yet
-					</div>
-				)}
-			</div>
+			{/*<div className="space-y-1">*/}
+			{/*	{custom.length ? (*/}
+			{/*		custom.map((m) => <Item key={m.slug ?? m.name ?? "label"} m={m} />)*/}
+			{/*	) : (*/}
+			{/*		<div className="px-2 text-xs text-muted-foreground">*/}
+			{/*			No labels yet*/}
+			{/*		</div>*/}
+			{/*	)}*/}
+			{/*</div>*/}
 		</div>
 	);
 }

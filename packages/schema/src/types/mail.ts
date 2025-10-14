@@ -55,11 +55,8 @@ export const SYSTEM_MAILBOXES: Array<{
 }> = [
 	{ kind: "inbox", isDefault: true }, // entrypoint
 	{ kind: "sent", isDefault: false },
-	{ kind: "drafts", isDefault: false },
 	{ kind: "trash", isDefault: false },
 	{ kind: "spam", isDefault: false },
-	{ kind: "archive", isDefault: false },
-	{ kind: "outbox", isDefault: false },
 ];
 
 export const SMTP_MAILBOXES: Array<{

@@ -398,6 +398,10 @@ importers:
       postmark:
         specifier: ^4.0.5
         version: 4.0.5
+    devDependencies:
+      '@types/nodemailer':
+        specifier: ^7.0.2
+        version: 7.0.2
 
   packages/repo-version: {}
 
@@ -2925,6 +2929,9 @@ packages:
 
   '@types/node@24.6.2':
     resolution: {integrity: sha512-d2L25Y4j+W3ZlNAeMKcy7yDsK425ibcAOO2t7aPTz6gNMH0z2GThtwENCDc0d/Pw9wgyRqE5Px1wkV7naz8ang==}
+
+  '@types/nodemailer@7.0.2':
+    resolution: {integrity: sha512-Zo6uOA9157WRgBk/ZhMpTQ/iCWLMk7OIs/Q9jvHarMvrzUUP/MDdPHL2U1zpf57HrrWGv4nYQn5uIxna0xY3xw==}
 
   '@types/pg@8.15.5':
     resolution: {integrity: sha512-LF7lF6zWEKxuT3/OR8wAZGzkg4ENGXFNyiV/JeOt9z5B+0ZVwbql9McqX5c/WStFq1GaGso7H1AzP/qSzmlCKQ==}
@@ -9352,6 +9359,13 @@ snapshots:
   '@types/node@24.6.2':
     dependencies:
       undici-types: 7.13.0
+
+  '@types/nodemailer@7.0.2':
+    dependencies:
+      '@aws-sdk/client-sesv2': 3.893.0
+      '@types/node': 24.6.2
+    transitivePeerDependencies:
+      - aws-crt
 
   '@types/pg@8.15.5':
     dependencies:

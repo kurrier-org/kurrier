@@ -1,4 +1,3 @@
-// @ts-nocheck
 import nodemailer, { type Transporter } from "nodemailer";
 import {
 	DomainIdentity,
@@ -8,6 +7,7 @@ import {
 	VerifyResult,
 } from "../core";
 import { ImapFlow } from "imapflow";
+import SMTPTransport from "nodemailer/lib/smtp-transport";
 
 export class SmtpMailer implements Mailer {
 	private transporter: Transporter;
@@ -20,7 +20,7 @@ export class SmtpMailer implements Mailer {
 			secure: cfg.secure ?? cfg.port === 465,
 			auth: cfg.auth,
 			pool: cfg.pool ?? false,
-		});
+		} as SMTPTransport.Options);
 		this.imapClient = cfg.imap
 			? new ImapFlow({
 					host: cfg.imap.host,

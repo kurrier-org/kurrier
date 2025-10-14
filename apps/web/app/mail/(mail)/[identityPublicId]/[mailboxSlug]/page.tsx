@@ -16,13 +16,15 @@ async function Page({
 }) {
 	const { page } = await searchParams;
 	const { identityPublicId, mailboxSlug } = await params;
-	const { activeMailbox, count, identity } = await fetchMailbox(
+	const { activeMailbox, count, identity, mailboxSync } = await fetchMailbox(
 		identityPublicId,
 		mailboxSlug,
 	);
-	if (identity.smtpAccountId) {
-		await deltaFetch({ identityId: activeMailbox.identityId });
-	}
+    if (mailboxSync){
+        if (mailboxSync.phase === "IDLE"){
+            await deltaFetch({ identityId: activeMailbox.identityId });
+        }
+    }
 
 	const publicConfig = getPublicEnv();
 	const mailboxThreads = await fetchMailboxThreads(
@@ -39,6 +41,7 @@ async function Page({
 					publicConfig={publicConfig}
 					activeMailbox={activeMailbox}
 					identityPublicId={identityPublicId}
+                    mailboxSync={mailboxSync}
 				/>
 
 				<MailPagination

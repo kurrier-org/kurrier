@@ -22,5 +22,8 @@
 		"mailgun.js": "^12.1.0",
 		"nodemailer": "^7.0.6",
 		"postmark": "^4.0.5"
+	},
+	"devDependencies": {
+		"@types/nodemailer": "^7.0.2"
 	}
 }

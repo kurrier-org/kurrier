@@ -182,11 +182,18 @@ function AddEmailIdentityForm({
 		...extraFields,
 	];
 
+    const finalizeEmail = async () => {
+        console.log("provider", provider)
+        console.log("activeId", activeId)
+        if (onCompleted) onCompleted()
+
+    };
+
 	return (
 		<div>
 			<ReusableForm
 				action={addNewEmailIdentity}
-				onSuccess={onCompleted || undefined}
+				onSuccess={finalizeEmail}
 				fields={fields}
 			/>
 
@@ -202,4 +209,3 @@ function AddEmailIdentityForm({
 
 export default AddEmailIdentityForm;
 
-// asdasd

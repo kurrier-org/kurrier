@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/ui/dashboards/mailbox/default/app-sidebar";
 import { fetchMailbox } from "@/lib/actions/mailbox";
@@ -17,7 +15,7 @@ export default async function DashboardLayout({
 		identityPublicId,
 		mailboxSlug,
 	);
-	const publicConfig = await getPublicEnv();
+	const publicConfig = getPublicEnv();
 
 	return (
 		<SidebarProvider
@@ -34,8 +32,7 @@ export default async function DashboardLayout({
 				publicConfig={publicConfig}
 			/>
 			<SidebarInset>
-				{/*{breadcrumb}*/}
-				{children}
+                {children}
 			</SidebarInset>
 		</SidebarProvider>
 	);

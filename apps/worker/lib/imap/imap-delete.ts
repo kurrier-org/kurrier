@@ -36,10 +36,10 @@ function collectUidsByMailboxPath(
 }
 
 export async function deleteMail(
-	data: { mailboxId: string; threadId?: string | string[]; emptyAll?: boolean },
+	data: { mailboxId: string; threadId?: string | string[]; emptyAll?: boolean, imapDelete: boolean },
 	imapInstances: Map<string, ImapFlow>,
 ) {
-	const { mailboxId, emptyAll } = data;
+	const { mailboxId, emptyAll, imapDelete } = data;
 	if (!mailboxId) return;
 
 	// 1) Resolve mailbox + IMAP client for the owning identity
@@ -49,31 +49,40 @@ export async function deleteMail(
 		.where(eq(mailboxes.id, mailboxId));
 	if (!box) return;
 
-	const client = await initSmtpClient(box.identityId, imapInstances);
-	if (!client?.authenticated || !client.usable) return;
 
 	// Read IMAP path (fallback to mailbox name if meta is missing)
 	const mailboxPath: string =
 		(box.metaData as any)?.imap?.path || box.name || "";
 
+    let client
+    if (imapDelete){
+        client = await initSmtpClient(box.identityId, imapInstances);
+        if (!client?.authenticated || !client.usable) return;
+    }
+
 	if (emptyAll) {
 		// --- IMAP side ---
-		try {
-			const lock = await client.getMailboxLock(String(mailboxPath));
-			try {
-				// returns number[] | false -> normalize to []
-				const allUids: number[] =
-					(await client.search({ all: true }, { uid: true })) || [];
-				if (allUids.length) {
-					await client.messageDelete(allUids, { uid: true });
-				}
-			} finally {
-				lock.release();
-			}
-		} catch (err) {
-			console.error("[deleteMail] emptyAll IMAP delete failed:", err);
-			// continue to DB cleanup to keep local state consistent
-		}
+        if (imapDelete && client){
+
+
+            try {
+                const lock = await client.getMailboxLock(String(mailboxPath));
+                try {
+                    // returns number[] | false -> normalize to []
+                    const allUids: number[] =
+                        (await client.search({ all: true }, { uid: true })) || [];
+                    if (allUids.length) {
+                        await client.messageDelete(allUids, { uid: true });
+                    }
+                } finally {
+                    lock.release();
+                }
+            } catch (err) {
+                console.error("[deleteMail] emptyAll IMAP delete failed:", err);
+                // continue to DB cleanup to keep local state consistent
+            }
+        }
+
 
 		// --- DB side ---
 		// gather message ids + affected threads for this mailbox
@@ -145,17 +154,20 @@ export async function deleteMail(
 			),
 		);
 
-	// delete on IMAP grouped by mailboxPath
-	try {
-		const byPath = collectUidsByMailboxPath(msgRows);
-		for (const [path, uids] of byPath) {
-			if (!uids.length) continue;
-			await deleteUids(client, path, uids);
-		}
-	} catch (err) {
-		console.error("[deleteMail] IMAP per-thread delete failed:", err);
-		// proceed with DB cleanup; delta sync can reconcile later
-	}
+    if (imapDelete && client){
+        // delete on IMAP grouped by mailboxPath
+        try {
+            const byPath = collectUidsByMailboxPath(msgRows);
+            for (const [path, uids] of byPath) {
+                if (!uids.length) continue;
+                await deleteUids(client, path, uids);
+            }
+        } catch (err) {
+            console.error("[deleteMail] IMAP per-thread delete failed:", err);
+            // proceed with DB cleanup; delta sync can reconcile later
+        }
+    }
+
 
 	// --- DB side ---
 	const allMessageIds = msgRows.map((r) => r.id);

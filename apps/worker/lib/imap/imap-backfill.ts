@@ -39,7 +39,7 @@ export const startBackfill = async (client: ImapFlow, identityId: string) => {
 
 		const ownerId = identity.ownerId;
 
-		await syncMailboxEntities(client, identity);
+		// await syncMailboxEntities(client, identity);
 
 		const mailboxRows = await db
 			.select()
@@ -204,7 +204,7 @@ async function backfillMailbox(opts: {
 		.where(eq(mailboxSync.id, sync.id));
 }
 
-const syncMailboxEntities = async (
+export const syncMailboxEntities = async (
 	client: ImapFlow,
 	identity: IdentityEntity,
 ): Promise<void> => {

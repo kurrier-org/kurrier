@@ -10,7 +10,7 @@ import {
 	Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { MailboxEntity } from "@db";
+import {MailboxEntity, MailboxSyncEntity} from "@db";
 import {
 	FetchMailboxThreadsResult,
 	markAsRead,
@@ -24,6 +24,7 @@ type Props = {
 	mailboxThreadItem: FetchMailboxThreadsResult[number];
 	activeMailbox: MailboxEntity;
 	identityPublicId: string;
+    mailboxSync: MailboxSyncEntity | undefined
 };
 import { Temporal } from "@js-temporal/polyfill";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
@@ -33,6 +34,7 @@ export default function WebmailListItem({
 	mailboxThreadItem,
 	activeMailbox,
 	identityPublicId,
+    mailboxSync
 }: Props) {
 	function formatDateLabel(input?: string | number | Date) {
 		const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -228,7 +230,8 @@ export default function WebmailListItem({
 								return await markAsUnread(
 									mailboxThreadItem.threadId,
 									activeMailbox.id,
-									true,
+                                    !!mailboxSync,
+                                    true
 								);
 							}}
 							className="rounded p-1 hover:bg-muted"
@@ -240,7 +243,7 @@ export default function WebmailListItem({
 					{canMarkAsRead && (
 						<button
 							onClick={() =>
-								markAsRead(mailboxThreadItem.threadId, activeMailbox.id)
+								markAsRead(mailboxThreadItem.threadId, activeMailbox.id, !!mailboxSync)
 							}
 							className="rounded p-1 hover:bg-muted"
 							title="Mark as read"
@@ -253,6 +256,7 @@ export default function WebmailListItem({
 							await moveToTrash(
 								mailboxThreadItem.threadId,
 								activeMailbox.id,
+                                !!mailboxSync,
 								true,
 							);
 							toast.success("Messages moved to Trash", {

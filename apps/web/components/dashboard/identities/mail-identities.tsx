@@ -1,16 +1,9 @@
-// @ts-nocheck
 "use client";
 
 import * as React from "react";
 import { Container } from "@/components/common/containers";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import {
-	ActionIcon,
-	Button,
-	CopyButton,
-	SegmentedControl,
-	Tooltip,
-} from "@mantine/core";
+import { Card, CardContent } from "@/components/ui/card";
+import { ActionIcon, Button, CopyButton, Tooltip } from "@mantine/core";
 import {
 	ArrowDownFromLine,
 	ArrowUpFromLine,
@@ -25,10 +18,8 @@ import {
 	Trash2,
 	Verified,
 } from "lucide-react";
-import { cn, parseSecret } from "@/lib/utils";
-import { useAppearance } from "@/components/providers/appearance-provider";
+import { parseSecret } from "@/lib/utils";
 import { modals } from "@mantine/modals";
-import { PROVIDER_CONFIG } from "@/components/dashboard/identities/PROVIDER_CONFIG";
 import AddEmailIdentityForm from "@/components/dashboard/identities/add-email-identity-form";
 import {
 	deleteDomainIdentity,
@@ -44,77 +35,10 @@ import { IconCheck, IconCopy, IconSend } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import AddDomainIdentityForm from "@/components/dashboard/identities/add-domain-identity-form";
-import { FormState, IdentityStatusMeta, Providers } from "@schema";
+import { FormState, IdentityStatus, IdentityStatusMeta } from "@schema";
 import EmailIdentityStatus from "@/components/dashboard/identities/email-identity-status";
-import { backfillAccount } from "@/lib/actions/mailbox";
+import { DnsRecord } from "@providers";
 
-export type Status = "verified" | "pending" | "failed";
-
-export type DomainIdentity = {
-	id: string;
-	value: string;
-	status: Status;
-	providerHint?: Providers;
-	note?: string;
-};
-
-export type EmailIdentity = {
-	id: string;
-	value: string;
-	status: Status;
-	providerHint?: Providers;
-	default?: boolean;
-};
-
-const MOCK_DOMAINS: DomainIdentity[] = [
-	{
-		id: "d1",
-		value: "news.acmeco.com",
-		status: "pending",
-		providerHint: "sendgrid",
-		note: "Add TXT + CNAME records at your DNS host.",
-	},
-	{
-		id: "d2",
-		value: "acmeco.com",
-		status: "verified",
-		providerHint: "ses",
-		note: "All emails under this domain can be used.",
-	},
-];
-
-const MOCK_EMAILS: EmailIdentity[] = [
-	{
-		id: "e1",
-		value: "support@acmeco.com",
-		status: "verified",
-		providerHint: "ses",
-		default: true,
-	},
-	{
-		id: "e2",
-		value: "billing@acmeco.com",
-		status: "failed",
-		providerHint: "smtp",
-	},
-];
-
-/* Header block (title + helper + actions) */
-function PageHeader() {
-	return (
-		<div className="mb-4 mt-2">
-			<h1 className="text-xl font-bold tracking-tight text-foreground">
-				Mail Identities
-			</h1>
-			<p className="mt-2 text-sm text-muted-foreground max-w-prose">
-				Manage domains and email addresses for sending across providers like
-				Amazon SES, Postmark, SendGrid, and custom SMTP.
-			</p>
-		</div>
-	);
-}
-
-/* Section header */
 function SectionHeader({
 	title,
 	count,
@@ -167,85 +91,6 @@ export default function MailIdentities({
 	);
 
 	const [query, setQuery] = React.useState("");
-	const [tab, setTab] = React.useState<"all" | "email" | "domain">("all");
-
-	const [domains, setDomains] = React.useState(MOCK_DOMAINS);
-	const [emails, setEmails] = React.useState(MOCK_EMAILS);
-
-	const [verifyingId, setVerifyingId] = React.useState<string | null>(null);
-	const [retryingId, setRetryingId] = React.useState<string | null>(null);
-
-	const { theme } = useAppearance();
-
-	const segmentedData = [
-		{ label: "All", value: "all" },
-		{ label: "Email", value: "email" },
-		{ label: "Domain", value: "domain" },
-	];
-
-	const filteredDomains = React.useMemo(() => {
-		let out = domains;
-		if (query.trim()) {
-			const q = query.toLowerCase();
-			out = out.filter(
-				(d) =>
-					d.value.toLowerCase().includes(q) ||
-					(d.providerHint
-						? PROVIDER_CONFIG[d.providerHint].name.toLowerCase().includes(q)
-						: false),
-			);
-		}
-		if (tab === "domain" || tab === "all") return out;
-		return [];
-	}, [domains, query, tab]);
-
-	const filteredEmails = React.useMemo(() => {
-		let out = emails;
-		if (query.trim()) {
-			const q = query.toLowerCase();
-			out = out.filter(
-				(e) =>
-					e.value.toLowerCase().includes(q) ||
-					(e.providerHint
-						? PROVIDER_CONFIG[e.providerHint].name.toLowerCase().includes(q)
-						: false),
-			);
-		}
-		if (tab === "email" || tab === "all") return out;
-		return [];
-	}, [emails, query, tab]);
-
-	// ---- Actions (mocked) ----
-	const verifyDomain = async (id: string) => {
-		setVerifyingId(id);
-		try {
-			await new Promise((r) => setTimeout(r, 900));
-			setDomains((prev) =>
-				prev.map((d) => (d.id === id ? { ...d, status: "verified" } : d)),
-			);
-		} finally {
-			setVerifyingId(null);
-		}
-	};
-
-	const retryEmail = async (id: string) => {
-		setRetryingId(id);
-		try {
-			await new Promise((r) => setTimeout(r, 900));
-			setEmails((prev) =>
-				prev.map((e) => (e.id === id ? { ...e, status: "verified" } : e)),
-			);
-		} finally {
-			setRetryingId(null);
-		}
-	};
-
-	const makeDefault = (id: string) => {
-		setEmails((prev) => prev.map((e) => ({ ...e, default: e.id === id })));
-	};
-
-	const removeEmail = (id: string) =>
-		setEmails((prev) => prev.filter((e) => e.id !== id));
 
 	const [sendTesting, setSendTesting] = useState(false);
 
@@ -401,7 +246,7 @@ export default function MailIdentities({
 					{/*<h4 className="text-sm font-medium text-muted-foreground">DNS Records</h4>*/}
 					<div className="space-y-2">
 						{userDomainIdentity?.identities?.dnsRecords?.map(
-							(record, index) => (
+							(record: DnsRecord, index: number) => (
 								<div
 									key={index}
 									className="rounded-lg bg-background/70 border border-muted-foreground/20 p-3 text-xs font-mono space-y-1"
@@ -420,8 +265,8 @@ export default function MailIdentities({
 									{/* Name row with copy */}
 									<div className="flex items-center gap-2">
 										<span className="text-muted-foreground">Name:</span>
-										<code className="break-all">{record.name}</code>
-										<CopyButton value={record.name} timeout={2000}>
+										<code className="break-all">{record?.name ? record?.name : userDomainIdentity.identities.value}</code>
+										<CopyButton value={record?.name ? record?.name : userDomainIdentity.identities.value} timeout={2000}>
 											{({ copied, copy }) => (
 												<Tooltip label={copied ? "Copied!" : "Copy"} withArrow>
 													<ActionIcon
@@ -494,50 +339,10 @@ export default function MailIdentities({
 			</p>
 
 			<Card className="shadow-none">
-				<CardHeader className="gap-5">
-					<div className="flex flex-col gap-3">
-						<SegmentedControl
-							value={tab}
-							onChange={(v) => setTab(v as typeof tab)}
-							data={segmentedData}
-							size="sm"
-							color={theme}
-							fullWidth
-							aria-label="Filter identities"
-						/>
-
-						<div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-							<div className="grid w-full max-w-[560px] grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
-								<input
-									value={query}
-									onChange={(e) => setQuery(e.target.value)}
-									placeholder="Search identities or providers…"
-									className={cn(
-										"h-9 w-full rounded-md border bg-background px-3 text-sm outline-none",
-										"focus-visible:ring-2 focus-visible:ring-ring",
-									)}
-									aria-label="Search identities"
-								/>
-								<div className="flex gap-2">
-									<Button
-										className="w-full gap-2 sm:w-auto"
-										aria-label="Add identity"
-									>
-										<Plus className="size-4" />
-										Add Identity
-									</Button>
-								</div>
-							</div>
-						</div>
-					</div>
-				</CardHeader>
-
 				<CardContent className="space-y-10">
-					{/* Domains */}
 					<div className="space-y-3">
 						<SectionHeader
 							title="Domains"
-							// count={filteredDomains.length}
 							count={userDomainIdentities.length}
 							action={
 								<Button
@@ -552,44 +357,27 @@ export default function MailIdentities({
 								</Button>
 							}
 						/>
-						{/*{filteredDomains.length === 0 ? (*/}
-						{/*    <EmptyState kind="domain" query={query} />*/}
-						{/*) : (*/}
-						{/*    <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">*/}
-						{/*        {filteredDomains.map((d) => (*/}
-						{/*            <DomainCard*/}
-						{/*                key={d.id}*/}
-						{/*                d={d}*/}
-						{/*                onVerify={verifyDomain}*/}
-						{/*                verifying={verifyingId === d.id}*/}
-						{/*            />*/}
-						{/*        ))}*/}
-						{/*    </div>*/}
-						{/*)}*/}
 
 						{userDomainIdentities.length === 0 ? (
 							<EmptyState kind="domain" query={query} />
 						) : (
 							<div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
 								{userDomainIdentities.map((userDomainIdentity) => {
-									// const decrypted = parseSecret(smtpAccounts.find((s) => s.linkRow.accountId === userIdentity?.smtp_accounts?.id));
-									// const providerType =
-									//     userIdentity.smtp_accounts ? "smtp" : (userIdentity?.providers?.type as string);
+									const status = userDomainIdentity.identities
+										.status as IdentityStatus;
 
 									return (
 										<div
 											key={userDomainIdentity.identities.id}
 											className="rounded-lg border mb-4 p-4 sm:p-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
 										>
-											{/* Left: identity + meta */}
 											<div className="min-w-0">
 												<div className="flex items-start gap-2">
 													<Globe className="mt-1 size-4 shrink-0 text-muted-foreground" />
 													<div className="min-w-0">
 														<div className="truncate font-semibold text-brand-foreground flex gap-4">
 															{userDomainIdentity.identities.value}
-															{userDomainIdentity.identities.status ===
-															"verified" ? (
+															{status === "verified" ? (
 																<div
 																	className={
 																		"flex justify-center gap-1 items-center mx-2 text-teal-600 dark:text-brand-foreground font-medium text-xs"
@@ -599,7 +387,8 @@ export default function MailIdentities({
 																	<span>
 																		{
 																			IdentityStatusMeta[
-																				userDomainIdentity.identities.status
+																				userDomainIdentity.identities
+																					.status as IdentityStatus
 																			].label
 																		}
 																	</span>
@@ -625,7 +414,8 @@ export default function MailIdentities({
 																	<span>
 																		{
 																			IdentityStatusMeta[
-																				userDomainIdentity.identities.status
+																				userDomainIdentity.identities
+																					.status as IdentityStatus
 																			].label
 																		}
 																	</span>
@@ -635,26 +425,18 @@ export default function MailIdentities({
 
 														<div className="mt-2 flex flex-wrap items-center gap-2">
 															<span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-																{userDomainIdentity.identities.status ===
-																"verified" ? (
+																{status === "verified" ? (
 																	<CheckCircle className="size-3.5" />
 																) : (
 																	<Clock className="size-3.5" />
 																)}
 																{
 																	IdentityStatusMeta[
-																		userDomainIdentity.identities.status
+																		userDomainIdentity.identities
+																			.status as IdentityStatus
 																	].note
 																}
 															</span>
-
-															{/*<Badge className={"bg-amber-100 text-amber-900 dark:bg-amber-300/20 dark:text-amber-200"}>*/}
-															{/*    <Clock className="size-3.5" />*/}
-															{/*    Pending DNS*/}
-															{/*</Badge>*/}
-															{/*<ProviderBadge providerType={providerType} />*/}
-															{/*<IsVerifiedStatus verified={!!decrypted.sendVerified} statusName="Outgoing" />*/}
-															{/*<IsVerifiedStatus verified={!!decrypted.receiveVerified} statusName="Incoming" />*/}
 														</div>
 
 														<div className="flex gap-2 sm:gap-3 w-full sm:w-auto my-2">
@@ -663,7 +445,6 @@ export default function MailIdentities({
 																size="xs"
 																className="flex-1 sm:flex-none"
 																loading={verifyingDomainIdentity}
-																// onClick={() => initTestEmail(userIdentity, decrypted)}
 																onClick={async () => {
 																	setVerifyingDomainIdentity(true);
 																	const providerAccount = providerAccounts.find(
@@ -721,28 +502,6 @@ export default function MailIdentities({
 													</div>
 												</div>
 											</div>
-
-											{/* Right: actions */}
-											{/*<div className="flex gap-2 sm:gap-3 w-full sm:w-auto">*/}
-											{/*    <Button*/}
-											{/*        leftSection={<IconSend size={16} />}*/}
-											{/*        size="xs"*/}
-											{/*        className="flex-1 sm:flex-none"*/}
-											{/*        loading={sendTesting}*/}
-											{/*        onClick={() => initTestEmail(userIdentity, decrypted)}*/}
-											{/*    >*/}
-											{/*        Send Test Email*/}
-											{/*    </Button>*/}
-
-											{/*    <ActionIcon*/}
-											{/*        color="red"*/}
-											{/*        className="shrink-0"*/}
-											{/*        aria-label="Remove identity"*/}
-											{/*        onClick={() => confirmDeleteIdentity(userIdentity)}*/}
-											{/*    >*/}
-											{/*        <Trash2 className="h-4 w-4" />*/}
-											{/*    </ActionIcon>*/}
-											{/*</div>*/}
 										</div>
 									);
 								})}
@@ -750,14 +509,11 @@ export default function MailIdentities({
 						)}
 					</div>
 
-					{/* Divider rhythm */}
 					<div className="border-t" />
 
-					{/* Emails */}
 					<div className="space-y-3">
 						<SectionHeader
 							title="Email Addresses"
-							// count={filteredEmails.length}
 							count={userEmailIdentities.length}
 							action={
 								<Button
@@ -833,15 +589,7 @@ export default function MailIdentities({
 											</div>
 										</div>
 
-										{/* Right: actions */}
 										<div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
-											<button
-												onClick={() =>
-													backfillAccount(userIdentity.identities.id)
-												}
-											>
-												trigger
-											</button>
 											<Button
 												leftSection={<IconSend size={16} />}
 												size="xs"
@@ -850,7 +598,6 @@ export default function MailIdentities({
 												href={`/mail/${userIdentity.identities.publicId}/inbox`}
 												target={"_blank"}
 												component="a"
-												// onClick={() => initTestEmail(userIdentity, decrypted)}
 											>
 												Mailbox
 											</Button>
@@ -909,5 +656,3 @@ function EmptyState({
 		</div>
 	);
 }
-
-// /mail/<mailboxId>/inbox
