@@ -433,6 +433,7 @@ function EmailRenderer({
 							scrollToEditor(el, { offsetTop: 96, minBottomGap: 64 });
 							requestAnimationFrame(() => editorRef.current?.focus());
 						}}
+						handleClose={() => setShowEditor(false)}
 						showEditorMode={showEditorMode}
 					/>
 				</div>

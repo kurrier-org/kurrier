@@ -31,9 +31,7 @@ export default async function DashboardLayout({
 				identity={identity}
 				publicConfig={publicConfig}
 			/>
-			<SidebarInset>
-                {children}
-			</SidebarInset>
+			<SidebarInset>{children}</SidebarInset>
 		</SidebarProvider>
 	);
 }

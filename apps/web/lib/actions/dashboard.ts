@@ -42,7 +42,7 @@ import slugify from "@sindresorhus/slugify";
 import { rlsClient } from "@/lib/actions/clients";
 import { v4 as uuidv4 } from "uuid";
 import { createClient } from "@/lib/supabase/server";
-import {backfillMailboxes} from "@/lib/actions/mailbox";
+import { backfillMailboxes } from "@/lib/actions/mailbox";
 
 const DASHBOARD_PATH = "/dashboard/providers";
 
@@ -490,9 +490,9 @@ export const initializeMailboxes = async (emailIdentity: IdentityEntity) => {
 	if (emailIdentity.kind !== "email") return;
 
 	if (emailIdentity.smtpAccountId) {
-        await backfillMailboxes(emailIdentity.id)
-        return
-    }
+		await backfillMailboxes(emailIdentity.id);
+		return;
+	}
 	// insert one row per mailbox kind
 	const rows = SYSTEM_MAILBOXES.map((m) => ({
 		ownerId: emailIdentity.ownerId,

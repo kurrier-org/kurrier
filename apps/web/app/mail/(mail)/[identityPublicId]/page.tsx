@@ -1,11 +1,7 @@
 import React from "react";
 
 async function Page() {
-
-	return (
-		<>
-		</>
-	);
+	return <></>;
 }
 
 export default Page;

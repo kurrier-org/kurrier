@@ -41,10 +41,8 @@ const data = {
 		email: "m@example.com",
 		avatar: "/avatars/shadcn.jpg",
 	},
-	navMain: [
-	],
-	mails: [
-	],
+	navMain: [],
+	mails: [],
 };
 
 export function AppSidebar({

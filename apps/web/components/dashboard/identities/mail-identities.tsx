@@ -265,8 +265,19 @@ export default function MailIdentities({
 									{/* Name row with copy */}
 									<div className="flex items-center gap-2">
 										<span className="text-muted-foreground">Name:</span>
-										<code className="break-all">{record?.name ? record?.name : userDomainIdentity.identities.value}</code>
-										<CopyButton value={record?.name ? record?.name : userDomainIdentity.identities.value} timeout={2000}>
+										<code className="break-all">
+											{record?.name
+												? record?.name
+												: userDomainIdentity.identities.value}
+										</code>
+										<CopyButton
+											value={
+												record?.name
+													? record?.name
+													: userDomainIdentity.identities.value
+											}
+											timeout={2000}
+										>
 											{({ copied, copy }) => (
 												<Tooltip label={copied ? "Copied!" : "Copy"} withArrow>
 													<ActionIcon

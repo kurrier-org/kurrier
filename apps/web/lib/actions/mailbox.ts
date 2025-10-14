@@ -3,12 +3,13 @@
 import { cache } from "react";
 import { rlsClient } from "@/lib/actions/clients";
 import {
-    identities,
-    mailboxes, mailboxSync,
-    mailboxThreads,
-    messageAttachments,
-    messages,
-    threads,
+	identities,
+	mailboxes,
+	mailboxSync,
+	mailboxThreads,
+	messageAttachments,
+	messages,
+	threads,
 } from "@db";
 import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -105,18 +106,19 @@ export const fetchMailbox = cache(
 				.where(eq(messages.mailboxId, activeMailbox.id)),
 		);
 
-        const [sync] = await rls((tx) => {
-            return tx.select().from(mailboxSync).where(eq(
-                mailboxSync.mailboxId, activeMailbox.id
-            ))
-        })
+		const [sync] = await rls((tx) => {
+			return tx
+				.select()
+				.from(mailboxSync)
+				.where(eq(mailboxSync.mailboxId, activeMailbox.id));
+		});
 
 		return {
 			activeMailbox,
 			mailboxList,
 			identity,
 			count: Number(messagesCount.count),
-            mailboxSync: sync
+			mailboxSync: sync,
 		};
 	},
 );
@@ -217,22 +219,22 @@ export const initSearch = async (
 };
 
 export const backfillMailboxes = async (identityId: string) => {
-    const { smtpQueue, smtpEvents } = await getRedis();
-    const job = await smtpQueue.add(
-        "backfill-mailboxes",
-        { identityId },
-        {
-            jobId: `backfill-mailboxes-${identityId}`,
-            attempts: 3,
-            backoff: {
-                type: "exponential",
-                delay: 1000,
-            },
-        },
-    );
-    const res = await job.waitUntilFinished(smtpEvents);
-    backfillAccount(identityId)
-    console.log("res", res)
+	const { smtpQueue, smtpEvents } = await getRedis();
+	const job = await smtpQueue.add(
+		"backfill-mailboxes",
+		{ identityId },
+		{
+			jobId: `backfill-mailboxes-${identityId}`,
+			attempts: 3,
+			backoff: {
+				type: "exponential",
+				delay: 1000,
+			},
+		},
+	);
+	const res = await job.waitUntilFinished(smtpEvents);
+	backfillAccount(identityId);
+	console.log("res", res);
 };
 
 export const backfillAccount = async (identityId: string) => {
@@ -280,7 +282,12 @@ export const fetchWebMailThreadDetail = cache(async (threadId: string) => {
 });
 
 export const markAsRead = cache(
-	async (threadIds: string | string[], mailboxId: string, markSmtp: boolean, refresh = true) => {
+	async (
+		threadIds: string | string[],
+		mailboxId: string,
+		markSmtp: boolean,
+		refresh = true,
+	) => {
 		const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
 			.map(String)
 			.filter(Boolean);
@@ -317,48 +324,50 @@ export const markAsRead = cache(
 			revalidatePath("/mail");
 		}
 
-        if (markSmtp){
+		if (markSmtp) {
+			const { smtpQueue, searchIngestQueue } = await getRedis();
 
-            const { smtpQueue, searchIngestQueue } = await getRedis();
+			await Promise.all(
+				ids.map((threadId) =>
+					smtpQueue.add(
+						"mail:set-flags",
+						{ threadId, mailboxId, op: "read" },
+						{
+							attempts: 3,
+							backoff: { type: "exponential", delay: 1500 },
+							removeOnComplete: true,
+							removeOnFail: false,
+						},
+					),
+				),
+			);
 
-            await Promise.all(
-                ids.map((threadId) =>
-                    smtpQueue.add(
-                        "mail:set-flags",
-                        { threadId, mailboxId, op: "read" },
-                        {
-                            attempts: 3,
-                            backoff: { type: "exponential", delay: 1500 },
-                            removeOnComplete: true,
-                            removeOnFail: false,
-                        },
-                    ),
-                ),
-            );
-
-            await Promise.all(
-                ids.map((threadId) =>
-                    searchIngestQueue.add(
-                        "refresh-thread",
-                        { threadId },
-                        {
-                            jobId: `refresh-${threadId}`, // collapse dupes
-                            removeOnComplete: true,
-                            removeOnFail: false,
-                            attempts: 3,
-                            backoff: { type: "exponential", delay: 1500 },
-                        },
-                    ),
-                ),
-            );
-
-        }
-
+			await Promise.all(
+				ids.map((threadId) =>
+					searchIngestQueue.add(
+						"refresh-thread",
+						{ threadId },
+						{
+							jobId: `refresh-${threadId}`, // collapse dupes
+							removeOnComplete: true,
+							removeOnFail: false,
+							attempts: 3,
+							backoff: { type: "exponential", delay: 1500 },
+						},
+					),
+				),
+			);
+		}
 	},
 );
 
 export const markAsUnread = cache(
-	async (threadIds: string | string[], mailboxId: string, markSmtp: boolean, refresh: boolean) => {
+	async (
+		threadIds: string | string[],
+		mailboxId: string,
+		markSmtp: boolean,
+		refresh: boolean,
+	) => {
 		const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
 			.map(String)
 			.filter(Boolean);
@@ -422,49 +431,47 @@ export const markAsUnread = cache(
 			revalidatePath("/mail");
 		}
 
-		if(markSmtp){
-            const { smtpQueue, searchIngestQueue } = await getRedis();
+		if (markSmtp) {
+			const { smtpQueue, searchIngestQueue } = await getRedis();
 
-            await Promise.all(
-                ids.map((threadId) =>
-                    smtpQueue.add(
-                        "mail:set-flags",
-                        { threadId, mailboxId, op: "unread" },
-                        {
-                            attempts: 3,
-                            backoff: { type: "exponential", delay: 1500 },
-                            removeOnComplete: true,
-                            removeOnFail: false,
-                        },
-                    ),
-                ),
-            );
+			await Promise.all(
+				ids.map((threadId) =>
+					smtpQueue.add(
+						"mail:set-flags",
+						{ threadId, mailboxId, op: "unread" },
+						{
+							attempts: 3,
+							backoff: { type: "exponential", delay: 1500 },
+							removeOnComplete: true,
+							removeOnFail: false,
+						},
+					),
+				),
+			);
 
-            await Promise.all(
-                ids.map((threadId) =>
-                    searchIngestQueue.add(
-                        "refresh-thread",
-                        { threadId },
-                        {
-                            jobId: `refresh-${threadId}`, // collapse dupes across callers
-                            removeOnComplete: true,
-                            removeOnFail: false,
-                            attempts: 3,
-                            backoff: { type: "exponential", delay: 1500 },
-                        },
-                    ),
-                ),
-            );
-        }
-
+			await Promise.all(
+				ids.map((threadId) =>
+					searchIngestQueue.add(
+						"refresh-thread",
+						{ threadId },
+						{
+							jobId: `refresh-${threadId}`, // collapse dupes across callers
+							removeOnComplete: true,
+							removeOnFail: false,
+							attempts: 3,
+							backoff: { type: "exponential", delay: 1500 },
+						},
+					),
+				),
+			);
+		}
 	},
 );
-
 
 export const moveToTrash = async (
 	threadIds: string | string[],
 	mailboxId: string,
-    moveImap: boolean,
+	moveImap: boolean,
 	refresh: boolean,
 	messageId?: string,
 ) => {
@@ -622,12 +629,10 @@ export async function fetchMailboxThreadsList(
 	return { threads: rows, missing };
 }
 
-
-
 export async function deleteForever(
 	threadIds: string | string[] | null,
 	mailboxId: string,
-    imapDelete: boolean,
+	imapDelete: boolean,
 	refresh = true,
 	opts?: { emptyAll?: boolean }, // NEW
 ) {

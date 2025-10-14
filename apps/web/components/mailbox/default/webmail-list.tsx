@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import {MailboxEntity, MailboxSyncEntity} from "@db";
+import { MailboxEntity, MailboxSyncEntity } from "@db";
 import { PublicConfig } from "@schema";
 import {
 	FetchMailboxThreadsResult,
@@ -11,21 +11,21 @@ import WebmailListItem from "@/components/mailbox/default/webmail-list-item";
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
-import {toast} from "sonner";
+import { toast } from "sonner";
 
 type WebListProps = {
 	mailboxThreads: FetchMailboxThreadsResult;
 	publicConfig: PublicConfig;
 	activeMailbox: MailboxEntity;
 	identityPublicId: string;
-    mailboxSync?: MailboxSyncEntity
+	mailboxSync?: MailboxSyncEntity;
 };
 
 export default function WebmailList({
 	mailboxThreads,
 	activeMailbox,
 	identityPublicId,
-    mailboxSync
+	mailboxSync,
 }: WebListProps) {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -35,15 +35,15 @@ export default function WebmailList({
 		revalidateMailbox(url);
 	}, [pathname, searchParams]);
 
-    useEffect(() => {
-        if (mailboxSync){
-            if (mailboxSync?.phase !== "IDLE"){
-                toast.info("Mailbox Busy", {
-                    description: "Mailbox is currently syncing",
-                });
-            }
-        }
-    }, [mailboxSync, mailboxSync?.phase])
+	useEffect(() => {
+		if (mailboxSync) {
+			if (mailboxSync?.phase !== "IDLE") {
+				toast.info("Mailbox Busy", {
+					description: "Mailbox is currently syncing",
+				});
+			}
+		}
+	}, [mailboxSync, mailboxSync?.phase]);
 
 	return (
 		<>
@@ -61,7 +61,10 @@ export default function WebmailList({
 					</div>
 				) : (
 					<div className="rounded-xl border bg-background/50 z-[50]">
-						<MailListHeader mailboxThreads={mailboxThreads} mailboxSync={mailboxSync} />
+						<MailListHeader
+							mailboxThreads={mailboxThreads}
+							mailboxSync={mailboxSync}
+						/>
 
 						<ul role="list" className="divide-y bg-white rounded-4xl">
 							{mailboxThreads.map((mailboxThreadItem) => (
@@ -70,7 +73,7 @@ export default function WebmailList({
 									mailboxThreadItem={mailboxThreadItem}
 									activeMailbox={activeMailbox}
 									identityPublicId={identityPublicId}
-                                    mailboxSync={mailboxSync}
+									mailboxSync={mailboxSync}
 								/>
 							))}
 						</ul>

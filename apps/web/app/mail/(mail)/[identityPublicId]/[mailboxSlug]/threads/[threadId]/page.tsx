@@ -17,7 +17,10 @@ async function Page({
 	}>;
 }) {
 	const { threadId, identityPublicId, mailboxSlug } = await params;
-	const { activeMailbox, mailboxSync } = await fetchMailbox(identityPublicId, mailboxSlug);
+	const { activeMailbox, mailboxSync } = await fetchMailbox(
+		identityPublicId,
+		mailboxSlug,
+	);
 	await markAsRead(threadId, activeMailbox.id, !!mailboxSync, false);
 	const activeThread = await fetchWebMailThreadDetail(threadId);
 

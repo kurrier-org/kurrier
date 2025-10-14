@@ -10,7 +10,7 @@ import {
 	revalidateMailbox,
 } from "@/lib/actions/mailbox";
 import { ActionIcon, Button, Tooltip } from "@mantine/core";
-import type {MailboxEntity, MailboxSyncEntity} from "@db";
+import type { MailboxEntity, MailboxSyncEntity } from "@db";
 import { toast } from "sonner";
 import clsx from "clsx";
 import {
@@ -27,10 +27,10 @@ import {
 
 function MailListHeader({
 	mailboxThreads,
-    mailboxSync
+	mailboxSync,
 }: {
 	mailboxThreads: FetchMailboxThreadsResult;
-    mailboxSync?: MailboxSyncEntity;
+	mailboxSync?: MailboxSyncEntity;
 }) {
 	const { state, setState } = useDynamicContext<{
 		selectedThreadIds: Set<string>;
@@ -56,27 +56,26 @@ function MailListHeader({
 
 	const [reloading, setReloading] = useState(false);
 	const reload = async () => {
-        if (mailboxSync){
-            const identityId = identityIdRef.current;
-            if (!identityId) return;
-            try {
-            	setReloading(true);
-            	await deltaFetch({ identityId });
-            	await revalidateMailbox("/mail");
-            } finally {
-            	setReloading(false);
-            }
-        } else {
-            revalidateMailbox("/mail")
-        }
-
+		if (mailboxSync) {
+			const identityId = identityIdRef.current;
+			if (!identityId) return;
+			try {
+				setReloading(true);
+				await deltaFetch({ identityId });
+				await revalidateMailbox("/mail");
+			} finally {
+				setReloading(false);
+			}
+		} else {
+			revalidateMailbox("/mail");
+		}
 	};
 
 	const markRead = async () => {
 		await markAsRead(
 			Array.from(state?.selectedThreadIds ?? []),
 			String(mailboxIdRef.current),
-            !!mailboxSync,
+			!!mailboxSync,
 			true,
 		);
 	};
@@ -89,7 +88,7 @@ function MailListHeader({
 		await moveToTrash(
 			Array.from(state?.selectedThreadIds ?? []),
 			String(mailboxIdRef.current),
-            !!mailboxSync,
+			!!mailboxSync,
 			true,
 		);
 		toast.success("Messages moved to Trash", { position: "bottom-left" });
@@ -99,16 +98,22 @@ function MailListHeader({
 		await deleteForever(
 			Array.from(state?.selectedThreadIds ?? []),
 			String(mailboxIdRef.current),
-            !!mailboxSync,
+			!!mailboxSync,
 			true,
 		);
 		toast.success("Thread deleted forever", { position: "bottom-left" });
 	};
 
 	const emptyTrash = async () => {
-		await deleteForever(null, String(mailboxIdRef.current), !!mailboxSync, true, {
-			emptyAll: true,
-		});
+		await deleteForever(
+			null,
+			String(mailboxIdRef.current),
+			!!mailboxSync,
+			true,
+			{
+				emptyAll: true,
+			},
+		);
 		toast.success("Trash removed successfully", { position: "bottom-left" });
 	};
 
@@ -148,7 +153,13 @@ function MailListHeader({
 								variant="transparent"
 								onClick={reload}
 								title="Sync"
-								disabled={mailboxSync ? !identityIdRef.current || reloading || mailboxSync?.phase !== "IDLE" : !identityIdRef.current || reloading}
+								disabled={
+									mailboxSync
+										? !identityIdRef.current ||
+											reloading ||
+											mailboxSync?.phase !== "IDLE"
+										: !identityIdRef.current || reloading
+								}
 								className="h-7 w-7"
 							>
 								<RotateCw

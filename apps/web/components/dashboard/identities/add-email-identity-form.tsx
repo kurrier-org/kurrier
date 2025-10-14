@@ -182,12 +182,11 @@ function AddEmailIdentityForm({
 		...extraFields,
 	];
 
-    const finalizeEmail = async () => {
-        console.log("provider", provider)
-        console.log("activeId", activeId)
-        if (onCompleted) onCompleted()
-
-    };
+	const finalizeEmail = async () => {
+		console.log("provider", provider);
+		console.log("activeId", activeId);
+		if (onCompleted) onCompleted();
+	};
 
 	return (
 		<div>
@@ -208,4 +207,3 @@ function AddEmailIdentityForm({
 }
 
 export default AddEmailIdentityForm;
-

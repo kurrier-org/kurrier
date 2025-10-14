@@ -28,10 +28,21 @@ type Props = {
 	publicConfig: PublicConfig;
 	showEditorMode: string;
 	sentMailboxId: string;
+	handleClose: () => void;
 };
 
 const EmailEditor = forwardRef<EmailEditorHandle, Props>(
-	({ onReady, message, publicConfig, showEditorMode, sentMailboxId }, ref) => {
+	(
+		{
+			onReady,
+			message,
+			publicConfig,
+			showEditorMode,
+			sentMailboxId,
+			handleClose,
+		},
+		ref,
+	) => {
 		const textEditorRef = useRef<TextEditorHandle>(null);
 
 		useImperativeHandle(
@@ -59,6 +70,7 @@ const EmailEditor = forwardRef<EmailEditorHandle, Props>(
 					description: formState.error,
 				});
 			} else if (formState.success) {
+				handleClose();
 				toast.success("Success", {
 					description: formState.success,
 				});

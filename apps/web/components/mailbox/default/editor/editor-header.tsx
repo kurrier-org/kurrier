@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
 	ActionIcon,
 	Select,
@@ -51,6 +51,24 @@ function EditorHeader() {
 
 	const CurrentIcon = (options.find((o) => o.value === mode)?.Icon ??
 		Reply) as typeof Reply;
+
+	const computedSubject = useMemo(() => {
+		if (!state.message) return "";
+
+		const original = state.message.subject?.trim() || "";
+
+		const cleaned = original.replace(/^(re|fwd)\s*:\s*/gi, "");
+
+		if (mode === "reply") return `Re: ${cleaned}`;
+		if (mode === "forward") return `Fwd: ${cleaned}`;
+		return cleaned;
+	}, [state.message, mode]);
+
+	const [subject, setSubject] = useState(computedSubject);
+
+	useEffect(() => {
+		setSubject(computedSubject);
+	}, [computedSubject]);
 
 	return (
 		<>
@@ -129,7 +147,12 @@ function EditorHeader() {
 			</div>
 			<div className={"border-b flex justify-start items-center px-2 gap-2"}>
 				<span className="text-sm text-muted-foreground">Subject</span>
-				<Input variant={"unstyled"} name={"subject"} />
+				<Input
+					variant={"unstyled"}
+					name={"subject"}
+					value={subject}
+					onChange={(e) => setSubject(e.currentTarget.value)}
+				/>
 			</div>
 		</>
 	);

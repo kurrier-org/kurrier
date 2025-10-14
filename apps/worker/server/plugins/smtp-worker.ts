@@ -10,7 +10,7 @@ import { moveMail } from "../../lib/imap/imap-move";
 
 import { getRedis } from "../../lib/get-redis";
 import { deleteMail } from "../../lib/imap/imap-delete";
-import {backfillMailboxes} from "../../lib/imap/imap-backfill-mailboxes";
+import { backfillMailboxes } from "../../lib/imap/imap-backfill-mailboxes";
 
 export default defineNitroPlugin(async (nitroApp) => {
 	console.log("**********************SMTP-WORKER***************************");
@@ -55,11 +55,11 @@ export default defineNitroPlugin(async (nitroApp) => {
 				await deleteMail(job.data, imapInstances);
 			} else if (job.name === "smtp:append:sent") {
 			} else if (job.name === "backfill-mailboxes") {
-                const identityId = job.data.identityId;
-                const client = await initSmtpClient(identityId, imapInstances);
-                if (client?.authenticated && client?.usable) {
-                    await backfillMailboxes(client, identityId);
-                }
+				const identityId = job.data.identityId;
+				const client = await initSmtpClient(identityId, imapInstances);
+				if (client?.authenticated && client?.usable) {
+					await backfillMailboxes(client, identityId);
+				}
 			} else if (job.name === "backfill") {
 				const identityId = job.data.identityId;
 				const client = await initSmtpClient(identityId, imapInstances);
