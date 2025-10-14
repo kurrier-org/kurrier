@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.39
+
+### Patch Changes
+
+- [#124](https://github.com/kurrier-org/kurrier/pull/124) [`4266b48`](https://github.com/kurrier-org/kurrier/commit/4266b48470268c76fc3b23f8ad380c74f97f7f02) Thanks [@krokhale](https://github.com/krokhale)! - Support for webmail operations for non-IMAP accounts
+
 ## 0.0.38
 
 ### Patch Changes
