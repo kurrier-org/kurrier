@@ -1,5 +1,11 @@
 # @kurrier/schema
 
+## 1.0.9
+
+### Patch Changes
+
+- [#131](https://github.com/kurrier-org/kurrier/pull/131) [`236a308`](https://github.com/kurrier-org/kurrier/commit/236a308106bcc567946044f9958446af7d7be056) Thanks [@krokhale](https://github.com/krokhale)! - Fixes, cleanups and updates for the mail identities page
+
 ## 1.0.8
 
 ### Patch Changes
