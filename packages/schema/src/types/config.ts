@@ -35,6 +35,7 @@ export const ZPublicConfig = z.object({
 	SUPABASE_DOMAIN: z.string("SUPABASE_DOMAIN must be present"),
 	SUPABASE_ANON_KEY: z.string("SUPABASE_ANON_KEY must be present"),
 	WEB_URL: z.string("WEB_URL must be present"),
+	DOCS_URL: z.string().optional(),
 	WEB_PROXY_URL: z.string().optional(),
 });
 

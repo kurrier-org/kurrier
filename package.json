@@ -35,6 +35,7 @@
 		"@sindresorhus/slugify": "^3.0.0",
 		"@supabase/supabase-js": "^2.57.4",
 		"bullmq": "^5.58.9",
+		"crypto": "^1.0.1",
 		"drizzle-orm": "^0.44.6",
 		"drizzle-zod": "^0.8.3",
 		"ioredis": "^5.8.0",

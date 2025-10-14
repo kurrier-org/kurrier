@@ -30,7 +30,7 @@ Clone the repository and copy the example environment file:
 ```bash
 git clone git@github.com:kurrier-org/kurrier.git
 cd kurrier/db
-cp .env.example .env
+cp example.env .env
 ```
 
 Open the .env file and set your environment variables:
@@ -85,6 +85,9 @@ This command will:
 - Start Postgres, Redis, db services, and the Kurrier web interface.
 - Run the initial database bootstrap.
 - Expose the web UI and API worker locally.
+
+At this point, Kurrier should be up and running! You are free to add your own proxy (e.g., Nginx, Caddy) in front of it if you want to use a custom domain or HTTPS. If you want to use it locally, you can skip that step.
+If you would like us to add a reverse proxy to the Docker setup, please open an issue or PR on GitHub.
 
 <Card>
     ✅ You can re-run <code>docker compose up -d</code> anytime to restart Kurrier after a system reboot.
