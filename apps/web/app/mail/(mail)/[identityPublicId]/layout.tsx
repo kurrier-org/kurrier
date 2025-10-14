@@ -2,6 +2,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/ui/dashboards/mailbox/default/app-sidebar";
 import { fetchMailbox } from "@/lib/actions/mailbox";
 import { getPublicEnv } from "@schema";
+import { getGravatarUrl, isSignedIn } from "@/lib/actions/auth";
 
 export default async function DashboardLayout({
 	children,
@@ -16,6 +17,8 @@ export default async function DashboardLayout({
 		mailboxSlug,
 	);
 	const publicConfig = getPublicEnv();
+	const user = await isSignedIn();
+	const avatar = await getGravatarUrl(String(user?.email));
 
 	return (
 		<SidebarProvider
@@ -30,6 +33,8 @@ export default async function DashboardLayout({
 				mailboxList={mailboxList}
 				identity={identity}
 				publicConfig={publicConfig}
+				user={user}
+				avatar={avatar}
 			/>
 			<SidebarInset>{children}</SidebarInset>
 		</SidebarProvider>

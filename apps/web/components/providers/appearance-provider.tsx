@@ -17,8 +17,6 @@ import {
 	setThemeServer,
 } from "@/lib/actions/appearance";
 import { Toaster } from "@/components/ui/sonner";
-// import {MantineProvider} from "@mantine/core";
-// import {createMantineTheme} from "@/lib/mantine-theme";
 
 type AppearanceCtx = {
 	theme: ThemeName;

@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
+import { useMemo } from "react";
 import { BookOpen, LayoutDashboard, Plug, Send } from "lucide-react";
 
 import { NavMain } from "@/components/ui/dashboards/workspace/nav-main";
-import { NavSecondary } from "@/components/nav-secondary";
 import {
 	Sidebar,
 	SidebarContent,
@@ -18,6 +18,9 @@ import Link from "next/link";
 import { PublicConfig } from "@schema";
 import { UserResponse } from "@supabase/supabase-js";
 import { NavUser } from "@/components/ui/dashboards/workspace/nav-user";
+import { Switch } from "@mantine/core";
+import { IconMoonStars, IconSun } from "@tabler/icons-react";
+import { useAppearance } from "@/components/providers/appearance-provider";
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	publicConfig: PublicConfig;
@@ -29,11 +32,6 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
 	const { publicConfig, user, avatar, ...restProps } = props;
 
 	const data = {
-		user: {
-			name: "Kurrier User",
-			email: "you@kurrier.dev",
-			avatar: "/avatars/placeholder.png",
-		},
 		navMain: [
 			{
 				title: "Dashboard",
@@ -63,6 +61,19 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
 		],
 	};
 
+	const { mode, setMode } = useAppearance();
+
+	const prefersDark = useMemo(() => {
+		if (typeof window === "undefined") return false;
+		return window.matchMedia("(prefers-color-scheme: dark)").matches;
+	}, []);
+
+	const isDark = useMemo(() => {
+		if (mode === "dark") return true;
+		if (mode === "light") return false;
+		return prefersDark; // mode === "system"
+	}, [mode, prefersDark]);
+
 	return (
 		<Sidebar variant="inset" {...restProps}>
 			<SidebarHeader>
@@ -78,9 +89,20 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
 					</SidebarMenuItem>
 				</SidebarMenu>
 			</SidebarHeader>
-			<SidebarContent>
+			<SidebarContent className={"relative"}>
 				<NavMain items={data.navMain} />
-				<NavSecondary items={data.navSecondary} className="mt-auto" />
+				<div className={"absolute bottom-2 left-2"}>
+					<Switch
+						size="md"
+						checked={!isDark}
+						onChange={(e) =>
+							setMode(e.currentTarget.checked ? "light" : "dark")
+						}
+						onLabel={<IconSun size={16} stroke={2.5} />}
+						offLabel={<IconMoonStars size={16} stroke={2.5} />}
+						aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+					/>
+				</div>
 			</SidebarContent>
 			<SidebarFooter>
 				<NavUser user={user} avatar={avatar} />
