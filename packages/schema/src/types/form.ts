@@ -25,6 +25,7 @@ export type BaseFormProps = {
 	onSuccess?: (data: FormData | any) => void;
 	formWrapperClasses?: string;
 	errorClasses?: string;
+	formKey?: string;
 };
 
 export type FormState<TData = unknown> = {

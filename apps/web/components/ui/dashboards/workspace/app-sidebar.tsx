@@ -2,22 +2,15 @@
 
 import * as React from "react";
 import {
-	Activity,
 	BookOpen,
-	Building2,
-	Inbox,
-	Key,
 	LayoutDashboard,
 	LifeBuoy,
 	Mail,
 	Plug,
 	Send,
-	Settings2,
-	User,
 } from "lucide-react";
 
 import { NavMain } from "@/components/ui/dashboards/workspace/nav-main";
-// import { NavProjects } from "@/components/nav-projects";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
 import {
@@ -61,43 +54,8 @@ const data = {
 				// { title: "Add Identity", url: "/dashboard/identities/new" },
 			],
 		},
-		{
-			title: "Messages",
-			url: "/dashboard/messages",
-			icon: Inbox,
-			items: [
-				{ title: "Outbound (Sent)", url: "/dashboard/messages/outbound" },
-				{ title: "Inbound (Received)", url: "/dashboard/messages/inbound" },
-			],
-		},
-		{
-			title: "Events & Logs",
-			url: "/dashboard/events",
-			icon: Activity,
-			items: [
-				{ title: "Delivery Events", url: "/dashboard/events" },
-				{ title: "Webhooks", url: "/dashboard/webhooks" },
-			],
-		},
-		{
-			title: "Settings",
-			url: "/dashboard/settings",
-			icon: Settings2,
-			items: [
-				{ title: "Profile", url: "/dashboard/settings/profile", icon: User },
-				{ title: "API Keys", url: "/dashboard/settings/keys", icon: Key },
-				{
-					title: "Organization",
-					url: "/dashboard/settings/org",
-					icon: Building2,
-				},
-			],
-		},
 	],
-	navSecondary: [
-		{ title: "Docs", url: "/docs", icon: BookOpen },
-		{ title: "Support", url: "/support", icon: LifeBuoy },
-	],
+	navSecondary: [{ title: "Docs", url: "/docs", icon: BookOpen }],
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

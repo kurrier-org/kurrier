@@ -143,24 +143,7 @@ export function AppSidebar({
 					</div>
 					<div className={"-mt-1"}>
 						<ComposeMail publicConfig={publicConfig} />
-						{/*<Button*/}
-						{/*    size="lg"*/}
-						{/*    className="w-[140px] justify-start gap-3 rounded-2xl bg-white text-brand shadow hover:bg-gray-50"*/}
-						{/*>*/}
-						{/*    <MailPlus className="h-5 w-5 text-brand" />*/}
-						{/*    Compose*/}
-						{/*</Button>*/}
 					</div>
-					{/*<div className="flex w-full items-center justify-between">*/}
-					{/*    <div className="text-foreground text-base font-medium">*/}
-					{/*        {activeItem?.title}*/}
-					{/*    </div>*/}
-					{/*    <Label className="flex items-center gap-2 text-sm">*/}
-					{/*        <span>Unreads</span>*/}
-					{/*        <Switch className="shadow-none" />*/}
-					{/*    </Label>*/}
-					{/*</div>*/}
-					{/*<SidebarInput placeholder="Type to search..." />*/}
 				</SidebarHeader>
 				<SidebarContent>
 					<SidebarGroup className="px-0">

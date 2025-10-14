@@ -92,13 +92,12 @@ export default function MailIdentities({
 
 	const [query, setQuery] = React.useState("");
 
-	const [sendTesting, setSendTesting] = useState(false);
-
 	const initTestEmail = async (
 		userIdentity: FetchUserIdentitiesResult[number],
 		decryptedSecrets: Record<any, unknown>,
 	) => {
-		setSendTesting(true);
+		// setSendTesting(true);
+		setSendingEmailId(userIdentity.identities.id);
 		const res = await testSendingEmail(userIdentity, decryptedSecrets);
 		if (res.success) {
 			toast.success(res.message, {
@@ -109,7 +108,8 @@ export default function MailIdentities({
 				description: res.message,
 			});
 		}
-		setSendTesting(false);
+		// setSendTesting(false);
+		setSendingEmailId(null);
 	};
 
 	const openAddEmailForm = async () => {
@@ -152,7 +152,6 @@ export default function MailIdentities({
 						providerOptions={providerOptions}
 						providerAccounts={providerAccounts}
 						onCompleted={(res: FormState) => {
-							console.log("AddDomainIdentityForm onCompleted", res);
 							modals.close(openModalId);
 						}}
 					/>
@@ -321,12 +320,12 @@ export default function MailIdentities({
 										</CopyButton>
 									</div>
 
-									{/*{record.priority && (*/}
-									{/*    <div>*/}
-									{/*        <span className="text-muted-foreground">Priority:</span>{" "}*/}
-									{/*        {record.priority}*/}
-									{/*    </div>*/}
-									{/*)}*/}
+									{record.priority && (
+										<div>
+											<span className="text-muted-foreground">Priority:</span>{" "}
+											{record?.priority || "10"}
+										</div>
+									)}
 								</div>
 							),
 						)}
@@ -336,7 +335,10 @@ export default function MailIdentities({
 		});
 	};
 
-	const [verifyingDomainIdentity, setVerifyingDomainIdentity] = useState(false);
+	const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
+	const [verifyingDomainId, setVerifyingDomainId] = useState<string | null>(
+		null,
+	);
 
 	return (
 		<Container variant="wide">
@@ -455,9 +457,14 @@ export default function MailIdentities({
 																leftSection={<RefreshCw className="size-4" />}
 																size="xs"
 																className="flex-1 sm:flex-none"
-																loading={verifyingDomainIdentity}
+																loading={
+																	verifyingDomainId ===
+																	userDomainIdentity.identities.id
+																}
 																onClick={async () => {
-																	setVerifyingDomainIdentity(true);
+																	setVerifyingDomainId(
+																		userDomainIdentity.identities.id,
+																	);
 																	const providerAccount = providerAccounts.find(
 																		(acc) => {
 																			return (
@@ -481,7 +488,7 @@ export default function MailIdentities({
 																				"Please check your DNS records. If you've just added them, it may take some time for changes to propagate.",
 																		});
 																	}
-																	setVerifyingDomainIdentity(false);
+																	setVerifyingDomainId(null);
 																}}
 															>
 																Verify
@@ -491,7 +498,10 @@ export default function MailIdentities({
 																leftSection={<Eye className="size-4" />}
 																size="xs"
 																className="flex-1 sm:flex-none"
-																loading={sendTesting}
+																loading={
+																	sendingEmailId ===
+																	userDomainIdentity.identities.id
+																}
 																onClick={() => openShowDNS(userDomainIdentity)}
 															>
 																Show DNS Records
@@ -605,7 +615,6 @@ export default function MailIdentities({
 												leftSection={<IconSend size={16} />}
 												size="xs"
 												className="flex-1 sm:flex-none"
-												loading={sendTesting}
 												href={`/mail/${userIdentity.identities.publicId}/inbox`}
 												target={"_blank"}
 												component="a"
@@ -616,7 +625,7 @@ export default function MailIdentities({
 												leftSection={<IconSend size={16} />}
 												size="xs"
 												className="flex-1 sm:flex-none"
-												loading={sendTesting}
+												loading={sendingEmailId === userIdentity.identities.id}
 												onClick={() => initTestEmail(userIdentity, decrypted)}
 											>
 												Send Test Email

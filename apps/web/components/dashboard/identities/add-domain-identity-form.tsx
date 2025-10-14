@@ -48,6 +48,7 @@ function AddDomainIdentityForm({
 			props: {
 				autoComplete: "off",
 				required: true,
+				placeholder: "e.g. example.com",
 			},
 		},
 		{
@@ -84,21 +85,6 @@ function AddDomainIdentityForm({
 							</p>
 						),
 					},
-					// {
-					// 	name: `incomingDomain`,
-					// 	label: "Enable Incoming Emails for this Domain",
-					// 	kind: "select" as const,
-					// 	options: [
-					// 		{ label: "Yes", value: "true" },
-					// 		{ label: "No", value: "false" },
-					// 	],
-					// 	wrapperClasses: "col-span-12 sm:col-span-6",
-					// 	props: {
-					// 		required: true,
-					// 		defaultValue: "false",
-					// 		className: "w-full",
-					// 	},
-					// },
 				]
 			: []),
 	];

@@ -86,6 +86,7 @@ export function ReusableForm({
 	},
 	formWrapperClasses = "grid grid-cols-12 gap-4",
 	errorClasses = "text-red-500",
+	formKey,
 }: ReusableFormProps) {
 	const [formState, formAction, isPending] = useActionState<
 		FormState,
@@ -123,7 +124,12 @@ export function ReusableForm({
 	);
 
 	return (
-		<Form ref={formRef} action={formAction} onChange={onChange ?? undefined}>
+		<Form
+			key={formKey}
+			ref={formRef}
+			action={formAction}
+			onChange={onChange ?? undefined}
+		>
 			<div className={formWrapperClasses}>
 				{fields.map((f, idx) => {
 					const {
