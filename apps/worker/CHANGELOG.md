@@ -1,5 +1,11 @@
 # @kurrier/worker
 
+## 0.1.13
+
+### Patch Changes
+
+- [#129](https://github.com/kurrier-org/kurrier/pull/129) [`fe0f9b3`](https://github.com/kurrier-org/kurrier/commit/fe0f9b396f37578e08b03ab5a07780a6fc16b2b9) Thanks [@krokhale](https://github.com/krokhale)! - UI/UX polish for the webmail editor
+
 ## 0.1.12
 
 ### Patch Changes
