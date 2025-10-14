@@ -1,5 +1,11 @@
 # @kurrier/docs
 
+## 0.0.2
+
+### Patch Changes
+
+- [#139](https://github.com/kurrier-org/kurrier/pull/139) [`65b4445`](https://github.com/kurrier-org/kurrier/commit/65b4445ebfe661c7242a4a18ef775ecce42eb1fd) Thanks [@krokhale](https://github.com/krokhale)! - Updated dashboard sidebar layout
+
 ## 0.0.1
 
 ### Patch Changes
