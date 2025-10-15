@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.44
+
+### Patch Changes
+
+- [#143](https://github.com/kurrier-org/kurrier/pull/143) [`a56f54a`](https://github.com/kurrier-org/kurrier/commit/a56f54a7509954b294341ca5946b3dcde06f6e93) Thanks [@krokhale](https://github.com/krokhale)! - Added Minimal dashboard stats v1
+
 ## 0.0.43
 
 ### Patch Changes
