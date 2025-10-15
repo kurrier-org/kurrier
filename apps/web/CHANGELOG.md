@@ -1,5 +1,11 @@
 # web
 
+## 0.1.20
+
+### Patch Changes
+
+- [#147](https://github.com/kurrier-org/kurrier/pull/147) [`ecc4e9d`](https://github.com/kurrier-org/kurrier/commit/ecc4e9ddfa2c885155530f0fa0266511a56a5b0f) Thanks [@krokhale](https://github.com/krokhale)! - Mobile view and light and dark mode support
+
 ## 0.1.19
 
 ### Patch Changes
