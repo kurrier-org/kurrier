@@ -1,7 +1,6 @@
 "use server";
 
 import {
-	createDrizzleSupabaseClient,
 	createSecret,
 	getSecret,
 	identities,
@@ -9,6 +8,7 @@ import {
 	IdentityEntity,
 	IdentityInsertSchema,
 	mailboxes,
+	messages,
 	providers,
 	providerSecrets,
 	secretsMeta,
@@ -20,18 +20,16 @@ import {
 	DomainIdentityFormSchema,
 	FormState,
 	getPublicEnv,
-	getServerEnv,
 	handleAction,
 	MailboxKindDisplay,
 	ProviderAccountFormSchema,
 	Providers,
 	PROVIDERS,
-	SMTP_MAILBOXES,
 	SmtpAccountFormSchema,
 	SYSTEM_MAILBOXES,
 } from "@schema";
 import { currentSession } from "@/lib/actions/auth";
-import { eq } from "drizzle-orm";
+import { and, count, eq, sql, gte } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { decode } from "decode-formdata";
 import { PgColumn, PgTable } from "drizzle-orm/pg-core";
@@ -41,7 +39,6 @@ import { z } from "zod";
 import slugify from "@sindresorhus/slugify";
 import { rlsClient } from "@/lib/actions/clients";
 import { v4 as uuidv4 } from "uuid";
-import { createClient } from "@/lib/supabase/server";
 import { backfillMailboxes } from "@/lib/actions/mailbox";
 
 const DASHBOARD_PATH = "/dashboard/providers";
@@ -301,14 +298,6 @@ export const getIdentityById = async (identityId: string) => {
 	return identity;
 };
 
-export const getSMTPAccountById = async (accountId: string) => {
-	const rls = await rlsClient();
-	const [account] = await rls((tx) =>
-		tx.select().from(smtpAccounts).where(eq(smtpAccounts.id, accountId)),
-	);
-	return account;
-};
-
 export async function initializeDomainIdentity(
 	data: Record<string, unknown>,
 ): Promise<FormState<{ identity: DomainIdentity }>> {
@@ -465,26 +454,6 @@ const initializeEmailIdentity = async (
 	});
 };
 
-export const triggerWorker = async (id: string) => {
-	console.log("Listening to mailbox changes on channel:");
-	const supabase = await createClient();
-	const testChannel = supabase.channel(`smtp-worker`);
-	testChannel.subscribe((status) => {
-		if (status !== "SUBSCRIBED") {
-			return null;
-		}
-		testChannel.send({
-			type: "broadcast",
-			event: "backfill",
-			payload: { identityId: id },
-		});
-		testChannel.unsubscribe();
-
-		return;
-	});
-	return;
-};
-
 export const initializeMailboxes = async (emailIdentity: IdentityEntity) => {
 	// sanity check: only for email kind
 	if (emailIdentity.kind !== "email") return;
@@ -507,18 +476,6 @@ export const initializeMailboxes = async (emailIdentity: IdentityEntity) => {
 	await rls((tx) => {
 		return tx.insert(mailboxes).values(rows).onConflictDoNothing().returning();
 	});
-
-	// await db.insert(mailboxes).values(
-	//     SYSTEM_MAILBOXES.map((m) => ({
-	//         ownerId: identity.ownerId,
-	//         identityId: identity.id,
-	//         kind: m.kind,
-	//         name: m.name,
-	//         slug: m.slug,
-	//         isDefault: m.isDefault,
-	//     }))
-	// );
-
 	return rows;
 };
 
@@ -827,19 +784,50 @@ export type FetchUserIdentitiesResult = Awaited<
 	ReturnType<typeof fetchUserIdentities>
 >;
 
-// export const disconnectProviderAccount = async (
-//     providerType: Providers,
-//     providerSecret: FetchDecryptedSecretsResultRow,
-// ) => {
-//     return handleAction(async () => {
-//         let res = { ok: false, message: "Not implemented" } as VerifyResult;
-//         if (providerType === "ses") {
-//             const mailer = createMailer("ses", providerSecret.parsedSecret);
-//             const { WEB_URL, WEB_PROXY_URL } = getPublicEnv();
-//         }
-//
-//         revalidatePath(DASHBOARD_PATH);
-//
-//         return { success: true, data: res };
-//     });
-// };
+export const getDashboardStats = async () => {
+	return handleAction(async () => {
+		const rls = await rlsClient();
+
+		const data = await rls(async (tx) => {
+			const [
+				[mp], // managed providers
+				[sa], // smtp accounts
+				[vd], // verified domains
+				[ai], // active identities (emails)
+				[epTotal], // emails processed total
+				[ep24h], // emails processed last 24h
+			] = await Promise.all([
+				tx.select({ count: count() }).from(providers),
+				tx.select({ count: count() }).from(smtpAccounts),
+				tx
+					.select({ count: count() })
+					.from(identities)
+					.where(
+						and(
+							eq(identities.kind, "domain"),
+							eq(identities.status, "verified"),
+						),
+					),
+				tx
+					.select({ count: count() })
+					.from(identities)
+					.where(eq(identities.kind, "email")),
+				tx.select({ count: count() }).from(messages),
+				tx
+					.select({ count: count() })
+					.from(messages)
+					.where(gte(messages.createdAt, sql`now() - interval '24 hours'`)),
+			]);
+
+			return {
+				connectedProviders: (mp?.count ?? 0) + (sa?.count ?? 0),
+				verifiedDomains: vd?.count ?? 0,
+				activeIdentities: ai?.count ?? 0,
+				emailsProcessedTotal: epTotal?.count ?? 0,
+				emailsProcessed24h: ep24h?.count ?? 0,
+			};
+		});
+
+		return { success: true, message: "OK", data };
+	});
+};
