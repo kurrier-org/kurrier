@@ -1,5 +1,11 @@
 # @kurrier/docs
 
+## 0.0.3
+
+### Patch Changes
+
+- [#145](https://github.com/kurrier-org/kurrier/pull/145) [`f9760ed`](https://github.com/kurrier-org/kurrier/commit/f9760edfbf584ab71dc240ba67461e419685fd22) Thanks [@krokhale](https://github.com/krokhale)! - Documentation updates for providers.
+
 ## 0.0.2
 
 ### Patch Changes
