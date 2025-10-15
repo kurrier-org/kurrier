@@ -106,11 +106,6 @@ const EmailEditor = forwardRef<EmailEditorHandle, Props>(
 											: ""
 								}
 							/>
-							{/*{sentMailboxId && <input*/}
-							{/*    type={"hidden"}*/}
-							{/*    name={"mode"}*/}
-							{/*    value={"new"}*/}
-							{/*/>}*/}
 							<TextEditor name={"html"} ref={textEditorRef} />
 						</Form>
 					</DynamicContextProvider>

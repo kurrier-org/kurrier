@@ -8,10 +8,12 @@ import {
 } from "@/lib/actions/mailbox";
 import MailListHeader from "@/components/mailbox/default/mail-list-header";
 import WebmailListItem from "@/components/mailbox/default/webmail-list-item";
-import { useEffect } from "react";
+import {useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
 import { toast } from "sonner";
+import { useMediaQuery } from "@mantine/hooks";
+import WebmailListItemMobile from "@/components/mailbox/default/webmail-list-item-mobile";
 
 type WebListProps = {
 	mailboxThreads: FetchMailboxThreadsResult;
@@ -26,6 +28,7 @@ export default function WebmailList({
 	activeMailbox,
 	identityPublicId,
 	mailboxSync,
+    publicConfig
 }: WebListProps) {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -44,6 +47,8 @@ export default function WebmailList({
 			}
 		}
 	}, [mailboxSync, mailboxSync?.phase]);
+
+    const isMobile = useMediaQuery("(max-width: 768px)");
 
 	return (
 		<>
@@ -64,19 +69,32 @@ export default function WebmailList({
 						<MailListHeader
 							mailboxThreads={mailboxThreads}
 							mailboxSync={mailboxSync}
+                            publicConfig={publicConfig}
 						/>
 
-						<ul role="list" className="divide-y bg-white rounded-4xl">
-							{mailboxThreads.map((mailboxThreadItem) => (
-								<WebmailListItem
-									key={mailboxThreadItem.threadId + mailboxThreadItem.mailboxId}
-									mailboxThreadItem={mailboxThreadItem}
-									activeMailbox={activeMailbox}
-									identityPublicId={identityPublicId}
-									mailboxSync={mailboxSync}
-								/>
-							))}
-						</ul>
+						{/*<ul role="list" className="divide-y bg-white rounded-4xl">*/}
+                        <ul role="list" className="divide-y rounded-4xl">
+                            {mailboxThreads.map((mailboxThreadItem) =>
+                                isMobile ? (
+                                    <WebmailListItemMobile
+                                        key={mailboxThreadItem.threadId + mailboxThreadItem.mailboxId}
+                                        mailboxThreadItem={mailboxThreadItem}
+                                        activeMailbox={activeMailbox}
+                                        identityPublicId={identityPublicId}
+                                        mailboxSync={mailboxSync}
+                                    />
+                                ) : (
+                                    <WebmailListItem
+                                        key={mailboxThreadItem.threadId + mailboxThreadItem.mailboxId}
+                                        mailboxThreadItem={mailboxThreadItem}
+                                        activeMailbox={activeMailbox}
+                                        identityPublicId={identityPublicId}
+                                        mailboxSync={mailboxSync}
+                                    />
+                                )
+                            )}
+                        </ul>
+
 					</div>
 				)}
 			</DynamicContextProvider>

@@ -1,12 +1,9 @@
 "use client";
 import React from "react";
 import {
-	Archive,
 	Mail,
 	MailOpen,
-	MoreHorizontal,
 	Paperclip,
-	Star,
 	Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";

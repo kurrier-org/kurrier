@@ -24,6 +24,7 @@ type AppearanceCtx = {
 	setTheme: (t: ThemeName) => void;
 	setMode: (m: ThemeMode) => void;
 	pending: boolean;
+    applyColorScheme: (mode: "light" | "dark" | "system") => void;
 };
 
 const Ctx = createContext<AppearanceCtx | null>(null);
@@ -126,10 +127,39 @@ export function AppearanceProvider({
 		});
 	};
 
+    function applyColorScheme(mode: "light" | "dark" | "system") {
+        const el = document.documentElement;
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const isDark = mode === "dark" || (mode === "system" && prefersDark);
+
+        // Tailwind + your CSS variables
+        el.classList.toggle("dark", isDark);
+
+        // Browser controls/scrollbars
+        el.style.setProperty("color-scheme", isDark ? "dark" : "light");
+
+        // Mantine components (and many libs) pick this up
+        el.setAttribute("data-mantine-color-scheme", isDark ? "dark" : "light");
+    }
+
 	const value = useMemo(
-		() => ({ theme, mode, setTheme, setMode, pending }),
-		[theme, mode, pending],
+		() => ({ theme, mode, setTheme, setMode, pending, applyColorScheme }),
+		[theme, mode, pending, applyColorScheme],
 	);
+
+    useEffect(() => {
+        applyColorScheme(mode);
+
+        // keep it reactive for "system"
+        if (mode === "system") {
+            const mq = window.matchMedia("(prefers-color-scheme: dark)");
+            const onChange = () => applyColorScheme("system");
+            mq.addEventListener?.("change", onChange);
+            return () => mq.removeEventListener?.("change", onChange);
+        }
+    }, [mode]);
+
+
 
 	return (
 		<Ctx.Provider value={value}>

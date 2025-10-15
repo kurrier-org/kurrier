@@ -24,7 +24,15 @@ const BASE_CSS = `
   font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
   background: var(--bg);
   color: var(--text);
-  word-break: break-word;
+   word-break: break-word;
+   overflow-wrap: anywhere;       /* allow wrapping mid-word */
+   white-space: normal !important; /* override inline nowrap */
+}
+
+
+.email-root * {
+  word-wrap: break-word !important; /* enforce wrapping for nested tags */
+  white-space: normal !important;   /* neutralize inline nowrap */
 }
 
 .email-root p { margin: 0 0 .85em; }
@@ -49,7 +57,7 @@ const BASE_CSS = `
 }
 
 /* Don’t style tables/cells; just prevent overflow */
-.email-root table { max-width: 100%; }
+.email-root table { max-width: 85vw; }
 .email-root .table-scroll { overflow-x: auto; }
 
 /* Pre/code */

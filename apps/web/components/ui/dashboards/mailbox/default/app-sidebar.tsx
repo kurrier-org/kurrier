@@ -25,8 +25,9 @@ import { UserResponse } from "@supabase/supabase-js";
 import Link from "next/link";
 import { IconMoonStars, IconSun } from "@tabler/icons-react";
 import { useAppearance } from "@/components/providers/appearance-provider";
-import { useMemo } from "react";
+import {useEffect, useMemo} from "react";
 import { Switch } from "@mantine/core";
+import {revalidateMailbox} from "@/lib/actions/mailbox";
 
 const data = {
 	navMain: [],
@@ -69,6 +70,10 @@ export function AppSidebar({
 		return prefersDark; // mode === "system"
 	}, [mode, prefersDark]);
 
+    useEffect(() => {
+
+    })
+
 	return (
 		<Sidebar
 			collapsible="icon"
@@ -105,9 +110,9 @@ export function AppSidebar({
 						<Switch
 							size="md"
 							checked={!isDark}
-							onChange={(e) =>
-								setMode(e.currentTarget.checked ? "light" : "dark")
-							}
+							onChange={(e) => {
+                                    setMode(e.currentTarget.checked ? "light" : "dark")
+                            }}
 							onLabel={<IconSun size={16} stroke={2.5} />}
 							offLabel={<IconMoonStars size={16} stroke={2.5} />}
 							aria-label={
