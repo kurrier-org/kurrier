@@ -3,4 +3,72 @@ title: Postmark
 description: Setting up Postmark
 ---
 
+# Postmark
 
+Postmark is a reliable transactional email service focused on fast delivery and excellent deliverability.
+Kurrier connects directly to Postmark via its **Server Token** and **Account Token** for sending and managing outbound emails.
+
+---
+
+## 1. Overview
+
+When you link Postmark to Kurrier, the app sends mail using Postmark’s REST API — no SMTP needed.
+You just need two keys from your Postmark dashboard:
+
+- **Server Token** — used to send emails from a specific Postmark Server
+- **Account Token** — used for administrative operations
+
+---
+
+## 2. Adding Postmark in Kurrier
+
+In Kurrier, go to:
+
+> **Dashboard → Providers → Add Provider → Postmark**
+
+Enter the following fields:
+
+| Field | Description | Example |
+|--------|--------------|----------|
+| **POSTMARK_SERVER_TOKEN** | Your Postmark server API token | `74ef518e-2dfa-451d-b9cf-2843608f789a` |
+| **POSTMARK_ACCOUNT_TOKEN** | Your Postmark account-level token | `0762807c-08e9-4ac3-a872-25e635766g61` |
+
+Click **Submit** to save your configuration.
+Kurrier will automatically validate the credentials and show **✅ Verified** when successful.
+
+---
+
+## 3. Where to Find Your Tokens
+
+1. Log in to your [Postmark Dashboard](https://account.postmarkapp.com/).
+2. Navigate to **Servers → (Choose your Server)**.
+3. Under **API Tokens**, copy the **Server API Token** — this identifies that specific sending server.
+4. For the **Account Token**, go to **Account → API Tokens** and copy your account-level token (used for broader account access).
+
+
+---
+
+## 4. Verify the Connection
+
+After saving, click **Verify Connection** in the Postmark card.
+Kurrier will test connectivity by making a simple authentication request to the Postmark API.
+
+- ✅ **Success:** You’ll see a verified badge next to your Postmark provider.
+- ⚠️ **Failure:** Check that both tokens are valid and belong to the same Postmark account.
+
+
+---
+
+## 5. Troubleshooting
+
+| Error | Meaning | Fix |
+|--------|----------|-----|
+| `401 Unauthorized` | Invalid or expired API token | Re-copy your tokens and re-save |
+| `422 Unprocessable Entity` | Domain or sender not verified | Verify your domain or sender in Postmark |
+| `403 Forbidden` | Using account token where server token is required | Ensure the **Server Token** is set correctly |
+| `Timeout` | Network/firewall issue | Allow outbound HTTPS to `api.postmarkapp.com` |
+
+
+---
+
+**Tip:** Kurrier integrates Postmark natively via the official API — no SMTP setup required.

@@ -3,4 +3,52 @@ title: Mailgun
 description: Setting up Mailgun
 ---
 
+# Mailgun
 
+Mailgun is a reliable email delivery service used for transactional and marketing emails.
+Kurrier can connect directly to your Mailgun account via its **API key** for sending and receiving emails.
+
+---
+
+## 1. Overview
+
+When you integrate Mailgun with Kurrier, the app uses Mailgun’s REST API for sending emails and optional inbound routing.
+Setup takes just one step — adding your Mailgun API key.
+
+---
+
+## 2. Adding Mailgun in Kurrier
+
+In Kurrier, go to:
+
+> **Dashboard → Providers → Add Provider → Mailgun**
+
+You’ll see a single required field:
+
+| Field | Description | Example |
+|--------|--------------|----------|
+| **MAILGUN_API_KEY** | Your private API key from the Mailgun dashboard | `key-9f6a41e71113d30cadeb28c-1ae02a08-07217cd` |
+
+Click **Submit** to save your configuration.
+
+Once saved, Kurrier will automatically verify the key and display a ✅ **Verified** status if successful.
+
+---
+
+## 3. Where to Find Your API Key
+
+1. Log in to your [Mailgun Dashboard](https://app.mailgun.com/).
+2. Navigate to **Settings → API Keys**.
+3. Copy your **Private API key** (not the Public one).
+4. Paste it into Kurrier’s field and click **Submit**.
+
+> 💡 You may use either the **EU** or **US** region keys — Kurrier will detect the correct endpoint automatically.
+
+---
+
+## 4. Verifying the Connection
+
+After submitting your API key, click **Verify Connection** in the Mailgun card.
+Kurrier will attempt to authenticate with the Mailgun API and confirm connectivity.
+
+If the test succeeds, the card will display:

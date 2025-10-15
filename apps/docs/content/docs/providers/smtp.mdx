@@ -3,4 +3,141 @@ title: SMTP/IMAP
 description: Setting up SMTP/IMAP
 ---
 
+# SMTP / IMAP
 
+Kurrier supports connecting to any standard **SMTP** and **IMAP** server — letting you send and receive emails through your own mail host.
+
+This option is perfect if you already have an email account with a provider such as Gmail (App Password), Outlook, Zoho, Proton, or a custom domain managed through cPanel or another hosting provider.
+
+---
+
+## 1. Overview
+
+When you add an SMTP/IMAP account in Kurrier, two connections are created:
+
+- **SMTP (Simple Mail Transfer Protocol)** — used to **send** emails
+- **IMAP (Internet Message Access Protocol)** — used to **receive** and sync incoming emails
+
+You can configure only SMTP (for outbound mail) or both SMTP + IMAP (for full two-way sync).
+
+---
+
+## 2. Adding Your Account
+
+In Kurrier, go to:
+
+> **Dashboard → Providers → Add Provider → SMTP/IMAP**
+
+You’ll see the following fields:
+
+| Field | Description | Example |
+|-------|--------------|----------|
+| **Account Label** | A friendly name for this connection | `Work Email` |
+| **SMTP Host** | Outgoing mail server hostname | `smtp.gmail.com` |
+| **SMTP Port** | Usually `465` for SSL or `587` for STARTTLS | `587` |
+| **SMTP Username** | Your full email address or username | `you@yourdomain.com` |
+| **SMTP Password** | App password or login password | `********` |
+| **SMTP Secure** | Choose `TRUE` for SSL/TLS | `TRUE` |
+| **SMTP Pool** | Optional — leave `FALSE` unless you know you need pooled connections | `FALSE` |
+| **IMAP Host** | Incoming mail server (optional) | `imap.gmail.com` |
+| **IMAP Port** | Usually `993` for SSL | `993` |
+| **IMAP Username** | Your full email address or username | `you@yourdomain.com` |
+| **IMAP Password** | Password or app password | `********` |
+| **IMAP Secure** | Choose `TRUE` for SSL/TLS | `TRUE` |
+
+---
+
+## 3. Example Configurations
+
+### Gmail (App Password)
+> ⚠️ Requires [2-Step Verification](https://myaccount.google.com/security) and an [App Password](https://myaccount.google.com/apppasswords)
+
+| Setting | Value |
+|----------|--------|
+| SMTP Host | `smtp.gmail.com` |
+| SMTP Port | `465` (SSL) |
+| SMTP Secure | `TRUE` |
+| IMAP Host | `imap.gmail.com` |
+| IMAP Port | `993` (SSL) |
+| IMAP Secure | `TRUE` |
+
+Use your Gmail address for both username fields and the 16-character app password for both passwords.
+
+---
+
+### Outlook / Office 365
+| Setting | Value |
+|----------|--------|
+| SMTP Host | `smtp.office365.com` |
+| SMTP Port | `587` (STARTTLS) |
+| SMTP Secure | `TRUE` |
+| IMAP Host | `outlook.office365.com` |
+| IMAP Port | `993` |
+| IMAP Secure | `TRUE` |
+
+Username is usually your full email address.
+
+---
+
+### cPanel / Custom Domain
+| Setting | Value |
+|----------|--------|
+| SMTP Host | `mail.yourdomain.com` |
+| SMTP Port | `465` (SSL) or `587` (TLS) |
+| IMAP Host | `mail.yourdomain.com` |
+| IMAP Port | `993` |
+| Secure | `TRUE` for both |
+
+Contact your web host if you’re unsure of these values.
+
+---
+
+## 4. Security Options
+
+| Field | Description |
+|--------|-------------|
+| **SMTP Secure** | Enables SSL/TLS encryption for outgoing mail. Set to `TRUE` unless your server requires plain STARTTLS. |
+| **SMTP Pool** | Allows reusing SMTP connections for faster bulk sending. Leave `FALSE` unless you’re running large workloads. |
+| **IMAP Secure** | Enables SSL/TLS encryption for incoming mail. Always set to `TRUE` unless debugging local servers. |
+
+---
+
+## 5. Verification & Troubleshooting
+
+Once you click **Save**, Kurrier will test your connection automatically.
+
+### ✅ Success
+You’ll see a **Verified** badge next to your new provider.
+
+### ⚠️ Common Errors
+
+| Error | Meaning | Fix |
+|-------|----------|-----|
+| `Invalid login or password` | Wrong credentials or app password | Double-check username/password |
+| `Connection refused` | Wrong port or SSL setting | Try switching `SMTP Secure` or check your host’s SSL port |
+| `IMAP timeout` | IMAP disabled on the account | Enable IMAP (e.g. in Gmail settings) |
+| `Hostname mismatch` | Wrong IMAP/SMTP hostname | Use provider’s documented host name |
+
+---
+
+## 6. Best Practices
+
+- Use **App Passwords** when available — never your real login password.
+- Always use **secure ports** (`465`/`993`) with SSL.
+- Avoid shared or root email credentials.
+- For hosted domains, create dedicated mailbox users for Kurrier.
+
+---
+
+## 7. Notes for Self-Hosted Mail Servers
+
+If you’re connecting to your own mail server (e.g., Postfix/Dovecot):
+
+1. Ensure **`smtpd_tls_security_level = may`** or higher in Postfix.
+2. IMAP must listen on port `993` with `ssl = yes`.
+3. You may need to allow Kurrier’s IP or internal Docker network.
+
+---
+
+
+**Tip:** You can create multiple SMTP/IMAP accounts in Kurrier — one for each mailbox or domain you manage.

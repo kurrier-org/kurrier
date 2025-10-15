@@ -41,7 +41,7 @@ const features = [
 
 export default function KurrierFeatures() {
 	return (
-		<section className="bg-white dark:bg-gray-950 py-24 sm:py-32 transition-colors">
+		<section className="bg-white dark:bg-neutral-950 py-24 sm:py-32 transition-colors">
 			<div className="mx-auto max-w-7xl px-6 lg:px-8">
 				{/* Section Header */}
 				<div className="mx-auto max-w-2xl sm:text-center">

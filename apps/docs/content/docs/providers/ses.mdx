@@ -3,4 +3,144 @@ title: AWS SES
 description: Setting up AWS
 ---
 
+# AWS SES
+
+Kurrier supports **Amazon Simple Email Service (SES)** for both sending and receiving emails. Kurrier does all the heavy lifting of configuring SES, S3, and SNS to work together for inbound email processing. All you need to do is create an IAM user with the right permissions and provide Kurrier with the credentials.
+This guide walks you through creating IAM credentials, setting permissions, and choosing the right AWS region.
+
+---
+
+## 1. Overview
+
+Kurrier uses the following AWS services for SES-based delivery:
+
+- **SES (Simple Email Service)** — to send and receive emails
+- **S3 (Simple Storage Service)** — to store inbound messages and attachments
+- **SNS (Simple Notification Service)** — to notify Kurrier when new inbound mail arrives
+
+You’ll need to create **IAM credentials** with access to these services and configure the region where your SES account operates.
+
+---
+
+## 2. Prerequisites
+
+- An active AWS account
+- SES account **out of sandbox** (for production use)
+- Access to create or manage IAM users and policies
+- A verified email domain or address in SES
+
+---
+
+## 3. Choosing Your Region
+
+Not all AWS regions support inbound email via SES.
+
+### ⚠️ Regions supporting inbound email:
+- `us-east-1` (N. Virginia)
+- `us-west-2` (Oregon)
+- `eu-west-1` (Ireland)
+- `ap-south-1` (Mumbai)
+
+If your selected region does **not** support inbound email, you can still send emails through SES, but incoming mail routing will not be available.
+
+When connecting your provider in Kurrier, make sure to select one of these supported regions if you want **full send + receive** capabilities.
+
+---
+
+## 4. Creating an IAM User
+
+1. Go to **IAM → Users → Add User**
+2. Choose a descriptive username (e.g. `kurrier-mail`)
+3. Under **Access Type**, select:
+- ✅ Programmatic access (for API access)
+4. Click **Next: Permissions**
+
+### Option A: Attach a pre-built policy
+Attach the following managed AWS policies:
+- `AmazonSESFullAccess`
+- `AmazonSNSFullAccess`
+- `AmazonS3FullAccess`
+
+### Option B: Use a least-privilege custom policy (recommended)
+Here’s an example JSON policy that grants the minimum required access:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    /* ---------- SES (classic) – receipt rule sets & quotas ---------- */
+    {
+      "Sid": "SESClassicRulesAndQuota",
+      "Effect": "Allow",
+      "Action": [
+        "ses:GetSendQuota",
+        "ses:DescribeActiveReceiptRuleSet",
+        "ses:ListReceiptRuleSets",
+        "ses:CreateReceiptRuleSet",
+        "ses:SetActiveReceiptRuleSet",
+        "ses:DescribeReceiptRuleSet",
+        "ses:CreateReceiptRule",
+        "ses:UpdateReceiptRule",
+        "ses:SetReceiptRulePosition",
+        "ses:DeleteReceiptRule"
+      ],
+      "Resource": "*"
+    },
+
+    /* ---------- SESv2 – identities & sending ---------- */
+    {
+      "Sid": "SESv2IdentitiesAndSend",
+      "Effect": "Allow",
+      "Action": [
+        "ses:SendEmail",                         // SESv2 send
+        "ses:CreateEmailIdentity",
+        "ses:GetEmailIdentity",
+        "ses:DeleteEmailIdentity",
+        "ses:PutEmailIdentityMailFromAttributes"
+      ],
+      "Resource": "*"
+    },
+
+    /* ---------- S3 – create bucket, lock it down, configure notifications ---------- */
+    {
+      "Sid": "S3BucketMgmtForInbound",
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket",
+        "s3:HeadBucket",
+        "s3:PutBucketPolicy",
+        "s3:PutPublicAccessBlock",
+        "s3:PutBucketNotificationConfiguration",
+        "s3:ListBucket",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": [
+        "arn:aws:s3:::kurrier-*-ses-inbound",
+        "arn:aws:s3:::kurrier-*-ses-inbound/*"
+      ]
+    },
+
+    /* ---------- SNS – create topic, set policy, subscribe Kurrier webhook ---------- */
+    {
+      "Sid": "SNSMgmtForInbound",
+      "Effect": "Allow",
+      "Action": [
+        "sns:CreateTopic",
+        "sns:GetTopicAttributes",
+        "sns:SetTopicAttributes",
+        "sns:ListSubscriptionsByTopic",
+        "sns:Subscribe"
+      ],
+      "Resource": "*"
+    },
+
+    /* ---------- STS – used to build bucket/topic policies with your account id ---------- */
+    {
+      "Sid": "STSCallerIdentity",
+      "Effect": "Allow",
+      "Action": ["sts:GetCallerIdentity"],
+      "Resource": "*"
+    }
+  ]
+}
 

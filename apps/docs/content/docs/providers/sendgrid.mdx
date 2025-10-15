@@ -1,6 +1,92 @@
 ---
-title: Sendgrid
-description: Setting up Sendgrid
+title: SendGrid
+description: Setting up SendGrid
 ---
 
+# SendGrid
 
+SendGrid is a popular transactional and marketing email platform by Twilio.
+Kurrier integrates directly with SendGrid’s REST API to handle sending and tracking emails using a single API key.
+
+---
+
+## 1. Overview
+
+Connecting SendGrid to Kurrier allows you to send emails through your SendGrid account without configuring SMTP.
+You only need your **SendGrid API Key** — Kurrier will handle everything else via the SendGrid API.
+
+---
+
+## 2. Adding SendGrid in Kurrier
+
+In Kurrier, go to:
+
+> **Dashboard → Providers → Add Provider → SendGrid**
+
+You’ll see the following field:
+
+| Field | Description | Example |
+|--------|--------------|----------|
+| **SENDGRID_API_KEY** | Your SendGrid API key (starts with `SG.`) | `SG.4aA4DyiCTValYwQQ.aC0RQSHrzdNeHFVMfIrgwn2RM3iVjkzIBNl` |
+
+Click **Submit** to save.
+Kurrier will automatically validate the key and show **✅ Verified** on success.
+
+---
+
+## 3. Where to Find Your API Key
+
+1. Log in to your [SendGrid Dashboard](https://app.sendgrid.com/).
+2. Go to **Settings → API Keys**.
+3. Click **Create API Key**.
+4. Name your key (e.g., `Kurrier Integration`).
+5. Under **API Key Permissions**, choose **Full Access** or **Restricted Access** (see below).
+6. Copy the generated key and paste it into Kurrier’s form.
+
+> ⚠️ You won’t be able to view this key again after closing the dialog, so store it securely.
+
+---
+
+## 4. Recommended Permissions
+
+For Kurrier to send emails and verify the connection properly, your key must have at least the following permissions:
+
+| Permission | Access Level | Description |
+|-------------|---------------|--------------|
+| `Mail Send` | Full Access | Required for sending outbound emails |
+| `User Account` | Read Access | Used to validate the key and fetch account info |
+| `Stats` | Read Access | Optional, for analytics or usage data |
+
+> You can choose **Full Access** if you’re unsure — it will work without issues, but restricted keys are safer for production.
+
+---
+
+## 5. Verify the Connection
+
+After saving your key, click **Verify Connection**.
+Kurrier will attempt an authentication check with SendGrid’s API endpoint (`https://api.sendgrid.com/v3/user/account`).
+
+### ✅ Success
+You’ll see **Verified** next to your SendGrid provider.
+
+### ⚠️ Failure
+Check that:
+- The API key is active and copied correctly.
+- It has at least `Mail Send` permissions.
+- Outbound HTTPS connections to `api.sendgrid.com` are allowed from your server.
+
+---
+
+## 6. Troubleshooting
+
+| Error | Meaning | Fix |
+|--------|----------|-----|
+| `401 Unauthorized` | Invalid API key or missing permissions | Recheck your key or create a new one |
+| `403 Forbidden` | Domain or sender not verified | Verify your domain in SendGrid |
+| `429 Too Many Requests` | Rate limit exceeded | Slow down sending or request higher limits |
+| `500 Server Error` | Temporary SendGrid issue | Retry after a few seconds |
+
+
+---
+
+**Tip:** SendGrid keys always start with `SG.` — if yours doesn’t, double-check that you copied the correct key from the dashboard.
