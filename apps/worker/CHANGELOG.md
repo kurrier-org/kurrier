@@ -1,5 +1,11 @@
 # @kurrier/worker
 
+## 0.1.15
+
+### Patch Changes
+
+- [#152](https://github.com/kurrier-org/kurrier/pull/152) [`e3c9fe6`](https://github.com/kurrier-org/kurrier/commit/e3c9fe6ebfac51e6b044a4d121b6b505161373f2) Thanks [@krokhale](https://github.com/krokhale)! - Updated consistent API_PUBLIC_URL and API_URl keys across the platform
+
 ## 0.1.14
 
 ### Patch Changes
