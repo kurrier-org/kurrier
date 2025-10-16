@@ -1,5 +1,11 @@
 # @kurrier/worker
 
+## 0.1.16
+
+### Patch Changes
+
+- [#154](https://github.com/kurrier-org/kurrier/pull/154) [`6de5929`](https://github.com/kurrier-org/kurrier/commit/6de5929e1f9dd43d6fe962a7d484a7eadf048892) Thanks [@krokhale](https://github.com/krokhale)! - build fixes for the worker
+
 ## 0.1.15
 
 ### Patch Changes
