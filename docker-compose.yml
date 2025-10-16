@@ -9,62 +9,72 @@ name: supabase
 
 services:
 
-  web:
-    image: ghcr.io/kurrier-org/kurrier-web:latest
-    restart: unless-stopped
-    ports:
-      - "${WEB_PORT:-3000}:3000"
-    depends_on:
-      db:
-        condition: service_healthy
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "fetch('http://web:3000').then((r) => {if (r.status !== 200) throw new Error(r.status)})"
-        ]
-    environment:
-      WEB_PORT: ${WEB_PORT}
-      WEB_URL: ${WEB_URL}
-      WEB_PROXY_URL: ${WEB_PROXY_URL}
-      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-      DATABASE_RLS_URL: postgres://rls_client:${RLS_CLIENT_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-      SUPABASE_DOMAIN: http://kong:8000
-      SUPABASE_ANON_KEY: ${ANON_KEY}
-      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-
-  worker:
-    image: ghcr.io/kurrier-org/kurrier-worker:latest
-    restart: unless-stopped
-    ports:
-      - "${NITRO_PORT:-3001}:3001"
-    depends_on:
-      db:
-        condition: service_healthy
-      web:
-        condition: service_healthy
-      studio:
-        condition: service_healthy
-      realtime:
-        condition: service_healthy
-    environment:
-      WEB_PORT: ${WEB_PORT}
-      WEB_URL: ${WEB_URL}
-      NITRO_PORT: ${NITRO_PORT}
-      WEB_PROXY_URL: ${WEB_PROXY_URL}
-      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-      DATABASE_RLS_URL: postgres://rls_client:${RLS_CLIENT_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-      SUPABASE_DOMAIN: http://kong:8000
-      SUPABASE_ANON_KEY: ${ANON_KEY}
-      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+#  web:
+#    image: ghcr.io/kurrier-org/kurrier-web:0.0.46
+#    restart: unless-stopped
+#    ports:
+#      - "${WEB_PORT:-3000}:3000"
+#    depends_on:
+#      db:
+#        condition: service_healthy
+#    healthcheck:
+#      test:
+#        [
+#          "CMD",
+#          "node",
+#          "-e",
+#          "fetch('http://web:3000').then((r) => {if (r.status !== 200) throw new Error(r.status)})"
+#        ]
+#    environment:
+#      WEB_PORT: ${WEB_PORT}
+#      WEB_URL: ${WEB_URL}
+#      WEB_PROXY_URL: ${WEB_PROXY_URL}
+#      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+#      DATABASE_RLS_URL: postgres://rls_client:${RLS_CLIENT_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+#      SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL}
+#      ANON_KEY: ${ANON_KEY}
+#      SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+#      REDIS_PASSWORD: ${REDIS_PASSWORD}
+#      REDIS_HOST: redis
+#      REDIS_PORT: ${REDIS_PORT}
+#      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY}
+#      TYPESENSE_PORT: ${TYPESENSE_PORT}
+#      TYPESENSE_PROTOCOL: ${TYPESENSE_PROTOCOL}
+#      TYPESENSE_HOST: ${TYPESENSE_HOST}
+#      SEARCH_REBUILD_ON_BOOT: ${SEARCH_REBUILD_ON_BOOT}
+#
+#  worker:
+#    image: ghcr.io/kurrier-org/kurrier-worker:0.0.46
+#    restart: unless-stopped
+#    ports:
+#      - "${NITRO_PORT:-3001}:3001"
+#    depends_on:
+#      db:
+#        condition: service_healthy
+#      web:
+#        condition: service_healthy
+#      studio:
+#        condition: service_healthy
+#      realtime:
+#        condition: service_healthy
+#    environment:
+#      WEB_PORT: ${WEB_PORT}
+#      WEB_URL: ${WEB_URL}
+#      NITRO_PORT: ${NITRO_PORT}
+#      WEB_PROXY_URL: ${WEB_PROXY_URL}
+#      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+#      DATABASE_RLS_URL: postgres://rls_client:${RLS_CLIENT_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+#      SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL}
+#      ANON_KEY: ${ANON_KEY}
+#      SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+#      REDIS_PASSWORD: ${REDIS_PASSWORD}
+#      REDIS_HOST: redis
+#      REDIS_PORT: ${REDIS_PORT}
+#      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY}
+#      TYPESENSE_PORT: ${TYPESENSE_PORT}
+#      TYPESENSE_PROTOCOL: ${TYPESENSE_PROTOCOL}
+#      TYPESENSE_HOST: ${TYPESENSE_HOST}
+#      SEARCH_REBUILD_ON_BOOT: ${SEARCH_REBUILD_ON_BOOT}
 
   redis:
     image: redis:latest
@@ -77,13 +87,13 @@ services:
     volumes:
       - ./redis_data:/data
     ports:
-      - "6379:6379"
+      - ${REDIS_PORT}:${REDIS_PORT}
 
   typesense:
     image: typesense/typesense:29.0
     restart: on-failure
     ports:
-      - "8108:8108"
+      - ${TYPESENSE_PORT}:${TYPESENSE_PORT}
     volumes:
       - ./typesense-data:/data
     command: >
@@ -93,6 +103,24 @@ services:
     environment:
       - TYPESENSE_API_KEY=${TYPESENSE_API_KEY}
 
+  db-bootstrap:
+    image: postgres:15
+    depends_on:
+      - db
+      - storage
+    environment:
+      PGHOST: db
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PGDATABASE: postgres
+      RLS_CLIENT_PASSWORD: ${RLS_CLIENT_PASSWORD}
+    volumes:
+      - ./init:/scripts
+    entrypoint: [ "/bin/bash", "/scripts/db-bootstrap.sh" ]
+    restart: "no"
 
   studio:
     container_name: supabase-studio
@@ -532,25 +560,6 @@ services:
         "-c",
         "log_min_messages=fatal" # prevents Realtime polling queries from appearing in logs
       ]
-
-  db-bootstrap:
-    image: postgres:15
-    depends_on:
-      - db
-      - storage
-    environment:
-      PGHOST: db
-      PGUSER: postgres
-      PGPASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_DB: ${POSTGRES_DB}
-      PGDATABASE: postgres
-      RLS_CLIENT_PASSWORD: ${RLS_CLIENT_PASSWORD}
-    volumes:
-      - ./init:/scripts
-    entrypoint: [ "/bin/bash", "/scripts/db-bootstrap.sh" ]
-    restart: "no"
 
   vector:
     container_name: supabase-vector
