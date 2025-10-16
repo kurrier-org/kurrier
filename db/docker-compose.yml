@@ -5,12 +5,12 @@
 #   Destroy:            docker compose -f docker-compose.yml -f ./dev/docker-compose.dev.yml down -v --remove-orphans
 #   Reset everything:  ./reset.sh
 
-name: supabase
+name: kurrier
 
 services:
 
   web:
-    image: ghcr.io/kurrier-org/kurrier-web:v0.0.48
+    image: ghcr.io/kurrier-org/kurrier-web:v0.0.49
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-3000}:3000"
@@ -25,6 +25,7 @@ services:
           "-e",
           "fetch('http://web:3000').then((r) => {if (r.status !== 200) throw new Error(r.status)})"
         ]
+    profiles: ["app"]
     environment:
       WEB_PORT: ${WEB_PORT}
       WEB_URL: ${WEB_URL}
@@ -45,7 +46,7 @@ services:
       SEARCH_REBUILD_ON_BOOT: ${SEARCH_REBUILD_ON_BOOT}
 
   worker:
-    image: ghcr.io/kurrier-org/kurrier-worker:v0.0.48
+    image: ghcr.io/kurrier-org/kurrier-worker:v0.0.49
     restart: unless-stopped
     ports:
       - "${NITRO_PORT:-3001}:3001"
@@ -58,6 +59,7 @@ services:
         condition: service_healthy
       realtime:
         condition: service_healthy
+    profiles: ["app"]
     environment:
       WEB_PORT: ${WEB_PORT}
       WEB_URL: ${WEB_URL}

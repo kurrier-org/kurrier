@@ -31,35 +31,23 @@ Clone the repository and copy the example environment file:
 git clone git@github.com:kurrier-org/kurrier.git
 cd kurrier/db
 cp example.env .env
+cp -r db/init/volumes db/volumes
 ```
 
-Open the .env file and set your environment variables:
+Open the .env file and update your secrets and passwords. You can also use the built-in secrets generator below to create a secure, production-ready passwords and secrets.
 
 ```bash
-WEB_PORT=3000
-WEB_URL=http://localhost:3000
-NITRO_PORT=3001
-
-REDIS_PASSWORD=your-redis-password
-REDIS_HOST=redis
-REDIS_PORT=6379
-RLS_CLIENT_PASSWORD=your-rls-password
-
+REDIS_PASSWORD=replace_with_your_redis_password
+RLS_CLIENT_PASSWORD=replace_with_your_rls_client_password
 TYPESENSE_API_KEY=supersecretkey
-TYPESENSE_PORT=8108
-TYPESENSE_PROTOCOL=http
-TYPESENSE_HOST=typesense
-
-
-POSTGRES_PASSWORD=your-postgres-password
-JWT_SECRET=your-jwt-secret
-ANON_KEY=your-anon-key
-SERVICE_ROLE_KEY=your-service-role-key
-DASHBOARD_USERNAME=kurrier
-DASHBOARD_PASSWORD=kurrier
-SECRET_KEY_BASE=your-secret-key-base
+POSTGRES_PASSWORD=your-super-secret-and-long-postgres-password
+JWT_SECRET=your-super-secret-jwt-token-with-at-least-32-characters-long
+ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE
+SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q
+DASHBOARD_USERNAME=supabase
+DASHBOARD_PASSWORD=this_password_is_insecure_and_should_be_updated
+SECRET_KEY_BASE=UpNVntn3cDxHJpq99YMc1T1AQgQpc8kfYTuRgBiYa15BLrx8etQoXz3gZv1/u2oq
 VAULT_ENC_KEY=your-encryption-key-32-chars-min
-PG_META_CRYPTO_KEY=your-encryption-key-32-chars-min
 ```
 
 ### 🔐 Generate Secrets Automatically

@@ -1,7 +1,3 @@
----
-title: What is Kurrier
-description: Introduction to Kurrier and how to get your first instance running.
----
 
 Kurrier is a modern, self-hosted webmail built for people who don't want the hassle to run their own email stack, yet want control over their data and privacy and ability to connect and manage multiple providers and email identities.
 It connects to standard protocols and providers — IMAP, SMTP, SES, SendGrid, Mailgun, and more — giving you a single, fast interface to turn any email service provider into a full-featured webmail.
@@ -28,3 +24,6 @@ Kurrier aims to give you the simplicity of a webmail with the flexibility of a f
 ## Next steps
 
 Ready to try it out? Follow the next sections to get your instance running:
+
+
+### → [Read the docs](https://www.kurrier.org)

@@ -17,16 +17,15 @@ import {
 	updateSecret,
 } from "@db";
 import {
-	DomainIdentityFormSchema,
-	FormState,
-	getPublicEnv,
-	handleAction,
-	MailboxKindDisplay,
-	ProviderAccountFormSchema,
-	Providers,
-	PROVIDERS,
-	SmtpAccountFormSchema,
-	SYSTEM_MAILBOXES,
+    DomainIdentityFormSchema,
+    FormState,
+    getPublicEnv,
+    handleAction,
+    MailboxKindDisplay,
+    ProviderAccountFormSchema,
+    Providers,
+    SmtpAccountFormSchema,
+    SYSTEM_MAILBOXES,
 } from "@schema";
 import { currentSession } from "@/lib/actions/auth";
 import { and, count, eq, sql, gte } from "drizzle-orm";
@@ -45,13 +44,6 @@ const DASHBOARD_PATH = "/dashboard/providers";
 
 export const syncProviders = async () => {
 	const rls = await rlsClient();
-	await rls((tx) =>
-		tx
-			.insert(providers)
-			.values(PROVIDERS.map((k) => ({ type: k.key })))
-			.onConflictDoNothing({ target: [providers.ownerId, providers.type] })
-			.returning(),
-	);
 	const rows = await rls((tx) => tx.select().from(providers));
 	return rows;
 };
