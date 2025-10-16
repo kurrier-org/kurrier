@@ -10,7 +10,7 @@ name: supabase
 services:
 
   web:
-    image: ghcr.io/kurrier-org/kurrier-web:0.0.46
+    image: ghcr.io/kurrier-org/kurrier-web:v0.0.48
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-3000}:3000"
@@ -45,7 +45,7 @@ services:
       SEARCH_REBUILD_ON_BOOT: ${SEARCH_REBUILD_ON_BOOT}
 
   worker:
-    image: ghcr.io/kurrier-org/kurrier-worker:0.0.46
+    image: ghcr.io/kurrier-org/kurrier-worker:v0.0.48
     restart: unless-stopped
     ports:
       - "${NITRO_PORT:-3001}:3001"
