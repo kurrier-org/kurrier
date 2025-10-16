@@ -1,9 +1,6 @@
 
 Kurrier is a modern, self-hosted webmail built for people who don't want the hassle to run their own email stack, yet want control over their data and privacy and ability to connect and manage multiple providers and email identities.
 It connects to standard protocols and providers — IMAP, SMTP, SES, SendGrid, Mailgun, and more — giving you a single, fast interface to turn any email service provider into a full-featured webmail.
-Kurrier runs entirely on your infrastructure, so your messages, identities, and credentials stay under your control.
-It’s lightweight and fast, API-driven, and designed to integrate cleanly with existing setups — from personal mail servers to multi-domain environments.
-So whether you want a simple webmail client or a way to create and manage multiple email identities via SES, SendGrid, Postmark, or Mailgun, Kurrier has you covered.
 
 
 
