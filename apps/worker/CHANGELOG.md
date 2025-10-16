@@ -1,5 +1,11 @@
 # @kurrier/worker
 
+## 0.1.14
+
+### Patch Changes
+
+- [#149](https://github.com/kurrier-org/kurrier/pull/149) [`3e4fc04`](https://github.com/kurrier-org/kurrier/commit/3e4fc04ae1aacb37065b9919a1a568c03536660f) Thanks [@krokhale](https://github.com/krokhale)! - Added build, develop and production env profiles
+
 ## 0.1.13
 
 ### Patch Changes
