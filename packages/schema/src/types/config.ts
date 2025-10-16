@@ -14,7 +14,6 @@ export const ZServerConfig = z.object({
 	DATABASE_RLS_URL: z.string(
 		"DATABASE_RLS_URL must be a valid Postgres connection URL",
 	),
-	// SUPABASE_SERVICE_ROLE_KEY: z.string("SUPABASE_SERVICE_ROLE_KEY must be present"),
 	SERVICE_ROLE_KEY: z.string("SERVICE_ROLE_KEY must be present"),
 	REDIS_PASSWORD: z.string("REDIS_PASSWORD must be present"),
 	REDIS_HOST: z.string("REDIS_HOST must be present"),
@@ -28,7 +27,8 @@ export const ZServerConfig = z.object({
 
 /** Safe to expose to the browser */
 export const ZPublicConfig = z.object({
-	SUPABASE_PUBLIC_URL: z.string("SUPABASE_PUBLIC_URL must be present"),
+    API_PUBLIC_URL: z.string("API_PUBLIC_URL must be present"),
+    API_URL: z.string("API_URL must be present"),
 	ANON_KEY: z.string("ANON_KEY must be present"),
 	WEB_URL: z.string("WEB_URL must be present"),
 	DOCS_URL: z.string().optional(),

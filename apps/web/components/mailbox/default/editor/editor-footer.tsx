@@ -57,7 +57,7 @@ export default function EditorFooter() {
 		file: File,
 		token: string,
 	): Promise<void> => {
-		const url = `${state.publicConfig.SUPABASE_PUBLIC_URL}/storage/v1/object/${bucket}/${path}`;
+		const url = `${state.publicConfig.API_PUBLIC_URL}/storage/v1/object/${bucket}/${path}`;
 
 		await new Promise<void>((resolve, reject) => {
 			const xhr = new XMLHttpRequest();

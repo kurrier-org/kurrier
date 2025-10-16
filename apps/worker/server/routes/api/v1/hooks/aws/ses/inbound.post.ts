@@ -15,99 +15,10 @@ import { createClient } from "@supabase/supabase-js";
 
 import { parseAndStoreEmail } from "../../../../../../../lib/message-payload-parser";
 
-// async function createOrInitializeThread(
-// 	parsed: ParsedMail & {
-// 		ownerId: string;
-// 		mailboxId: string;
-// 	},
-// ) {
-// 	const { ownerId, mailboxId } = parsed;
-//
-// 	// Build candidate parent ids from headers
-// 	const inReplyTo = parsed.inReplyTo?.trim() || null;
-//
-// 	// mailparser can give references as string | string[]
-// 	const referencesArr = Array.isArray(parsed.references)
-// 		? parsed.references
-// 		: parsed.references
-// 			? [parsed.references]
-// 			: [];
-//
-// 	// Only keep well-formed <...> Message-IDs and dedupe
-// 	const candidates = Array.from(
-// 		new Set(
-// 			[inReplyTo, ...referencesArr].filter(Boolean).map((s) => String(s)),
-// 		),
-// 	);
-//
-// 	// In a transaction so thread creation is atomic
-// 	return db.transaction(async (tx) => {
-// 		// Try direct parent first (inReplyTo), then fall back to any reference,
-// 		// newest first if multiple hit.
-// 		let existingThread = null as null | typeof threads.$inferSelect;
-//
-// 		if (candidates.length > 0) {
-// 			const parentMsgs = await tx
-// 				.select({
-// 					id: messages.id,
-// 					threadId: messages.threadId,
-// 					messageId: messages.messageId,
-// 					date: messages.date,
-// 				})
-// 				.from(messages)
-// 				.where(
-// 					and(
-// 						eq(messages.mailboxId, mailboxId),
-// 						inArray(messages.messageId, candidates),
-// 					),
-// 				)
-// 				.orderBy(desc(messages.date ?? sql`now()`));
-//
-// 			if (parentMsgs.length) {
-// 				// Prefer the exact inReplyTo match, otherwise take the most recent hit
-// 				const direct = inReplyTo
-// 					? parentMsgs.find((m) => m.messageId === inReplyTo)
-// 					: null;
-// 				const chosen = direct ?? parentMsgs[0];
-//
-// 				if (chosen.threadId) {
-// 					const [t] = await tx
-// 						.select()
-// 						.from(threads)
-// 						.where(
-// 							and(
-// 								eq(threads.id, chosen.threadId),
-// 								eq(threads.mailboxId, mailboxId),
-// 							),
-// 						);
-// 					if (t) existingThread = t;
-// 				}
-// 			}
-// 		}
-//
-// 		if (existingThread) {
-// 			return existingThread;
-// 		}
-//
-// 		// No parent found → create a new thread (minimal fields)
-// 		const [newThread] = await tx
-// 			.insert(threads)
-// 			.values({
-// 				ownerId,
-// 				mailboxId,
-// 				lastMessageDate: parsed.date ?? new Date(),
-// 				// messageCount can be incremented after you insert the message
-// 			})
-// 			.returning();
-//
-// 		return newThread;
-// 	});
-// }
-
 const publicConfig = getPublicEnv();
 const serverConfig = getServerEnv();
 const supabase = createClient(
-	publicConfig.SUPABASE_PUBLIC_URL,
+	publicConfig.API_URL,
 	serverConfig.SERVICE_ROLE_KEY,
 );
 

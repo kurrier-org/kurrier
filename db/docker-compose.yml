@@ -9,72 +9,74 @@ name: supabase
 
 services:
 
-#  web:
-#    image: ghcr.io/kurrier-org/kurrier-web:0.0.46
-#    restart: unless-stopped
-#    ports:
-#      - "${WEB_PORT:-3000}:3000"
-#    depends_on:
-#      db:
-#        condition: service_healthy
-#    healthcheck:
-#      test:
-#        [
-#          "CMD",
-#          "node",
-#          "-e",
-#          "fetch('http://web:3000').then((r) => {if (r.status !== 200) throw new Error(r.status)})"
-#        ]
-#    environment:
-#      WEB_PORT: ${WEB_PORT}
-#      WEB_URL: ${WEB_URL}
-#      WEB_PROXY_URL: ${WEB_PROXY_URL}
-#      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-#      DATABASE_RLS_URL: postgres://rls_client:${RLS_CLIENT_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-#      SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL}
-#      ANON_KEY: ${ANON_KEY}
-#      SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
-#      REDIS_PASSWORD: ${REDIS_PASSWORD}
-#      REDIS_HOST: redis
-#      REDIS_PORT: ${REDIS_PORT}
-#      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY}
-#      TYPESENSE_PORT: ${TYPESENSE_PORT}
-#      TYPESENSE_PROTOCOL: ${TYPESENSE_PROTOCOL}
-#      TYPESENSE_HOST: ${TYPESENSE_HOST}
-#      SEARCH_REBUILD_ON_BOOT: ${SEARCH_REBUILD_ON_BOOT}
-#
-#  worker:
-#    image: ghcr.io/kurrier-org/kurrier-worker:0.0.46
-#    restart: unless-stopped
-#    ports:
-#      - "${NITRO_PORT:-3001}:3001"
-#    depends_on:
-#      db:
-#        condition: service_healthy
-#      web:
-#        condition: service_healthy
-#      studio:
-#        condition: service_healthy
-#      realtime:
-#        condition: service_healthy
-#    environment:
-#      WEB_PORT: ${WEB_PORT}
-#      WEB_URL: ${WEB_URL}
-#      NITRO_PORT: ${NITRO_PORT}
-#      WEB_PROXY_URL: ${WEB_PROXY_URL}
-#      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-#      DATABASE_RLS_URL: postgres://rls_client:${RLS_CLIENT_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-#      SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL}
-#      ANON_KEY: ${ANON_KEY}
-#      SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
-#      REDIS_PASSWORD: ${REDIS_PASSWORD}
-#      REDIS_HOST: redis
-#      REDIS_PORT: ${REDIS_PORT}
-#      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY}
-#      TYPESENSE_PORT: ${TYPESENSE_PORT}
-#      TYPESENSE_PROTOCOL: ${TYPESENSE_PROTOCOL}
-#      TYPESENSE_HOST: ${TYPESENSE_HOST}
-#      SEARCH_REBUILD_ON_BOOT: ${SEARCH_REBUILD_ON_BOOT}
+  web:
+    image: ghcr.io/kurrier-org/kurrier-web:0.0.46
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://web:3000').then((r) => {if (r.status !== 200) throw new Error(r.status)})"
+        ]
+    environment:
+      WEB_PORT: ${WEB_PORT}
+      WEB_URL: ${WEB_URL}
+      WEB_PROXY_URL: ${WEB_PROXY_URL}
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      DATABASE_RLS_URL: postgres://rls_client:${RLS_CLIENT_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      API_PUBLIC_URL: ${SUPABASE_PUBLIC_URL}
+      API_URL: http://kong:8000
+      ANON_KEY: ${ANON_KEY}
+      SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT}
+      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY}
+      TYPESENSE_PORT: ${TYPESENSE_PORT}
+      TYPESENSE_PROTOCOL: ${TYPESENSE_PROTOCOL}
+      TYPESENSE_HOST: ${TYPESENSE_HOST}
+      SEARCH_REBUILD_ON_BOOT: ${SEARCH_REBUILD_ON_BOOT}
+
+  worker:
+    image: ghcr.io/kurrier-org/kurrier-worker:0.0.46
+    restart: unless-stopped
+    ports:
+      - "${NITRO_PORT:-3001}:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+      studio:
+        condition: service_healthy
+      realtime:
+        condition: service_healthy
+    environment:
+      WEB_PORT: ${WEB_PORT}
+      WEB_URL: ${WEB_URL}
+      NITRO_PORT: ${NITRO_PORT}
+      WEB_PROXY_URL: ${WEB_PROXY_URL}
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      DATABASE_RLS_URL: postgres://rls_client:${RLS_CLIENT_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      API_PUBLIC_URL: ${SUPABASE_PUBLIC_URL}
+      API_URL: http://kong:8000
+      ANON_KEY: ${ANON_KEY}
+      SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT}
+      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY}
+      TYPESENSE_PORT: ${TYPESENSE_PORT}
+      TYPESENSE_PROTOCOL: ${TYPESENSE_PROTOCOL}
+      TYPESENSE_HOST: ${TYPESENSE_HOST}
+      SEARCH_REBUILD_ON_BOOT: ${SEARCH_REBUILD_ON_BOOT}
 
   redis:
     image: redis:latest
