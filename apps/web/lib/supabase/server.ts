@@ -5,11 +5,11 @@ import { getEnv } from "@schema";
 export async function createClient() {
 	const cookieStore = await cookies();
 	const {
-		public: { SUPABASE_PUBLIC_URL },
+		public: { API_URL },
 		server: { SERVICE_ROLE_KEY },
 	} = getEnv();
 
-	return createServerClient(SUPABASE_PUBLIC_URL, SERVICE_ROLE_KEY, {
+	return createServerClient(API_URL, SERVICE_ROLE_KEY, {
 		cookies: {
 			getAll() {
 				return cookieStore.getAll();

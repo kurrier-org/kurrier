@@ -19,7 +19,7 @@ import { getRedis } from "./get-redis";
 const publicConfig = getPublicEnv();
 const serverConfig = getServerEnv();
 const supabase = createClient(
-	publicConfig.SUPABASE_PUBLIC_URL,
+	publicConfig.API_URL,
 	serverConfig.SERVICE_ROLE_KEY,
 );
 

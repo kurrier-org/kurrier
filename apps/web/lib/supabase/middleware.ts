@@ -8,11 +8,11 @@ export async function updateSession(request: NextRequest) {
 	});
 
 	const {
-		public: { SUPABASE_PUBLIC_URL },
+		public: { API_URL },
 		server: { SERVICE_ROLE_KEY },
 	} = getEnv();
 
-	const supabase = createServerClient(SUPABASE_PUBLIC_URL, SERVICE_ROLE_KEY, {
+	const supabase = createServerClient(API_URL, SERVICE_ROLE_KEY, {
 		cookies: {
 			getAll() {
 				return request.cookies.getAll();

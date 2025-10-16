@@ -5,10 +5,10 @@ import { getCookie, setCookie, deleteCookie } from "h3";
 
 export async function createClient(event: H3Event) {
 	const {
-		public: { SUPABASE_PUBLIC_URL, ANON_KEY },
+		public: { API_URL, ANON_KEY },
 	} = getEnv();
 
-	return createServerClient(SUPABASE_PUBLIC_URL, ANON_KEY, {
+	return createServerClient(API_URL, ANON_KEY, {
 		cookies: {
 			get: (name: string) => getCookie(event, name) ?? "",
 			set: (name: string, value: string, options: CookieOptions) =>

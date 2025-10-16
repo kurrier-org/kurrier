@@ -11,7 +11,7 @@ import { getToEmails } from "../sendgrid/inbound.post";
 const publicConfig = getPublicEnv();
 const serverConfig = getServerEnv();
 const supabase = createClient(
-	publicConfig.SUPABASE_PUBLIC_URL,
+	publicConfig.API_URL,
 	serverConfig.SERVICE_ROLE_KEY,
 );
 
