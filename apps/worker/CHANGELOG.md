@@ -1,5 +1,11 @@
 # @kurrier/worker
 
+## 0.1.17
+
+### Patch Changes
+
+- [#156](https://github.com/kurrier-org/kurrier/pull/156) [`44251c1`](https://github.com/kurrier-org/kurrier/commit/44251c14542386fb46130c6acb76e51e74670054) Thanks [@krokhale](https://github.com/krokhale)! - Updated docs, cleanup for the env vars and docker compose profiles
+
 ## 0.1.16
 
 ### Patch Changes
