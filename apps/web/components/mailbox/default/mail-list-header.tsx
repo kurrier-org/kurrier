@@ -25,16 +25,16 @@ import {
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import ComposeMail from "@/components/mailbox/default/compose-mail";
-import {PublicConfig} from "@schema";
-import {useMediaQuery} from "@mantine/hooks";
+import { PublicConfig } from "@schema";
+import { useMediaQuery } from "@mantine/hooks";
 
 function MailListHeader({
 	mailboxThreads,
 	mailboxSync,
-    publicConfig
+	publicConfig,
 }: {
 	mailboxThreads: FetchMailboxThreadsResult;
-    publicConfig: PublicConfig;
+	publicConfig: PublicConfig;
 	mailboxSync?: MailboxSyncEntity;
 }) {
 	const { state, setState } = useDynamicContext<{
@@ -122,7 +122,7 @@ function MailListHeader({
 		toast.success("Trash removed successfully", { position: "bottom-left" });
 	};
 
-    const isMobile = useMediaQuery("(max-width: 768px)");
+	const isMobile = useMediaQuery("(max-width: 768px)");
 
 	return (
 		<>
@@ -148,13 +148,13 @@ function MailListHeader({
 					className="h-4 w-4 rounded border-muted-foreground/40"
 				/>
 
-
-                {isMobile && <div className={"w-full flex justify-end"}>
-                    <ComposeMail publicConfig={publicConfig} />
-                </div>}
+				{isMobile && (
+					<div className={"w-full flex justify-end"}>
+						<ComposeMail publicConfig={publicConfig} />
+					</div>
+				)}
 
 				<div className="relative h-7 min-w-[140px]">
-
 					<div
 						className={clsx(
 							"absolute inset-0 flex items-center gap-2 transition-opacity",
@@ -182,7 +182,6 @@ function MailListHeader({
 							</ActionIcon>
 						</Tooltip>
 					</div>
-
 
 					{/* Layer 2: Bulk actions (shown when some selected) */}
 					<div

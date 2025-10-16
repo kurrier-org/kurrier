@@ -1,11 +1,6 @@
 "use client";
 import React from "react";
-import {
-	Mail,
-	MailOpen,
-	Paperclip,
-	Trash2,
-} from "lucide-react";
+import { Mail, MailOpen, Paperclip, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { MailboxEntity, MailboxSyncEntity } from "@db";
 import {

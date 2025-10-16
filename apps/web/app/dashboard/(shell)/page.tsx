@@ -38,22 +38,22 @@ export default async function Page() {
 				<StatCard
 					icon={<Plug className="size-5 text-primary" />}
 					label="Connected Providers"
-					value={statsData.connectedProviders}
+					value={statsData?.connectedProviders || 0}
 				/>
 				<StatCard
 					icon={<Globe className="size-5 text-primary" />}
 					label="Verified Domains"
-					value={statsData.verifiedDomains}
+					value={statsData?.verifiedDomains || 0}
 				/>
 				<StatCard
 					icon={<Send className="size-5 text-primary" />}
 					label="Active Identities"
-					value={statsData.activeIdentities}
+					value={statsData?.activeIdentities || 0}
 				/>
 				<StatCard
 					icon={<Mail className="size-5 text-primary" />}
 					label="Emails Processed"
-					value={statsData.emailsProcessedTotal}
+					value={statsData?.emailsProcessedTotal || 0}
 				/>
 			</div>
 		</div>

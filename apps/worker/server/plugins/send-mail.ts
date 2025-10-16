@@ -33,8 +33,8 @@ import { toArray } from "drizzle-orm/mysql-core";
 import { eq } from "drizzle-orm";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 const supabase = createClient(
-	publicConfig.SUPABASE_DOMAIN,
-	serverConfig.SUPABASE_SERVICE_ROLE_KEY,
+	publicConfig.SUPABASE_PUBLIC_URL,
+	serverConfig.SERVICE_ROLE_KEY,
 );
 import addressparser from "addressparser";
 import { PgTransaction } from "drizzle-orm/pg-core";

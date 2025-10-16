@@ -12,7 +12,7 @@ import { Forward, Reply } from "lucide-react";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { MessageEntity } from "@db";
 import { getMessageAddress } from "@common/mail-client";
-import {useMediaQuery} from "@mantine/hooks";
+import { useMediaQuery } from "@mantine/hooks";
 
 function EditorHeader() {
 	const { state } = useDynamicContext<{
@@ -71,114 +71,125 @@ function EditorHeader() {
 		setSubject(computedSubject);
 	}, [computedSubject]);
 
-    const isMobile = useMediaQuery("(max-width: 768px)");
+	const isMobile = useMediaQuery("(max-width: 768px)");
 
-	return isMobile ?
-        <>
-            {/* Row 1: Select | To | Cc/Bcc */}
-            <div className="border-b px-3 py-2 grid gap-3
+	return isMobile ? (
+		<>
+			{/* Row 1: Select | To | Cc/Bcc */}
+			<div
+				className="border-b px-3 py-2 grid gap-3
                   grid-cols-1
-                  sm:grid-cols-[auto,1fr,auto] sm:items-start">
-                {/* Left: reply/forward select */}
-                {state.message ? (
-                    <div className="sm:pt-1">
-                        <Select
-                            value={mode}
-                            name="mode"
-                            onChange={(v) => v && setMode(v as "reply" | "forward")}
-                            data={options}
-                            renderOption={renderOption}
-                            leftSection={<CurrentIcon size={14} />}
-                            leftSectionPointerEvents="none"
-                            variant="unstyled"
-                            className="text-sm"
-                            comboboxProps={{
-                                withinPortal: true,
-                                position: "bottom",
-                                offset: 8,
-                                zIndex: 2000,
-                            }}
-                        />
-                    </div>
-                ) : (
-                    <input type="hidden" name="mode" value={mode} />
-                )}
+                  sm:grid-cols-[auto,1fr,auto] sm:items-start"
+			>
+				{/* Left: reply/forward select */}
+				{state.message ? (
+					<div className="sm:pt-1">
+						<Select
+							value={mode}
+							name="mode"
+							onChange={(v) => v && setMode(v as "reply" | "forward")}
+							data={options}
+							renderOption={renderOption}
+							leftSection={<CurrentIcon size={14} />}
+							leftSectionPointerEvents="none"
+							variant="unstyled"
+							className="text-sm"
+							comboboxProps={{
+								withinPortal: true,
+								position: "bottom",
+								offset: 8,
+								zIndex: 2000,
+							}}
+						/>
+					</div>
+				) : (
+					<input type="hidden" name="mode" value={mode} />
+				)}
 
-                {/* Middle: To */}
-                <div className="grid items-center gap-2 sm:grid-cols-[40px,1fr]">
-      <span className="text-[13px] text-muted-foreground sm:text-right leading-6">
-        To
-      </span>
-                    <TagsInput
-                        defaultValue={toEmail ? [toEmail] : []}
-                        maxTags={1}
-                        name="to"
-                        size="sm"
-                        variant="unstyled"
-                        className="min-h-[28px] text-sm"
-                    />
-                </div>
+				{/* Middle: To */}
+				<div className="grid items-center gap-2 sm:grid-cols-[40px,1fr]">
+					<span className="text-[13px] text-muted-foreground sm:text-right leading-6">
+						To
+					</span>
+					<TagsInput
+						defaultValue={toEmail ? [toEmail] : []}
+						maxTags={1}
+						name="to"
+						size="sm"
+						variant="unstyled"
+						className="min-h-[28px] text-sm"
+					/>
+				</div>
 
-                {/* Right: Cc / Bcc (same row) */}
-                <div className="flex items-center justify-end gap-4 text-primary text-sm">
-                    {!ccActive && (
-                        <button
-                            type="button"
-                            onClick={() => setCcActive(true)}
-                            className="hover:underline"
-                            aria-label="Add Cc"
-                            title="Add Cc"
-                        >
-                            Cc
-                        </button>
-                    )}
-                    {!bccActive && (
-                        <button
-                            type="button"
-                            onClick={() => setBccActive(true)}
-                            className="hover:underline"
-                            aria-label="Add Bcc"
-                            title="Add Bcc"
-                        >
-                            Bcc
-                        </button>
-                    )}
-                </div>
-            </div>
+				{/* Right: Cc / Bcc (same row) */}
+				<div className="flex items-center justify-end gap-4 text-primary text-sm">
+					{!ccActive && (
+						<button
+							type="button"
+							onClick={() => setCcActive(true)}
+							className="hover:underline"
+							aria-label="Add Cc"
+							title="Add Cc"
+						>
+							Cc
+						</button>
+					)}
+					{!bccActive && (
+						<button
+							type="button"
+							onClick={() => setBccActive(true)}
+							className="hover:underline"
+							aria-label="Add Bcc"
+							title="Add Bcc"
+						>
+							Bcc
+						</button>
+					)}
+				</div>
+			</div>
 
-            {/* Row 2+: Cc / Bcc (only when active) */}
-            {ccActive && (
-                <div className="border-b px-3 py-2 grid items-center gap-2 sm:grid-cols-[72px,1fr]">
-      <span className="text-[13px] text-muted-foreground sm:text-right leading-6">
-        Cc
-      </span>
-                    <TagsInput name="cc" variant="unstyled" className="min-h-[28px] text-sm" />
-                </div>
-            )}
+			{/* Row 2+: Cc / Bcc (only when active) */}
+			{ccActive && (
+				<div className="border-b px-3 py-2 grid items-center gap-2 sm:grid-cols-[72px,1fr]">
+					<span className="text-[13px] text-muted-foreground sm:text-right leading-6">
+						Cc
+					</span>
+					<TagsInput
+						name="cc"
+						variant="unstyled"
+						className="min-h-[28px] text-sm"
+					/>
+				</div>
+			)}
 
-            {bccActive && (
-                <div className="border-b px-3 py-2 grid items-center gap-2 sm:grid-cols-[72px,1fr]">
-      <span className="text-[13px] text-muted-foreground sm:text-right leading-6">
-        Bcc
-      </span>
-                    <TagsInput name="bcc" variant="unstyled" className="min-h-[28px] text-sm" />
-                </div>
-            )}
+			{bccActive && (
+				<div className="border-b px-3 py-2 grid items-center gap-2 sm:grid-cols-[72px,1fr]">
+					<span className="text-[13px] text-muted-foreground sm:text-right leading-6">
+						Bcc
+					</span>
+					<TagsInput
+						name="bcc"
+						variant="unstyled"
+						className="min-h-[28px] text-sm"
+					/>
+				</div>
+			)}
 
-            {/* Subject */}
-            <div className="border-b px-3 py-2 grid items-center gap-2 sm:grid-cols-[72px,1fr]">
-    <span className="text-[13px] text-muted-foreground sm:text-right leading-6">
-      Subject
-    </span>
-                <Input
-                    variant="unstyled"
-                    className="w-full text-base"
-                    name="subject"
-                    value={subject}
-                    onChange={(e) => setSubject(e.currentTarget.value)}
-                />
-            </div>
-        </> :
+			{/* Subject */}
+			<div className="border-b px-3 py-2 grid items-center gap-2 sm:grid-cols-[72px,1fr]">
+				<span className="text-[13px] text-muted-foreground sm:text-right leading-6">
+					Subject
+				</span>
+				<Input
+					variant="unstyled"
+					className="w-full text-base"
+					name="subject"
+					value={subject}
+					onChange={(e) => setSubject(e.currentTarget.value)}
+				/>
+			</div>
+		</>
+	) : (
 		<>
 			<div className="border-b p-2 flex gap-2">
 				{state.message ? (
@@ -257,13 +268,14 @@ function EditorHeader() {
 				<span className="text-sm text-muted-foreground">Subject</span>
 				<Input
 					variant={"unstyled"}
-                    className={"w-full"}
+					className={"w-full"}
 					name={"subject"}
 					value={subject}
 					onChange={(e) => setSubject(e.currentTarget.value)}
 				/>
 			</div>
 		</>
+	);
 }
 
 export default EditorHeader;

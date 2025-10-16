@@ -25,9 +25,9 @@ import { UserResponse } from "@supabase/supabase-js";
 import Link from "next/link";
 import { IconMoonStars, IconSun } from "@tabler/icons-react";
 import { useAppearance } from "@/components/providers/appearance-provider";
-import {useEffect, useMemo} from "react";
+import { useEffect, useMemo } from "react";
 import { Switch } from "@mantine/core";
-import {revalidateMailbox} from "@/lib/actions/mailbox";
+import { revalidateMailbox } from "@/lib/actions/mailbox";
 
 const data = {
 	navMain: [],
@@ -70,9 +70,7 @@ export function AppSidebar({
 		return prefersDark; // mode === "system"
 	}, [mode, prefersDark]);
 
-    useEffect(() => {
-
-    })
+	useEffect(() => {});
 
 	return (
 		<Sidebar
@@ -111,8 +109,8 @@ export function AppSidebar({
 							size="md"
 							checked={!isDark}
 							onChange={(e) => {
-                                    setMode(e.currentTarget.checked ? "light" : "dark")
-                            }}
+								setMode(e.currentTarget.checked ? "light" : "dark");
+							}}
 							onLabel={<IconSun size={16} stroke={2.5} />}
 							offLabel={<IconMoonStars size={16} stroke={2.5} />}
 							aria-label={

@@ -11,8 +11,8 @@ import { parseAndStoreEmail } from "../../../../../../lib/message-payload-parser
 const publicConfig = getPublicEnv();
 const serverConfig = getServerEnv();
 const supabase = createClient(
-	publicConfig.SUPABASE_DOMAIN,
-	serverConfig.SUPABASE_SERVICE_ROLE_KEY,
+	publicConfig.SUPABASE_PUBLIC_URL,
+	serverConfig.SERVICE_ROLE_KEY,
 );
 
 export function getToEmails(parsed: ParsedMail): string[] {

@@ -8,32 +8,28 @@ export async function updateSession(request: NextRequest) {
 	});
 
 	const {
-		public: { SUPABASE_DOMAIN },
-		server: { SUPABASE_SERVICE_ROLE_KEY },
+		public: { SUPABASE_PUBLIC_URL },
+		server: { SERVICE_ROLE_KEY },
 	} = getEnv();
 
-	const supabase = createServerClient(
-		SUPABASE_DOMAIN,
-		SUPABASE_SERVICE_ROLE_KEY,
-		{
-			cookies: {
-				getAll() {
-					return request.cookies.getAll();
-				},
-				setAll(cookiesToSet) {
-					cookiesToSet.forEach(({ name, value, options }) =>
-						request.cookies.set(name, value),
-					);
-					supabaseResponse = NextResponse.next({
-						request,
-					});
-					cookiesToSet.forEach(({ name, value, options }) =>
-						supabaseResponse.cookies.set(name, value, options),
-					);
-				},
+	const supabase = createServerClient(SUPABASE_PUBLIC_URL, SERVICE_ROLE_KEY, {
+		cookies: {
+			getAll() {
+				return request.cookies.getAll();
+			},
+			setAll(cookiesToSet) {
+				cookiesToSet.forEach(({ name, value, options }) =>
+					request.cookies.set(name, value),
+				);
+				supabaseResponse = NextResponse.next({
+					request,
+				});
+				cookiesToSet.forEach(({ name, value, options }) =>
+					supabaseResponse.cookies.set(name, value, options),
+				);
 			},
 		},
-	);
+	});
 
 	// Do not run code between createServerClient and
 	// supabase.auth.getUser(). A simple mistake could make it very hard to debug

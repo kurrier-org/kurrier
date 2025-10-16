@@ -19,8 +19,8 @@ import { getRedis } from "./get-redis";
 const publicConfig = getPublicEnv();
 const serverConfig = getServerEnv();
 const supabase = createClient(
-	publicConfig.SUPABASE_DOMAIN,
-	serverConfig.SUPABASE_SERVICE_ROLE_KEY,
+	publicConfig.SUPABASE_PUBLIC_URL,
+	serverConfig.SERVICE_ROLE_KEY,
 );
 
 function generateFileName(att: Attachment) {
