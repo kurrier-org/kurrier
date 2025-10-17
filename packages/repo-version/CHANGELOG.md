@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.55
+
+### Patch Changes
+
+- [#173](https://github.com/kurrier-org/kurrier/pull/173) [`86b6e70`](https://github.com/kurrier-org/kurrier/commit/86b6e70182dfbe7b95f00e491fb80e6a505f75ed) Thanks [@krokhale](https://github.com/krokhale)! - fix for worker url
+
 ## 0.0.54
 
 ### Patch Changes
