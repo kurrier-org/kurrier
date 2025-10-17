@@ -1,5 +1,11 @@
 # @kurrier/docs
 
+## 0.0.6
+
+### Patch Changes
+
+- [#166](https://github.com/kurrier-org/kurrier/pull/166) [`70f4728`](https://github.com/kurrier-org/kurrier/commit/70f472827e87747978594b3a841235cb9490ba2f) Thanks [@krokhale](https://github.com/krokhale)! - Updated tunnels logic and docs
+
 ## 0.0.5
 
 ### Patch Changes
