@@ -63,6 +63,7 @@ services:
     environment:
       WEB_PORT: ${WEB_PORT}
       WEB_URL: ${WEB_URL}
+      NITRO_URL: ${NITRO_URL}
       NITRO_PORT: ${NITRO_PORT}
       DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       DATABASE_RLS_URL: postgres://rls_client:${RLS_CLIENT_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
