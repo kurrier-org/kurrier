@@ -31,8 +31,7 @@ export const ZPublicConfig = z.object({
     API_URL: z.string("API_URL must be present"),
 	ANON_KEY: z.string("ANON_KEY must be present"),
 	WEB_URL: z.string("WEB_URL must be present"),
-	DOCS_URL: z.string().optional(),
-	WEB_PROXY_URL: z.string().optional(),
+	DOCS_URL: z.string().optional()
 });
 
 export type ServerConfig = z.infer<typeof ZServerConfig>;

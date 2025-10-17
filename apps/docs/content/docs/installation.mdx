@@ -18,7 +18,7 @@ Before you start, make sure you have:
 - **Docker** and **Docker Compose** installed
 → [Install Docker](https://docs.docker.com/get-docker/)
 - **Git** (for cloning the repository)
-- **At least 1 GB RAM** and **1 vCPU** for testing (2 GB+ recommended for production)
+- **At least 1 GB RAM** and **1 vCPU**  (2 GB+ recommended for production)
 - Optional: a domain name (for `mail.yourdomain.com` or similar)
 
 ---
@@ -61,25 +61,63 @@ It creates a secure, production-ready .env block with everything filled in — i
 
 ---
 
-## 🚀 Start Kurrier
+## 🧩 Local vs. Hosted Setup
 
-Once your `.env` file is ready, you can start all services with Docker Compose:
+Kurrier can run in **two modes** — local and hosted (on a VPS etc with a domain name).
+Both work the same way, but differ in how external services like **AWS SES**, **SendGrid**, or **Mailgun** can reach your server.
+
+### 🖥️ Local Setup
+
+If you’re running Kurrier on your own laptop or a private machine (with `http://localhost` or an internal IP),
+email providers can’t reach your API directly to deliver incoming messages or webhooks.
+
+To make this seamless, Kurrier automatically starts a **LocalTunnel** connection by default using the `ENABLE_LOCAL_TUNNEL` flag in your `.env` file.:
+
+```bash
+ENABLE_LOCAL_TUNNEL=true
+```
+
+This creates a public URL (like `https://random-subdomain.loca.lt`) that tunnels requests to your local machine.
+In case you want to host Kurrier on a public server, eg ```yourdomain.com```, you can disable this feature by setting the flag to `false`.
+
+<Callout type="info">
+    We highly recommend hosting Kurrier on a public server with a domain for production use, as LocalTunnel is not reliable for production workloads.
+</Callout>
+
+
+✅ Once you are all set with your environment vars run
 
 ```bash
 docker compose up -d
 ```
 
-This command will:
-- Start Postgres, Redis, db services, and the Kurrier web interface.
-- Run the initial database bootstrap.
-- Expose the web UI and API worker locally.
+✅ To stop Kurrier, run
 
-At this point, Kurrier should be up and running! You are free to add your own proxy (e.g., Nginx, Caddy) in front of it if you want to use a custom domain or HTTPS. If you want to use it locally, you can skip that step.
-If you would like us to add a reverse proxy to the Docker setup, please open an issue or PR on GitHub.
+```bash
+docker compose down
+```
+
+
+### 🖥️ Hosted Setup
+
+When hosting Kurrier on a server or cloud instance (e.g. DigitalOcean, AWS, Hetzner, or your own VPS),
+you should use your own domain and disable LocalTunnel:
+
+```bash
+ENABLE_LOCAL_TUNNEL=false
+WEB_URL=https://www.yourdomain.com
+```
+
+
+<Callout type="info">
+    We highly recommend hosting Kurrier on a public server with a domain for production use, as LocalTunnel is not reliable for production workloads.
+</Callout>
 
 <Card>
-    ✅ You can re-run <code>docker compose up -d</code> anytime to restart Kurrier after a system reboot.
+    ✅ Once you are all set with your environment vars run <code>docker compose up -d</code> anytime to start Kurrier
+    and to stop Kurrier, run <code>docker compose down</code>
 </Card>
+
 
 ---
 
@@ -95,7 +133,7 @@ Once Docker finishes starting up, open the following URLs in your browser:
 
 
 <Callout type="info">
-    To access Kurrier dashboard, signup and create your user account
+    To access Kurrier dashboard, signup and create your user account on http://localhost:3000
 </Callout>
 
 <Callout type="info">

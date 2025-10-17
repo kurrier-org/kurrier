@@ -75,6 +75,7 @@ type MailAttachmentInput = {
 };
 
 import type { Attachment as SesV2Attachment } from "@aws-sdk/client-sesv2";
+import {kvGet} from "@common";
 
 export class SesMailer implements Mailer {
 	private client: SESClient;
@@ -477,10 +478,11 @@ export class SesMailer implements Mailer {
 				AttributeValue: JSON.stringify(topicPolicy),
 			}),
 		);
+        const localTunnelUrl = await kvGet("local-tunnel-url")
 		const { subscribed } = await this.ensureWebhookSubscription(
 			sns,
 			topicArn,
-			`${metaData.WEB_URL}/api/v1/hooks/aws/ses/inbound`,
+			`${localTunnelUrl ? localTunnelUrl : metaData.WEB_URL}/api/v1/hooks/aws/ses/inbound`,
 		);
 		console.log("subscribed", subscribed);
 
