@@ -3,7 +3,7 @@ import { Worker } from "bullmq";
 import { getRedis } from "../../lib/get-redis";
 import {db, providers} from "@db";
 import {PROVIDERS} from "@schema";
-import {kvGet, kvSet} from "@common";
+import {kvDel, kvGet, kvSet} from "@common";
 
 export default defineNitroPlugin(async (nitroApp) => {
     const connection = (await getRedis()).connection;
@@ -50,6 +50,7 @@ export default defineNitroPlugin(async (nitroApp) => {
         });
     } else {
         console.log("Local tunnel not enabled");
+        await kvDel("local-tunnel-url");
     }
 
 });

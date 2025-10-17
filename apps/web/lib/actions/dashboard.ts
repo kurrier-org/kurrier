@@ -321,9 +321,9 @@ export async function initializeDomainIdentity(
 		if (providerIdentifier === "ses") {
 			opts.mailFrom = String(data?.mailFromSubdomain ?? "").trim() || undefined;
 		} else if (providerIdentifier === "sendgrid") {
-			const { WEB_URL } = getPublicEnv();
+			const { NITRO_URL } = getPublicEnv();
             const localTunnelUrl = await kvGet("local-tunnel-url")
-			const url = localTunnelUrl ? localTunnelUrl : WEB_URL;
+			const url = localTunnelUrl ? localTunnelUrl : NITRO_URL;
 			opts.webHookUrl = `${url}/api/v1/hooks/sendgrid/inbound`;
 		}
 		const identity = await mailer.addDomain(String(data?.value), opts);
@@ -384,9 +384,9 @@ export async function verifyDomainIdentity(
 		const opts = {} as Record<any, any>;
 
 		if (providerAccount?.provider?.type !== "ses") {
-			const { WEB_URL } = getPublicEnv();
+			const { NITRO_URL } = getPublicEnv();
             const localTunnelUrl = await kvGet("local-tunnel-url")
-			const url = localTunnelUrl ? localTunnelUrl : WEB_URL;
+			const url = localTunnelUrl ? localTunnelUrl : NITRO_URL;
 			if (providerAccount?.provider?.type === "mailgun") {
 				opts.webHookUrl = `${url}/api/v1/hooks/${providerAccount?.provider?.type}/mime`;
 			} else {
@@ -656,10 +656,11 @@ export const verifyProviderAccount = async (
 		let res = { ok: false, message: "Not implemented" } as VerifyResult;
 		if (providerType === "ses") {
 			const mailer = createMailer("ses", providerSecret.parsedSecret);
-			const { WEB_URL } = getPublicEnv();
+			const { NITRO_URL } = getPublicEnv();
             const localTunnelUrl = await kvGet("local-tunnel-url")
 			res = await mailer.verify(String(providerSecret?.metaId), {
-				WEB_URL: localTunnelUrl ? localTunnelUrl : WEB_URL,
+				// webHookUrl: localTunnelUrl ? localTunnelUrl : NITRO_URL,
+				webHookUrl: `${localTunnelUrl ? localTunnelUrl : NITRO_URL}/api/v1/hooks/aws/ses/inbound`,
 			});
 
 			const data = providerSecret.parsedSecret;
