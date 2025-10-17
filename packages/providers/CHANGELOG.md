@@ -1,5 +1,11 @@
 # @kurrier/providers
 
+## 1.0.6
+
+### Patch Changes
+
+- [#168](https://github.com/kurrier-org/kurrier/pull/168) [`867c965`](https://github.com/kurrier-org/kurrier/commit/867c9653b8e7ae4cdb9ee452a35af316282f76d0) Thanks [@krokhale](https://github.com/krokhale)! - Added NITRO_URL and fixed an issue related to webhooks
+
 ## 1.0.5
 
 ### Patch Changes
