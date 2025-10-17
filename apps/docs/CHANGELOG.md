@@ -1,5 +1,11 @@
 # @kurrier/docs
 
+## 0.0.5
+
+### Patch Changes
+
+- [#164](https://github.com/kurrier-org/kurrier/pull/164) [`276ee8a`](https://github.com/kurrier-org/kurrier/commit/276ee8a7dbb005894ff4e8cc9700eb58ae527a1e) Thanks [@krokhale](https://github.com/krokhale)! - Added support for localtunnel and updated docs
+
 ## 0.0.4
 
 ### Patch Changes

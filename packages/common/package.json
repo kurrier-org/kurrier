@@ -1,7 +1,7 @@
 {
 	"name": "@kurrier/common",
 	"private": true,
-	"version": "0.0.6",
+	"version": "0.0.7",
 	"description": "",
 	"types": "src/index.ts",
 	"main": "src/index.ts",
