@@ -1,5 +1,11 @@
 # web
 
+## 0.1.26
+
+### Patch Changes
+
+- [#171](https://github.com/kurrier-org/kurrier/pull/171) [`23ea7f8`](https://github.com/kurrier-org/kurrier/commit/23ea7f87af420914a3abba2314b527926bd166be) Thanks [@krokhale](https://github.com/krokhale)! - Added worker url support and removed redundant env vars
+
 ## 0.1.25
 
 ### Patch Changes

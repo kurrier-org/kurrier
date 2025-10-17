@@ -1,5 +1,11 @@
 # @kurrier/schema
 
+## 1.0.15
+
+### Patch Changes
+
+- [#171](https://github.com/kurrier-org/kurrier/pull/171) [`23ea7f8`](https://github.com/kurrier-org/kurrier/commit/23ea7f87af420914a3abba2314b527926bd166be) Thanks [@krokhale](https://github.com/krokhale)! - Added worker url support and removed redundant env vars
+
 ## 1.0.14
 
 ### Patch Changes
