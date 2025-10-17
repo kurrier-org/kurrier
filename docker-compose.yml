@@ -10,7 +10,7 @@ name: kurrier
 services:
 
   web:
-    image: ghcr.io/kurrier-org/kurrier-web:v0.0.49
+    image: ghcr.io/kurrier-org/kurrier-web:v0.0.51
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-3000}:3000"
@@ -45,7 +45,7 @@ services:
       SEARCH_REBUILD_ON_BOOT: ${SEARCH_REBUILD_ON_BOOT}
 
   worker:
-    image: ghcr.io/kurrier-org/kurrier-worker:v0.0.49
+    image: ghcr.io/kurrier-org/kurrier-worker:v0.0.51
     restart: unless-stopped
     ports:
       - "${NITRO_PORT:-3001}:3001"
@@ -77,9 +77,10 @@ services:
       TYPESENSE_PROTOCOL: ${TYPESENSE_PROTOCOL}
       TYPESENSE_HOST: ${TYPESENSE_HOST}
       SEARCH_REBUILD_ON_BOOT: ${SEARCH_REBUILD_ON_BOOT}
+      LOCAL_TUNNEL_URL: ${LOCAL_TUNNEL_URL}
 
   redis:
-    image: redis:latest
+    image: redis:8.2.2
     command: [ "redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}" ]
     healthcheck:
       test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "PING" ]
