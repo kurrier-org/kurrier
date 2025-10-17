@@ -3,8 +3,7 @@ import { Worker } from "bullmq";
 import { getRedis } from "../../lib/get-redis";
 import {db, providers} from "@db";
 import {PROVIDERS} from "@schema";
-import localtunnel from "localtunnel";
-import {kvSet} from "@common";
+import {kvGet, kvSet} from "@common";
 
 export default defineNitroPlugin(async (nitroApp) => {
     const connection = (await getRedis()).connection;
@@ -37,18 +36,18 @@ export default defineNitroPlugin(async (nitroApp) => {
     });
 
 
-    if (process.env.ENABLE_LOCAL_TUNNEL === "true") {
-        const tunnel = await localtunnel({ port: Number(process.env.NITRO_PORT) || 3001 });
-        await kvSet("local-tunnel-url", tunnel.url, 3600 * 24 * 7)
-
-        tunnel.on("close", () => {
-            console.log("tunnel closed");
-        });
+    if (process.env.LOCAL_TUNNEL_URL) {
+        const existing = await kvGet("local-tunnel-url");
+        if (!existing) {
+            await kvSet("local-tunnel-url", process.env.LOCAL_TUNNEL_URL);
+            console.log(`✅ Stored local tunnel URL: ${process.env.LOCAL_TUNNEL_URL}`);
+        } else {
+            console.log(`ℹ️ Using existing tunnel URL from Redis: ${existing}`);
+        }
 
         nitroApp.hooks.hookOnce("close", async () => {
             console.log("Closing common-worker tunnel");
-            tunnel.close()
-        })
+        });
     } else {
         console.log("Local tunnel not enabled");
     }

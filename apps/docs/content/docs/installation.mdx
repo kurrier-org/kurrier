@@ -68,24 +68,43 @@ Both work the same way, but differ in how external services like **AWS SES**, **
 
 ### 🖥️ Local Setup
 
-If you’re running Kurrier on your own laptop or a private machine (with `http://localhost` or an internal IP),
+If you’re running Kurrier on your own laptop or private machine (http://localhost or internal IP),
 email providers can’t reach your API directly to deliver incoming messages or webhooks.
 
-To make this seamless, Kurrier automatically starts a **LocalTunnel** connection by default using the `ENABLE_LOCAL_TUNNEL` flag in your `.env` file.:
+To solve this, Kurrier allows you to define your own public tunnel URL via any tunneling service such as [ngrok](https://ngrok.com/docs/getting-started), [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/), or [LocalTunnel](https://github.com/localtunnel/localtunnel).
+
+Example using ngrok:
 
 ```bash
-ENABLE_LOCAL_TUNNEL=true
+  ngrok http 3001
 ```
 
-This creates a public URL (like `https://random-subdomain.loca.lt`) that tunnels requests to your local machine.
-In case you want to host Kurrier on a public server, eg ```yourdomain.com```, you can disable this feature by setting the flag to `false`.
+You can also use any other tunneling service of your choice.
 
-<Callout type="info">
-    We highly recommend hosting Kurrier on a public server with a domain for production use, as LocalTunnel is not reliable for production workloads.
+Update your `.env` file with the generated public URL:
+
+```bash
+LOCAL_TUNNEL_URL=https://48c2c6e61d81.ngrok-free.app
+```
+
+<Callout type="warning">
+    We highly recommend hosting Kurrier on a public server with a domain for production use as tunnels might not be reliable for production workloads
+    and any downtime or change in the tunnel URL will break incoming email delivery and webhooks.
 </Callout>
 
 
-✅ Once you are all set with your environment vars run
+### 🖥️ Hosted Setup
+
+When hosting Kurrier on a server or cloud instance (e.g. DigitalOcean, AWS, Hetzner, or your own VPS),
+you should use your own domain and disable tunneling by removing or commenting out the `LOCAL_TUNNEL_URL` variable in your `.env` file.
+
+```bash
+WEB_URL=https://www.yourdomain.com
+```
+
+---
+
+✅ Once you are all set with your environment variables you are now ready to run
 
 ```bash
 docker compose up -d
@@ -98,25 +117,6 @@ docker compose down
 ```
 
 
-### 🖥️ Hosted Setup
-
-When hosting Kurrier on a server or cloud instance (e.g. DigitalOcean, AWS, Hetzner, or your own VPS),
-you should use your own domain and disable LocalTunnel:
-
-```bash
-ENABLE_LOCAL_TUNNEL=false
-WEB_URL=https://www.yourdomain.com
-```
-
-
-<Callout type="info">
-    We highly recommend hosting Kurrier on a public server with a domain for production use, as LocalTunnel is not reliable for production workloads.
-</Callout>
-
-<Card>
-    ✅ Once you are all set with your environment vars run <code>docker compose up -d</code> anytime to start Kurrier
-    and to stop Kurrier, run <code>docker compose down</code>
-</Card>
 
 
 ---
