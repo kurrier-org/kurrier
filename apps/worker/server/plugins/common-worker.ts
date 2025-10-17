@@ -38,7 +38,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 
     if (process.env.LOCAL_TUNNEL_URL) {
         const existing = await kvGet("local-tunnel-url");
-        if (!existing) {
+        if (!existing || existing !== process.env.LOCAL_TUNNEL_URL) {
             await kvSet("local-tunnel-url", process.env.LOCAL_TUNNEL_URL);
             console.log(`✅ Stored local tunnel URL: ${process.env.LOCAL_TUNNEL_URL}`);
         } else {
