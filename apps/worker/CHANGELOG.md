@@ -1,5 +1,11 @@
 # @kurrier/worker
 
+## 0.1.22
+
+### Patch Changes
+
+- [`64f6f21`](https://github.com/kurrier-org/kurrier/commit/64f6f212eb407b485a1a0e13ea0f0cb4fd589c07) Thanks [@krokhale](https://github.com/krokhale)! - Added licencse and notice
+
 ## 0.1.21
 
 ### Patch Changes
