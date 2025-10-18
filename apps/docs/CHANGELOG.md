@@ -1,5 +1,11 @@
 # @kurrier/docs
 
+## 0.0.7
+
+### Patch Changes
+
+- [`3ded473`](https://github.com/kurrier-org/kurrier/commit/3ded473095d5ad2dc967b26677a10738f3590632) Thanks [@krokhale](https://github.com/krokhale)! - updated docs
+
 ## 0.0.6
 
 ### Patch Changes
