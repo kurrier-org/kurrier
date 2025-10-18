@@ -163,10 +163,8 @@ export default function ProviderCard({
 								<CardTitle className="text-lg sm:text-xl">
 									{spec.name}
 								</CardTitle>
-								{/*<small>{userProvider?.providers.id}</small>*/}
 								<p className="text-sm text-muted-foreground">
-									Managed via environment variables. Toggle by adding/removing
-									keys.
+                                    Managed securely in a secure Vault. Verify by adding or removing stored credentials.
 								</p>
 							</div>
 						</div>

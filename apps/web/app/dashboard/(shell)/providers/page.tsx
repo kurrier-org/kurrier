@@ -22,9 +22,8 @@ export default async function ProvidersPage() {
 			</div>
 
 			<p className="max-w-prose text-sm text-muted-foreground my-6">
-				Configure email providers by setting environment variables. We never
-				store your credentials; the app only checks whether required keys exist
-				and then performs a provider-level test when you ask it to.
+                Connect email providers directly from the dashboard — no manual environment setup required.
+                All provider credentials are securely encrypted and stored in the Vault, never in plain text or source code ensuring full control and privacy.
 			</p>
 
 			<div className="grid gap-6 lg:grid-cols-2">
