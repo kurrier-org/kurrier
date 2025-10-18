@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.58
+
+### Patch Changes
+
+- [#177](https://github.com/kurrier-org/kurrier/pull/177) [`ebd70a5`](https://github.com/kurrier-org/kurrier/commit/ebd70a52fa1a50519463b3dab6049001fad4194c) Thanks [@krokhale](https://github.com/krokhale)! - Updating image versions
+
 ## 0.0.57
 
 ### Patch Changes
