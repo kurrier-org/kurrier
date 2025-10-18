@@ -1,5 +1,11 @@
 # web
 
+## 0.1.30
+
+### Patch Changes
+
+- [#182](https://github.com/kurrier-org/kurrier/pull/182) [`6bf133b`](https://github.com/kurrier-org/kurrier/commit/6bf133baf79399bba7d33577856e782c29594d75) Thanks [@krokhale](https://github.com/krokhale)! - Added support for color themes
+
 ## 0.1.29
 
 ### Patch Changes
