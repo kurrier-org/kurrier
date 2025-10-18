@@ -1,5 +1,11 @@
 # web
 
+## 0.1.29
+
+### Patch Changes
+
+- [#179](https://github.com/kurrier-org/kurrier/pull/179) [`4240e36`](https://github.com/kurrier-org/kurrier/commit/4240e3630746b85fc6d1c178e0ca5bbd35165b63) Thanks [@krokhale](https://github.com/krokhale)! - Updated readme and images
+
 ## 0.1.28
 
 ### Patch Changes
