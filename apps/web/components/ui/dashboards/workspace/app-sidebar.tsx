@@ -21,6 +21,7 @@ import { NavUser } from "@/components/ui/dashboards/workspace/nav-user";
 import { Switch } from "@mantine/core";
 import { IconMoonStars, IconSun } from "@tabler/icons-react";
 import { useAppearance } from "@/components/providers/appearance-provider";
+import ThemeColorPicker from "@/components/common/theme-color-picker";
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	publicConfig: PublicConfig;
@@ -91,9 +92,9 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
 			</SidebarHeader>
 			<SidebarContent className={"relative"}>
 				<NavMain items={data.navMain} />
-				<div className={"absolute bottom-2 left-2"}>
+				<div className={"absolute bottom-2 left-2 flex gap-2"}>
 					<Switch
-						size="md"
+						size="sm"
 						checked={!isDark}
 						onChange={(e) =>
 							setMode(e.currentTarget.checked ? "light" : "dark")
@@ -102,6 +103,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
 						offLabel={<IconMoonStars size={16} stroke={2.5} />}
 						aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
 					/>
+                    <ThemeColorPicker />
 				</div>
 			</SidebarContent>
 			<SidebarFooter>

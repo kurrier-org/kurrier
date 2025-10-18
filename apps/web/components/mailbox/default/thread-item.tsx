@@ -47,34 +47,6 @@ export default async function ThreadItem({
 					</div>
 				</div>
 			</Container>
-
-			{/*<div className="flex flex-1 flex-col gap-4 p-4">*/}
-			{/*	<div className={"flex gap-4"}>*/}
-			{/*		<div*/}
-			{/*			className={`flex-shrink flex flex-col items-center ${threadIndex === 0 ? "pt-12" : "pt-4"}`}*/}
-			{/*		>*/}
-			{/*			<Avatar*/}
-			{/*				name={*/}
-			{/*					getMessageName(message, "from") ||*/}
-			{/*					getMessageAddress(message, "from") ||*/}
-			{/*					""*/}
-			{/*				}*/}
-			{/*				color="initials"*/}
-			{/*			/>*/}
-			{/*		</div>*/}
-			{/*		<div className={"flex-grow flex flex-col gap-2"}>*/}
-			{/*			<EmailRenderer*/}
-			{/*				threadIndex={threadIndex}*/}
-			{/*				numberOfMessages={numberOfMessages}*/}
-			{/*				message={message}*/}
-			{/*				attachments={attachments}*/}
-			{/*				publicConfig={publicConfig}*/}
-			{/*			>*/}
-			{/*				<EmailViewer message={message} />*/}
-			{/*			</EmailRenderer>*/}
-			{/*		</div>*/}
-			{/*	</div>*/}
-			{/*</div>*/}
 		</>
 	);
 }

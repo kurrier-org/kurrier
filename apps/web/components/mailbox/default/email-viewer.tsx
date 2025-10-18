@@ -127,7 +127,7 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 		const rawHtml =
 			message.html && message.html.trim()
 				? message.html
-				: `<div style="white-space: pre-wrap">${(message.text || "No content")
+				: `<div style="white-space: pre-wrap;padding: 6px;">${(message.text || "No content")
 						.toString()
 						.replace(
 							/[<>&]/g,

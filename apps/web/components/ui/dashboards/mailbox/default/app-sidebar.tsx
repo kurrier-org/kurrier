@@ -28,6 +28,7 @@ import { useAppearance } from "@/components/providers/appearance-provider";
 import { useEffect, useMemo } from "react";
 import { Switch } from "@mantine/core";
 import { revalidateMailbox } from "@/lib/actions/mailbox";
+import ThemeColorPicker from "@/components/common/theme-color-picker";
 
 const data = {
 	navMain: [],
@@ -104,20 +105,22 @@ export function AppSidebar({
 							<SidebarMenu></SidebarMenu>
 						</SidebarGroupContent>
 					</SidebarGroup>
-					<div className={"absolute bottom-3 rotate-90"}>
-						<Switch
-							size="md"
-							checked={!isDark}
-							onChange={(e) => {
-								setMode(e.currentTarget.checked ? "light" : "dark");
-							}}
-							onLabel={<IconSun size={16} stroke={2.5} />}
-							offLabel={<IconMoonStars size={16} stroke={2.5} />}
-							aria-label={
-								isDark ? "Switch to light mode" : "Switch to dark mode"
-							}
-						/>
-					</div>
+                    <div className={"absolute bottom-28 rotate-90 flex justify-start items-center w-full gap-2"}>
+                        <ThemeColorPicker />
+                        <Switch
+                            size="sm"
+                            checked={!isDark}
+                            onChange={(e) => {
+                                setMode(e.currentTarget.checked ? "light" : "dark");
+                            }}
+                            onLabel={<IconSun size={16} stroke={2.5} />}
+                            offLabel={<IconMoonStars size={16} stroke={2.5} />}
+                            aria-label={
+                                isDark ? "Switch to light mode" : "Switch to dark mode"
+                            }
+                        />
+                    </div>
+
 				</SidebarContent>
 				<SidebarFooter>
 					<NavUser user={user} avatar={avatar} />
@@ -128,7 +131,7 @@ export function AppSidebar({
 			{/* We disable collapsible and let it fill remaining space */}
 			<Sidebar collapsible="none" className="hidden flex-1 md:flex">
 				<SidebarHeader className="gap-3.5 border-b p-4">
-					<div className="text-left text-brand font-sans flex items-center gap-1">
+					<div className="text-left font-sans flex items-center gap-1">
 						<KurrierLogo size={36} />
 						<span className="text-lg font-semibold">kurrier</span>
 					</div>
