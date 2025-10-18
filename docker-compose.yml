@@ -127,7 +127,7 @@ services:
     restart: "no"
 
   studio:
-    container_name: kurrier-studio
+    container_name: supabase-studio
     image: supabase/studio:2025.10.01-sha-8460121
     restart: unless-stopped
     healthcheck:
@@ -171,7 +171,7 @@ services:
       # NEXT_ANALYTICS_BACKEND_PROVIDER: bigquery
 
   kong:
-    container_name: kurrier-kong
+    container_name: supabase-kong
     image: kong:2.8.1
     restart: unless-stopped
     ports:
