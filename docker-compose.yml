@@ -10,7 +10,7 @@ name: kurrier
 services:
 
   web:
-    image: ghcr.io/kurrier-org/kurrier-web:v0.0.60
+    image: ghcr.io/kurrier-org/kurrier-web:v0.0.62
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-3000}:3000"
@@ -46,7 +46,7 @@ services:
       WORKER_URL: ${WORKER_URL}
 
   worker:
-    image: ghcr.io/kurrier-org/kurrier-worker:v0.0.60
+    image: ghcr.io/kurrier-org/kurrier-worker:v0.0.62
     restart: unless-stopped
     ports:
       - "${NITRO_PORT:-3001}:3001"
