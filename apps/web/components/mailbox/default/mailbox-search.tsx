@@ -12,7 +12,7 @@ import { initSearch } from "@/lib/actions/mailbox";
 import type { User } from "@supabase/supabase-js";
 import type { ThreadHit, SearchThreadsResponse } from "@schema";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import {usePathname, useRouter} from "next/navigation";
 import { IconStar, IconStarFilled } from "@tabler/icons-react";
 
 export default function MailboxSearch({
@@ -91,6 +91,8 @@ export default function MailboxSearch({
 
 	const router = useRouter();
 
+    const pathName = usePathname()
+
 	return (
 		<>
 			<button
@@ -114,7 +116,7 @@ export default function MailboxSearch({
 							e.preventDefault();
 							setOpen(false);
 							router.push(
-								`/mail/${publicId}/${mailboxSlug}/search?q=${encodeURIComponent(query)}&has=${hasAttachment ? "1" : "0"}&unread=${onlyUnread ? "1" : "0"}&starred=${isStarred ? "1" : "0"}`,
+								`${pathName.match("/dashboard/mail") ? "/dashboard" : "" }/mail/${publicId}/${mailboxSlug}/search?q=${encodeURIComponent(query)}&has=${hasAttachment ? "1" : "0"}&unread=${onlyUnread ? "1" : "0"}&starred=${isStarred ? "1" : "0"}`,
 							);
 						}
 					}}
@@ -168,7 +170,7 @@ export default function MailboxSearch({
 							{items.map((t) => (
 								<li key={t.id} className={"my-2"}>
 									<Link
-										href={`/mail/${publicId}/inbox/threads/${t.threadId}`}
+										href={`${pathName.match("/dashboard/mail") ? "/dashboard/mail" : "/mail" }/${publicId}/inbox/threads/${t.threadId}`}
 										type="button"
 										className="w-full rounded-md px-4 py-3 text-left hover:bg-muted/60 block focus:outline-none focus:ring-2 focus:ring-ring"
 									>

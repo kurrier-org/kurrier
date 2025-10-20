@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { Mail, MailOpen, Paperclip, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import {usePathname, useRouter} from "next/navigation";
 import { MailboxEntity, MailboxSyncEntity } from "@db";
 import {
 	FetchMailboxThreadsResult,
@@ -71,10 +71,14 @@ export default function WebmailListItem({
 	const date = new Date(mailboxThreadItem.lastActivityAt || Date.now());
 	const dateLabel = formatDateLabel(date);
 
+    const pathname = usePathname()
+
 	const openThread = () => {
-		router.push(
-			`/mail/${identityPublicId}/${activeMailbox.slug}/threads/${mailboxThreadItem.threadId}`,
-		);
+        const url = pathname.match("/dashboard/mail") ?
+            `/dashboard/mail/${identityPublicId}/${activeMailbox.slug}/threads/${mailboxThreadItem.threadId}`
+            :
+            `/mail/${identityPublicId}/${activeMailbox.slug}/threads/${mailboxThreadItem.threadId}`
+		router.push(url);
 	};
 
 	// Width reserved on the right so text never collides with the overlay actions

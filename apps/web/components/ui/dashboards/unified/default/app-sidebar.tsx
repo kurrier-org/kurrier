@@ -1,0 +1,188 @@
+"use client";
+
+import * as React from "react";
+import {Command, File, Inbox, LayoutDashboard, Plug, Send} from "lucide-react";
+
+import { NavUser } from "@/components/ui/dashboards/workspace/nav-user";
+import {
+	Sidebar,
+	SidebarContent,
+	SidebarFooter,
+	SidebarGroup,
+	SidebarGroupContent,
+	SidebarHeader,
+	SidebarMenu,
+	SidebarMenuButton,
+	SidebarMenuItem,
+	useSidebar,
+} from "@/components/ui/sidebar";
+import {usePathname, useRouter} from "next/navigation";
+import KurrierLogo from "@/components/common/kurrier-logo";
+import ComposeMail from "@/components/mailbox/default/compose-mail";
+import {PublicConfig} from "@schema";
+import {UserResponse} from "@supabase/supabase-js";
+import { NavMain } from "@/components/ui/dashboards/workspace/nav-main";
+import ThemeColorPicker from "@/components/common/theme-color-picker";
+import IdentityMailboxesList from "@/components/dashboard/identity-mailboxes-list";
+import {FetchIdentityMailboxListResult} from "@/lib/actions/mailbox";
+import ThemeSwitch from "@/components/common/theme-switch";
+
+
+type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
+    publicConfig: PublicConfig;
+    user: UserResponse["data"]["user"];
+    avatar: string;
+    identityMailboxes: FetchIdentityMailboxListResult
+};
+
+export function AppSidebar({ ...props }: UnifiedSidebarProps) {
+
+    const { publicConfig, user, avatar, identityMailboxes, ...restProps } = props;
+
+    const allMailUrl = identityMailboxes.length > 0 ?
+        `/dashboard/mail/${identityMailboxes[0].identity.publicId}/inbox`
+        : `/dashboard/mail`;
+
+
+    const data = {
+        navMain: [
+            {
+                title: "All Mail",
+                url: allMailUrl,
+                icon: Inbox,
+                isActive: true,
+            },
+            {
+                title: "Platform",
+                url: "/dashboard/platform/overview",
+                icon: File,
+                isActive: false,
+            }
+        ],
+        navPlatform: [
+            {
+                title: "Overview",
+                url: "/dashboard/platform/overview",
+                icon: LayoutDashboard,
+                items: [],
+            },
+            {
+                title: "Providers",
+                url: "/dashboard/platform/providers",
+                icon: Plug,
+                items: [],
+            },
+            {
+                title: "Identities",
+                url: "/dashboard/platform/identities",
+                icon: Send,
+                items: [],
+            },
+        ],
+
+    };
+
+	// Note: I'm using state to show active item.
+	// IRL you should use the url/router.
+	const [activeItem, setActiveItem] = React.useState(data.navMain[0]);
+	// const [mails, setMails] = React.useState(data.mails);
+	const { setOpen } = useSidebar();
+
+    const router = useRouter()
+    const pathName = usePathname()
+    const isOnPlatform = pathName?.includes("/platform")
+
+
+	return (
+		<Sidebar
+			collapsible="icon"
+			className="overflow-hidden *:data-[sidebar=sidebar]:flex-row"
+            {...restProps}
+		>
+			{/* This is the first sidebar */}
+			{/* We disable collapsible and adjust width to icon. */}
+			{/* This will make the sidebar appear as icons. */}
+			<Sidebar
+				collapsible="none"
+				className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r"
+			>
+				<SidebarHeader>
+					<SidebarMenu>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
+                                <a href="#">
+                                    <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                                        <Command className="size-4" />
+                                    </div>
+                                    <div className="grid flex-1 text-left text-sm leading-tight">
+                                        <span className="truncate font-medium">Acme Inc</span>
+                                        <span className="truncate text-xs">Enterprise</span>
+                                    </div>
+                                </a>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+					</SidebarMenu>
+				</SidebarHeader>
+                <SidebarContent className={"relative"}>
+					<SidebarGroup>
+						<SidebarGroupContent className="px-1.5 md:px-0">
+							<SidebarMenu>
+								{data.navMain.map((item) => (
+									<SidebarMenuItem key={item.title}>
+										<SidebarMenuButton
+											tooltip={{
+												children: item.title,
+												hidden: false,
+											}}
+											onClick={() => {
+												setActiveItem(item);
+												setOpen(true);
+                                                router.push(item.url)
+											}}
+											isActive={activeItem?.title === item.title}
+											className="px-2.5 md:px-2"
+										>
+											<item.icon />
+											<span>{item.title}</span>
+										</SidebarMenuButton>
+									</SidebarMenuItem>
+								))}
+							</SidebarMenu>
+						</SidebarGroupContent>
+					</SidebarGroup>
+                    <div className={"absolute bottom-28 rotate-90 flex justify-start items-center w-full gap-2"}>
+                        <ThemeColorPicker />
+                        <ThemeSwitch />
+                    </div>
+				</SidebarContent>
+                <SidebarFooter>
+                    <NavUser user={user} avatar={avatar} />
+                </SidebarFooter>
+			</Sidebar>
+
+			{/* This is the second sidebar */}
+			{/* We disable collapsible and let it fill remaining space */}
+
+            <Sidebar collapsible="none" className="hidden flex-1 md:flex">
+                <SidebarHeader className="gap-3.5 border-b p-4">
+                    <div className="text-left font-sans flex items-center gap-1">
+                        <KurrierLogo size={36} />
+                        <span className="text-lg font-semibold">kurrier</span>
+                    </div>
+                    {!isOnPlatform && <div className={"-mt-1"}>
+                        <ComposeMail publicConfig={publicConfig} />
+                    </div>}
+                </SidebarHeader>
+                <SidebarContent>
+                    <SidebarGroup className="px-0">
+                        <SidebarGroupContent>
+                            {isOnPlatform
+                                ? <NavMain items={data.navPlatform} />
+                                : <IdentityMailboxesList identityMailboxes={identityMailboxes}/>}
+                        </SidebarGroupContent>
+                    </SidebarGroup>
+                </SidebarContent>
+            </Sidebar>
+		</Sidebar>
+	);
+}

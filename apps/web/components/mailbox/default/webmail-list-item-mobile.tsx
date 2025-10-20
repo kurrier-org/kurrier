@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { Mail, MailOpen, Paperclip, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import {usePathname, useRouter} from "next/navigation";
 import type { MailboxEntity, MailboxSyncEntity } from "@db";
 import {
 	FetchMailboxThreadsResult,
@@ -59,10 +59,15 @@ export default function WebmailListItemMobile({
 		}
 	})();
 
-	const openThread = () =>
-		router.push(
-			`/mail/${identityPublicId}/${activeMailbox.slug}/threads/${mailboxThreadItem.threadId}`,
-		);
+    const pathname = usePathname()
+
+    const openThread = () => {
+        const url = pathname.match("/dashboard/mail") ?
+            `/dashboard/mail/${identityPublicId}/${activeMailbox.slug}/threads/${mailboxThreadItem.threadId}`
+            :
+            `/mail/${identityPublicId}/${activeMailbox.slug}/threads/${mailboxThreadItem.threadId}`
+        router.push(url);
+    };
 
 	const ACTIONS_W = 96;
 

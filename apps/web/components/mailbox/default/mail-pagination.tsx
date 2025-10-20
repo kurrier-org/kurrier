@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { Pagination } from "@mantine/core";
-import { useRouter } from "next/navigation";
+import {usePathname, useRouter} from "next/navigation";
 
 function MailPagination({
 	count,
@@ -16,14 +16,15 @@ function MailPagination({
 }) {
 	const [activePage, setPage] = useState(page || 1);
 	const router = useRouter();
+    const pathname = usePathname()
 
 	const updatePageNumber = async (number: number) => {
 		if (number < 1) return;
 		if (Number(number) === 1) {
-			router.push(`/mail/${identityPublicId}/${mailboxSlug}`);
+			router.push(`${pathname.match("/dashboard/mail") ? "/dashboard" : ""}/mail/${identityPublicId}/${mailboxSlug}`);
 			return;
 		}
-		router.push(`/mail/${identityPublicId}/${mailboxSlug}?page=${number}`);
+		router.push(`${pathname.match("/dashboard/mail") ? "/dashboard" : ""}/mail/${identityPublicId}/${mailboxSlug}?page=${number}`);
 		setPage(number);
 	};
 

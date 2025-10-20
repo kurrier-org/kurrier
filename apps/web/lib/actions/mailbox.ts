@@ -11,7 +11,7 @@ import {
 	messages,
 	threads,
 } from "@db";
-import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
+import {and, asc, count, desc, eq, inArray, ne, sql} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { FormState, getServerEnv, SearchThreadsResponse } from "@schema";
 import { decode } from "decode-formdata";
@@ -122,6 +122,38 @@ export const fetchMailbox = cache(
 		};
 	},
 );
+
+export const fetchIdentityMailboxList = cache(async () => {
+    const rls = await rlsClient();
+
+    const rows = await rls(tx =>
+        tx
+            .select({
+                identity: identities,
+                mailbox: mailboxes,
+            })
+            .from(identities)
+            .leftJoin(mailboxes, eq(identities.id, mailboxes.identityId))
+            .where(and(
+                eq(identities.kind, "email"),
+                ne(mailboxes.kind, "outbox"),
+                ne(mailboxes.kind, "drafts"),
+            ))
+    );
+
+    const byIdentity = rows.reduce((acc, r) => {
+        const id = r.identity.id;
+        if (!acc[id]) acc[id] = { identity: r.identity, mailboxes: [] as typeof mailboxes.$inferSelect[] };
+        if (r.mailbox) acc[id].mailboxes.push(r.mailbox);
+        return acc;
+    }, {} as Record<string, { identity: typeof identities.$inferSelect; mailboxes: typeof mailboxes.$inferSelect[] }>);
+
+    return Object.values(byIdentity);
+});
+
+export type FetchIdentityMailboxListResult = Awaited<
+    ReturnType<typeof fetchIdentityMailboxList>
+>;
 
 export const fetchMessageAttachments = cache(async (messageId: string) => {
 	const rls = await rlsClient();

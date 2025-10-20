@@ -27,7 +27,6 @@ import { IconMoonStars, IconSun } from "@tabler/icons-react";
 import { useAppearance } from "@/components/providers/appearance-provider";
 import { useEffect, useMemo } from "react";
 import { Switch } from "@mantine/core";
-import { revalidateMailbox } from "@/lib/actions/mailbox";
 import ThemeColorPicker from "@/components/common/theme-color-picker";
 
 const data = {

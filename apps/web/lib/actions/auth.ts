@@ -44,7 +44,7 @@ export async function login(
 	}
 
 	if (data) {
-		redirect("/dashboard");
+		redirect("/dashboard/platform/overview");
 	}
 
 	return { success: true, message: "Logged in!" };
@@ -71,7 +71,7 @@ export async function signup(
     await initProviders(String(data?.user?.id))
 
 	if (data) {
-		redirect("/dashboard");
+        redirect("/dashboard/platform/overview");
 	}
 
 	return { success: true, message: "Welcome!", data };
