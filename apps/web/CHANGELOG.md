@@ -1,5 +1,11 @@
 # web
 
+## 0.1.31
+
+### Patch Changes
+
+- [#186](https://github.com/kurrier-org/kurrier/pull/186) [`97a89a4`](https://github.com/kurrier-org/kurrier/commit/97a89a43f90c799b5005b432e80096ea976c3c61) Thanks [@krokhale](https://github.com/krokhale)! - added support for unified mailbox view
+
 ## 0.1.30
 
 ### Patch Changes
