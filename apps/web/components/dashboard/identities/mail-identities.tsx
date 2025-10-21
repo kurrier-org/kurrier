@@ -385,10 +385,10 @@ export default function MailIdentities({
 											className="rounded-lg border mb-4 p-4 sm:p-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
 										>
 											<div className="min-w-0">
-												<div className="flex items-start gap-2">
+												<div className="flex items-start gap-2 flex-wrap">
 													<Globe className="mt-1 size-4 shrink-0 text-muted-foreground" />
 													<div className="min-w-0">
-														<div className="truncate font-semibold text-brand-foreground flex gap-4">
+														<div className="truncate font-semibold text-brand-foreground flex gap-4 flex-wrap">
 															{userDomainIdentity.identities.value}
 															{status === "verified" ? (
 																<div
@@ -452,7 +452,7 @@ export default function MailIdentities({
 															</span>
 														</div>
 
-														<div className="flex gap-2 sm:gap-3 w-full sm:w-auto my-2">
+														<div className="flex gap-2 sm:gap-3 w-full sm:w-auto my-2 flex-wrap">
 															<Button
 																leftSection={<RefreshCw className="size-4" />}
 																size="xs"

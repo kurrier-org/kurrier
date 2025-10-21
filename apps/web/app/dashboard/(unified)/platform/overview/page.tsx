@@ -39,10 +39,10 @@ export default async function Page() {
 								</div>
 								<div className="mt-4 md:mt-0 flex gap-3">
 									<Button>
-										<Link href="/dashboard/providers">Add Provider</Link>
+										<Link href="/dashboard/platform/providers">Add Provider</Link>
 									</Button>
 									<Link
-										href="/dashboard/identities"
+										href="/dashboard/platform/identities"
 										className="px-4 py-2 rounded-md border border-border text-sm text-muted-foreground hover:bg-muted transition"
 									>
 										Create Identity

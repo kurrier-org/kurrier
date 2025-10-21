@@ -13,7 +13,7 @@ const THEME_OPTIONS: Array<{ label: string; theme: ThemeName; color: string }> =
 		{ label: "Teal", theme: "teal", color: "var(--color-teal-500)" },
 	];
 
-function ThemeColorPicker() {
+function ThemeColorPicker({onComplete}: {onComplete?: () => void}) {
 	const { theme: activeTheme, setTheme, pending } = useAppearance();
 
 	return (
@@ -24,7 +24,10 @@ function ThemeColorPicker() {
 					<button
 						key={theme}
 						type="button"
-						onClick={() => setTheme(theme)}
+						onClick={() => {
+                            setTheme(theme)
+                            onComplete && onComplete()
+                        }}
 						disabled={pending}
 						aria-label={`Switch to ${label} theme`}
 						aria-pressed={isActive}

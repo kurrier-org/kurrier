@@ -3,7 +3,7 @@ import { IconMoonStars, IconSun } from "@tabler/icons-react";
 import { Switch } from "@mantine/core";
 import { useAppearance } from "@/components/providers/appearance-provider";
 
-function ThemeSwitch() {
+function ThemeSwitch({onComplete}: {onComplete?: () => void}) {
 	const { mode, setMode } = useAppearance();
 
 	const prefersDark = useMemo(() => {
@@ -23,6 +23,7 @@ function ThemeSwitch() {
 			checked={!isDark}
 			onChange={(e) => {
 				setMode(e.currentTarget.checked ? "light" : "dark");
+                onComplete && onComplete()
 			}}
 			onLabel={<IconSun size={16} stroke={2.5} />}
 			offLabel={<IconMoonStars size={16} stroke={2.5} />}
