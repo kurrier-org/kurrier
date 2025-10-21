@@ -1,5 +1,11 @@
 # web
 
+## 0.1.33
+
+### Patch Changes
+
+- [#190](https://github.com/kurrier-org/kurrier/pull/190) [`49ae420`](https://github.com/kurrier-org/kurrier/commit/49ae420b7d432a1a72460ffff447084dce39858f) Thanks [@krokhale](https://github.com/krokhale)! - Added support for unread counts
+
 ## 0.1.32
 
 ### Patch Changes
