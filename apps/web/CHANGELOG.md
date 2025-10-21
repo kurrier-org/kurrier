@@ -1,5 +1,11 @@
 # web
 
+## 0.1.36
+
+### Patch Changes
+
+- [`ec41f1f`](https://github.com/kurrier-org/kurrier/commit/ec41f1fa61e9bd7365e7ffb4e41410573a076f6d) Thanks [@krokhale](https://github.com/krokhale)! - Build error fix
+
 ## 0.1.35
 
 ### Patch Changes
