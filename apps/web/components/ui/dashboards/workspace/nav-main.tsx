@@ -22,7 +22,7 @@ import Link from "next/link";
 
 export function NavMain({
 	items,
-    onComplete
+	onComplete,
 }: {
 	items: {
 		title: string;
@@ -34,14 +34,19 @@ export function NavMain({
 			url: string;
 		}[];
 	}[];
-    onComplete?: () => void;
+	onComplete?: () => void;
 }) {
 	return (
 		<SidebarGroup>
 			<SidebarGroupLabel>Platform</SidebarGroupLabel>
 			<SidebarMenu>
 				{items.map((item) => (
-					<Collapsible key={item.title} asChild defaultOpen={item.isActive} onClick={onComplete ? () => onComplete() : undefined}>
+					<Collapsible
+						key={item.title}
+						asChild
+						defaultOpen={item.isActive}
+						onClick={onComplete ? () => onComplete() : undefined}
+					>
 						<SidebarMenuItem>
 							<SidebarMenuButton asChild tooltip={item.title}>
 								<Link href={item.url}>

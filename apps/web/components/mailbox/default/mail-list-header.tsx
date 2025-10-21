@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import ComposeMail from "@/components/mailbox/default/compose-mail";
 import { PublicConfig } from "@schema";
-import {useMediaQuery} from "@mantine/hooks";
+import { useMediaQuery } from "@mantine/hooks";
 
 function MailListHeader({
 	mailboxThreads,
@@ -121,54 +121,57 @@ function MailListHeader({
 		toast.success("Trash removed successfully", { position: "bottom-left" });
 	};
 
-    const isMobile = useMediaQuery("(max-width: 768px)");
+	const isMobile = useMediaQuery("(max-width: 768px)");
 
 	return (
 		<>
-            <div className="sticky top-0 z-10 flex items-center bg-background/95 px-3 py-2 backdrop-blur rounded-t-2xl">
-                {/* Select all checkbox */}
-                <input
-                    type="checkbox"
-                    onChange={(e) => {
-                        const newSet = new Set(state?.selectedThreadIds ?? []);
-                        if (e.target.checked) {
-                            mailboxThreads.forEach((t) => newSet.add(t.threadId));
-                        } else {
-                            mailboxThreads.forEach((t) => newSet.delete(t.threadId));
-                        }
-                        setState((prev) => ({ ...(prev ?? {}), selectedThreadIds: newSet }));
-                    }}
-                    checked={isChecked}
-                    aria-label="Select all"
-                    className="h-4 w-4 rounded border-muted-foreground/40"
-                />
+			<div className="sticky top-0 z-10 flex items-center bg-background/95 px-3 py-2 backdrop-blur rounded-t-2xl">
+				{/* Select all checkbox */}
+				<input
+					type="checkbox"
+					onChange={(e) => {
+						const newSet = new Set(state?.selectedThreadIds ?? []);
+						if (e.target.checked) {
+							mailboxThreads.forEach((t) => newSet.add(t.threadId));
+						} else {
+							mailboxThreads.forEach((t) => newSet.delete(t.threadId));
+						}
+						setState((prev) => ({
+							...(prev ?? {}),
+							selectedThreadIds: newSet,
+						}));
+					}}
+					checked={isChecked}
+					aria-label="Select all"
+					className="h-4 w-4 rounded border-muted-foreground/40"
+				/>
 
-                {/* Spacer pushes actions to right */}
-                <div className="flex-1" />
+				{/* Spacer pushes actions to right */}
+				<div className="flex-1" />
 
-                {/* Right actions: reload + compose */}
-                <div className="flex items-center gap-2 ml-auto">
-                    <Tooltip label="Sync" withArrow>
-                        <ActionIcon
-                            variant="subtle"
-                            onClick={reload}
-                            title="Sync"
-                            disabled={
-                                mailboxSync
-                                    ? !identityIdRef.current ||
-                                    reloading ||
-                                    mailboxSync?.phase !== "IDLE"
-                                    : !identityIdRef.current || reloading
-                            }
-                            className="h-8 w-8"
-                        >
-                            <RotateCw className={reloading ? "animate-spin" : ""} size={16} />
-                        </ActionIcon>
-                    </Tooltip>
+				{/* Right actions: reload + compose */}
+				<div className="flex items-center gap-2 ml-auto">
+					<Tooltip label="Sync" withArrow>
+						<ActionIcon
+							variant="subtle"
+							onClick={reload}
+							title="Sync"
+							disabled={
+								mailboxSync
+									? !identityIdRef.current ||
+										reloading ||
+										mailboxSync?.phase !== "IDLE"
+									: !identityIdRef.current || reloading
+							}
+							className="h-8 w-8"
+						>
+							<RotateCw className={reloading ? "animate-spin" : ""} size={16} />
+						</ActionIcon>
+					</Tooltip>
 
-                    {isMobile && <ComposeMail publicConfig={publicConfig} />}
-                </div>
-            </div>
+					{isMobile && <ComposeMail publicConfig={publicConfig} />}
+				</div>
+			</div>
 
 			{mailboxKind.current === "trash" && (
 				<div

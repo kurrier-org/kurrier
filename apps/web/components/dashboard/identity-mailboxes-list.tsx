@@ -55,11 +55,11 @@ const TITLE: Record<MailboxKind, string> = {
 export default function IdentityMailboxesList({
 	identityMailboxes,
 	unreadCounts,
-    onComplete
+	onComplete,
 }: {
 	identityMailboxes: FetchIdentityMailboxListResult;
 	unreadCounts: FetchMailboxUnreadCountsResult;
-    onComplete?: () => void;
+	onComplete?: () => void;
 }) {
 	const pathname = usePathname();
 	const params = useParams() as {
@@ -85,7 +85,7 @@ export default function IdentityMailboxesList({
 		return (
 			<Link
 				href={href}
-                onClick={onComplete ? () => onComplete() : undefined}
+				onClick={onComplete ? () => onComplete() : undefined}
 				className={cn(
 					"group flex items-center gap-2 rounded-md px-2 py-1.5 text-sm",
 					"hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",

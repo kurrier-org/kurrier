@@ -37,8 +37,8 @@ import {
 } from "@/lib/actions/mailbox";
 import ThemeSwitch from "@/components/common/theme-switch";
 import Link from "next/link";
-import {useMediaQuery} from "@mantine/hooks";
-import {Divider} from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
+import { Divider } from "@mantine/core";
 
 type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	publicConfig: PublicConfig;
@@ -58,7 +58,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 		...restProps
 	} = props;
 
-    const isMobile = useMediaQuery("(max-width: 768px)");
+	const isMobile = useMediaQuery("(max-width: 768px)");
 
 	const allMailUrl =
 		identityMailboxes.length > 0
@@ -146,11 +146,14 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 						<SidebarGroupContent className="px-1.5 md:px-0">
 							<SidebarMenu>
 								{data.navMain.map((item) => (
-									<SidebarMenuItem key={item.title} onClick={() => {
-                                        if (isMobile) {
-                                            toggleSidebar()
-                                        }
-                                    }}>
+									<SidebarMenuItem
+										key={item.title}
+										onClick={() => {
+											if (isMobile) {
+												toggleSidebar();
+											}
+										}}
+									>
 										<SidebarMenuButton
 											tooltip={{
 												children: item.title,
@@ -170,41 +173,53 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 									</SidebarMenuItem>
 								))}
 
-                                {isMobile ? <>
-                                    <Divider variant={"dashed"} my={"xl"} />
-                                    {isOnPlatform ? (
-                                        <NavMain items={data.navPlatform} onComplete={() => {
-                                            if (isMobile){
-                                                toggleSidebar();
-                                            }
-                                        }} />
-                                    ) : (
-                                        <IdentityMailboxesList
-                                            identityMailboxes={identityMailboxes}
-                                            unreadCounts={unreadCounts}
-                                            onComplete={() => {
-                                                if (isMobile){
-                                                    toggleSidebar();
-                                                }
-                                            }}
-                                        />
-                                    )}
-                                </> : <hr className="my-2 border-border" />}
-
+								{isMobile ? (
+									<>
+										<Divider variant={"dashed"} my={"xl"} />
+										{isOnPlatform ? (
+											<NavMain
+												items={data.navPlatform}
+												onComplete={() => {
+													if (isMobile) {
+														toggleSidebar();
+													}
+												}}
+											/>
+										) : (
+											<IdentityMailboxesList
+												identityMailboxes={identityMailboxes}
+												unreadCounts={unreadCounts}
+												onComplete={() => {
+													if (isMobile) {
+														toggleSidebar();
+													}
+												}}
+											/>
+										)}
+									</>
+								) : (
+									<hr className="my-2 border-border" />
+								)}
 							</SidebarMenu>
 						</SidebarGroupContent>
 					</SidebarGroup>
 					<div
 						className={
-							isMobile ? "absolute top-0 mx-4 flex gap-2 justify-center items-center" : "absolute bottom-28 rotate-90 flex justify-start items-center w-full gap-2"
+							isMobile
+								? "absolute top-0 mx-4 flex gap-2 justify-center items-center"
+								: "absolute bottom-28 rotate-90 flex justify-start items-center w-full gap-2"
 						}
 					>
-						<ThemeColorPicker onComplete={() => {
-                            isMobile && toggleSidebar();
-                        }} />
-						<ThemeSwitch onComplete={() => {
-                            isMobile && toggleSidebar();
-                        }} />
+						<ThemeColorPicker
+							onComplete={() => {
+								isMobile && toggleSidebar();
+							}}
+						/>
+						<ThemeSwitch
+							onComplete={() => {
+								isMobile && toggleSidebar();
+							}}
+						/>
 					</div>
 				</SidebarContent>
 				<SidebarFooter>
