@@ -11,7 +11,7 @@ import {
 	messages,
 	threads,
 } from "@db";
-import {and, asc, count, desc, eq, inArray, ne, sql} from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { FormState, getServerEnv, SearchThreadsResponse } from "@schema";
 import { decode } from "decode-formdata";
@@ -51,7 +51,7 @@ const getRedis = async () => {
 };
 
 import Typesense, { Client } from "typesense";
-import {gt} from "zod";
+import { gt } from "zod";
 let typeSenseClient: Client | null = null;
 function getTypeSenseClient(): Client {
 	if (typeSenseClient) return typeSenseClient;
@@ -125,103 +125,120 @@ export const fetchMailbox = cache(
 );
 
 export const fetchIdentityMailboxList = cache(async () => {
-    const rls = await rlsClient();
+	const rls = await rlsClient();
 
-    const rows = await rls(tx =>
-        tx
-            .select({
-                identity: identities,
-                mailbox: mailboxes,
-            })
-            .from(identities)
-            .leftJoin(mailboxes, eq(identities.id, mailboxes.identityId))
-            .where(and(
-                eq(identities.kind, "email"),
-                ne(mailboxes.kind, "outbox"),
-                ne(mailboxes.kind, "drafts"),
-            ))
-    );
+	const rows = await rls((tx) =>
+		tx
+			.select({
+				identity: identities,
+				mailbox: mailboxes,
+			})
+			.from(identities)
+			.leftJoin(mailboxes, eq(identities.id, mailboxes.identityId))
+			.where(
+				and(
+					eq(identities.kind, "email"),
+					ne(mailboxes.kind, "outbox"),
+					ne(mailboxes.kind, "drafts"),
+				),
+			),
+	);
 
-    const byIdentity = rows.reduce((acc, r) => {
-        const id = r.identity.id;
-        if (!acc[id]) acc[id] = { identity: r.identity, mailboxes: [] as typeof mailboxes.$inferSelect[] };
-        if (r.mailbox) acc[id].mailboxes.push(r.mailbox);
-        return acc;
-    }, {} as Record<string, { identity: typeof identities.$inferSelect; mailboxes: typeof mailboxes.$inferSelect[] }>);
+	const byIdentity = rows.reduce(
+		(acc, r) => {
+			const id = r.identity.id;
+			if (!acc[id])
+				acc[id] = {
+					identity: r.identity,
+					mailboxes: [] as (typeof mailboxes.$inferSelect)[],
+				};
+			if (r.mailbox) acc[id].mailboxes.push(r.mailbox);
+			return acc;
+		},
+		{} as Record<
+			string,
+			{
+				identity: typeof identities.$inferSelect;
+				mailboxes: (typeof mailboxes.$inferSelect)[];
+			}
+		>,
+	);
 
-    const unreadAgg = await rls(tx =>
-        tx
-            .select({
-                mailboxId: mailboxThreads.mailboxId,
-                // count(*) of rows that have any unread
-                unreadThreads: sql<number>`
+	const unreadAgg = await rls((tx) =>
+		tx
+			.select({
+				mailboxId: mailboxThreads.mailboxId,
+				// count(*) of rows that have any unread
+				unreadThreads: sql<number>`
         count(*) FILTER (WHERE ${mailboxThreads.unreadCount} > 0)
       `.as("unread_threads"),
-                // sum of unread_count across all rows (0 if null)
-                unreadTotal: sql<number>`
+				// sum of unread_count across all rows (0 if null)
+				unreadTotal: sql<number>`
         coalesce(sum(${mailboxThreads.unreadCount}), 0)
       `.as("unread_total"),
-            })
-            .from(mailboxThreads)
-            .groupBy(mailboxThreads.mailboxId),
-    );
+			})
+			.from(mailboxThreads)
+			.groupBy(mailboxThreads.mailboxId),
+	);
 
-    const aggByMailbox = new Map<
-        string,
-        { unreadThreads: number; unreadTotal: number }
-    >(
-        unreadAgg.map(a => [
-            a.mailboxId,
-            { unreadThreads: Number(a.unreadThreads ?? 0), unreadTotal: Number(a.unreadTotal ?? 0) },
-        ]),
-    );
+	const aggByMailbox = new Map<
+		string,
+		{ unreadThreads: number; unreadTotal: number }
+	>(
+		unreadAgg.map((a) => [
+			a.mailboxId,
+			{
+				unreadThreads: Number(a.unreadThreads ?? 0),
+				unreadTotal: Number(a.unreadTotal ?? 0),
+			},
+		]),
+	);
 
-    return Object.values(byIdentity);
+	return Object.values(byIdentity);
 });
 
-
-
-
 export type FetchIdentityMailboxListResult = Awaited<
-    ReturnType<typeof fetchIdentityMailboxList>
+	ReturnType<typeof fetchIdentityMailboxList>
 >;
 
-
 export const fetchMailboxUnreadCounts = cache(async () => {
-    const rls = await rlsClient();
+	const rls = await rlsClient();
 
-    const unreadAgg = await rls(tx =>
-        tx
-            .select({
-                mailboxId: mailboxThreads.mailboxId,
-                // count(*) of rows that have any unread
-                unreadThreads: sql<number>`
+	const unreadAgg = await rls((tx) =>
+		tx
+			.select({
+				mailboxId: mailboxThreads.mailboxId,
+				// count(*) of rows that have any unread
+				unreadThreads: sql<number>`
         count(*) FILTER (WHERE ${mailboxThreads.unreadCount} > 0)
       `.as("unread_threads"),
-                // sum of unread_count across all rows (0 if null)
-                unreadTotal: sql<number>`
+				// sum of unread_count across all rows (0 if null)
+				unreadTotal: sql<number>`
         coalesce(sum(${mailboxThreads.unreadCount}), 0)
       `.as("unread_total"),
-            })
-            .from(mailboxThreads)
-            .groupBy(mailboxThreads.mailboxId),
-    );
+			})
+			.from(mailboxThreads)
+			.groupBy(mailboxThreads.mailboxId),
+	);
 
-    const aggByMailbox = new Map<
-        string,
-        { unreadThreads: number; unreadTotal: number }
-    >(
-        unreadAgg.map(a => [
-            a.mailboxId,
-            { unreadThreads: Number(a.unreadThreads ?? 0), unreadTotal: Number(a.unreadTotal ?? 0) },
-        ]),
-    );
+	const aggByMailbox = new Map<
+		string,
+		{ unreadThreads: number; unreadTotal: number }
+	>(
+		unreadAgg.map((a) => [
+			a.mailboxId,
+			{
+				unreadThreads: Number(a.unreadThreads ?? 0),
+				unreadTotal: Number(a.unreadTotal ?? 0),
+			},
+		]),
+	);
 
-    return aggByMailbox;
+	return aggByMailbox;
 });
 
 export type FetchMailboxUnreadCountsResult = Awaited<
-    ReturnType<typeof fetchMailboxUnreadCounts>
+	ReturnType<typeof fetchMailboxUnreadCounts>
 >;
 
 export const fetchMessageAttachments = cache(async (messageId: string) => {

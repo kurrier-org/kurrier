@@ -164,7 +164,8 @@ export default function ProviderCard({
 									{spec.name}
 								</CardTitle>
 								<p className="text-sm text-muted-foreground">
-                                    Managed securely in a secure Vault. Verify by adding or removing stored credentials.
+									Managed securely in a secure Vault. Verify by adding or
+									removing stored credentials.
 								</p>
 							</div>
 						</div>

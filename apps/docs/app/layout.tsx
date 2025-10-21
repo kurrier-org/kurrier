@@ -7,34 +7,47 @@ const inter = Inter({
 });
 
 export const metadata = {
-    title: {
-        default: "Kurrier Instant webmail for any email provider",
-        template: "%s | Kurrier Docs",
-    },
-    description: "Self-hosted email web client with IMAP, SMTP, SES, Mailgun, Postmark, Sendgrid provider integrations.",
-    keywords: ["Kurrier", "email", "self-hosted", "IMAP", "SMTP", "open source", "postmark", "mailgun", "sendgrid", "ses", "webmail"],
-    openGraph: {
-        title: "Kurrier Instant webmail",
-        description: "Your own self-hosted webmail platform.",
-        url: "https://www.kurrier.org",
-        siteName: "Kurrier",
-        images: [
-            {
-                url: "https://www.kurrier.org/light-mailbox.png",
-                width: 1200,
-                height: 630,
-            },
-        ],
-        locale: "en_US",
-        type: "website",
-    },
-    twitter: {
-        card: "summary_large_image",
-        title: "Kurrier Instant webmail",
-        description: "Your own self-hosted webmail platform.",
-        images: ["https://www.kurrier.org/light-mailbox.png"],
-    },
-    metadataBase: new URL("https://www.kurrier.org"),
+	title: {
+		default: "Kurrier Instant webmail for any email provider",
+		template: "%s | Kurrier Docs",
+	},
+	description:
+		"Self-hosted email web client with IMAP, SMTP, SES, Mailgun, Postmark, Sendgrid provider integrations.",
+	keywords: [
+		"Kurrier",
+		"email",
+		"self-hosted",
+		"IMAP",
+		"SMTP",
+		"open source",
+		"postmark",
+		"mailgun",
+		"sendgrid",
+		"ses",
+		"webmail",
+	],
+	openGraph: {
+		title: "Kurrier Instant webmail",
+		description: "Your own self-hosted webmail platform.",
+		url: "https://www.kurrier.org",
+		siteName: "Kurrier",
+		images: [
+			{
+				url: "https://www.kurrier.org/light-mailbox.png",
+				width: 1200,
+				height: 630,
+			},
+		],
+		locale: "en_US",
+		type: "website",
+	},
+	twitter: {
+		card: "summary_large_image",
+		title: "Kurrier Instant webmail",
+		description: "Your own self-hosted webmail platform.",
+		images: ["https://www.kurrier.org/light-mailbox.png"],
+	},
+	metadataBase: new URL("https://www.kurrier.org"),
 };
 
 export default function Layout({ children }: LayoutProps<"/">) {

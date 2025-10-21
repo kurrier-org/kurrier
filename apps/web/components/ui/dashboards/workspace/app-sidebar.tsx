@@ -103,7 +103,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
 						offLabel={<IconMoonStars size={16} stroke={2.5} />}
 						aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
 					/>
-                    <ThemeColorPicker />
+					<ThemeColorPicker />
 				</div>
 			</SidebarContent>
 			<SidebarFooter>

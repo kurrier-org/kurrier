@@ -1,42 +1,42 @@
 import { Mail, Lock, Search, Server, ShieldCheck, Cpu } from "lucide-react";
 
 const features = [
-    {
-        name: "Instant webmail for any provider",
-        description:
-            "Add Gmail, SES, SendGrid, or any IMAP/SMTP account — Kurrier automatically builds a working inbox with threads and attachments.",
-        icon: Mail,
-    },
-    {
-        name: "Self-hosted and private",
-        description:
-            "Run Kurrier on your own server or laptop. No external tracking or telemetry — your data and credentials stay fully in your control.",
-        icon: Lock,
-    },
-    {
-        name: "Reliable message sync",
-        description:
-            "Kurrier continuously syncs new mail, sent items, and deletions — keeping your local inbox up to date automatically.",
-        icon: Server,
-    },
-    {
-        name: "Local search and filters",
-        description:
-            "Search subjects, senders, and content instantly with fast local indexing — no dependency on cloud APIs.",
-        icon: Search,
-    },
-    {
-        name: "Simple to deploy",
-        description:
-            "Get started in minutes with Docker or run it from source. Kurrier runs anywhere — from a personal machine to a VPS.",
-        icon: Cpu,
-    },
-    {
-        name: "Open-source and extensible",
-        description:
-            "Fully open-source under a permissive license. Extend providers, add custom logic, or integrate Kurrier into your own projects.",
-        icon: ShieldCheck,
-    },
+	{
+		name: "Instant webmail for any provider",
+		description:
+			"Add Gmail, SES, SendGrid, or any IMAP/SMTP account — Kurrier automatically builds a working inbox with threads and attachments.",
+		icon: Mail,
+	},
+	{
+		name: "Self-hosted and private",
+		description:
+			"Run Kurrier on your own server or laptop. No external tracking or telemetry — your data and credentials stay fully in your control.",
+		icon: Lock,
+	},
+	{
+		name: "Reliable message sync",
+		description:
+			"Kurrier continuously syncs new mail, sent items, and deletions — keeping your local inbox up to date automatically.",
+		icon: Server,
+	},
+	{
+		name: "Local search and filters",
+		description:
+			"Search subjects, senders, and content instantly with fast local indexing — no dependency on cloud APIs.",
+		icon: Search,
+	},
+	{
+		name: "Simple to deploy",
+		description:
+			"Get started in minutes with Docker or run it from source. Kurrier runs anywhere — from a personal machine to a VPS.",
+		icon: Cpu,
+	},
+	{
+		name: "Open-source and extensible",
+		description:
+			"Fully open-source under a permissive license. Extend providers, add custom logic, or integrate Kurrier into your own projects.",
+		icon: ShieldCheck,
+	},
 ];
 
 export default function KurrierFeatures() {
@@ -60,23 +60,22 @@ export default function KurrierFeatures() {
 
 			<div className="relative overflow-hidden pt-16">
 				<div className="mx-auto max-w-7xl px-6 lg:px-8">
+					<img
+						alt="Kurrier dashboard preview (light)"
+						src="/light-mailbox.png"
+						width={2432}
+						height={1442}
+						className="block dark:hidden mb-[-12%] rounded-xl shadow-2xl ring-1 ring-gray-900/10"
+					/>
 
-                    <img
-                        alt="Kurrier dashboard preview (light)"
-                        src="/light-mailbox.png"
-                        width={2432}
-                        height={1442}
-                        className="block dark:hidden mb-[-12%] rounded-xl shadow-2xl ring-1 ring-gray-900/10"
-                    />
-
-                    {/* Dark mode image */}
-                    <img
-                        alt="Kurrier dashboard preview (dark)"
-                        src="/dark-mailbox.png"
-                        width={2432}
-                        height={1442}
-                        className="hidden dark:block mb-[-12%] rounded-xl shadow-2xl ring-1 ring-gray-100/10 dark:shadow-gray-900/40"
-                    />
+					{/* Dark mode image */}
+					<img
+						alt="Kurrier dashboard preview (dark)"
+						src="/dark-mailbox.png"
+						width={2432}
+						height={1442}
+						className="hidden dark:block mb-[-12%] rounded-xl shadow-2xl ring-1 ring-gray-100/10 dark:shadow-gray-900/40"
+					/>
 
 					<div aria-hidden="true" className="relative">
 						<div className="absolute -inset-x-20 bottom-0 bg-gradient-to-t from-white dark:from-gray-950 pt-[7%]" />

@@ -37,11 +37,18 @@ export default function HomePage() {
 				</Button>
 			</div>
 
-            <div className={"flex justify-center -mt-10"}>
-                <Button variant={"link"} className={"underline"} asChild={true} size={"sm"}>
-                    <Link href={"https://buy.stripe.com/dRmfZje75d4OaGG8ux3Nm00"}>💙 Support Kurrier</Link>
-                </Button>
-            </div>
+			<div className={"flex justify-center -mt-10"}>
+				<Button
+					variant={"link"}
+					className={"underline"}
+					asChild={true}
+					size={"sm"}
+				>
+					<Link href={"https://buy.stripe.com/dRmfZje75d4OaGG8ux3Nm00"}>
+						💙 Support Kurrier
+					</Link>
+				</Button>
+			</div>
 
 			<FeatureExample />
 		</>

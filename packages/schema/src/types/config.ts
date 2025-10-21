@@ -27,11 +27,11 @@ export const ZServerConfig = z.object({
 
 /** Safe to expose to the browser */
 export const ZPublicConfig = z.object({
-    API_PUBLIC_URL: z.string("API_PUBLIC_URL must be present"),
-    API_URL: z.string("API_URL must be present"),
+	API_PUBLIC_URL: z.string("API_PUBLIC_URL must be present"),
+	API_URL: z.string("API_URL must be present"),
 	ANON_KEY: z.string("ANON_KEY must be present"),
 	WEB_URL: z.string("WEB_URL must be present"),
-	DOCS_URL: z.string().optional()
+	DOCS_URL: z.string().optional(),
 });
 
 export type ServerConfig = z.infer<typeof ZServerConfig>;

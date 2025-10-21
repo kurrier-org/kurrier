@@ -104,22 +104,25 @@ export function AppSidebar({
 							<SidebarMenu></SidebarMenu>
 						</SidebarGroupContent>
 					</SidebarGroup>
-                    <div className={"absolute bottom-28 rotate-90 flex justify-start items-center w-full gap-2"}>
-                        <ThemeColorPicker />
-                        <Switch
-                            size="sm"
-                            checked={!isDark}
-                            onChange={(e) => {
-                                setMode(e.currentTarget.checked ? "light" : "dark");
-                            }}
-                            onLabel={<IconSun size={16} stroke={2.5} />}
-                            offLabel={<IconMoonStars size={16} stroke={2.5} />}
-                            aria-label={
-                                isDark ? "Switch to light mode" : "Switch to dark mode"
-                            }
-                        />
-                    </div>
-
+					<div
+						className={
+							"absolute bottom-28 rotate-90 flex justify-start items-center w-full gap-2"
+						}
+					>
+						<ThemeColorPicker />
+						<Switch
+							size="sm"
+							checked={!isDark}
+							onChange={(e) => {
+								setMode(e.currentTarget.checked ? "light" : "dark");
+							}}
+							onLabel={<IconSun size={16} stroke={2.5} />}
+							offLabel={<IconMoonStars size={16} stroke={2.5} />}
+							aria-label={
+								isDark ? "Switch to light mode" : "Switch to dark mode"
+							}
+						/>
+					</div>
 				</SidebarContent>
 				<SidebarFooter>
 					<NavUser user={user} avatar={avatar} />

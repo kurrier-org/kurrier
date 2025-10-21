@@ -17,15 +17,15 @@ import {
 	updateSecret,
 } from "@db";
 import {
-    DomainIdentityFormSchema,
-    FormState,
-    getPublicEnv,
-    handleAction,
-    MailboxKindDisplay,
-    ProviderAccountFormSchema,
-    Providers,
-    SmtpAccountFormSchema,
-    SYSTEM_MAILBOXES,
+	DomainIdentityFormSchema,
+	FormState,
+	getPublicEnv,
+	handleAction,
+	MailboxKindDisplay,
+	ProviderAccountFormSchema,
+	Providers,
+	SmtpAccountFormSchema,
+	SYSTEM_MAILBOXES,
 } from "@schema";
 import { currentSession } from "@/lib/actions/auth";
 import { and, count, eq, sql, gte } from "drizzle-orm";
@@ -39,7 +39,7 @@ import slugify from "@sindresorhus/slugify";
 import { rlsClient } from "@/lib/actions/clients";
 import { v4 as uuidv4 } from "uuid";
 import { backfillMailboxes } from "@/lib/actions/mailbox";
-import {kvGet} from "@common";
+import { kvGet } from "@common";
 
 const DASHBOARD_PATH = "/dashboard/providers";
 
@@ -322,7 +322,7 @@ export async function initializeDomainIdentity(
 			opts.mailFrom = String(data?.mailFromSubdomain ?? "").trim() || undefined;
 		} else if (providerIdentifier === "sendgrid") {
 			const { WEB_URL } = getPublicEnv();
-            const localTunnelUrl = await kvGet("local-tunnel-url")
+			const localTunnelUrl = await kvGet("local-tunnel-url");
 			const url = localTunnelUrl ? localTunnelUrl : WEB_URL;
 			opts.webHookUrl = `${url}/api/v1/hooks/sendgrid/inbound`;
 		}
@@ -385,7 +385,7 @@ export async function verifyDomainIdentity(
 
 		if (providerAccount?.provider?.type !== "ses") {
 			const { WEB_URL } = getPublicEnv();
-            const localTunnelUrl = await kvGet("local-tunnel-url")
+			const localTunnelUrl = await kvGet("local-tunnel-url");
 			const url = localTunnelUrl ? localTunnelUrl : WEB_URL;
 			if (providerAccount?.provider?.type === "mailgun") {
 				opts.webHookUrl = `${url}/api/v1/hooks/${providerAccount?.provider?.type}/mime`;
@@ -657,7 +657,7 @@ export const verifyProviderAccount = async (
 		if (providerType === "ses") {
 			const mailer = createMailer("ses", providerSecret.parsedSecret);
 			const { WEB_URL } = getPublicEnv();
-            const localTunnelUrl = await kvGet("local-tunnel-url")
+			const localTunnelUrl = await kvGet("local-tunnel-url");
 			res = await mailer.verify(String(providerSecret?.metaId), {
 				// webHookUrl: localTunnelUrl ? localTunnelUrl : NITRO_URL,
 				webHookUrl: `${localTunnelUrl ? localTunnelUrl : WEB_URL}/api/v1/hooks/aws/ses/inbound`,

@@ -14,8 +14,8 @@ import {
 	Folder,
 	Plus,
 } from "lucide-react";
-import {IdentityEntity, MailboxEntity} from "@db";
-import {FetchIdentityMailboxListResult} from "@/lib/actions/mailbox";
+import { IdentityEntity, MailboxEntity } from "@db";
+import { FetchIdentityMailboxListResult } from "@/lib/actions/mailbox";
 
 type Mailbox = {
 	slug: string | null; // "inbox", "sent", ... or custom
@@ -35,45 +35,49 @@ type Mailbox = {
 export function UnifiedMailboxNav({
 	// mailboxes,
 	// identityPublicId,
-    identityMailboxes,
+	identityMailboxes,
 	onCreateLabel,
 }: {
 	// mailboxes: MailboxEntity[];
 	// identityPublicId: string;
-    identityMailboxes: FetchIdentityMailboxListResult;
+	identityMailboxes: FetchIdentityMailboxListResult;
 	onCreateLabel?: () => void;
 }) {
 	const pathname = usePathname();
 	const params = useParams() as { mailboxSlug?: string };
 
-    const unifiedMailboxes: {mailbox: MailboxEntity, identity: IdentityEntity }[] = [];
-    identityMailboxes.map(({identity, mailboxes}) => {
-        for (const m of mailboxes) {
-            const isPresent = unifiedMailboxes.find((um) => {
-                return um?.mailbox.name?.toLowerCase() === m?.name?.toLowerCase()
-            });
-            if (!isPresent) {
-                unifiedMailboxes.push({
-                    mailbox: m, identity
-                });
-            }
-        }
-    })
+	const unifiedMailboxes: {
+		mailbox: MailboxEntity;
+		identity: IdentityEntity;
+	}[] = [];
+	identityMailboxes.map(({ identity, mailboxes }) => {
+		for (const m of mailboxes) {
+			const isPresent = unifiedMailboxes.find((um) => {
+				return um?.mailbox.name?.toLowerCase() === m?.name?.toLowerCase();
+			});
+			if (!isPresent) {
+				unifiedMailboxes.push({
+					mailbox: m,
+					identity,
+				});
+			}
+		}
+	});
 
-    const systemOrder: Mailbox["kind"][] = [
-        "inbox",
-        "drafts",
-        "sent",
-        "archive",
-        "spam",
-        "trash",
-        "outbox",
-    ];
+	const systemOrder: Mailbox["kind"][] = [
+		"inbox",
+		"drafts",
+		"sent",
+		"archive",
+		"spam",
+		"trash",
+		"outbox",
+	];
 
-    const orderIndex = (k: Mailbox["kind"]) => {
-        const i = systemOrder.indexOf(k);
-        return i === -1 ? Number.MAX_SAFE_INTEGER : i;
-    };
+	const orderIndex = (k: Mailbox["kind"]) => {
+		const i = systemOrder.indexOf(k);
+		return i === -1 ? Number.MAX_SAFE_INTEGER : i;
+	};
 
 	const iconFor: Record<Mailbox["kind"], React.ElementType> = {
 		inbox: Inbox,
@@ -86,27 +90,29 @@ export function UnifiedMailboxNav({
 		custom: Folder,
 	};
 
-    const system = unifiedMailboxes
-        .filter((m) => m.mailbox.kind !== "drafts")
-        .sort((a, b) => {
-            const ai = orderIndex(a.mailbox.kind);
-            const bi = orderIndex(b.mailbox.kind);
-            if (ai !== bi) return ai - bi;
-            // tie-break: alphabetical for customs (same index)
-            const an = (a.mailbox.name ?? a.mailbox.slug ?? "").toLowerCase();
-            const bn = (b.mailbox.name ?? b.mailbox.slug ?? "").toLowerCase();
-            return an.localeCompare(bn);
-        });
+	const system = unifiedMailboxes
+		.filter((m) => m.mailbox.kind !== "drafts")
+		.sort((a, b) => {
+			const ai = orderIndex(a.mailbox.kind);
+			const bi = orderIndex(b.mailbox.kind);
+			if (ai !== bi) return ai - bi;
+			// tie-break: alphabetical for customs (same index)
+			const an = (a.mailbox.name ?? a.mailbox.slug ?? "").toLowerCase();
+			const bn = (b.mailbox.name ?? b.mailbox.slug ?? "").toLowerCase();
+			return an.localeCompare(bn);
+		});
 
-	const Item = ({ m }: { m: {mailbox: MailboxEntity, identity: IdentityEntity } }) => {
+	const Item = ({
+		m,
+	}: {
+		m: { mailbox: MailboxEntity; identity: IdentityEntity };
+	}) => {
 		const Icon = iconFor[m.mailbox.kind] ?? Folder;
 		const slug = m.mailbox.slug ?? "inbox";
 		const href = `/mail/${m.identity.publicId}/${slug}`;
 
 		const isActive =
 			pathname === href || (params.mailboxSlug == null && slug === "inbox");
-
-
 
 		return (
 			<Link
@@ -119,7 +125,9 @@ export function UnifiedMailboxNav({
 			>
 				<Icon className="h-4 w-4 shrink-0" />
 				<span className="min-w-0 truncate">
-					{m.mailbox.kind === "custom" ? (m.mailbox.name ?? "Label") : titleFor(m.mailbox.kind)}
+					{m.mailbox.kind === "custom"
+						? (m.mailbox.name ?? "Label")
+						: titleFor(m.mailbox.kind)}
 				</span>
 				{/*{m.unreadCount ? (*/}
 				{/*	<Badge*/}

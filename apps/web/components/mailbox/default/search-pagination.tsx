@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useEffect, useState } from "react";
 import { Pagination } from "@mantine/core";
-import {usePathname, useRouter} from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 type Props = {
 	total: number;
@@ -31,7 +31,7 @@ export default function SearchPagination({
 	const [activePage, setPage] = useState(page);
 	const router = useRouter();
 	const totalPages = Math.max(1, Math.ceil((total || 1) / pageSize));
-    const pathName = usePathname()
+	const pathName = usePathname();
 	useEffect(() => {
 		if (activePage !== page && activePage) {
 			const params = new URLSearchParams();
@@ -42,7 +42,7 @@ export default function SearchPagination({
 			params.set("page", String(activePage));
 
 			router.push(
-				`${pathName.match("/dashboard/mail") ? "/dashboard" : "" }/mail/${identityPublicId}/${mailboxSlug}/search?${params.toString()}`,
+				`${pathName.match("/dashboard/mail") ? "/dashboard" : ""}/mail/${identityPublicId}/${mailboxSlug}/search?${params.toString()}`,
 			);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps

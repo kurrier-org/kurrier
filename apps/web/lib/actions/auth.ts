@@ -1,28 +1,28 @@
 "use server";
 
-import {FormState, getServerEnv} from "@schema";
+import { FormState, getServerEnv } from "@schema";
 import { formDataToJson } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { AuthSession } from "@supabase/supabase-js";
 import * as crypto from "node:crypto";
-import {Queue, QueueEvents} from "bullmq";
+import { Queue, QueueEvents } from "bullmq";
 
 const initProviders = async (userId: string) => {
-    const { REDIS_PASSWORD, REDIS_HOST, REDIS_PORT } = getServerEnv();
-    const redisConnection = {
-        connection: {
-            host: REDIS_HOST || "redis",
-            port: Number(REDIS_PORT || 6379),
-            password: REDIS_PASSWORD,
-        },
-    };
-    const commonWorkerQueue = new Queue("common-worker", redisConnection);
-    const commonWorkerEvents = new QueueEvents("common-worker", redisConnection);
-    await commonWorkerEvents.waitUntilReady();
+	const { REDIS_PASSWORD, REDIS_HOST, REDIS_PORT } = getServerEnv();
+	const redisConnection = {
+		connection: {
+			host: REDIS_HOST || "redis",
+			port: Number(REDIS_PORT || 6379),
+			password: REDIS_PASSWORD,
+		},
+	};
+	const commonWorkerQueue = new Queue("common-worker", redisConnection);
+	const commonWorkerEvents = new QueueEvents("common-worker", redisConnection);
+	await commonWorkerEvents.waitUntilReady();
 
-    const job = await commonWorkerQueue.add("sync-providers", { userId });
-    await job.waitUntilFinished(commonWorkerEvents);
+	const job = await commonWorkerQueue.add("sync-providers", { userId });
+	await job.waitUntilFinished(commonWorkerEvents);
 };
 
 export async function login(
@@ -68,10 +68,10 @@ export async function signup(
 		};
 	}
 
-    await initProviders(String(data?.user?.id))
+	await initProviders(String(data?.user?.id));
 
 	if (data) {
-        redirect("/dashboard/platform/overview");
+		redirect("/dashboard/platform/overview");
 	}
 
 	return { success: true, message: "Welcome!", data };
