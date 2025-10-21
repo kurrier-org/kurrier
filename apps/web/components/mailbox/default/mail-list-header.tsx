@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { RotateCw } from "lucide-react";
+import {MailOpen, RotateCw, Trash2} from "lucide-react";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import {
 	deleteForever,
@@ -26,6 +26,7 @@ import {
 import ComposeMail from "@/components/mailbox/default/compose-mail";
 import { PublicConfig } from "@schema";
 import { useMediaQuery } from "@mantine/hooks";
+import {clsx} from "clsx";
 
 function MailListHeader({
 	mailboxThreads,
@@ -168,6 +169,31 @@ function MailListHeader({
 							<RotateCw className={reloading ? "animate-spin" : ""} size={16} />
 						</ActionIcon>
 					</Tooltip>
+
+                    <div
+                        className={clsx(
+                            "inset-0 flex items-center gap-1 transition-opacity",
+                            hasSelected ? "opacity-100" : "opacity-0 hidden pointer-events-none",
+                        )}
+                    >
+                        <button
+                            type="button"
+                            onClick={deleteThreads}
+                            className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs hover:bg-muted"
+                            title="Delete"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={markRead}
+                            className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs hover:bg-muted"
+                            title="Mark read"
+                        >
+                            <MailOpen className="h-4 w-4" />
+                        </button>
+                    </div>
+
 
 					{isMobile && <ComposeMail publicConfig={publicConfig} />}
 				</div>

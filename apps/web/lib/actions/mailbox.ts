@@ -3,13 +3,14 @@
 import { cache } from "react";
 import { rlsClient } from "@/lib/actions/clients";
 import {
-	identities,
-	mailboxes,
-	mailboxSync,
-	mailboxThreads,
-	messageAttachments,
-	messages,
-	threads,
+    db,
+    identities,
+    mailboxes,
+    mailboxSync,
+    mailboxThreads,
+    messageAttachments,
+    messages,
+    threads,
 } from "@db";
 import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -640,25 +641,78 @@ export const toggleStar = async (
 	threadId: string,
 	mailboxId: string,
 	starred: boolean,
+    starImap: boolean,
 ) => {
 	if (!threadId || !mailboxId) return;
+    const { smtpQueue, searchIngestQueue } = await getRedis();
 
-	const { smtpQueue, searchIngestQueue } = await getRedis();
+    if (starImap){
 
-	await smtpQueue.add(
-		"mail:set-flags",
-		{
-			threadId,
-			mailboxId,
-			op: starred ? "unflag" : "flag",
-		},
-		{
-			attempts: 3,
-			backoff: { type: "exponential", delay: 1500 },
-			removeOnComplete: true,
-			removeOnFail: true,
-		},
-	);
+        await smtpQueue.add(
+            "mail:set-flags",
+            {
+                threadId,
+                mailboxId,
+                op: starred ? "unflag" : "flag",
+            },
+            {
+                attempts: 3,
+                backoff: { type: "exponential", delay: 1500 },
+                removeOnComplete: true,
+                removeOnFail: true,
+            },
+        );
+    } else {
+
+        const rls = await rlsClient();
+        const op = starred ? "unflag" : "flag"
+        await rls(async (tx) => {
+            const update: Record<string, any> = {updatedAt: new Date()};
+            if (op === "flag") update.flagged = true;
+            if (op === "unflag") update.flagged = false;
+
+            await tx
+                .update(messages)
+                .set(update)
+                .where(
+                    and(eq(messages.threadId, threadId), eq(messages.mailboxId, mailboxId)),
+                );
+
+            const [agg] = await tx
+                .select({
+                    unreadCount: sql<number>`count(*) filter (where
+                    ${messages.seen}
+                    =
+                    false
+                    )`,
+                    anyFlagged: sql<boolean>`bool_or
+                    (
+                    ${messages.flagged}
+                    )`,
+                })
+                .from(messages)
+                .where(
+                    and(eq(messages.threadId, threadId), eq(messages.mailboxId, mailboxId)),
+                );
+
+            await tx
+                .update(mailboxThreads)
+                .set({
+                    unreadCount: agg.unreadCount ?? 0,
+                    starred: agg.anyFlagged ?? false,
+                    updatedAt: new Date(),
+                })
+                .where(
+                    and(
+                        eq(mailboxThreads.threadId, threadId),
+                        eq(mailboxThreads.mailboxId, mailboxId),
+                    ),
+                );
+        })
+
+    }
+
+
 
 	await searchIngestQueue.add(
 		"refresh-thread",

@@ -166,6 +166,7 @@ export default function WebmailListItem({
 							mailboxThreadItem.threadId,
 							activeMailbox.id,
 							mailboxThreadItem.starred,
+                            !!mailboxSync,
 						)
 					}
 				>
