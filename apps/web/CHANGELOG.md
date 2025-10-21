@@ -1,5 +1,11 @@
 # web
 
+## 0.1.35
+
+### Patch Changes
+
+- [`1707614`](https://github.com/kurrier-org/kurrier/commit/17076141680b98f7ed4710ecd8720e6d3118e4d2) Thanks [@krokhale](https://github.com/krokhale)! - rewrite kong requests via the web url
+
 ## 0.1.34
 
 ### Patch Changes
