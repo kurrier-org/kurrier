@@ -51,6 +51,7 @@ const getRedis = async () => {
 };
 
 import Typesense, { Client } from "typesense";
+import {gt} from "zod";
 let typeSenseClient: Client | null = null;
 function getTypeSenseClient(): Client {
 	if (typeSenseClient) return typeSenseClient;
@@ -148,11 +149,79 @@ export const fetchIdentityMailboxList = cache(async () => {
         return acc;
     }, {} as Record<string, { identity: typeof identities.$inferSelect; mailboxes: typeof mailboxes.$inferSelect[] }>);
 
+    const unreadAgg = await rls(tx =>
+        tx
+            .select({
+                mailboxId: mailboxThreads.mailboxId,
+                // count(*) of rows that have any unread
+                unreadThreads: sql<number>`
+        count(*) FILTER (WHERE ${mailboxThreads.unreadCount} > 0)
+      `.as("unread_threads"),
+                // sum of unread_count across all rows (0 if null)
+                unreadTotal: sql<number>`
+        coalesce(sum(${mailboxThreads.unreadCount}), 0)
+      `.as("unread_total"),
+            })
+            .from(mailboxThreads)
+            .groupBy(mailboxThreads.mailboxId),
+    );
+
+    const aggByMailbox = new Map<
+        string,
+        { unreadThreads: number; unreadTotal: number }
+    >(
+        unreadAgg.map(a => [
+            a.mailboxId,
+            { unreadThreads: Number(a.unreadThreads ?? 0), unreadTotal: Number(a.unreadTotal ?? 0) },
+        ]),
+    );
+
     return Object.values(byIdentity);
 });
 
+
+
+
 export type FetchIdentityMailboxListResult = Awaited<
     ReturnType<typeof fetchIdentityMailboxList>
+>;
+
+
+export const fetchMailboxUnreadCounts = cache(async () => {
+    const rls = await rlsClient();
+
+    const unreadAgg = await rls(tx =>
+        tx
+            .select({
+                mailboxId: mailboxThreads.mailboxId,
+                // count(*) of rows that have any unread
+                unreadThreads: sql<number>`
+        count(*) FILTER (WHERE ${mailboxThreads.unreadCount} > 0)
+      `.as("unread_threads"),
+                // sum of unread_count across all rows (0 if null)
+                unreadTotal: sql<number>`
+        coalesce(sum(${mailboxThreads.unreadCount}), 0)
+      `.as("unread_total"),
+            })
+            .from(mailboxThreads)
+            .groupBy(mailboxThreads.mailboxId),
+    );
+
+    const aggByMailbox = new Map<
+        string,
+        { unreadThreads: number; unreadTotal: number }
+    >(
+        unreadAgg.map(a => [
+            a.mailboxId,
+            { unreadThreads: Number(a.unreadThreads ?? 0), unreadTotal: Number(a.unreadTotal ?? 0) },
+        ]),
+    );
+
+    return aggByMailbox;
+});
+
+export type FetchMailboxUnreadCountsResult = Awaited<
+    ReturnType<typeof fetchMailboxUnreadCounts>
 >;
 
 export const fetchMessageAttachments = cache(async (messageId: string) => {
@@ -266,7 +335,6 @@ export const backfillMailboxes = async (identityId: string) => {
 	);
 	const res = await job.waitUntilFinished(smtpEvents);
 	backfillAccount(identityId);
-	console.log("res", res);
 };
 
 export const backfillAccount = async (identityId: string) => {

@@ -24,20 +24,21 @@ import {UserResponse} from "@supabase/supabase-js";
 import { NavMain } from "@/components/ui/dashboards/workspace/nav-main";
 import ThemeColorPicker from "@/components/common/theme-color-picker";
 import IdentityMailboxesList from "@/components/dashboard/identity-mailboxes-list";
-import {FetchIdentityMailboxListResult} from "@/lib/actions/mailbox";
+import {FetchIdentityMailboxListResult, FetchMailboxUnreadCountsResult} from "@/lib/actions/mailbox";
 import ThemeSwitch from "@/components/common/theme-switch";
-
+import Link from "next/link";
 
 type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
     publicConfig: PublicConfig;
     user: UserResponse["data"]["user"];
     avatar: string;
     identityMailboxes: FetchIdentityMailboxListResult
+    unreadCounts: FetchMailboxUnreadCountsResult
 };
 
 export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 
-    const { publicConfig, user, avatar, identityMailboxes, ...restProps } = props;
+    const { publicConfig, user, avatar, identityMailboxes, unreadCounts, ...restProps } = props;
 
     const allMailUrl = identityMailboxes.length > 0 ?
         `/dashboard/mail/${identityMailboxes[0].identity.publicId}/inbox`
@@ -110,15 +111,14 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 					<SidebarMenu>
                         <SidebarMenuItem>
                             <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
-                                <a href="#">
+                                <Link href={"/dashboard/platform/overview"}>
                                     <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                                         <Command className="size-4" />
                                     </div>
                                     <div className="grid flex-1 text-left text-sm leading-tight">
-                                        <span className="truncate font-medium">Acme Inc</span>
-                                        <span className="truncate text-xs">Enterprise</span>
+                                        <span className="truncate font-medium">Kurrier</span>
                                     </div>
-                                </a>
+                                </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
 					</SidebarMenu>
@@ -178,7 +178,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
                         <SidebarGroupContent>
                             {isOnPlatform
                                 ? <NavMain items={data.navPlatform} />
-                                : <IdentityMailboxesList identityMailboxes={identityMailboxes}/>}
+                                : <IdentityMailboxesList identityMailboxes={identityMailboxes} unreadCounts={unreadCounts}/>}
                         </SidebarGroupContent>
                     </SidebarGroup>
                 </SidebarContent>

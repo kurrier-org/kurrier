@@ -1,6 +1,6 @@
 import {SidebarInset, SidebarProvider} from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/ui/dashboards/unified/default/app-sidebar";
-import {fetchIdentityMailboxList} from "@/lib/actions/mailbox";
+import {fetchIdentityMailboxList, fetchMailboxUnreadCounts} from "@/lib/actions/mailbox";
 import { getPublicEnv } from "@schema";
 import { getGravatarUrl, isSignedIn } from "@/lib/actions/auth";
 
@@ -9,6 +9,7 @@ export default async function DashboardLayout({ children }: {
 }) {
 
     const identityMailboxes = await fetchIdentityMailboxList()
+    const unreadCounts = await fetchMailboxUnreadCounts()
 
     const publicConfig = getPublicEnv();
     const user = await isSignedIn();
@@ -22,7 +23,7 @@ export default async function DashboardLayout({ children }: {
         }>
             <AppSidebar publicConfig={publicConfig}
                         user={user} avatar={avatar}
-                        identityMailboxes={identityMailboxes} />
+                        identityMailboxes={identityMailboxes} unreadCounts={unreadCounts} />
             <SidebarInset>{children}</SidebarInset>
         </SidebarProvider>
     </>

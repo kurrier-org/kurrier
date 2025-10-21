@@ -101,11 +101,10 @@ export default function MailboxSearch({
 				className="flex w-full items-center gap-2 rounded-lg border bg-background px-4 py-2.5 text-muted-foreground hover:bg-muted/30"
 			>
 				<Search className="h-4 w-4 opacity-60" />
-				<span className="text-sm">Search mail (⌘K)</span>
+				<span className="text-sm">Search all mailboxes (⌘K)</span>
 			</button>
 
 			<CommandDialog open={open} onOpenChange={setOpen}>
-				{/* INPUT */}
 				<CommandInput
 					autoFocus
 					placeholder="Search mail…"

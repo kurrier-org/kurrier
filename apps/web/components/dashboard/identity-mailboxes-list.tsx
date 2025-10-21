@@ -12,7 +12,7 @@ import {
     Trash2,
     Folder,
 } from "lucide-react";
-import type { FetchIdentityMailboxListResult } from "@/lib/actions/mailbox";
+import {FetchIdentityMailboxListResult, FetchMailboxUnreadCountsResult} from "@/lib/actions/mailbox";
 import {MailboxKind} from "@schema";
 import {MailboxEntity} from "@db";
 
@@ -51,8 +51,10 @@ const TITLE: Record<MailboxKind, string> = {
 
 export default function IdentityMailboxesList({
                                                   identityMailboxes,
+                                                  unreadCounts
                                               }: {
     identityMailboxes: FetchIdentityMailboxListResult;
+    unreadCounts: FetchMailboxUnreadCountsResult
 }) {
     const pathname = usePathname();
     const params = useParams() as {
@@ -67,6 +69,7 @@ export default function IdentityMailboxesList({
         m: MailboxEntity;
         identityPublicId: string;
     }) => {
+
         const Icon = ICON[m.kind] ?? Folder;
         const slug = m.slug ?? "inbox";
         const href = `/dashboard/mail/${identityPublicId}/${slug}`;
@@ -87,6 +90,9 @@ export default function IdentityMailboxesList({
                 <Icon className="h-4 w-4 shrink-0" />
                 <span className="min-w-0 truncate">
           {m.kind === "custom" ? m.name ?? "Mailbox" : TITLE[m.kind]}
+                    {unreadCounts.get(m.id) && <span>
+                        {' '}({unreadCounts.get(m.id)?.unreadTotal ?? 0})
+                    </span>}
         </span>
             </Link>
         );
