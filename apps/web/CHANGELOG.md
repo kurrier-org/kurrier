@@ -1,5 +1,11 @@
 # web
 
+## 0.1.38
+
+### Patch Changes
+
+- [#198](https://github.com/kurrier-org/kurrier/pull/198) [`f933b55`](https://github.com/kurrier-org/kurrier/commit/f933b55beaec29aac265b6a844cc1126acef7a5f) Thanks [@krokhale](https://github.com/krokhale)! - Fixed starred for non Imap and mail list header
+
 ## 0.1.37
 
 ### Patch Changes
