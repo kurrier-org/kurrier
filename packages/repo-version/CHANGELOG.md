@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.71
+
+### Patch Changes
+
+- [`a94665a`](https://github.com/kurrier-org/kurrier/commit/a94665ab776cf8bcf3ecf3cec6ff921f3ef06d09) Thanks [@krokhale](https://github.com/krokhale)! - updated image versions
+
 ## 0.0.70
 
 ### Patch Changes
