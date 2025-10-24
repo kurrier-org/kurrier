@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
 	/* config options here */
 	devIndicators: false,
 	output: "standalone",
-    cacheComponents: true,
+    // cacheComponents: true,
     reactCompiler: true,
 	async rewrites() {
 		return {
