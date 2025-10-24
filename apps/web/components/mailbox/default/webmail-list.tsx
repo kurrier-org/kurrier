@@ -4,12 +4,10 @@ import { MailboxEntity, MailboxSyncEntity } from "@db";
 import { PublicConfig } from "@schema";
 import {
 	FetchMailboxThreadsResult,
-	revalidateMailbox,
 } from "@/lib/actions/mailbox";
 import MailListHeader from "@/components/mailbox/default/mail-list-header";
 import WebmailListItem from "@/components/mailbox/default/webmail-list-item";
 import { useEffect } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
 import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
 import { toast } from "sonner";
 import { useMediaQuery } from "@mantine/hooks";
@@ -30,13 +28,6 @@ export default function WebmailList({
 	mailboxSync,
 	publicConfig,
 }: WebListProps) {
-	const pathname = usePathname();
-	const searchParams = useSearchParams();
-
-	useEffect(() => {
-		const url = `${pathname}?${searchParams.toString()}`;
-		revalidateMailbox(url);
-	}, [pathname, searchParams]);
 
 	useEffect(() => {
 		if (mailboxSync) {
