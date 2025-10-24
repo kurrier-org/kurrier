@@ -1,5 +1,11 @@
 # web
 
+## 0.1.40
+
+### Patch Changes
+
+- [#209](https://github.com/kurrier-org/kurrier/pull/209) [`4bf47dc`](https://github.com/kurrier-org/kurrier/commit/4bf47dc89018c38e24e1f9372948c4e248f6cbf3) Thanks [@krokhale](https://github.com/krokhale)! - Updated support for Nextjs v16
+
 ## 0.1.39
 
 ### Patch Changes
