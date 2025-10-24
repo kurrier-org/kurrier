@@ -1,5 +1,11 @@
 # web
 
+## 0.1.41
+
+### Patch Changes
+
+- [#211](https://github.com/kurrier-org/kurrier/pull/211) [`a77df6f`](https://github.com/kurrier-org/kurrier/commit/a77df6f656f9f3b6e4ba80c602eaffae46d8b262) Thanks [@krokhale](https://github.com/krokhale)! - Nextjs 16 upgrade build
+
 ## 0.1.40
 
 ### Patch Changes
