@@ -1,8 +1,9 @@
 import {
-	fetchMailbox,
-	FetchMailboxThreadsByIdsResult,
-	fetchMailboxThreadsList,
-	initSearch,
+    fetchIdentityMailboxList,
+    fetchMailbox,
+    FetchMailboxThreadsByIdsResult,
+    fetchMailboxThreadsList,
+    initSearch,
 } from "@/lib/actions/mailbox";
 import { getPublicEnv, ThreadHit } from "@schema";
 import { isSignedIn } from "@/lib/actions/auth";
@@ -60,6 +61,8 @@ export default async function SearchPage({
 			? await fetchMailboxThreadsList(activeMailbox.id, threadIds)
 			: { threads: [] };
 
+    const identityMailboxes = await fetchIdentityMailboxList();
+
 	return (
 		<div className="p-4 space-y-4">
 			<header className="flex items-center justify-between">
@@ -95,6 +98,7 @@ export default async function SearchPage({
 						publicConfig={publicConfig}
 						activeMailbox={activeMailbox}
 						identityPublicId={identityPublicId}
+                        identityMailboxes={identityMailboxes}
 					/>
 				</>
 			)}
