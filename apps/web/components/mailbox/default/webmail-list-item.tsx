@@ -74,12 +74,13 @@ export default function WebmailListItem({
 	const pathname = usePathname();
     const searchParams = useSearchParams();
 
-	const openThread = () => {
+	const openThread = async () => {
 		const url = pathname.match("/dashboard/mail")
 			? `/dashboard/mail/${identityPublicId}/${activeMailbox.slug}/threads/${mailboxThreadItem.threadId}`
 			: `/mail/${identityPublicId}/${activeMailbox.slug}/threads/${mailboxThreadItem.threadId}`;
-        revalidateMailbox(`${pathname}?${searchParams.toString()}`);
 		router.push(url);
+        // router.refresh()
+        // await revalidateMailbox(`${pathname}?${searchParams.toString()}`);
 	};
 
 	// Width reserved on the right so text never collides with the overlay actions

@@ -81,7 +81,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
 				<SidebarMenu>
 					<SidebarMenuItem>
 						<Link
-							href="/dashboard"
+							href="/dashboard/platform/overview"
 							className={"flex justify-start mx-1 items-center gap-1"}
 						>
 							<KurrierLogo size={30} />

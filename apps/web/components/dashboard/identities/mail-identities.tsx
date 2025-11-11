@@ -615,7 +615,7 @@ export default function MailIdentities({
 												leftSection={<IconSend size={16} />}
 												size="xs"
 												className="flex-1 sm:flex-none"
-												href={`/mail/${userIdentity.identities.publicId}/inbox`}
+												href={`/dashboard/mail/${userIdentity.identities.publicId}/inbox`}
 												target={"_blank"}
 												component="a"
 											>

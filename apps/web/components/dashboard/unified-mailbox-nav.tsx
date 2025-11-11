@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
 	Inbox,
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import { IdentityEntity, MailboxEntity } from "@db";
 import { FetchIdentityMailboxListResult } from "@/lib/actions/mailbox";
+import {MailboxKind} from "@schema";
 
 type Mailbox = {
 	slug: string | null; // "inbox", "sent", ... or custom
@@ -107,7 +107,7 @@ export function UnifiedMailboxNav({
 	}: {
 		m: { mailbox: MailboxEntity; identity: IdentityEntity };
 	}) => {
-		const Icon = iconFor[m.mailbox.kind] ?? Folder;
+		const Icon = iconFor[m.mailbox.kind as MailboxKind] ?? Folder;
 		const slug = m.mailbox.slug ?? "inbox";
 		const href = `/mail/${m.identity.publicId}/${slug}`;
 

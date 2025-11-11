@@ -1,7 +1,7 @@
 import {
-	deltaFetch,
-	fetchMailbox,
-	fetchMailboxThreads,
+    deltaFetch, fetchIdentityMailboxList,
+    fetchMailbox,
+    fetchMailboxThreads,
 } from "@/lib/actions/mailbox";
 import { getPublicEnv } from "@schema";
 import MailPagination from "@/components/mailbox/default/mail-pagination";
@@ -33,6 +33,8 @@ async function Page({
 		Number(page),
 	);
 
+    const identityMailboxes = await fetchIdentityMailboxList();
+
 	return (
 		<>
 			<div className="flex flex-1 flex-col gap-4 p-4 mb-12">
@@ -42,6 +44,7 @@ async function Page({
 					activeMailbox={activeMailbox}
 					identityPublicId={identityPublicId}
 					mailboxSync={mailboxSync}
+                    identityMailboxes={identityMailboxes}
 				/>
 
 				<MailPagination

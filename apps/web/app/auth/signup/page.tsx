@@ -1,4 +1,3 @@
-import { GalleryVerticalEnd } from "lucide-react";
 import { SignupForm } from "@/components/auth/signup-form";
 import KurrierLogo from "@/components/common/kurrier-logo";
 import Link from "next/link";

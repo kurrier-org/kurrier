@@ -2,12 +2,12 @@ import React, { useRef, useEffect, useState } from "react";
 import {MailOpen, RotateCw, Trash2} from "lucide-react";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import {
-	deleteForever,
-	deltaFetch,
-	FetchMailboxThreadsResult,
-	markAsRead,
-	moveToTrash,
-	revalidateMailbox,
+    deleteForever,
+    deltaFetch, FetchIdentityMailboxListResult,
+    FetchMailboxThreadsResult,
+    markAsRead,
+    moveToTrash,
+    revalidateMailbox,
 } from "@/lib/actions/mailbox";
 import { ActionIcon, Button, Tooltip } from "@mantine/core";
 import type { MailboxEntity, MailboxSyncEntity } from "@db";
@@ -27,14 +27,19 @@ import ComposeMail from "@/components/mailbox/default/compose-mail";
 import { PublicConfig } from "@schema";
 import { useMediaQuery } from "@mantine/hooks";
 import {clsx} from "clsx";
+import MoveToFolder from "@/components/mailbox/default/move-to-folder";
 
 function MailListHeader({
 	mailboxThreads,
 	mailboxSync,
 	publicConfig,
+    identityMailboxes,
+    activeMailbox
 }: {
 	mailboxThreads: FetchMailboxThreadsResult;
 	publicConfig: PublicConfig;
+    identityMailboxes: FetchIdentityMailboxListResult
+    activeMailbox: MailboxEntity;
 	mailboxSync?: MailboxSyncEntity;
 }) {
 	const { state, setState } = useDynamicContext<{
@@ -44,15 +49,15 @@ function MailListHeader({
 	}>();
 
 	const identityIdRef = useRef<string | undefined>(
-		state?.activeMailbox?.identityId,
+		activeMailbox?.identityId,
 	);
-	const mailboxIdRef = useRef<string | undefined>(state?.activeMailbox?.id);
-	const mailboxKind = useRef<string | undefined>(state?.activeMailbox?.kind);
+	const mailboxIdRef = useRef<string | undefined>(activeMailbox?.id);
+	const mailboxKind = useRef<string | undefined>(activeMailbox?.kind);
 	useEffect(() => {
-		if (state?.activeMailbox?.identityId)
-			identityIdRef.current = state.activeMailbox.identityId;
-		if (state?.activeMailbox?.id) mailboxIdRef.current = state.activeMailbox.id;
-	}, [state?.activeMailbox?.identityId, state?.activeMailbox?.id]);
+		if (activeMailbox?.identityId)
+			identityIdRef.current = activeMailbox.identityId;
+		if (activeMailbox?.id) mailboxIdRef.current = activeMailbox.id;
+	}, [activeMailbox?.identityId, activeMailbox?.id]);
 
 	const selectedSize = state?.selectedThreadIds?.size ?? 0;
 	const hasSelected = selectedSize > 0;
@@ -176,6 +181,7 @@ function MailListHeader({
                             hasSelected ? "opacity-100" : "opacity-0 hidden pointer-events-none",
                         )}
                     >
+                        <MoveToFolder identityMailboxes={identityMailboxes} activeMailbox={activeMailbox} />
                         <button
                             type="button"
                             onClick={deleteThreads}

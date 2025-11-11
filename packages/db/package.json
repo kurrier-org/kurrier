@@ -7,9 +7,9 @@
 	"main": "src/index.ts",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"db:generate": "dotenvx run -f ../../.env -- npx drizzle-kit generate",
-		"db:migrate": "dotenvx run -f ../../.env -- npx drizzle-kit migrate",
-		"db:push": "dotenvx run -f ../../.env -- npx drizzle-kit push"
+		"db:generate": "dotenvx run -f ../../db/.env.develop -- npx drizzle-kit generate",
+		"db:migrate": "dotenvx run -f ../../db/.env.develop -- npx drizzle-kit migrate",
+		"db:push": "dotenvx run -f ../../db/.env.develop -- npx drizzle-kit push"
 	},
 	"keywords": [],
 	"author": "Krishna Rokhale",

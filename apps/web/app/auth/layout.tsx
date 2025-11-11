@@ -9,7 +9,7 @@ export default async function DashboardLayout({
 	const user = await isSignedIn();
 
 	if (user) {
-		redirect("/dashboard");
+		redirect("/dashboard/platform/overview");
 	}
 
 	return <>{children}</>;

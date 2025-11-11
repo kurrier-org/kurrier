@@ -398,6 +398,9 @@ export const mailboxes = pgTable(
 		identityId: uuid("identity_id")
 			.references(() => identities.id, { onDelete: "cascade" })
 			.notNull(),
+        parentId: uuid("parent_id")
+            .references(() => mailboxes.id, { onDelete: "cascade" })
+            .default(null),
 		publicId: text("public_id")
 			.notNull()
 			.$defaultFn(() => nanoid(10)),
@@ -421,6 +424,8 @@ export const mailboxes = pgTable(
 		uniqueIndex("uniq_mailbox_slug_per_identity")
 			.on(t.identityId, t.slug)
 			.where(sql`${t.slug} IS NOT NULL`),
+
+        index("idx_mailbox_parent").on(t.parentId),
 
 		pgPolicy("mailboxes_select_own", {
 			for: "select",
