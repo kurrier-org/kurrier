@@ -9,7 +9,7 @@ import {
 	useRef,
 } from "react";
 import Form from "next/form";
-import type { BaseFormProps, FormState, SelectOption } from "@schema";
+import type {BaseFormProps, FormState, SelectGroupOption, SelectOption} from "@schema";
 import { Button as MantineButton, Alert } from "@mantine/core";
 import {
 	TextInput,
@@ -44,7 +44,7 @@ function SelectField({
 }: {
 	name: string;
 	placeholder?: string;
-	options?: SelectOption[];
+	options?: SelectOption[] | SelectGroupOption[];
 	defaultValue?: string;
 	disabled?: boolean;
 	className?: string;
@@ -58,7 +58,8 @@ function SelectField({
 			<MantineSelect
 				className={className}
 				placeholder={placeholder}
-				data={options.map((o) => ({ value: o.value, label: o.label }))}
+				// data={options.map((o) => ({ value: o.value, label: o.label }))}
+				data={options}
 				value={val || null}
 				onChange={(v) => {
 					setVal(v ?? "");

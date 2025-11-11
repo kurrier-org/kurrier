@@ -80,3 +80,11 @@ export function sanitizeFilename(name: string): string {
 
 	return (cleanBase || "attachment") + ext.toLowerCase();
 }
+
+export const encodeMailboxPath = (path: string) => {
+    return encodeURIComponent(path).replaceAll('%2F', '~'); // keep nicer URLs
+}
+
+export const decodeMailboxPath = (slug: string) => {
+    return decodeURIComponent(slug.replaceAll('~', '%2F'));
+}

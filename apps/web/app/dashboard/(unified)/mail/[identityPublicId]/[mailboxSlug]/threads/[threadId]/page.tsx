@@ -21,7 +21,7 @@ async function Page({
 		identityPublicId,
 		mailboxSlug,
 	);
-	markAsRead(threadId, activeMailbox.id, !!mailboxSync, false);
+	// await markAsRead(threadId, activeMailbox.id, !!mailboxSync, false);
 	const activeThread = await fetchWebMailThreadDetail(threadId);
 
 	return (
@@ -33,6 +33,9 @@ async function Page({
 							message={message}
 							threadIndex={threadIndex}
 							numberOfMessages={activeThread.messages.length}
+                            threadId={threadId}
+                            activeMailboxId={activeMailbox.id}
+                            markSmtp={!!mailboxSync}
 						/>
 						<Divider className={"opacity-50 mb-6"} ml={"xl"} mr={"xl"} />
 					</div>
