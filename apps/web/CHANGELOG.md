@@ -1,5 +1,11 @@
 # web
 
+## 0.1.43
+
+### Patch Changes
+
+- [#215](https://github.com/kurrier-org/kurrier/pull/215) [`a7338c4`](https://github.com/kurrier-org/kurrier/commit/a7338c41c6d154aeb8e17f7850c8d1668f43f164) Thanks [@krokhale](https://github.com/krokhale)! - Added support for IMAP folders and regular folder. Ability to move messages into folders and create folders.
+
 ## 0.1.42
 
 ### Patch Changes
