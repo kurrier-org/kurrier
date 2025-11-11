@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.74
+
+### Patch Changes
+
+- [#213](https://github.com/kurrier-org/kurrier/pull/213) [`f6c3cfe`](https://github.com/kurrier-org/kurrier/commit/f6c3cfe969e792dda19ce25f61ec367581294ac6) Thanks [@krokhale](https://github.com/krokhale)! - Added support for IMAP folders and regular folder. Ability to move messages into folders and create folders.
+
 ## 0.0.73
 
 ### Patch Changes
