@@ -79,7 +79,6 @@ export const ProviderAccountFormSchema = z.object({
 	required: z.record(z.string(), z.string().min(1, "Value is required")),
 });
 
-
 export type ProviderAccountFormData = z.infer<typeof ProviderAccountFormSchema>;
 export type DomainIdentityFormData = z.infer<typeof DomainIdentityFormSchema>;
 export type SmtpAccountFormData = z.infer<typeof SmtpAccountFormSchema>;

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { IdentityEntity, MailboxEntity } from "@db";
 import { FetchIdentityMailboxListResult } from "@/lib/actions/mailbox";
-import {MailboxKind} from "@schema";
+import { MailboxKind } from "@schema";
 
 type Mailbox = {
 	slug: string | null; // "inbox", "sent", ... or custom

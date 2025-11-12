@@ -11,7 +11,7 @@ import { ActionIcon, Button, Menu, Modal } from "@mantine/core";
 import { EmailEditorHandle } from "@/components/mailbox/default/editor/email-editor";
 import EditorAttachmentItem from "@/components/mailbox/default/editor/editor-attachment-item";
 import { PublicConfig } from "@schema";
-import {fetchMailbox, markAsRead} from "@/lib/actions/mailbox";
+import { fetchMailbox, markAsRead } from "@/lib/actions/mailbox";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useDisclosure } from "@mantine/hooks";
@@ -87,9 +87,9 @@ function EmailRenderer({
 	message,
 	attachments,
 	publicConfig,
-    threadId,
-    markSmtp,
-    activeMailboxId,
+	threadId,
+	markSmtp,
+	activeMailboxId,
 	children,
 }: {
 	threadIndex: number;
@@ -97,9 +97,9 @@ function EmailRenderer({
 	message: MessageEntity;
 	attachments: MessageAttachmentEntity[];
 	publicConfig: PublicConfig;
-    threadId: string;
-    markSmtp: boolean;
-    activeMailboxId: string;
+	threadId: string;
+	markSmtp: boolean;
+	activeMailboxId: string;
 	children?: React.ReactNode;
 }) {
 	const formatted = Temporal.Instant.from(message.createdAt.toISOString())
@@ -132,16 +132,16 @@ function EmailRenderer({
 
 	useEffect(() => {
 		if (!sentMailboxId && !seenRef.current) {
-            seenRef.current = true
+			seenRef.current = true;
 			fetchSentMailbox();
 		}
 	}, []);
 
-    useEffect(() => {
-        if (activeMailboxId){
-            markAsRead(threadId, activeMailboxId, markSmtp, true);
-        }
-    }, [activeMailboxId])
+	useEffect(() => {
+		if (activeMailboxId) {
+			markAsRead(threadId, activeMailboxId, markSmtp, true);
+		}
+	}, [activeMailboxId]);
 
 	const downloadEml = async () => {
 		const supabase = createClient(publicConfig);

@@ -82,9 +82,9 @@ export function sanitizeFilename(name: string): string {
 }
 
 export const encodeMailboxPath = (path: string) => {
-    return encodeURIComponent(path).replaceAll('%2F', '~'); // keep nicer URLs
-}
+	return encodeURIComponent(path).replaceAll("%2F", "~"); // keep nicer URLs
+};
 
 export const decodeMailboxPath = (slug: string) => {
-    return decodeURIComponent(slug.replaceAll('~', '%2F'));
-}
+	return decodeURIComponent(slug.replaceAll("~", "%2F"));
+};

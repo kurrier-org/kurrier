@@ -33,9 +33,9 @@ async function Page({
 							message={message}
 							threadIndex={threadIndex}
 							numberOfMessages={activeThread.messages.length}
-                            threadId={threadId}
-                            activeMailboxId={activeMailbox.id}
-                            markSmtp={!!mailboxSync}
+							threadId={threadId}
+							activeMailboxId={activeMailbox.id}
+							markSmtp={!!mailboxSync}
 						/>
 						<Divider className={"opacity-50 mb-6"} ml={"xl"} mr={"xl"} />
 					</div>

@@ -20,14 +20,15 @@ import { users } from "./supabase-schema";
 import { authenticatedRole, authUid } from "drizzle-orm/supabase";
 import { sql } from "drizzle-orm";
 import {
-    AddressObjectJSON, apiScopeList,
-    identityStatusList,
-    identityTypesList,
-    mailboxKindsList,
-    mailboxSyncPhase,
-    messagePriorityList,
-    messageStatesList,
-    providersList,
+	AddressObjectJSON,
+	apiScopeList,
+	identityStatusList,
+	identityTypesList,
+	mailboxKindsList,
+	mailboxSyncPhase,
+	messagePriorityList,
+	messageStatesList,
+	providersList,
 } from "@schema";
 import { DnsRecord } from "@providers";
 import { nanoid } from "nanoid";
@@ -48,7 +49,6 @@ export const mailboxSyncPhaseEnum = pgEnum(
 );
 
 export const ApiScopeEnum = pgEnum("api_scope", apiScopeList);
-
 
 export const secretsMeta = pgTable(
 	"secrets_meta",
@@ -401,9 +401,9 @@ export const mailboxes = pgTable(
 		identityId: uuid("identity_id")
 			.references(() => identities.id, { onDelete: "cascade" })
 			.notNull(),
-        parentId: uuid("parent_id")
-            .references(() => mailboxes.id, { onDelete: "cascade" })
-            .default(null),
+		parentId: uuid("parent_id")
+			.references(() => mailboxes.id, { onDelete: "cascade" })
+			.default(null),
 		publicId: text("public_id")
 			.notNull()
 			.$defaultFn(() => nanoid(10)),
@@ -428,7 +428,7 @@ export const mailboxes = pgTable(
 			.on(t.identityId, t.slug)
 			.where(sql`${t.slug} IS NOT NULL`),
 
-        index("idx_mailbox_parent").on(t.parentId),
+		index("idx_mailbox_parent").on(t.parentId),
 
 		pgPolicy("mailboxes_select_own", {
 			for: "select",
@@ -838,72 +838,69 @@ export const mailboxThreads = pgTable(
 	],
 ).enableRLS();
 
-
 export const apiKeys = pgTable(
-    "api_keys",
-    {
-        id: uuid("id").defaultRandom().primaryKey(),
+	"api_keys",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
 
-        ownerId: uuid("owner_id")
-            .references(() => users.id)
-            .notNull()
-            .default(sql`auth.uid()`),
+		ownerId: uuid("owner_id")
+			.references(() => users.id)
+			.notNull()
+			.default(sql`auth.uid()`),
 
-        name: text("name").notNull(),
+		name: text("name").notNull(),
 
-        secretId: uuid("secret_id")
-            .references(() => secretsMeta.id, { onDelete: "cascade" })
-            .notNull(),
+		secretId: uuid("secret_id")
+			.references(() => secretsMeta.id, { onDelete: "cascade" })
+			.notNull(),
 
-        keyPrefix: text("key_prefix").notNull(),
-        keyLast4: text("key_last4").notNull(),
+		keyPrefix: text("key_prefix").notNull(),
+		keyLast4: text("key_last4").notNull(),
 
-        keyVersion: integer("key_version").notNull().default(1),
+		keyVersion: integer("key_version").notNull().default(1),
 
-        scopes: ApiScopeEnum("scopes")
-            .array()
-            .notNull(),
+		scopes: ApiScopeEnum("scopes").array().notNull(),
 
-        expiresAt: timestamp("expires_at", { withTimezone: true }),
-        revokedAt: timestamp("revoked_at", { withTimezone: true }),
+		expiresAt: timestamp("expires_at", { withTimezone: true }),
+		revokedAt: timestamp("revoked_at", { withTimezone: true }),
 
-        metaData: jsonb("meta").$type<Record<string, any> | null>().default(null),
+		metaData: jsonb("meta").$type<Record<string, any> | null>().default(null),
 
-        createdAt: timestamp("created_at", { withTimezone: true })
-            .defaultNow()
-            .notNull(),
-        updatedAt: timestamp("updated_at", { withTimezone: true })
-            .defaultNow()
-            .$onUpdateFn(() => sql`now()`),
-    },
-    (t) => [
-        uniqueIndex("ux_api_keys_owner_name").on(t.ownerId, t.name),
-        uniqueIndex("ux_api_keys_owner_prefix").on(t.ownerId, t.keyPrefix),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.$onUpdateFn(() => sql`now()`),
+	},
+	(t) => [
+		uniqueIndex("ux_api_keys_owner_name").on(t.ownerId, t.name),
+		uniqueIndex("ux_api_keys_owner_prefix").on(t.ownerId, t.keyPrefix),
 
-        index("ix_api_keys_owner").on(t.ownerId),
-        index("ix_api_keys_expires").on(t.expiresAt),
-        index("ix_api_keys_revoked").on(t.revokedAt),
+		index("ix_api_keys_owner").on(t.ownerId),
+		index("ix_api_keys_expires").on(t.expiresAt),
+		index("ix_api_keys_revoked").on(t.revokedAt),
 
-        pgPolicy("apikeys_select_own", {
-            for: "select",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("apikeys_insert_own", {
-            for: "insert",
-            to: authenticatedRole,
-            withCheck: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("apikeys_update_own", {
-            for: "update",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-            withCheck: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("apikeys_delete_own", {
-            for: "delete",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-        }),
-    ],
+		pgPolicy("apikeys_select_own", {
+			for: "select",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("apikeys_insert_own", {
+			for: "insert",
+			to: authenticatedRole,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("apikeys_update_own", {
+			for: "update",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("apikeys_delete_own", {
+			for: "delete",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+	],
 ).enableRLS();

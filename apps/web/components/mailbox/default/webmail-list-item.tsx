@@ -1,14 +1,15 @@
 "use client";
 import React from "react";
 import { Mail, MailOpen, Paperclip, Trash2 } from "lucide-react";
-import {usePathname, useRouter, useSearchParams} from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MailboxEntity, MailboxSyncEntity } from "@db";
 import {
-    FetchMailboxThreadsResult,
-    markAsRead,
-    markAsUnread,
-    moveToTrash, revalidateMailbox,
-    toggleStar,
+	FetchMailboxThreadsResult,
+	markAsRead,
+	markAsUnread,
+	moveToTrash,
+	revalidateMailbox,
+	toggleStar,
 } from "@/lib/actions/mailbox";
 import { IconStar, IconStarFilled } from "@tabler/icons-react";
 
@@ -72,15 +73,15 @@ export default function WebmailListItem({
 	const dateLabel = formatDateLabel(date);
 
 	const pathname = usePathname();
-    const searchParams = useSearchParams();
+	const searchParams = useSearchParams();
 
 	const openThread = async () => {
 		const url = pathname.match("/dashboard/mail")
 			? `/dashboard/mail/${identityPublicId}/${activeMailbox.slug}/threads/${mailboxThreadItem.threadId}`
 			: `/mail/${identityPublicId}/${activeMailbox.slug}/threads/${mailboxThreadItem.threadId}`;
 		router.push(url);
-        // router.refresh()
-        // await revalidateMailbox(`${pathname}?${searchParams.toString()}`);
+		// router.refresh()
+		// await revalidateMailbox(`${pathname}?${searchParams.toString()}`);
 	};
 
 	// Width reserved on the right so text never collides with the overlay actions
@@ -169,7 +170,7 @@ export default function WebmailListItem({
 							mailboxThreadItem.threadId,
 							activeMailbox.id,
 							mailboxThreadItem.starred,
-                            !!mailboxSync,
+							!!mailboxSync,
 						)
 					}
 				>

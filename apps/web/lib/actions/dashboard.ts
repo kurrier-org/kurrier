@@ -1,36 +1,36 @@
 "use server";
 
 import {
-    apiKeys,
-    createSecret,
-    getSecret,
-    identities,
-    IdentityCreate,
-    IdentityEntity,
-    IdentityInsertSchema,
-    mailboxes,
-    messages,
-    providers,
-    providerSecrets,
-    secretsMeta,
-    smtpAccounts,
-    smtpAccountSecrets,
-    updateSecret,
+	apiKeys,
+	createSecret,
+	getSecret,
+	identities,
+	IdentityCreate,
+	IdentityEntity,
+	IdentityInsertSchema,
+	mailboxes,
+	messages,
+	providers,
+	providerSecrets,
+	secretsMeta,
+	smtpAccounts,
+	smtpAccountSecrets,
+	updateSecret,
 } from "@db";
 import {
-    apiScopeList,
-    DomainIdentityFormSchema,
-    FormState,
-    getPublicEnv,
-    handleAction,
-    MailboxKindDisplay,
-    ProviderAccountFormSchema,
-    Providers,
-    SmtpAccountFormSchema,
-    SYSTEM_MAILBOXES,
+	apiScopeList,
+	DomainIdentityFormSchema,
+	FormState,
+	getPublicEnv,
+	handleAction,
+	MailboxKindDisplay,
+	ProviderAccountFormSchema,
+	Providers,
+	SmtpAccountFormSchema,
+	SYSTEM_MAILBOXES,
 } from "@schema";
 import { currentSession } from "@/lib/actions/auth";
-import {and, count, eq, sql, gte, desc} from "drizzle-orm";
+import { and, count, eq, sql, gte, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { decode } from "decode-formdata";
 import { PgColumn, PgTable } from "drizzle-orm/pg-core";
@@ -42,7 +42,7 @@ import { rlsClient } from "@/lib/actions/clients";
 import { v4 as uuidv4 } from "uuid";
 import { backfillMailboxes } from "@/lib/actions/mailbox";
 import { kvGet } from "@common";
-import {nanoid} from "nanoid";
+import { nanoid } from "nanoid";
 
 const DASHBOARD_PATH = "/dashboard/providers";
 
@@ -832,96 +832,95 @@ export const getDashboardStats = async () => {
 	});
 };
 
-
 export async function addApiKey(
-    _prev: FormState,
-    formData: FormData,
+	_prev: FormState,
+	formData: FormData,
 ): Promise<FormState> {
-    return handleAction(async () => {
-        const session = await currentSession();
-        const data = decode(formData);
+	return handleAction(async () => {
+		const session = await currentSession();
+		const data = decode(formData);
 
-        const { ulid, name, scope } = data as {
-            ulid: string;
-            name: string;
-            scope: string;
-        };
+		const { ulid, name, scope } = data as {
+			ulid: string;
+			name: string;
+			scope: string;
+		};
 
-        type ApiScope = (typeof apiScopeList)[number];
+		type ApiScope = (typeof apiScopeList)[number];
 
-        const isApiScope = (s: string): s is ApiScope =>
-            (apiScopeList as readonly string[]).includes(s);
+		const isApiScope = (s: string): s is ApiScope =>
+			(apiScopeList as readonly string[]).includes(s);
 
-        const scopesRaw = scope.split(",").map((s) => s.trim());
-        const scopesClean = scopesRaw.filter(isApiScope);
+		const scopesRaw = scope.split(",").map((s) => s.trim());
+		const scopesClean = scopesRaw.filter(isApiScope);
 
-        const finalScopes: ApiScope[] =
-            scopesClean.length ? scopesClean : (["emails:send"] as ApiScope[]);
+		const finalScopes: ApiScope[] = scopesClean.length
+			? scopesClean
+			: (["emails:send"] as ApiScope[]);
 
-        const keyPrefix = nanoid(6);
-        const rawKey = `${keyPrefix}.${nanoid(32)}`;
-        const keyLast4 = rawKey.slice(-4);
+		const keyPrefix = nanoid(6);
+		const rawKey = `${keyPrefix}.${nanoid(32)}`;
+		const keyLast4 = rawKey.slice(-4);
 
-        const secretMeta = await createSecret(session, {
-            name: ulid,
-            value: JSON.stringify({ rawKey }),
-        });
+		const secretMeta = await createSecret(session, {
+			name: ulid,
+			value: JSON.stringify({ rawKey }),
+		});
 
-        const rls = await rlsClient();
-        await rls((tx) =>
-            tx
-                .insert(apiKeys)
-                .values({
-                    name: name.trim(),
-                    secretId: secretMeta.id,
-                    keyPrefix,
-                    keyLast4,
-                    scopes: finalScopes,
-                    metaData: { ulid },
-                })
-                .returning(),
-        );
+		const rls = await rlsClient();
+		await rls((tx) =>
+			tx
+				.insert(apiKeys)
+				.values({
+					name: name.trim(),
+					secretId: secretMeta.id,
+					keyPrefix,
+					keyLast4,
+					scopes: finalScopes,
+					metaData: { ulid },
+				})
+				.returning(),
+		);
 
-        revalidatePath(DASHBOARD_PATH);
+		revalidatePath(DASHBOARD_PATH);
 
-        return {
-            success: true,
-            message: "API key created successfully",
-        };
-    });
+		return {
+			success: true,
+			message: "API key created successfully",
+		};
+	});
 }
 
-
 export const fetchUserAPIKeys = async () => {
-    const rls = await rlsClient();
-    const session = await currentSession();
+	const rls = await rlsClient();
+	const session = await currentSession();
 
-    const apiKeyRows = await rls((tx) =>
-        tx
-            .select({
-                key: apiKeys,
-                metaId: secretsMeta.id,
-            })
-            .from(apiKeys)
-            .leftJoin(secretsMeta, eq(apiKeys.secretId, secretsMeta.id))
-            .orderBy(desc(apiKeys.createdAt)),
-    );
+	const apiKeyRows = await rls((tx) =>
+		tx
+			.select({
+				key: apiKeys,
+				metaId: secretsMeta.id,
+			})
+			.from(apiKeys)
+			.leftJoin(secretsMeta, eq(apiKeys.secretId, secretsMeta.id))
+			.orderBy(desc(apiKeys.createdAt)),
+	);
 
-    const userApiKeys = await Promise.all(
-        apiKeyRows.map(async (r) => {
-            const { vault } = await getSecret(session, String(r.metaId));
-            return {
-                ...r.key,
-                vault: vault?.decrypted_secret
-                    ? JSON.parse(vault.decrypted_secret)
-                    : {},
-            };
-        })
-    );
+	const userApiKeys = await Promise.all(
+		apiKeyRows.map(async (r) => {
+			const { vault } = await getSecret(session, String(r.metaId));
+			return {
+				...r.key,
+				vault: vault?.decrypted_secret
+					? JSON.parse(vault.decrypted_secret)
+					: {},
+			};
+		}),
+	);
 
-    return userApiKeys
+	return userApiKeys;
 };
 
 export type FetchUserAPIKeysResult = Awaited<
-    ReturnType<typeof fetchUserAPIKeys>
+	ReturnType<typeof fetchUserAPIKeys>
 >;

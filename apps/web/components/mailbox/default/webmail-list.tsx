@@ -3,8 +3,8 @@ import * as React from "react";
 import { MailboxEntity, MailboxSyncEntity } from "@db";
 import { PublicConfig } from "@schema";
 import {
-    FetchIdentityMailboxListResult,
-    FetchMailboxThreadsResult,
+	FetchIdentityMailboxListResult,
+	FetchMailboxThreadsResult,
 } from "@/lib/actions/mailbox";
 import MailListHeader from "@/components/mailbox/default/mail-list-header";
 import WebmailListItem from "@/components/mailbox/default/webmail-list-item";
@@ -19,7 +19,7 @@ type WebListProps = {
 	publicConfig: PublicConfig;
 	activeMailbox: MailboxEntity;
 	identityPublicId: string;
-    identityMailboxes: FetchIdentityMailboxListResult
+	identityMailboxes: FetchIdentityMailboxListResult;
 	mailboxSync?: MailboxSyncEntity;
 };
 
@@ -29,9 +29,8 @@ export default function WebmailList({
 	identityPublicId,
 	mailboxSync,
 	publicConfig,
-    identityMailboxes
+	identityMailboxes,
 }: WebListProps) {
-
 	useEffect(() => {
 		if (mailboxSync) {
 			if (mailboxSync?.phase !== "IDLE") {
@@ -64,8 +63,8 @@ export default function WebmailList({
 							mailboxThreads={mailboxThreads}
 							mailboxSync={mailboxSync}
 							publicConfig={publicConfig}
-                            identityMailboxes={identityMailboxes}
-                            activeMailbox={activeMailbox}
+							identityMailboxes={identityMailboxes}
+							activeMailbox={activeMailbox}
 						/>
 
 						{/*<ul role="list" className="divide-y bg-white rounded-4xl">*/}

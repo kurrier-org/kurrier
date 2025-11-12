@@ -9,8 +9,7 @@ export async function createClient() {
 		server: { SERVICE_ROLE_KEY },
 	} = getEnv();
 
-
-	return createServerClient(WEB_URL+"/api/kong", SERVICE_ROLE_KEY, {
+	return createServerClient(WEB_URL + "/api/kong", SERVICE_ROLE_KEY, {
 		cookies: {
 			getAll() {
 				return cookieStore.getAll();

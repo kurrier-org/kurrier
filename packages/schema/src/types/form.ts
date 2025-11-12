@@ -1,8 +1,7 @@
 import { ReactNode } from "react";
 
 export type SelectOption = { label: string; value: string };
-export type SelectGroupOption = { group: string, items: SelectOption[] };
-
+export type SelectGroupOption = { group: string; items: SelectOption[] };
 
 export type FieldKind = "input" | "textarea" | "select" | "custom";
 
@@ -13,7 +12,7 @@ export type FieldConfig = {
 	labelSuffix?: ReactNode;
 	wrapperClasses?: string;
 	props?: any;
-    component?: React.ComponentType<any>;
+	component?: React.ComponentType<any>;
 	options?: SelectOption[] | SelectGroupOption[];
 	el?: ReactNode;
 	prefix?: ReactNode;

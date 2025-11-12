@@ -11,7 +11,7 @@ import { moveMail } from "../../lib/imap/imap-move";
 import { getRedis } from "../../lib/get-redis";
 import { deleteMail } from "../../lib/imap/imap-delete";
 import { backfillMailboxes } from "../../lib/imap/imap-backfill-mailboxes";
-import {addNewFolder} from "../../lib/imap/imap-new-folder";
+import { addNewFolder } from "../../lib/imap/imap-new-folder";
 import { deleteFolder } from "../../lib/imap/imap-delete-folder";
 
 export default defineNitroPlugin(async (nitroApp) => {
@@ -27,31 +27,35 @@ export default defineNitroPlugin(async (nitroApp) => {
 			if (job.name === "delta-fetch") {
 				const identityId = job.data.identityId;
 				await deltaFetch(identityId, imapInstances);
-            } else if (job.name === "mail:move") {
-                if (job.data.op === "move" && !job.data.toMailboxId) {
-                    throw new Error("mail:move requires toMailboxId when op === 'move'");
-                }
-                await moveMail(job.data, imapInstances);
-                await searchIngestQueue.add("refresh-thread", { threadId: job.data.threadId }, 		{
-                    jobId: `refresh-${job.data.threadId}`, // collapses duplicates
-                    removeOnComplete: true,
-                    removeOnFail: false,
-                    attempts: 3,
-                    backoff: { type: "exponential", delay: 1500 },
-                });
-			// } else if (job.name === "mail:move") {
-			// 	await moveMail(job.data, imapInstances);
-			// 	await searchIngestQueue.add(
-			// 		"refresh-thread",
-			// 		{ threadId: job.data.threadId },
-			// 		{
-			// 			jobId: `refresh-${job.data.threadId}`, // collapses duplicates
-			// 			removeOnComplete: true,
-			// 			removeOnFail: false,
-			// 			attempts: 3,
-			// 			backoff: { type: "exponential", delay: 1500 },
-			// 		},
-			// 	);
+			} else if (job.name === "mail:move") {
+				if (job.data.op === "move" && !job.data.toMailboxId) {
+					throw new Error("mail:move requires toMailboxId when op === 'move'");
+				}
+				await moveMail(job.data, imapInstances);
+				await searchIngestQueue.add(
+					"refresh-thread",
+					{ threadId: job.data.threadId },
+					{
+						jobId: `refresh-${job.data.threadId}`, // collapses duplicates
+						removeOnComplete: true,
+						removeOnFail: false,
+						attempts: 3,
+						backoff: { type: "exponential", delay: 1500 },
+					},
+				);
+				// } else if (job.name === "mail:move") {
+				// 	await moveMail(job.data, imapInstances);
+				// 	await searchIngestQueue.add(
+				// 		"refresh-thread",
+				// 		{ threadId: job.data.threadId },
+				// 		{
+				// 			jobId: `refresh-${job.data.threadId}`, // collapses duplicates
+				// 			removeOnComplete: true,
+				// 			removeOnFail: false,
+				// 			attempts: 3,
+				// 			backoff: { type: "exponential", delay: 1500 },
+				// 		},
+				// 	);
 			} else if (job.name === "mail:set-flags") {
 				await mailSetFlags(job.data, imapInstances);
 				await searchIngestQueue.add(
@@ -75,13 +79,13 @@ export default defineNitroPlugin(async (nitroApp) => {
 					await backfillMailboxes(client, identityId);
 				}
 			} else if (job.name === "mailbox:add-new") {
-                const identityId = job.data.identityId;
-                const client = await initSmtpClient(identityId, imapInstances);
-                await addNewFolder(job.data, client)
-            } else if (job.name === "mailbox:delete-folder") {
-                const identityId = job.data.identityId;
-                const client = await initSmtpClient(identityId, imapInstances);
-                await deleteFolder(job.data, client)
+				const identityId = job.data.identityId;
+				const client = await initSmtpClient(identityId, imapInstances);
+				await addNewFolder(job.data, client);
+			} else if (job.name === "mailbox:delete-folder") {
+				const identityId = job.data.identityId;
+				const client = await initSmtpClient(identityId, imapInstances);
+				await deleteFolder(job.data, client);
 			} else if (job.name === "backfill") {
 				const identityId = job.data.identityId;
 				const client = await initSmtpClient(identityId, imapInstances);
