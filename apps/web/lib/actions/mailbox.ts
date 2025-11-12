@@ -3,17 +3,17 @@
 import { cache } from "react";
 import { rlsClient } from "@/lib/actions/clients";
 import {
-    db,
-    identities,
-    mailboxes,
-    mailboxSync,
-    mailboxThreads,
-    messageAttachments,
-    messages,
-    threads,
+	db,
+	identities,
+	mailboxes,
+	mailboxSync,
+	mailboxThreads,
+	messageAttachments,
+	messages,
+	threads,
 } from "@db";
 import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
-import {refresh, revalidatePath, revalidateTag} from "next/cache";
+import { refresh, revalidatePath, revalidateTag } from "next/cache";
 import { FormState, getServerEnv, SearchThreadsResponse } from "@schema";
 import { decode } from "decode-formdata";
 import { toArray } from "@/lib/utils";
@@ -53,9 +53,9 @@ const getRedis = async () => {
 
 import Typesense, { Client } from "typesense";
 import { gt } from "zod";
-import {isSignedIn} from "@/lib/actions/auth";
+import { isSignedIn } from "@/lib/actions/auth";
 import slugify from "@sindresorhus/slugify";
-import {redirect} from "next/navigation";
+import { redirect } from "next/navigation";
 let typeSenseClient: Client | null = null;
 function getTypeSenseClient(): Client {
 	if (typeSenseClient) return typeSenseClient;
@@ -131,22 +131,22 @@ export const fetchMailbox = cache(
 export const fetchIdentityMailboxList = cache(async () => {
 	const rls = await rlsClient();
 
-    const rows = await rls((tx) =>
-        tx
-            .select({ identity: identities, mailbox: mailboxes })
-            .from(identities)
-            .leftJoin(
-                mailboxes,
-                and(
-                    eq(identities.id, mailboxes.identityId),
-                    // exclude drafts/outbox *only when a mailbox exists*
-                    sql`${mailboxes.kind} NOT IN ('outbox','drafts')`
-                )
-            )
-            .where(eq(identities.kind, "email"))
-            .orderBy(
-                asc(identities.id),
-                sql`
+	const rows = await rls((tx) =>
+		tx
+			.select({ identity: identities, mailbox: mailboxes })
+			.from(identities)
+			.leftJoin(
+				mailboxes,
+				and(
+					eq(identities.id, mailboxes.identityId),
+					// exclude drafts/outbox *only when a mailbox exists*
+					sql`${mailboxes.kind} NOT IN ('outbox','drafts')`,
+				),
+			)
+			.where(eq(identities.kind, "email"))
+			.orderBy(
+				asc(identities.id),
+				sql`
                     CASE ${mailboxes.kind}
                     WHEN 'inbox'   THEN 0
                     WHEN 'drafts'  THEN 1
@@ -158,10 +158,10 @@ export const fetchIdentityMailboxList = cache(async () => {
                     ELSE 7
                     END
                 `,
-                asc(mailboxes.parentId),
-                sql`lower(coalesce(${mailboxes.name}, ''))`
-            )
-    );
+				asc(mailboxes.parentId),
+				sql`lower(coalesce(${mailboxes.name}, ''))`,
+			),
+	);
 
 	const byIdentity = rows.reduce(
 		(acc, r) => {
@@ -498,109 +498,105 @@ export const markAsRead = cache(
 );
 
 export const markAsUnread = async (
-        threadIds: string | string[],
-        mailboxId: string,
-        markSmtp: boolean,
-        refresh: boolean,
-    ) => {
-        const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
-            .map(String)
-            .filter(Boolean);
+	threadIds: string | string[],
+	mailboxId: string,
+	markSmtp: boolean,
+	refresh: boolean,
+) => {
+	const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
+		.map(String)
+		.filter(Boolean);
 
-        if (!ids.length || !mailboxId) return;
+	if (!ids.length || !mailboxId) return;
 
-        const now = new Date();
-        const rls = await rlsClient();
+	const now = new Date();
+	const rls = await rlsClient();
 
-        await rls(async (tx) => {
-            // 1) Flip seen=false for all messages in THESE threads for THIS mailbox
-            await tx
-                .update(messages)
-                .set({ seen: false, updatedAt: now })
-                .where(
-                    and(
-                        inArray(messages.threadId, ids),
-                        eq(messages.mailboxId, mailboxId),
-                    ),
-                );
+	await rls(async (tx) => {
+		// 1) Flip seen=false for all messages in THESE threads for THIS mailbox
+		await tx
+			.update(messages)
+			.set({ seen: false, updatedAt: now })
+			.where(
+				and(inArray(messages.threadId, ids), eq(messages.mailboxId, mailboxId)),
+			);
 
-            // 2) Recompute unread counts per thread (grouped)
-            const grouped = await tx
-                .select({
-                    threadId: messages.threadId,
-                    count: sql<number>`count(*)`,
-                })
-                .from(messages)
-                .where(
-                    and(
-                        inArray(messages.threadId, ids),
-                        eq(messages.mailboxId, mailboxId),
-                        eq(messages.seen, false),
-                    ),
-                )
-                .groupBy(messages.threadId);
+		// 2) Recompute unread counts per thread (grouped)
+		const grouped = await tx
+			.select({
+				threadId: messages.threadId,
+				count: sql<number>`count(*)`,
+			})
+			.from(messages)
+			.where(
+				and(
+					inArray(messages.threadId, ids),
+					eq(messages.mailboxId, mailboxId),
+					eq(messages.seen, false),
+				),
+			)
+			.groupBy(messages.threadId);
 
-            const countMap = new Map<string, number>();
-            for (const g of grouped)
-                countMap.set(String(g.threadId), Number(g.count));
+		const countMap = new Map<string, number>();
+		for (const g of grouped) countMap.set(String(g.threadId), Number(g.count));
 
-            // 3) Update mailboxThreads per thread with recomputed unreadCount
-            for (const tid of ids) {
-                const unread = countMap.get(tid);
-                await tx
-                    .update(mailboxThreads)
-                    .set({
-                        unreadCount: unread ?? 1, // fallback to 1 so it surfaces in UI if uncertain
-                        updatedAt: now,
-                    })
-                    .where(
-                        and(
-                            eq(mailboxThreads.threadId, tid),
-                            eq(mailboxThreads.mailboxId, mailboxId),
-                        ),
-                    );
-            }
-        });
+		// 3) Update mailboxThreads per thread with recomputed unreadCount
+		for (const tid of ids) {
+			const unread = countMap.get(tid);
+			await tx
+				.update(mailboxThreads)
+				.set({
+					unreadCount: unread ?? 1, // fallback to 1 so it surfaces in UI if uncertain
+					updatedAt: now,
+				})
+				.where(
+					and(
+						eq(mailboxThreads.threadId, tid),
+						eq(mailboxThreads.mailboxId, mailboxId),
+					),
+				);
+		}
+	});
 
-        if (refresh) {
-            revalidatePath("/mail");
-        }
+	if (refresh) {
+		revalidatePath("/mail");
+	}
 
-        if (markSmtp) {
-            const { smtpQueue, searchIngestQueue } = await getRedis();
+	if (markSmtp) {
+		const { smtpQueue, searchIngestQueue } = await getRedis();
 
-            await Promise.all(
-                ids.map((threadId) =>
-                    smtpQueue.add(
-                        "mail:set-flags",
-                        { threadId, mailboxId, op: "unread" },
-                        {
-                            attempts: 3,
-                            backoff: { type: "exponential", delay: 1500 },
-                            removeOnComplete: true,
-                            removeOnFail: false,
-                        },
-                    ),
-                ),
-            );
+		await Promise.all(
+			ids.map((threadId) =>
+				smtpQueue.add(
+					"mail:set-flags",
+					{ threadId, mailboxId, op: "unread" },
+					{
+						attempts: 3,
+						backoff: { type: "exponential", delay: 1500 },
+						removeOnComplete: true,
+						removeOnFail: false,
+					},
+				),
+			),
+		);
 
-            await Promise.all(
-                ids.map((threadId) =>
-                    searchIngestQueue.add(
-                        "refresh-thread",
-                        { threadId },
-                        {
-                            jobId: `refresh-${threadId}`, // collapse dupes across callers
-                            removeOnComplete: true,
-                            removeOnFail: false,
-                            attempts: 3,
-                            backoff: { type: "exponential", delay: 1500 },
-                        },
-                    ),
-                ),
-            );
-        }
-}
+		await Promise.all(
+			ids.map((threadId) =>
+				searchIngestQueue.add(
+					"refresh-thread",
+					{ threadId },
+					{
+						jobId: `refresh-${threadId}`, // collapse dupes across callers
+						removeOnComplete: true,
+						removeOnFail: false,
+						attempts: 3,
+						backoff: { type: "exponential", delay: 1500 },
+					},
+				),
+			),
+		);
+	}
+};
 
 export const moveToTrash = async (
 	threadIds: string | string[],
@@ -657,78 +653,79 @@ export const toggleStar = async (
 	threadId: string,
 	mailboxId: string,
 	starred: boolean,
-    starImap: boolean,
+	starImap: boolean,
 ) => {
 	if (!threadId || !mailboxId) return;
-    const { smtpQueue, searchIngestQueue } = await getRedis();
+	const { smtpQueue, searchIngestQueue } = await getRedis();
 
-    if (starImap){
+	if (starImap) {
+		await smtpQueue.add(
+			"mail:set-flags",
+			{
+				threadId,
+				mailboxId,
+				op: starred ? "unflag" : "flag",
+			},
+			{
+				attempts: 3,
+				backoff: { type: "exponential", delay: 1500 },
+				removeOnComplete: true,
+				removeOnFail: true,
+			},
+		);
+	} else {
+		const rls = await rlsClient();
+		const op = starred ? "unflag" : "flag";
+		await rls(async (tx) => {
+			const update: Record<string, any> = { updatedAt: new Date() };
+			if (op === "flag") update.flagged = true;
+			if (op === "unflag") update.flagged = false;
 
-        await smtpQueue.add(
-            "mail:set-flags",
-            {
-                threadId,
-                mailboxId,
-                op: starred ? "unflag" : "flag",
-            },
-            {
-                attempts: 3,
-                backoff: { type: "exponential", delay: 1500 },
-                removeOnComplete: true,
-                removeOnFail: true,
-            },
-        );
-    } else {
+			await tx
+				.update(messages)
+				.set(update)
+				.where(
+					and(
+						eq(messages.threadId, threadId),
+						eq(messages.mailboxId, mailboxId),
+					),
+				);
 
-        const rls = await rlsClient();
-        const op = starred ? "unflag" : "flag"
-        await rls(async (tx) => {
-            const update: Record<string, any> = {updatedAt: new Date()};
-            if (op === "flag") update.flagged = true;
-            if (op === "unflag") update.flagged = false;
-
-            await tx
-                .update(messages)
-                .set(update)
-                .where(
-                    and(eq(messages.threadId, threadId), eq(messages.mailboxId, mailboxId)),
-                );
-
-            const [agg] = await tx
-                .select({
-                    unreadCount: sql<number>`count(*) filter (where
+			const [agg] = await tx
+				.select({
+					unreadCount: sql<number>`count(*) filter (where
                     ${messages.seen}
                     =
                     false
                     )`,
-                    anyFlagged: sql<boolean>`bool_or
+					anyFlagged: sql<boolean>`bool_or
                     (
                     ${messages.flagged}
                     )`,
-                })
-                .from(messages)
-                .where(
-                    and(eq(messages.threadId, threadId), eq(messages.mailboxId, mailboxId)),
-                );
+				})
+				.from(messages)
+				.where(
+					and(
+						eq(messages.threadId, threadId),
+						eq(messages.mailboxId, mailboxId),
+					),
+				);
 
-            await tx
-                .update(mailboxThreads)
-                .set({
-                    unreadCount: agg.unreadCount ?? 0,
-                    starred: agg.anyFlagged ?? false,
-                    updatedAt: new Date(),
-                })
-                .where(
-                    and(
-                        eq(mailboxThreads.threadId, threadId),
-                        eq(mailboxThreads.mailboxId, mailboxId),
-                    ),
-                );
-        })
-
-    }
-
-
+			await tx
+				.update(mailboxThreads)
+				.set({
+					unreadCount: agg.unreadCount ?? 0,
+					starred: agg.anyFlagged ?? false,
+					updatedAt: new Date(),
+				})
+				.where(
+					and(
+						eq(mailboxThreads.threadId, threadId),
+						eq(mailboxThreads.mailboxId, mailboxId),
+					),
+				);
+		});
+	}
 
 	await searchIngestQueue.add(
 		"refresh-thread",
@@ -878,212 +875,209 @@ export async function deleteForever(
 	if (refresh) revalidatePath("/mail");
 }
 
-
 export async function addNewMailboxFolder(
-    _prev: FormState,
-    formData: FormData,
+	_prev: FormState,
+	formData: FormData,
 ): Promise<FormState> {
-    const decodedForm = decode(formData);
-    const isImapOp = String(decodedForm.imapOp).trim().length > 0
-    const user = await isSignedIn()
-    if (isImapOp){
-        const { smtpQueue, smtpEvents } = await getRedis();
-        const job =  await smtpQueue.add(
-            "mailbox:add-new",
-            {
-                name: decodedForm.name,
-                parentId: decodedForm.parentId,
-                identityId: decodedForm.identityId,
-                ownerId: user?.id,
-                kind: "custom",
-                slug: slugify(String(decodedForm.name))
-            },
-            {
-                attempts: 3,
-                backoff: { type: "exponential", delay: 1500 },
-                removeOnComplete: true,
-                removeOnFail: true
-            },
-        );
+	const decodedForm = decode(formData);
+	const isImapOp = String(decodedForm.imapOp).trim().length > 0;
+	const user = await isSignedIn();
+	if (isImapOp) {
+		const { smtpQueue, smtpEvents } = await getRedis();
+		const job = await smtpQueue.add(
+			"mailbox:add-new",
+			{
+				name: decodedForm.name,
+				parentId: decodedForm.parentId,
+				identityId: decodedForm.identityId,
+				ownerId: user?.id,
+				kind: "custom",
+				slug: slugify(String(decodedForm.name)),
+			},
+			{
+				attempts: 3,
+				backoff: { type: "exponential", delay: 1500 },
+				removeOnComplete: true,
+				removeOnFail: true,
+			},
+		);
 
-        await job.waitUntilFinished(smtpEvents);
-        revalidatePath("/dashboard/mail")
+		await job.waitUntilFinished(smtpEvents);
+		revalidatePath("/dashboard/mail");
+	} else {
+		const name = String(decodedForm.name ?? "").trim();
+		if (!name)
+			return { success: false, error: "Folder name is required" } as any;
 
+		const ownerId = String(user?.id ?? "");
+		const identityId = String(decodedForm.identityId);
+		const parentId =
+			decodedForm.parentId && decodedForm.parentId !== "none"
+				? String(decodedForm.parentId)
+				: null;
 
-    } else {
+		// (optional safety) ensure parent (if provided) belongs to same identity
+		if (parentId) {
+			const [parent] = await db
+				.select({ id: mailboxes.id, identityId: mailboxes.identityId })
+				.from(mailboxes)
+				.where(eq(mailboxes.id, parentId))
+				.limit(1);
 
-        const name = String(decodedForm.name ?? "").trim();
-        if (!name) return { success: false, error: "Folder name is required" } as any;
+			if (!parent || parent.identityId !== identityId) {
+				return { success: false, error: "Invalid parent folder" } as any;
+			}
+		}
 
-        const ownerId = String(user?.id ?? "");
-        const identityId = String(decodedForm.identityId);
-        const parentId =
-            decodedForm.parentId && decodedForm.parentId !== "none"
-                ? String(decodedForm.parentId)
-                : null;
+		await db
+			.insert(mailboxes)
+			.values({
+				ownerId,
+				identityId,
+				parentId,
+				kind: "custom",
+				name,
+				slug: slugify(name.toLowerCase()),
+				isDefault: false,
+				// No IMAP metadata for non-IMAP accounts—leave empty object to be safe with JSONB column
+				metaData: {},
+			})
+			.returning();
 
-        // (optional safety) ensure parent (if provided) belongs to same identity
-        if (parentId) {
-            const [parent] = await db
-                .select({ id: mailboxes.id, identityId: mailboxes.identityId })
-                .from(mailboxes)
-                .where(eq(mailboxes.id, parentId))
-                .limit(1);
+		// refresh UI
+		revalidatePath("/dashboard/mail");
+	}
 
-            if (!parent || parent.identityId !== identityId) {
-                return { success: false, error: "Invalid parent folder" } as any;
-            }
-        }
-
-        await db
-            .insert(mailboxes)
-            .values({
-                ownerId,
-                identityId,
-                parentId,
-                kind: "custom",
-                name,
-                slug: slugify(name.toLowerCase()),
-                isDefault: false,
-                // No IMAP metadata for non-IMAP accounts—leave empty object to be safe with JSONB column
-                metaData: {},
-            })
-            .returning();
-
-        // refresh UI
-        revalidatePath("/dashboard/mail");
-
-    }
-
-
-    return {
-        success: true
-    }
+	return {
+		success: true,
+	};
 }
-
-
 
 export async function deleteMailboxFolder({
-                                              imapOp,
-                                              identityId,
-                                              mailboxId,
-                                          }: {
-    imapOp: boolean;
-    identityId: string;
-    mailboxId: string;
+	imapOp,
+	identityId,
+	mailboxId,
+}: {
+	imapOp: boolean;
+	identityId: string;
+	mailboxId: string;
 }): Promise<FormState> {
-    const user = await isSignedIn();
+	const user = await isSignedIn();
 
-    // 🔹 If not IMAP, just delete locally
-    if (!imapOp) {
-        const [mailbox] = await db
-            .select()
-            .from(mailboxes)
-            .where(eq(mailboxes.id, mailboxId))
-            .limit(1);
+	// 🔹 If not IMAP, just delete locally
+	if (!imapOp) {
+		const [mailbox] = await db
+			.select()
+			.from(mailboxes)
+			.where(eq(mailboxes.id, mailboxId))
+			.limit(1);
 
-        if (!mailbox) return { success: false, error: "Folder not found" } as any;
-        if (mailbox.isDefault)
-            return { success: false, error: "Cannot delete a default folder" } as any;
+		if (!mailbox) return { success: false, error: "Folder not found" } as any;
+		if (mailbox.isDefault)
+			return { success: false, error: "Cannot delete a default folder" } as any;
 
-        // Delete any subfolders first (if you prefer cascade)
-        await db.delete(mailboxes).where(eq(mailboxes.parentId, mailboxId));
+		// Delete any subfolders first (if you prefer cascade)
+		await db.delete(mailboxes).where(eq(mailboxes.parentId, mailboxId));
 
-        // Delete this mailbox and any sync info
-        await db.delete(mailboxSync).where(eq(mailboxSync.mailboxId, mailboxId));
-        await db.delete(mailboxes).where(eq(mailboxes.id, mailboxId));
+		// Delete this mailbox and any sync info
+		await db.delete(mailboxSync).where(eq(mailboxSync.mailboxId, mailboxId));
+		await db.delete(mailboxes).where(eq(mailboxes.id, mailboxId));
 
-        revalidatePath("/dashboard/mail");
-        return { success: true };
-    }
+		revalidatePath("/dashboard/mail");
+		return { success: true };
+	}
 
-    // 🔵 IMAP case — use queue/worker
-    const [ident] = await db
-        .select({ id: identities.id })
-        .from(identities)
-        .where(eq(identities.publicId, identityId))
-        .limit(1);
+	// 🔵 IMAP case — use queue/worker
+	const [ident] = await db
+		.select({ id: identities.id })
+		.from(identities)
+		.where(eq(identities.publicId, identityId))
+		.limit(1);
 
-    if (!ident) throw new Error("Identity not found");
+	if (!ident) throw new Error("Identity not found");
 
-    const { smtpQueue, smtpEvents } = await getRedis();
+	const { smtpQueue, smtpEvents } = await getRedis();
 
-    const job = await smtpQueue.add(
-        "mailbox:delete-folder",
-        {
-            mailboxId,
-            identityId: ident.id,
-            ownerId: user?.id,
-        },
-        {
-            attempts: 3,
-            backoff: { type: "exponential", delay: 1500 },
-            removeOnComplete: true,
-            removeOnFail: true,
-        }
-    );
+	const job = await smtpQueue.add(
+		"mailbox:delete-folder",
+		{
+			mailboxId,
+			identityId: ident.id,
+			ownerId: user?.id,
+		},
+		{
+			attempts: 3,
+			backoff: { type: "exponential", delay: 1500 },
+			removeOnComplete: true,
+			removeOnFail: true,
+		},
+	);
 
-    await job.waitUntilFinished(smtpEvents);
-    redirect(`/dashboard/mail/${identityId}/inbox`);
-    return { success: true };
+	await job.waitUntilFinished(smtpEvents);
+	redirect(`/dashboard/mail/${identityId}/inbox`);
+	return { success: true };
 }
 
-
 export const moveToFolder = async (
-    threadIds: string | string[],
-    fromMailboxId: string,   // current mailbox
-    toMailboxId: string,     // destination mailbox (UUID)
-    moveImap: boolean,       // perform IMAP move when true
-    refresh: boolean,
-    messageId?: string
+	threadIds: string | string[],
+	fromMailboxId: string, // current mailbox
+	toMailboxId: string, // destination mailbox (UUID)
+	moveImap: boolean, // perform IMAP move when true
+	refresh: boolean,
+	messageId?: string,
 ) => {
+	const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
+		.map(String)
+		.filter(Boolean);
 
-    const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
-        .map(String)
-        .filter(Boolean);
+	if (
+		!ids.length ||
+		!fromMailboxId ||
+		!toMailboxId ||
+		fromMailboxId === toMailboxId
+	)
+		return;
 
-    if (!ids.length || !fromMailboxId || !toMailboxId || fromMailboxId === toMailboxId) return;
+	const { smtpQueue, searchIngestQueue } = await getRedis();
 
-    const { smtpQueue, searchIngestQueue } = await getRedis();
+	await Promise.all(
+		ids.map((threadId) =>
+			smtpQueue.add(
+				"mail:move",
+				{
+					threadId,
+					mailboxId: fromMailboxId, // source
+					op: "move", // <- new op supported in worker
+					toMailboxId, // <- destination
+					messageId,
+					moveImap,
+				},
+				{
+					jobId: `move:${threadId}:${fromMailboxId}->${toMailboxId}`, // collapse dupes
+					attempts: 3,
+					backoff: { type: "exponential", delay: 1500 },
+					removeOnComplete: true,
+					removeOnFail: false,
+				},
+			),
+		),
+	);
 
-    await Promise.all(
-        ids.map((threadId) =>
-            smtpQueue.add(
-                "mail:move",
-                {
-                    threadId,
-                    mailboxId: fromMailboxId, // source
-                    op: "move",               // <- new op supported in worker
-                    toMailboxId,              // <- destination
-                    messageId,
-                    moveImap,
-                },
-                {
-                    jobId: `move:${threadId}:${fromMailboxId}->${toMailboxId}`, // collapse dupes
-                    attempts: 3,
-                    backoff: { type: "exponential", delay: 1500 },
-                    removeOnComplete: true,
-                    removeOnFail: false,
-                }
-            )
-        )
-    );
+	await Promise.all(
+		ids.map((threadId) =>
+			searchIngestQueue.add(
+				"refresh-thread",
+				{ threadId },
+				{
+					jobId: `refresh-${threadId}`,
+					removeOnComplete: true,
+					removeOnFail: false,
+					attempts: 3,
+					backoff: { type: "exponential", delay: 1500 },
+				},
+			),
+		),
+	);
 
-    await Promise.all(
-        ids.map((threadId) =>
-            searchIngestQueue.add(
-                "refresh-thread",
-                { threadId },
-                {
-                    jobId: `refresh-${threadId}`,
-                    removeOnComplete: true,
-                    removeOnFail: false,
-                    attempts: 3,
-                    backoff: { type: "exponential", delay: 1500 },
-                }
-            )
-        )
-    );
-
-    if (refresh) revalidatePath("/mail");
+	if (refresh) revalidatePath("/mail");
 };

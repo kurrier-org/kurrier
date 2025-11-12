@@ -1,13 +1,14 @@
 import React, { useRef, useEffect, useState } from "react";
-import {MailOpen, RotateCw, Trash2} from "lucide-react";
+import { MailOpen, RotateCw, Trash2 } from "lucide-react";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import {
-    deleteForever,
-    deltaFetch, FetchIdentityMailboxListResult,
-    FetchMailboxThreadsResult,
-    markAsRead,
-    moveToTrash,
-    revalidateMailbox,
+	deleteForever,
+	deltaFetch,
+	FetchIdentityMailboxListResult,
+	FetchMailboxThreadsResult,
+	markAsRead,
+	moveToTrash,
+	revalidateMailbox,
 } from "@/lib/actions/mailbox";
 import { ActionIcon, Button, Tooltip } from "@mantine/core";
 import type { MailboxEntity, MailboxSyncEntity } from "@db";
@@ -26,20 +27,20 @@ import {
 import ComposeMail from "@/components/mailbox/default/compose-mail";
 import { PublicConfig } from "@schema";
 import { useMediaQuery } from "@mantine/hooks";
-import {clsx} from "clsx";
+import { clsx } from "clsx";
 import MoveToFolder from "@/components/mailbox/default/move-to-folder";
 
 function MailListHeader({
 	mailboxThreads,
 	mailboxSync,
 	publicConfig,
-    identityMailboxes,
-    activeMailbox
+	identityMailboxes,
+	activeMailbox,
 }: {
 	mailboxThreads: FetchMailboxThreadsResult;
 	publicConfig: PublicConfig;
-    identityMailboxes: FetchIdentityMailboxListResult
-    activeMailbox: MailboxEntity;
+	identityMailboxes: FetchIdentityMailboxListResult;
+	activeMailbox: MailboxEntity;
 	mailboxSync?: MailboxSyncEntity;
 }) {
 	const { state, setState } = useDynamicContext<{
@@ -48,9 +49,7 @@ function MailListHeader({
 		identityPublicId: string;
 	}>();
 
-	const identityIdRef = useRef<string | undefined>(
-		activeMailbox?.identityId,
-	);
+	const identityIdRef = useRef<string | undefined>(activeMailbox?.identityId);
 	const mailboxIdRef = useRef<string | undefined>(activeMailbox?.id);
 	const mailboxKind = useRef<string | undefined>(activeMailbox?.kind);
 	useEffect(() => {
@@ -175,31 +174,35 @@ function MailListHeader({
 						</ActionIcon>
 					</Tooltip>
 
-                    <div
-                        className={clsx(
-                            "inset-0 flex items-center gap-1 transition-opacity",
-                            hasSelected ? "opacity-100" : "opacity-0 hidden pointer-events-none",
-                        )}
-                    >
-                        <MoveToFolder identityMailboxes={identityMailboxes} activeMailbox={activeMailbox} />
-                        <button
-                            type="button"
-                            onClick={deleteThreads}
-                            className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs hover:bg-muted"
-                            title="Delete"
-                        >
-                            <Trash2 className="h-4 w-4" />
-                        </button>
-                        <button
-                            type="button"
-                            onClick={markRead}
-                            className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs hover:bg-muted"
-                            title="Mark read"
-                        >
-                            <MailOpen className="h-4 w-4" />
-                        </button>
-                    </div>
-
+					<div
+						className={clsx(
+							"inset-0 flex items-center gap-1 transition-opacity",
+							hasSelected
+								? "opacity-100"
+								: "opacity-0 hidden pointer-events-none",
+						)}
+					>
+						<MoveToFolder
+							identityMailboxes={identityMailboxes}
+							activeMailbox={activeMailbox}
+						/>
+						<button
+							type="button"
+							onClick={deleteThreads}
+							className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs hover:bg-muted"
+							title="Delete"
+						>
+							<Trash2 className="h-4 w-4" />
+						</button>
+						<button
+							type="button"
+							onClick={markRead}
+							className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs hover:bg-muted"
+							title="Mark read"
+						>
+							<MailOpen className="h-4 w-4" />
+						</button>
+					</div>
 
 					{isMobile && <ComposeMail publicConfig={publicConfig} />}
 				</div>

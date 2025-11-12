@@ -137,7 +137,7 @@ export default function WebmailListItemMobile({
 							mailboxThreadItem.threadId,
 							activeMailbox.id,
 							mailboxThreadItem.starred,
-                            !!mailboxSync,
+							!!mailboxSync,
 						);
 					}}
 					className="text-muted-foreground hover:text-foreground mt-[1px]"

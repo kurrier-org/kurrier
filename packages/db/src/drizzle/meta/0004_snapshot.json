@@ -1,9 +1,245 @@
 {
-	"id": "9a8197ea-f3a4-417a-a7a1-6e2a1e6a1e3d",
-	"prevId": "886bbf22-d0f0-4327-83c4-2bd7b2bac78d",
+	"id": "72cd6dba-7931-4fed-ae98-91915c0807aa",
+	"prevId": "9a8197ea-f3a4-417a-a7a1-6e2a1e6a1e3d",
 	"version": "7",
 	"dialect": "postgresql",
 	"tables": {
+		"public.api_keys": {
+			"name": "api_keys",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"owner_id": {
+					"name": "owner_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "auth.uid()"
+				},
+				"name": {
+					"name": "name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"secret_id": {
+					"name": "secret_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"key_prefix": {
+					"name": "key_prefix",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"key_last4": {
+					"name": "key_last4",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"key_version": {
+					"name": "key_version",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"default": 1
+				},
+				"scopes": {
+					"name": "scopes",
+					"type": "api_scope[]",
+					"typeSchema": "public",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"expires_at": {
+					"name": "expires_at",
+					"type": "timestamp with time zone",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"revoked_at": {
+					"name": "revoked_at",
+					"type": "timestamp with time zone",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"meta": {
+					"name": "meta",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'null'::jsonb"
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp with time zone",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp with time zone",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "now()"
+				}
+			},
+			"indexes": {
+				"ux_api_keys_owner_name": {
+					"name": "ux_api_keys_owner_name",
+					"columns": [
+						{
+							"expression": "owner_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						},
+						{
+							"expression": "name",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": true,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"ux_api_keys_owner_prefix": {
+					"name": "ux_api_keys_owner_prefix",
+					"columns": [
+						{
+							"expression": "owner_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						},
+						{
+							"expression": "key_prefix",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": true,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"ix_api_keys_owner": {
+					"name": "ix_api_keys_owner",
+					"columns": [
+						{
+							"expression": "owner_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"ix_api_keys_expires": {
+					"name": "ix_api_keys_expires",
+					"columns": [
+						{
+							"expression": "expires_at",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"ix_api_keys_revoked": {
+					"name": "ix_api_keys_revoked",
+					"columns": [
+						{
+							"expression": "revoked_at",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				}
+			},
+			"foreignKeys": {
+				"api_keys_owner_id_users_id_fk": {
+					"name": "api_keys_owner_id_users_id_fk",
+					"tableFrom": "api_keys",
+					"tableTo": "users",
+					"schemaTo": "auth",
+					"columnsFrom": ["owner_id"],
+					"columnsTo": ["id"],
+					"onDelete": "no action",
+					"onUpdate": "no action"
+				},
+				"api_keys_secret_id_secrets_meta_id_fk": {
+					"name": "api_keys_secret_id_secrets_meta_id_fk",
+					"tableFrom": "api_keys",
+					"tableTo": "secrets_meta",
+					"columnsFrom": ["secret_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {
+				"apikeys_select_own": {
+					"name": "apikeys_select_own",
+					"as": "PERMISSIVE",
+					"for": "SELECT",
+					"to": ["authenticated"],
+					"using": "\"api_keys\".\"owner_id\" = (select auth.uid())"
+				},
+				"apikeys_insert_own": {
+					"name": "apikeys_insert_own",
+					"as": "PERMISSIVE",
+					"for": "INSERT",
+					"to": ["authenticated"],
+					"withCheck": "\"api_keys\".\"owner_id\" = (select auth.uid())"
+				},
+				"apikeys_update_own": {
+					"name": "apikeys_update_own",
+					"as": "PERMISSIVE",
+					"for": "UPDATE",
+					"to": ["authenticated"],
+					"using": "\"api_keys\".\"owner_id\" = (select auth.uid())",
+					"withCheck": "\"api_keys\".\"owner_id\" = (select auth.uid())"
+				},
+				"apikeys_delete_own": {
+					"name": "apikeys_delete_own",
+					"as": "PERMISSIVE",
+					"for": "DELETE",
+					"to": ["authenticated"],
+					"using": "\"api_keys\".\"owner_id\" = (select auth.uid())"
+				}
+			},
+			"checkConstraints": {},
+			"isRLSEnabled": true
+		},
 		"public.identities": {
 			"name": "identities",
 			"schema": "",
@@ -2193,6 +2429,11 @@
 		}
 	},
 	"enums": {
+		"public.api_scope": {
+			"name": "api_scope",
+			"schema": "public",
+			"values": ["emails:send", "templates:read", "templates:write"]
+		},
 		"public.identity_kind": {
 			"name": "identity_kind",
 			"schema": "public",

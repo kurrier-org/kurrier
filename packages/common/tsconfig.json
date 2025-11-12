@@ -8,9 +8,7 @@
 			"@db": ["../../packages/db/src/index.ts"],
 			"@db/*": ["../../packages/db/src/*"]
 		},
-        "lib": [
-          "ES2021.String"
-        ]
+		"lib": ["ES2021.String"]
 	},
 	"exclude": ["node_modules"]
 }

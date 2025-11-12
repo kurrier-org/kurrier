@@ -9,7 +9,12 @@ import {
 	useRef,
 } from "react";
 import Form from "next/form";
-import type {BaseFormProps, FormState, SelectGroupOption, SelectOption} from "@schema";
+import type {
+	BaseFormProps,
+	FormState,
+	SelectGroupOption,
+	SelectOption,
+} from "@schema";
 import { Button as MantineButton, Alert } from "@mantine/core";
 import {
 	TextInput,
@@ -144,6 +149,7 @@ export function ReusableForm({
 						el,
 						prefix,
 						bottomStartPrefix,
+						component: FieldComponent,
 						bottomEndSuffix,
 					} = f;
 
@@ -195,6 +201,33 @@ export function ReusableForm({
 											) : (
 												<>
 													<TextInput name={name!} {...(props as any)} />
+													{bottomStartPrefix && (
+														<div className="mt-2 flex justify-start">
+															{bottomStartPrefix}
+														</div>
+													)}
+													{bottomEndSuffix && (
+														<div className="mt-2 flex justify-end">
+															{bottomEndSuffix}
+														</div>
+													)}
+												</>
+											)}
+										</>
+									) : kind === "custom" ? (
+										<>
+											{prefix ? (
+												<div className="flex items-center gap-2">
+													{prefix}
+													{FieldComponent ? (
+														<FieldComponent name={name!} {...(props as any)} />
+													) : null}
+												</div>
+											) : (
+												<>
+													{FieldComponent ? (
+														<FieldComponent name={name!} {...(props as any)} />
+													) : null}
 													{bottomStartPrefix && (
 														<div className="mt-2 flex justify-start">
 															{bottomStartPrefix}

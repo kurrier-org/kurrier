@@ -78,17 +78,16 @@ export default async function RootLayout({
 			<body
 				className={`${jakartaSans.variable} ${jetbrains.variable} font-sans bg-background text-foreground antialiased`}
 			>
-            <AppearanceProvider initialTheme={theme} initialMode={mode}>
-				<ConfigProvider value={publicConfig}>
-
+				<AppearanceProvider initialTheme={theme} initialMode={mode}>
+					<ConfigProvider value={publicConfig}>
 						<MantineProvider
 							theme={mantineTheme}
 							defaultColorScheme={colorScheme}
 						>
 							<ModalsProvider>{children}</ModalsProvider>
 						</MantineProvider>
-				</ConfigProvider>
-            </AppearanceProvider>
+					</ConfigProvider>
+				</AppearanceProvider>
 			</body>
 		</html>
 	);
