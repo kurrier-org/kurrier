@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.76
+
+### Patch Changes
+
+- [#220](https://github.com/kurrier-org/kurrier/pull/220) [`3dc48d4`](https://github.com/kurrier-org/kurrier/commit/3dc48d48251290e3e517231c631bc603c1c318ee) Thanks [@krokhale](https://github.com/krokhale)! - Added support for generating API key secrets for the platform
+
 ## 0.0.75
 
 ### Patch Changes
