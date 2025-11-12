@@ -144,6 +144,7 @@ export function ReusableForm({
 						el,
 						prefix,
 						bottomStartPrefix,
+                        component: FieldComponent,
 						bottomEndSuffix,
 					} = f;
 
@@ -208,7 +209,30 @@ export function ReusableForm({
 												</>
 											)}
 										</>
-									) : null}
+                                    ) : kind === "custom" ? (
+                                        <>
+                                            {prefix ? (
+                                                <div className="flex items-center gap-2">
+                                                    {prefix}
+                                                    {FieldComponent ? <FieldComponent name={name!} {...(props as any)} /> : null}
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    {FieldComponent ? <FieldComponent name={name!} {...(props as any)} /> : null}
+                                                    {bottomStartPrefix && (
+                                                        <div className="mt-2 flex justify-start">
+                                                            {bottomStartPrefix}
+                                                        </div>
+                                                    )}
+                                                    {bottomEndSuffix && (
+                                                        <div className="mt-2 flex justify-end">
+                                                            {bottomEndSuffix}
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
+                                        </>
+                                    ) : null}
 
 									{name && errors?.[name] && (
 										<span className={`${errorClasses} mt-1 block text-sm`}>

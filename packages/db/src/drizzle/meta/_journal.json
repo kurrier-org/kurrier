@@ -15,6 +15,27 @@
       "when": 1761562373229,
       "tag": "0001_messy_penance",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1762950188238,
+      "tag": "0002_calm_madripoor",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1762950298792,
+      "tag": "0003_white_fenris",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1762950324146,
+      "tag": "0004_tranquil_lockheed",
+      "breakpoints": true
     }
   ]
 }

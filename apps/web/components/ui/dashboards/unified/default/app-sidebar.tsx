@@ -2,12 +2,12 @@
 
 import * as React from "react";
 import {
-	Command,
-	File,
-	Inbox,
-	LayoutDashboard,
-	Plug,
-	Send,
+    Command,
+    File,
+    Inbox, Key,
+    LayoutDashboard,
+    Plug,
+    Send,
 } from "lucide-react";
 
 import { NavUser } from "@/components/ui/dashboards/workspace/nav-user";
@@ -99,6 +99,12 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				icon: Send,
 				items: [],
 			},
+            {
+                title: "API Keys",
+                url: "/dashboard/platform/api-keys",
+                icon: Key,
+                items: [],
+            },
 		],
 	};
 

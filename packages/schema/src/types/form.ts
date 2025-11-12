@@ -13,6 +13,7 @@ export type FieldConfig = {
 	labelSuffix?: ReactNode;
 	wrapperClasses?: string;
 	props?: any;
+    component?: React.ComponentType<any>;
 	options?: SelectOption[] | SelectGroupOption[];
 	el?: ReactNode;
 	prefix?: ReactNode;

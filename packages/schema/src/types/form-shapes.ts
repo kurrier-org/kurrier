@@ -1,8 +1,6 @@
 // @ts-nocheck
 import { z } from "zod";
 import isFQDN from "validator/lib/isFQDN";
-import isEmail from "validator/lib/isEmail";
-import { messageStatesList } from "./mail";
 
 const cleanKV = <T extends Record<string, unknown>>(obj: T) =>
 	Object.fromEntries(
@@ -81,56 +79,7 @@ export const ProviderAccountFormSchema = z.object({
 	required: z.record(z.string(), z.string().min(1, "Value is required")),
 });
 
-// export const MessageFormSchema = z.object({
-//     mailboxId: z.string("Mailbox ID must be a valid UUID"),
-//     subject: z.string().optional(),
-//     snippet: z.string().optional(),
-//     fromName: z.string().optional(),
-//     fromEmail: z.string().refine((val) => !val || isEmail(val), { message: "Must be a valid email" }).optional(),
-//     to: z.array(
-//             z.object({name: z.string().optional(), email: z.string().refine((val) => isEmail(val), { message: "Invalid email in 'to'" }),}),
-//         )
-//         .optional(),
-//     cc: z
-//         .array(
-//             z.object({
-//                 name: z.string().optional(),
-//                 email: z
-//                     .string()
-//                     .refine((val) => isEmail(val), { message: "Invalid email in 'cc'" }),
-//             }),
-//         )
-//         .optional(),
-//
-//     bcc: z
-//         .array(
-//             z.object({
-//                 name: z.string().optional(),
-//                 email: z
-//                     .string()
-//                     .refine((val) => isEmail(val), { message: "Invalid email in 'bcc'" }),
-//             }),
-//         )
-//         .optional(),
-//
-//     date: z.coerce.date().optional(),
-//
-//     sizeBytes: z.number().int().nonnegative().optional(),
-//
-//     seen: z.boolean().default(false),
-//     answered: z.boolean().default(false),
-//     flagged: z.boolean().default(false),
-//     draft: z.boolean().default(false),
-//     hasAttachments: z.boolean().default(false),
-//
-//     state: z.enum(messageStatesList).default("normal"),
-//
-//     headersJson: z.record(z.string(), z.string()).optional(),
-//
-//     rawStorageKey: z.string().optional(),
-// });
 
 export type ProviderAccountFormData = z.infer<typeof ProviderAccountFormSchema>;
 export type DomainIdentityFormData = z.infer<typeof DomainIdentityFormSchema>;
 export type SmtpAccountFormData = z.infer<typeof SmtpAccountFormSchema>;
-// export type MessageFormData = z.infer<typeof MessageFormSchema>;

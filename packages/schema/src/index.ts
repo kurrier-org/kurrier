@@ -6,3 +6,4 @@ export * from "./types/identities";
 export * from "./types/form-shapes";
 export * from "./types/mail";
 export * from "./types/search";
+export * from "./types/common";
