@@ -33,7 +33,7 @@ Here’s a look at Kurrier in action — a clean, modern webmail built to connec
 ### 🔌 Providers View
 Connect and manage IMAP, SMTP, SES, SendGrid, Mailgun, and more — all from one dashboard.
 
-![Kurrier Providers View](https://www.kurrier.org/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdoc-providers.21c34a8a.png&w=1920&q=100)
+![Kurrier Providers View](https://www.kurrier.org/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdoc-providers.167aad5f.png&w=1920&q=100)
 
 
 ### 👤 Identity View
@@ -55,3 +55,7 @@ If you find it useful, consider supporting its development — your contribution
 
 Every bit of support helps keep Kurrier sustainable and open for everyone.  
 Thank you for helping make privacy-friendly email more accessible.
+
+### Contributing
+
+Kurrier is an open-source project and contributions are welcome! If you’re interested in helping out, please check out the [contributing guidelines](https://www.kurrier.org/docs/contributing).

@@ -3,7 +3,7 @@
 	"version": "0.1.24",
 	"private": true,
 	"scripts": {
-		"dev": "dotenvx run -f ../../.env -- nitro dev --port 3001",
+		"dev": "dotenvx run -f ../../db/.env.develop -- nitro dev --port 3001",
 		"build": "nitro build",
 		"start": "node .output/server/index.mjs"
 	},

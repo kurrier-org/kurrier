@@ -1,0 +1,61 @@
+---
+title: Contributing to Kurrier
+description: How to set up a local development environment for Kurrier.
+---
+
+Thank you for your interest in contributing to **Kurrier**!
+
+---
+
+This guide walks you through setting up the full development environment, including:
+
+- ✔ Backend stack (Postgres, Supabase services, Redis, Typesense, Worker)
+- ✔ Web dashboard (Next.js)
+- ✔ Tools such as Studio & Kong
+
+If you run into any issues, feel free to open an issue or PR — contributions of all kinds are welcome.
+
+---
+
+## 🚀 Getting Started
+
+Kurrier uses **Docker Compose** for backend services and **pnpm** for frontend apps. Start by ensuring you have the following installed:
+- [Docker](https://docs.docker.com/get-docker/)
+- [pnpm](https://pnpm.io/installation)
+- [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- [Node.js](https://github.com/nvm-sh/nvm)
+
+
+### 🛠️ Development Setup
+
+```bash
+git clone git@github.com:kurrier-org/kurrier.git
+cd kurrier/db
+cp example.develop.env .env
+cp example.develop.env .env.develop
+cp -r ./init/volumes/ volumes
+docker compose up -d
+cd ..
+pnpm install
+pnpm run dev
+```
+
+### 🧭 Access the Dashboards
+
+Once Docker finishes starting up, open the following URLs in your browser:
+
+| Service | URL | Description |
+|----------|-----|-------------|
+| **Kurrier Web Dashboard** | [http://localhost:3000](http://localhost:3000) | Manage your mailboxes, messages, and settings |
+| **Studio** | [http://localhost:8000](http://localhost:8000) | View and manage the Postgres database |
+| **Nitro Worker (API)** | [http://localhost:3001](http://localhost:3001) | API background service and job runner |
+
+
+<Callout type="info">
+    To access Kurrier dashboard, signup and create your user account on http://localhost:3000
+</Callout>
+
+<Callout type="info">
+    To access Studio, log in with the credentials you defined in your `.env` file DASHBOARD_USERNAME
+    and DASHBOARD_PASSWORD
+</Callout>
