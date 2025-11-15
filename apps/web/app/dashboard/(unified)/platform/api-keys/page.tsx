@@ -24,10 +24,3 @@ export default async function Page() {
 		</>
 	);
 }
-
-// /api/send
-// /api/messages
-// /api/templates
-// /api/providers
-// /api/identities
-// /api/webhooks

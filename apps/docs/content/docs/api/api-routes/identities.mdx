@@ -1,0 +1,88 @@
+---
+title: Identities
+description: Manage email identities in Kurrier
+---
+
+Identities represent **email addresses or domains** that you have connected to Kurrier.
+Each identity can optionally belong to a provider (SES, SMTP, Mailgun, etc.) and is
+used when sending or receiving email.
+
+These endpoints let you **create, list, update, and delete identities** from your
+backend using your Kurrier API key.
+
+All routes below are relative to:
+
+```text
+https://your-domain.com/api/kurrier
+```
+
+---
+
+## What is an Identity?
+
+An identity is either:
+
+- an **email identity** (`email@example.com`)
+- a **domain identity** (`example.com`)
+
+Identities also store DNS verification records, provider configuration,
+status, and metadata.
+
+---
+
+## List identities
+
+### `GET /identities`
+
+Returns all identities owned by the authenticated user.
+
+---
+
+## Get a single identity
+
+### `GET /identities/{id}`
+
+Fetch an identity by its ID.
+
+---
+
+## Update an identity
+
+### `PATCH /identities/{id}`
+
+Partially update an identity.
+
+---
+
+## Delete an identity
+
+### `DELETE /identities/{id}`
+
+Permanently deletes an identity.
+
+Note: This cascades to mailboxes and worker sync state.
+
+---
+
+## Identity object format
+
+Example response object:
+
+```json
+{
+    "id":"1a9b317a-8a84-493a-b9f8-83a3800861e2",
+    "owner_id":"be7a7201-76db-4b73-a5e0-ad6a1b93cf1f",
+    "kind":"email",
+    "public_id":"9ANdDSgvj5",
+    "value":"me@myapp.com",
+    "incoming_domain":false,
+    "domain_identity_id":"b4950019-500a-44a6-9b24-08b2517f1b3d",
+    "dns_records":"null",
+    "meta":"{}",
+    "provider_id":"c4248dd5-46f2-48f5-9d5b-91b7e7d67c74",
+    "smtp_account_id":null,
+    "status":"unverified",
+    "created_at":"2025-11-15 10:47:23.60418+00",
+    "updated_at":"2025-11-15 10:47:23.60418+00"
+}
+```

@@ -28,6 +28,9 @@ const sendMailEvents = new QueueEvents("send-mail", redisConnection);
 const searchIngestQueue = new Queue("search-ingest", redisConnection);
 const searchIngestEvents = new QueueEvents("search-ingest", redisConnection);
 
+const commonWorkerQueue = new Queue("common-worker", redisConnection);
+const commonWorkerEvents = new QueueEvents("common-worker", redisConnection);
+
 export async function getRedis() {
 	await Promise.all([
 		smtpEvents.waitUntilReady(),
@@ -42,5 +45,7 @@ export async function getRedis() {
 		sendMailEvents,
 		searchIngestQueue,
 		searchIngestEvents,
+        commonWorkerQueue,
+        commonWorkerEvents,
 	};
 }

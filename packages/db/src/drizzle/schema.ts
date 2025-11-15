@@ -20,15 +20,15 @@ import { users } from "./supabase-schema";
 import { authenticatedRole, authUid } from "drizzle-orm/supabase";
 import { sql } from "drizzle-orm";
 import {
-	AddressObjectJSON,
-	apiScopeList,
-	identityStatusList,
-	identityTypesList,
-	mailboxKindsList,
-	mailboxSyncPhase,
-	messagePriorityList,
-	messageStatesList,
-	providersList,
+    AddressObjectJSON,
+    apiScopeList,
+    identityStatusList,
+    identityTypesList,
+    mailboxKindsList,
+    mailboxSyncPhase,
+    messagePriorityList,
+    messageStatesList,
+    providersList, webHookList,
 } from "@schema";
 import { DnsRecord } from "@providers";
 import { nanoid } from "nanoid";
@@ -49,6 +49,7 @@ export const mailboxSyncPhaseEnum = pgEnum(
 );
 
 export const ApiScopeEnum = pgEnum("api_scope", apiScopeList);
+export const WebHookEnum = pgEnum("webhook_list", webHookList);
 
 export const secretsMeta = pgTable(
 	"secrets_meta",
@@ -903,4 +904,65 @@ export const apiKeys = pgTable(
 			using: sql`${t.ownerId} = ${authUid}`,
 		}),
 	],
+).enableRLS();
+
+
+export const webhooks = pgTable(
+    "webhooks",
+    {
+        id: uuid("id").defaultRandom().primaryKey(),
+        ownerId: uuid("owner_id")
+            .references(() => users.id)
+            .notNull()
+            .default(sql`auth.uid()`),
+
+        identityId: uuid("identity_id")
+            .references(() => identities.id, { onDelete: "set null" })
+            .default(null),
+
+        url: text("url").notNull(),
+        description: text("description"),
+
+        events: WebHookEnum("events").array().notNull(),
+
+        enabled: boolean("enabled").notNull().default(true),
+
+        metaData: jsonb("meta")
+            .$type<Record<string, any> | null>()
+            .default(null),
+
+        createdAt: timestamp("created_at", { withTimezone: true })
+            .defaultNow()
+            .notNull(),
+        updatedAt: timestamp("updated_at", { withTimezone: true })
+            .defaultNow()
+            .notNull(),
+    },
+    (t) => [
+        index("ix_webhooks_owner").on(t.ownerId),
+        index("ix_webhooks_identity").on(t.identityId),
+        index("ix_webhooks_enabled").on(t.enabled),
+
+        pgPolicy("webhooks_select_own", {
+            for: "select",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("webhooks_insert_own", {
+            for: "insert",
+            to: authenticatedRole,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("webhooks_update_own", {
+            for: "update",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("webhooks_delete_own", {
+            for: "delete",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+    ],
 ).enableRLS();

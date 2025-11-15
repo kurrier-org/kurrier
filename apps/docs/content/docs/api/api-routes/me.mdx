@@ -1,0 +1,48 @@
+---
+title: Me
+description: Retrieve information about the authenticated API user
+---
+
+# GET /me
+
+The `/me` endpoint allows you to validate your API key and retrieve basic information about the authenticated user (the owner of the API key).
+This is useful for testing API key validity and discovering the `ownerId` tied to the key.
+
+For more details on authentication, see the [authentication guide](/docs/api/authentication).
+
+---
+
+## Endpoint
+
+```
+GET /me
+```
+
+## Headers
+
+| Header | Description | Example |
+|--------|-------------|---------|
+| **Authorization** *(required)* | Bearer token containing your API key | `Authorization: Bearer kur_123456...` |
+
+---
+
+## Response
+
+On success, Kurrier returns the authenticated user's basic identity:
+
+```json
+{
+  "userId": "8f7c0e1e-d334-4f63-9df8-bb45d0cf94a3"
+}
+```
+
+### Fields
+
+| Field | Description |
+|--------|-------------|
+| **userId** | The UUID of the authenticated Kurrier user (owner of the API key) |
+
+
+---
+
+Use this endpoint when you want to verify API connectivity or check which user a key belongs to before calling other Kurrier API routes.

@@ -1,0 +1,40 @@
+---
+title: Email
+description: Send email through Kurrier's unified API
+---
+
+Kurrier exposes a single, focused endpoint for sending email.
+
+For more information on how to authenticate with the Kurrier API, see the [authentication guide](/docs/api/authentication).
+
+
+### POST /email/send
+
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| **identityId** *(required)* | The Kurrier Identity to send from | `"id_12345"` |
+| **to** *(required)* | One recipient email addresses | `"ada@example.com"` |
+| **subject** *(required)* | Subject line of the email | `"Welcome to Kurrier!"` |
+| **html** *(required unless `text` is provided)* | HTML version of the email body | `"<p>Hello!</p>"` |
+| **text** *(required unless `html` is provided)* | Plain-text version of the email body | `"Hello!"` |
+| **cc** | CC recipients | `"manager@your.co,ops@your.co"` |
+| **bcc** | BCC recipients | `"audit@your.co,gm@your.co"` |
+| **attachments** | Attachments | `[{ "filename": "photo.jpg", "contentType": "image/jpeg", "content": "BASE64_STRING_HERE" }, ...]` |
+
+
+
+Send an email using one of your configured Identities (which in turn map to a provider account such as SES, SMTP, Mailgun, Postmark, SendGrid, etc.).
+
+
+
+### Response
+
+On success, Kurrier returns a JSON payload with a unique message id:
+
+```
+{
+  "messageId": "3c152a84-6559-4094-a1da-3f1a3209866d"
+}
+```
+

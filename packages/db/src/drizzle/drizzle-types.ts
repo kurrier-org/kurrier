@@ -1,13 +1,13 @@
 import {
-	providers,
-	smtpAccounts,
-	identities,
-	mailboxes,
-	messages,
-	threads,
-	messageAttachments,
-	mailboxSync,
-	mailboxThreads,
+    providers,
+    smtpAccounts,
+    identities,
+    mailboxes,
+    messages,
+    threads,
+    messageAttachments,
+    mailboxSync,
+    mailboxThreads, webhooks,
 } from "./schema";
 import { decryptedSecrets } from "./supabase-schema";
 import { z } from "zod";
@@ -66,3 +66,9 @@ export const CommonProviderEntitySchema = z.union([
 	SMTPAccountSchema,
 ]);
 export type CommonProviderEntity = z.infer<typeof CommonProviderEntitySchema>;
+export const WebhookUpdateSchema = createUpdateSchema(webhooks);
+export const WebhookCreateSchema = createInsertSchema(webhooks);
+export type WebhookSelectEntity = typeof webhooks.$inferSelect;
+export type WebhookInsertEntity = typeof webhooks.$inferInsert;
+
+export const IdentityUpdateSchema = createUpdateSchema(identities);

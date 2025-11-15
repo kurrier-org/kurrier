@@ -10,6 +10,7 @@
 	"devDependencies": {
 		"@types/addressparser": "^1.0.3",
 		"@types/mailparser": "^3.4.6",
+		"@types/mime-types": "^3.0.1",
 		"h3": "^1.15.4",
 		"nitropack": "^2.12.6"
 	},
@@ -17,6 +18,7 @@
 		"@supabase/ssr": "^0.7.0",
 		"addressparser": "^1.0.1",
 		"imapflow": "^1.0.198",
-		"mailparser": "^3.7.4"
+		"mailparser": "^3.7.4",
+		"mime-types": "^3.0.1"
 	}
 }

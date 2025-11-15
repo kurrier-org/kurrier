@@ -9,7 +9,7 @@ export async function mailSetFlags(
 ) {
 	const { threadId, mailboxId, op } = data;
 
-	// 1️⃣ Load mailbox info (we need identityId for IMAP connection)
+
 	const [mailbox] = await db
 		.select()
 		.from(mailboxes)
@@ -19,7 +19,7 @@ export async function mailSetFlags(
 	const client = await initSmtpClient(mailbox.identityId, imapInstances);
 	if (!client?.authenticated || !client?.usable) return;
 
-	// 2️⃣ Fetch all messages in this mailbox + thread
+
 	const threadMessages = await db
 		.select()
 		.from(messages)
@@ -31,7 +31,7 @@ export async function mailSetFlags(
 	const newest = threadMessages[0];
 	if (!newest) return;
 
-	// 3️⃣ Map op → IMAP flag and add/remove behavior
+
 	const opToAction = (
 		op: string,
 	): {
@@ -59,7 +59,7 @@ export async function mailSetFlags(
 	const action = opToAction(op);
 	if (!action) return;
 
-	// 4️⃣ Group messages by mailboxPath (IMAP folder)
+
 	const byMailbox = new Map<string, Array<{ id: string; uid: number }>>();
 	for (const m of threadMessages) {
 		const imap = (m.metaData as any)?.imap;
@@ -71,7 +71,7 @@ export async function mailSetFlags(
 		byMailbox.get(mailboxPath)!.push({ id: m.id, uid });
 	}
 
-	// 5️⃣ Perform IMAP updates
+
 	for (const [mailboxPath, list] of byMailbox.entries()) {
 		const uids = list.map((x) => x.uid).sort((a, b) => a - b);
 		if (!uids.length) continue;
@@ -92,7 +92,6 @@ export async function mailSetFlags(
 		}
 	}
 
-	// 6️⃣ Reflect locally in DB (messages + mailboxThreads)
 	await db.transaction(async (tx) => {
 		const update: Record<string, any> = { updatedAt: new Date() };
 		if (op === "read") update.seen = true;

@@ -1,0 +1,5 @@
+{
+	"title": "Routes",
+	"defaultOpen": true,
+	"pages": ["me","email", "webhooks", "identities"]
+}

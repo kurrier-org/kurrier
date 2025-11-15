@@ -117,7 +117,7 @@ services:
 
   studio:
     container_name: supabase-studio
-    image: supabase/studio:2025.10.20-sha-5005fc6
+    image: supabase/studio:2025.11.10-sha-5291fe3
     restart: unless-stopped
     healthcheck:
       test:
@@ -161,7 +161,7 @@ services:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
       KONG_DNS_ORDER: LAST,A,CNAME
-      KONG_PLUGINS: request-transformer,cors,key-auth,acl,basic-auth
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl,basic-auth,request-termination,ip-restriction
       KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
       KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
       SUPABASE_ANON_KEY: ${ANON_KEY}
@@ -172,7 +172,7 @@ services:
 
   auth:
     container_name: supabase-auth
-    image: supabase/gotrue:v2.180.0
+    image: supabase/gotrue:v2.182.1
     restart: unless-stopped
     healthcheck:
       test:
@@ -242,7 +242,7 @@ services:
 
   storage:
     container_name: supabase-storage
-    image: supabase/storage-api:v1.28.1
+    image: supabase/storage-api:v1.29.0
     restart: unless-stopped
     volumes:
       - ./volumes/storage:/var/lib/storage:z
@@ -281,7 +281,7 @@ services:
 
   meta:
     container_name: supabase-meta
-    image: supabase/postgres-meta:v0.93.0
+    image: supabase/postgres-meta:v0.93.1
     restart: unless-stopped
     depends_on:
       db:
@@ -344,7 +344,7 @@ services:
 
   supavisor:
     container_name: supabase-pooler
-    image: supabase/supavisor:2.7.3
+    image: supabase/supavisor:2.7.4
     restart: unless-stopped
     ports:
       - ${POSTGRES_PORT}:5432

@@ -1,9 +1,10 @@
 import { defineNitroPlugin } from "nitropack/runtime";
 import { Worker } from "bullmq";
 import { getRedis } from "../../lib/get-redis";
-import { db, providers } from "@db";
+import {db, MessageEntity, providers} from "@db";
 import { PROVIDERS } from "@schema";
 import { kvDel, kvGet, kvSet } from "@common";
+import { processWebhook } from "../../lib/webhooks/message.received";
 
 export default defineNitroPlugin(async (nitroApp) => {
 	const connection = (await getRedis()).connection;
@@ -23,6 +24,11 @@ export default defineNitroPlugin(async (nitroApp) => {
 						.returning();
 					return { success: true };
 				}
+                case "webhook:message.received": {
+                    const { message, rawEmail } = job.data as { message: MessageEntity, rawEmail: string };
+                    await processWebhook({message, rawEmail});
+                    return { success: true };
+                }
 				default:
 					return { success: true };
 			}
