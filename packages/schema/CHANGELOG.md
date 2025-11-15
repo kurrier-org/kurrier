@@ -1,5 +1,11 @@
 # @kurrier/schema
 
+## 1.0.18
+
+### Patch Changes
+
+- [#233](https://github.com/kurrier-org/kurrier/pull/233) [`88c8567`](https://github.com/kurrier-org/kurrier/commit/88c856790f49b3fb0ae6f18a2b8a0990136f5e34) Thanks [@krokhale](https://github.com/krokhale)! - Updated docs for contributing, API Keys support added, Roles/Scope for API Keys added, Added support for API for sending emails using your identities, Added support for Webhooks and message:receive event
+
 ## 1.0.17
 
 ### Patch Changes

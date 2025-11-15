@@ -1,7 +1,7 @@
 {
 	"name": "@kurrier/schema",
 	"private": true,
-	"version": "1.0.17",
+	"version": "1.0.18",
 	"description": "",
 	"types": "src/index.ts",
 	"main": "src/index.ts",
