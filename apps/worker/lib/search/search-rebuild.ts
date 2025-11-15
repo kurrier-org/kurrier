@@ -3,7 +3,7 @@ import { messagesSearchSchema } from "@schema";
 import { getMessageAddress, getMessageName } from "@common/mail-client";
 import { and, eq } from "drizzle-orm";
 import client from "../../lib/get-typesense";
-import { toSearchDoc } from "./search-common"; // ✅ new import
+import { toSearchDoc } from "./search-common";
 
 const BATCH_SIZE = 2000;
 

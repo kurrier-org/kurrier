@@ -1,0 +1,109 @@
+---
+title: Webhooks
+description: Receive incoming webhooks through Kurrier's unified API
+---
+
+Kurrier lets you **register outbound webhooks** so your app can react to events like
+messages being sent, delivered, bounced, or received.
+
+These endpoints are **management APIs** – you call them from your backend with your
+Kurrier API key. For more information on authentication, see the
+[authentication guide](/docs/api/authentication).
+
+All routes below are relative to:
+
+```text
+https://your-domain.com/api/kurrier
+```
+
+---
+
+## Event types
+
+Right now Kurrier plans supports the following event names (this list may grow over time):
+
+- `message.received`
+
+and these are coming soon:
+
+- `message.sent`
+- `message.delivered`
+- `message.bounced`
+
+Please open an issue on Github if you have other event types you'd like to see.
+
+You subscribe a webhook to one or more of these events using the `events` field.
+
+---
+
+## Create a webhook
+
+### `POST /webhooks`
+
+Create a new webhook subscription.
+
+```json
+{
+"ownerId": "be7a7201-76db-4b73-a5e0-ad6a1b93cf1f",
+"identityId": "1a9b317a-8a84-493a-b9f8-83a3800861e2",
+"url": "http://www.myapp.com/api/webhooks/kurrier",
+"events": ["message.received"]
+}
+```
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| **url** *(required)* | HTTPS endpoint that Kurrier will POST events to. | `"https://example.com/webhooks/kurrier"` |
+| **events** *(required)* | Array of event types to subscribe to. | `["message.sent", "message.delivered"]` |
+| **ownerId** *(required)* | The user ID associated with the API key. You can retrieve this using the **GET /me** endpoint. | `"7f3b1a84-c1ef-4c8d-a9fb-8e9dc3d1a230"` |
+| **identityId** *(optional)* | The Kurrier Identity this webhook belongs to. Only events for this identity will trigger the webhook. Or it will be invoked for all identities | `"id_12345"` |
+| **enabled** | Whether this webhook is active. Defaults to `true`. | `true` |
+| **description** | Free-form label to help you remember what this webhook does. | `"Notify billing service"` |
+
+---
+
+## List webhooks
+
+### `GET /webhooks`
+
+Returns all webhooks for the current project/user.
+
+---
+
+## Get a single webhook
+
+### `GET /webhooks/{id}`
+
+Fetch a single webhook by id.
+
+---
+
+## Update a webhook
+
+### `PATCH /webhooks/{id}`
+
+Update part of an existing webhook.
+
+---
+
+## Delete a webhook
+
+### `DELETE /webhooks/{id}`
+
+Permanently delete a webhook.
+
+---
+
+## Webhook delivery format
+
+Webhook POST request example:
+
+```json
+{
+   "event": "message.received",
+   "data": {
+     "message": {...},
+     "rawEmail": ...
+   }
+}
+```

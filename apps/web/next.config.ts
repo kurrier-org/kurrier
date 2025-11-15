@@ -4,7 +4,6 @@ const nextConfig: NextConfig = {
 	/* config options here */
 	devIndicators: false,
 	output: "standalone",
-	// cacheComponents: true,
 	reactCompiler: true,
 	async rewrites() {
 		return {
@@ -17,6 +16,10 @@ const nextConfig: NextConfig = {
 					source: "/api/v1/:path*",
 					destination: `${process.env.WORKER_URL}:3001/api/v1/:path*`,
 				},
+                {
+                    source: "/api/kurrier/:path*",
+                    destination: `${process.env.WORKER_URL}:3001/api/kurrier/:path*`,
+                },
 			],
 			afterFiles: [],
 			fallback: [],

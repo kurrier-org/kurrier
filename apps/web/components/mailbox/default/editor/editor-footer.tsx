@@ -13,14 +13,13 @@ type UploadItem = {
 	name: string;
 	path: string;
 	size: number;
-	progress: number; // 0..100
+	progress: number;
 	status: "uploading" | "done" | "error";
 	error?: string;
 };
 
-// --- Optional: make progress visibly slower for demo/debug
-const SLOW_MODE = false; // set false for real-time progress
-const SLOW_MS_PER_PERCENT = 20; // lower=faster
+const SLOW_MODE = false;
+const SLOW_MS_PER_PERCENT = 20;
 
 const formatBytes = (n: number) => {
 	if (!Number.isFinite(n)) return "";
@@ -185,7 +184,7 @@ export default function EditorFooter() {
 
 	return (
 		<>
-			{/* Attachments area */}
+
 			{uploads.length > 0 && (
 				<div className="w-full rounded-md p-2 flex flex-col gap-2">
 					{uploads.map((u) => {
@@ -195,7 +194,6 @@ export default function EditorFooter() {
 								key={u.path}
 								className="flex justify-between items-center w-full max-w-xl bg-zinc-100 rounded px-4 py-2"
 							>
-								{/* left: filename + size */}
 								<div className="flex items-center gap-2 min-w-0">
 									<a
 										href="#"
@@ -210,7 +208,6 @@ export default function EditorFooter() {
 									</span>
 								</div>
 
-								{/* right: progress (when uploading) + X */}
 								<div className="flex items-center gap-2">
 									{showProgress && (
 										<div className="w-40">
@@ -245,7 +242,6 @@ export default function EditorFooter() {
 				</div>
 			)}
 
-			{/* Footer bar */}
 			<div className="border-t items-center flex py-2 px-2">
 				<div className="mx-2">
 					<Button

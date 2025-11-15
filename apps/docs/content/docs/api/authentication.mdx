@@ -1,0 +1,36 @@
+---
+title: Authentication
+description: How to access the Kurrier API
+---
+
+
+## Overview
+
+Kurrier exposes a simple HTTP+JSON API for sending email and managing webhooks to receive emails from various providers.
+
+All endpoints are **authenticated** and live under the Kurrier namespace:
+
+```text
+https://your-domain.com/api/kurrier
+```
+
+The API is currently v1 and versioning is handled via your API key. You can generate and manage API keys in the Kurrier dashboard
+
+---
+
+### Steps
+
+1. Go to **API Keys**
+2. Add a key with a name and optional restrictions. Note, the default scopes allow everything for now and will be refined in the future.
+
+
+![Dashboard Screenshot](/doc-api-keys.jpg)
+
+
+### Authentication
+
+Every request must include your API key. Kurrier supports bearer token authentication via the `Authorization` header.:
+
+```http
+Authorization: Bearer YOUR_API_KEY
+```

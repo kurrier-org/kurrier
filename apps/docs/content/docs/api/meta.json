@@ -1,0 +1,5 @@
+{
+	"title": "Kurrier API",
+	"defaultOpen": true,
+	"pages": ["authentication", "api-routes"]
+}

@@ -45,6 +45,7 @@ import { kvGet } from "@common";
 import { nanoid } from "nanoid";
 
 const DASHBOARD_PATH = "/dashboard/providers";
+const CURRENT_API_VERSION = 1;
 
 export const syncProviders = async () => {
 	const rls = await rlsClient();
@@ -876,6 +877,7 @@ export async function addApiKey(
 					secretId: secretMeta.id,
 					keyPrefix,
 					keyLast4,
+                    keyVersion: CURRENT_API_VERSION,
 					scopes: finalScopes,
 					metaData: { ulid },
 				})

@@ -19,7 +19,6 @@ async function deleteUids(
 	}
 }
 
-/** Helper: extract { path -> [uids] } from message rows (metaData.imap.{uid, mailboxPath}) */
 function collectUidsByMailboxPath(
 	rows: Array<{ meta: unknown }>,
 ): Map<string, number[]> {
@@ -85,7 +84,7 @@ export async function deleteMail(
 			}
 		}
 
-		// --- DB side ---
+
 		// gather message ids + affected threads for this mailbox
 		const rows = await db
 			.select({ id: messages.id, threadId: messages.threadId })

@@ -1,9 +1,5 @@
 import { getRedis } from "../get-redis";
 
-// const DAILY_CAP_BYTES = 1_000_000_000;   // 1 GB
-// const INTERACTIVE_RESERVE = 200_000_000; // reserve 200MB
-// export const DEFAULT_BACKFILL_BUDGET = Math.max(0, DAILY_CAP_BYTES - INTERACTIVE_RESERVE);
-// export const BACKFILL_WINDOW_MS = 24 * 60 * 60 * 1000; // 24h
 
 const DAILY_CAP_BYTES = 5 * 1024 * 1024; // 5 MB per day (easy to hit quickly)
 const INTERACTIVE_RESERVE = 1 * 1024 * 1024; // reserve 1 MB
@@ -50,7 +46,6 @@ export function maybeResetWindow(state: BudgetState): BudgetState {
 }
 
 export async function consumeBudget(identityId: string, bytes: number) {
-	// const redis = await getRedisClient();
 	const state = maybeResetWindow(await loadBudget(identityId));
 	const newUsed = Math.min(DEFAULT_BACKFILL_BUDGET, state.bytesUsed + bytes);
 	const updated: BudgetState = {

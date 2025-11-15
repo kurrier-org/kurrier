@@ -14,7 +14,7 @@ import { getPublicEnv, getServerEnv } from "@schema";
 import { generateSnippet, upsertMailboxThreadItem } from "@common";
 import { randomUUID } from "crypto";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
-import { getRedis } from "./get-redis";
+import { getRedis } from "../lib/get-redis";
 
 const publicConfig = getPublicEnv();
 const serverConfig = getServerEnv();
@@ -182,7 +182,6 @@ export async function parseAndStoreEmail(
 	const [message] = await db
 		.insert(messages)
 		.values(messagePayload as MessageCreate)
-		// .onConflictDoNothing()
 		.onConflictDoNothing({
 			target: [messages.mailboxId, messages.messageId],
 		})
@@ -244,6 +243,9 @@ export async function parseAndStoreEmail(
 		{ messageId: message.id },
 		{ removeOnComplete: true },
 	);
+
+    const { commonWorkerQueue } = await getRedis();
+    await commonWorkerQueue.add("webhook:message.received", { message, rawEmail });
 
 	return message;
 }
