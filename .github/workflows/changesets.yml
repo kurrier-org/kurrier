@@ -22,7 +22,7 @@ jobs:
           node-version: 20
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --no-frozen-lockfile
 
       # This opens/updates a PR named “Version Packages”
       - name: Create or update version PR
