@@ -40,7 +40,7 @@ import { z } from "zod";
 import slugify from "@sindresorhus/slugify";
 import { rlsClient } from "@/lib/actions/clients";
 import { v4 as uuidv4 } from "uuid";
-import { backfillMailboxes } from "@/lib/actions/mailbox";
+import {backfillMailboxes, clearImapClients} from "@/lib/actions/mailbox";
 import { kvGet } from "@common";
 import { nanoid } from "nanoid";
 
@@ -454,20 +454,19 @@ const initializeEmailIdentity = async (
 };
 
 export const initializeMailboxes = async (emailIdentity: IdentityEntity) => {
-	// sanity check: only for email kind
 	if (emailIdentity.kind !== "email") return;
 
 	if (emailIdentity.smtpAccountId) {
 		await backfillMailboxes(emailIdentity.id);
 		return;
 	}
-	// insert one row per mailbox kind
+
 	const rows = SYSTEM_MAILBOXES.map((m) => ({
 		ownerId: emailIdentity.ownerId,
 		identityId: emailIdentity.id,
 		kind: m.kind,
 		name: MailboxKindDisplay[m.kind],
-		slug: slugify(m.kind), // e.g. "inbox" → URL segment
+		slug: slugify(m.kind),
 		isDefault: m.isDefault,
 	}));
 
@@ -639,13 +638,16 @@ export const deleteEmailIdentity = async (
 					ruleName: userIdentity?.identities?.metaData?.ruleName,
 				});
 			}
-		}
+		} else {
+            await clearImapClients(userIdentity.identities.id);
+        }
 
 		await rls((tx) =>
 			tx
 				.delete(identities)
 				.where(eq(identities.id, String(userIdentity.identities.id))),
 		);
+
 
 		revalidatePath(DASHBOARD_PATH);
 		return { success: true, message: "Deleted email identity" };
@@ -663,7 +665,6 @@ export const verifyProviderAccount = async (
 			const { WEB_URL } = getPublicEnv();
 			const localTunnelUrl = await kvGet("local-tunnel-url");
 			res = await mailer.verify(String(providerSecret?.metaId), {
-				// webHookUrl: localTunnelUrl ? localTunnelUrl : NITRO_URL,
 				webHookUrl: `${localTunnelUrl ? localTunnelUrl : WEB_URL}/api/v1/hooks/aws/ses/inbound`,
 			});
 
@@ -791,12 +792,12 @@ export const getDashboardStats = async () => {
 
 		const data = await rls(async (tx) => {
 			const [
-				[mp], // managed providers
-				[sa], // smtp accounts
-				[vd], // verified domains
-				[ai], // active identities (emails)
-				[epTotal], // emails processed total
-				[ep24h], // emails processed last 24h
+				[mp],
+				[sa],
+				[vd],
+				[ai],
+				[epTotal],
+				[ep24h],
 			] = await Promise.all([
 				tx.select({ count: count() }).from(providers),
 				tx.select({ count: count() }).from(smtpAccounts),
