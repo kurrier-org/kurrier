@@ -9,7 +9,6 @@ export async function mailSetFlags(
 ) {
 	const { threadId, mailboxId, op } = data;
 
-
 	const [mailbox] = await db
 		.select()
 		.from(mailboxes)
@@ -18,7 +17,6 @@ export async function mailSetFlags(
 
 	const client = await initSmtpClient(mailbox.identityId, imapInstances);
 	if (!client?.authenticated || !client?.usable) return;
-
 
 	const threadMessages = await db
 		.select()
@@ -30,7 +28,6 @@ export async function mailSetFlags(
 
 	const newest = threadMessages[0];
 	if (!newest) return;
-
 
 	const opToAction = (
 		op: string,
@@ -59,7 +56,6 @@ export async function mailSetFlags(
 	const action = opToAction(op);
 	if (!action) return;
 
-
 	const byMailbox = new Map<string, Array<{ id: string; uid: number }>>();
 	for (const m of threadMessages) {
 		const imap = (m.metaData as any)?.imap;
@@ -70,7 +66,6 @@ export async function mailSetFlags(
 		if (!byMailbox.has(mailboxPath)) byMailbox.set(mailboxPath, []);
 		byMailbox.get(mailboxPath)!.push({ id: m.id, uid });
 	}
-
 
 	for (const [mailboxPath, list] of byMailbox.entries()) {
 		const uids = list.map((x) => x.uid).sort((a, b) => a - b);

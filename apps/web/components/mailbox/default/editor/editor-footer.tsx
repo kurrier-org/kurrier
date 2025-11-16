@@ -184,7 +184,6 @@ export default function EditorFooter() {
 
 	return (
 		<>
-
 			{uploads.length > 0 && (
 				<div className="w-full rounded-md p-2 flex flex-col gap-2">
 					{uploads.map((u) => {

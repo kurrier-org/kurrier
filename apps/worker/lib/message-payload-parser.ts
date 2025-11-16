@@ -244,8 +244,11 @@ export async function parseAndStoreEmail(
 		{ removeOnComplete: true },
 	);
 
-    const { commonWorkerQueue } = await getRedis();
-    await commonWorkerQueue.add("webhook:message.received", { message, rawEmail });
+	const { commonWorkerQueue } = await getRedis();
+	await commonWorkerQueue.add("webhook:message.received", {
+		message,
+		rawEmail,
+	});
 
 	return message;
 }

@@ -224,16 +224,16 @@ export async function upsertMailboxThreadItem(
 }
 
 export function base64ToUint8Array(base64: string): Uint8Array {
-    const binary = atob(base64);
-    const len = binary.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-        bytes[i] = binary.charCodeAt(i);
-    }
-    return bytes;
+	const binary = atob(base64);
+	const len = binary.length;
+	const bytes = new Uint8Array(len);
+	for (let i = 0; i < len; i++) {
+		bytes[i] = binary.charCodeAt(i);
+	}
+	return bytes;
 }
 
 export function base64ToBlob(base64: string, contentType: string): Blob {
-    const bytes = base64ToUint8Array(base64);
-    return new Blob([bytes], { type: contentType });
+	const bytes = base64ToUint8Array(base64);
+	return new Blob([bytes], { type: contentType });
 }

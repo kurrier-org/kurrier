@@ -14,6 +14,4 @@ export const apiScopeOptions = apiScopeList.map((scope) => ({
 			"templates:write": "templates:write",
 		}[scope] ?? scope,
 }));
-export const webHookList = [
-    "message.received"
-] as const;
+export const webHookList = ["message.received"] as const;

@@ -45,7 +45,7 @@ export async function getRedis() {
 		sendMailEvents,
 		searchIngestQueue,
 		searchIngestEvents,
-        commonWorkerQueue,
-        commonWorkerEvents,
+		commonWorkerQueue,
+		commonWorkerEvents,
 	};
 }

@@ -877,7 +877,7 @@ export async function addApiKey(
 					secretId: secretMeta.id,
 					keyPrefix,
 					keyLast4,
-                    keyVersion: CURRENT_API_VERSION,
+					keyVersion: CURRENT_API_VERSION,
 					scopes: finalScopes,
 					metaData: { ulid },
 				})

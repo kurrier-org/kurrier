@@ -1,13 +1,14 @@
 import {
-    providers,
-    smtpAccounts,
-    identities,
-    mailboxes,
-    messages,
-    threads,
-    messageAttachments,
-    mailboxSync,
-    mailboxThreads, webhooks,
+	providers,
+	smtpAccounts,
+	identities,
+	mailboxes,
+	messages,
+	threads,
+	messageAttachments,
+	mailboxSync,
+	mailboxThreads,
+	webhooks,
 } from "./schema";
 import { decryptedSecrets } from "./supabase-schema";
 import { z } from "zod";

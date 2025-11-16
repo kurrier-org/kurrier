@@ -1,3 +1,11 @@
 {
-	"pages": ["index", "installation", "getting-started", "providers", "api" ,"contributing", "support"]
+	"pages": [
+		"index",
+		"installation",
+		"getting-started",
+		"providers",
+		"api",
+		"contributing",
+		"support"
+	]
 }

@@ -35,7 +35,6 @@ export const startBackfill = async (client: ImapFlow, identityId: string) => {
 
 		const ownerId = identity.ownerId;
 
-
 		const mailboxRows = await db
 			.select()
 			.from(mailboxes)
@@ -104,7 +103,6 @@ async function backfillMailbox(opts: {
 		politeWaitMs = 50,
 		onMessage,
 	} = opts;
-
 
 	await client.mailboxOpen(path, { readOnly: true });
 

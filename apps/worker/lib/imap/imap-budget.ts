@@ -1,6 +1,5 @@
 import { getRedis } from "../get-redis";
 
-
 const DAILY_CAP_BYTES = 5 * 1024 * 1024; // 5 MB per day (easy to hit quickly)
 const INTERACTIVE_RESERVE = 1 * 1024 * 1024; // reserve 1 MB
 export const DEFAULT_BACKFILL_BUDGET = Math.max(

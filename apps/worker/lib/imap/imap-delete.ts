@@ -84,7 +84,6 @@ export async function deleteMail(
 			}
 		}
 
-
 		// gather message ids + affected threads for this mailbox
 		const rows = await db
 			.select({ id: messages.id, threadId: messages.threadId })
