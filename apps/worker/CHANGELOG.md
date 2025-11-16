@@ -1,5 +1,11 @@
 # @kurrier/worker
 
+## 0.1.26
+
+### Patch Changes
+
+- [#237](https://github.com/kurrier-org/kurrier/pull/237) [`65980e6`](https://github.com/kurrier-org/kurrier/commit/65980e6a169cd05b5c2894d5dc9f69ea40695f34) Thanks [@krokhale](https://github.com/krokhale)! - Support for realtime IDLE ops for IMAP clients
+
 ## 0.1.25
 
 ### Patch Changes
