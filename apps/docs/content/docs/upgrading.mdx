@@ -1,0 +1,21 @@
+---
+title: Upgrading Kurrier
+description: A guide to upgrading Kurrier to the latest version.
+---
+
+Unless otherwise noted in the release notes, upgrading Kurrier is as simple as pulling the latest Docker images and restarting your services.
+
+```bash
+docker compose down
+git pull origin main
+docker compose up -d
+```
+
+---
+
+There might be occasional new environment variables or configuration changes required for new versions. Always check the release notes for any additional steps needed during the upgrade process.
+
+Any database migrations will be handled automatically during the startup process. For major version upgrades, it's recommended to back up your database before proceeding.
+
+In case there are breaking changes, or changes that require manual intervention, these will be documented in the release notes and on this page.
+In case you encounter any issues after upgrading, refer to the troubleshooting section in the documentation or seek help from the community.
