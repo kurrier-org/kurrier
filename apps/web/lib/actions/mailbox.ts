@@ -12,8 +12,8 @@ import {
 	messages,
 	threads,
 } from "@db";
-import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
-import { refresh, revalidatePath, revalidateTag } from "next/cache";
+import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { FormState, getServerEnv, SearchThreadsResponse } from "@schema";
 import { decode } from "decode-formdata";
 import { toArray } from "@/lib/utils";
@@ -52,7 +52,6 @@ const getRedis = async () => {
 };
 
 import Typesense, { Client } from "typesense";
-import { gt } from "zod";
 import { isSignedIn } from "@/lib/actions/auth";
 import slugify from "@sindresorhus/slugify";
 import { redirect } from "next/navigation";
@@ -139,7 +138,6 @@ export const fetchIdentityMailboxList = cache(async () => {
 				mailboxes,
 				and(
 					eq(identities.id, mailboxes.identityId),
-					// exclude drafts/outbox *only when a mailbox exists*
 					sql`${mailboxes.kind} NOT IN ('outbox','drafts')`,
 				),
 			)
@@ -187,11 +185,9 @@ export const fetchIdentityMailboxList = cache(async () => {
 		tx
 			.select({
 				mailboxId: mailboxThreads.mailboxId,
-				// count(*) of rows that have any unread
 				unreadThreads: sql<number>`
         count(*) FILTER (WHERE ${mailboxThreads.unreadCount} > 0)
       `.as("unread_threads"),
-				// sum of unread_count across all rows (0 if null)
 				unreadTotal: sql<number>`
         coalesce(sum(${mailboxThreads.unreadCount}), 0)
       `.as("unread_total"),
@@ -227,11 +223,9 @@ export const fetchMailboxUnreadCounts = cache(async () => {
 		tx
 			.select({
 				mailboxId: mailboxThreads.mailboxId,
-				// count(*) of rows that have any unread
 				unreadThreads: sql<number>`
         count(*) FILTER (WHERE ${mailboxThreads.unreadCount} > 0)
       `.as("unread_threads"),
-				// sum of unread_count across all rows (0 if null)
 				unreadTotal: sql<number>`
         coalesce(sum(${mailboxThreads.unreadCount}), 0)
       `.as("unread_total"),
@@ -302,7 +296,7 @@ export const initSearch = async (
 	ownerId: string,
 	hasAttachment: boolean,
 	onlyUnread: boolean,
-	starred: boolean, // NEW
+	starred: boolean,
 	page: number,
 ): Promise<SearchThreadsResponse> => {
 	const client = getTypeSenseClient();
@@ -369,13 +363,13 @@ export const backfillMailboxes = async (identityId: string) => {
 			},
 		},
 	);
-	const res = await job.waitUntilFinished(smtpEvents);
+	await job.waitUntilFinished(smtpEvents);
 	backfillAccount(identityId);
 };
 
 export const backfillAccount = async (identityId: string) => {
-	const { smtpQueue, smtpEvents } = await getRedis();
-	const job = await smtpQueue.add(
+	const { smtpQueue } = await getRedis();
+	await smtpQueue.add(
 		"backfill",
 		{ identityId },
 		{
@@ -387,7 +381,16 @@ export const backfillAccount = async (identityId: string) => {
 			},
 		},
 	);
-	// await job.waitUntilFinished(smtpEvents);
+    await smtpQueue.add(
+        "imap:start-idle",
+        { identityId },
+        {
+            removeOnComplete: true,
+            removeOnFail: false,
+            attempts: 3,
+            backoff: { type: "exponential", delay: 1500 },
+        },
+    );
 };
 
 export const fetchWebMailThreadDetail = cache(async (threadId: string) => {
@@ -455,7 +458,6 @@ export const markAsRead = cache(
 				);
 		});
 
-		// 2) UI refresh (once)
 		if (refresh) {
 			revalidatePath("/dashboard/mail");
 		}
@@ -484,7 +486,7 @@ export const markAsRead = cache(
 						"refresh-thread",
 						{ threadId },
 						{
-							jobId: `refresh-${threadId}`, // collapse dupes
+							jobId: `refresh-${threadId}`,
 							removeOnComplete: true,
 							removeOnFail: false,
 							attempts: 3,
@@ -513,7 +515,6 @@ export const markAsUnread = async (
 	const rls = await rlsClient();
 
 	await rls(async (tx) => {
-		// 1) Flip seen=false for all messages in THESE threads for THIS mailbox
 		await tx
 			.update(messages)
 			.set({ seen: false, updatedAt: now })
@@ -521,7 +522,7 @@ export const markAsUnread = async (
 				and(inArray(messages.threadId, ids), eq(messages.mailboxId, mailboxId)),
 			);
 
-		// 2) Recompute unread counts per thread (grouped)
+
 		const grouped = await tx
 			.select({
 				threadId: messages.threadId,
@@ -540,7 +541,6 @@ export const markAsUnread = async (
 		const countMap = new Map<string, number>();
 		for (const g of grouped) countMap.set(String(g.threadId), Number(g.count));
 
-		// 3) Update mailboxThreads per thread with recomputed unreadCount
 		for (const tid of ids) {
 			const unread = countMap.get(tid);
 			await tx
@@ -586,7 +586,7 @@ export const markAsUnread = async (
 					"refresh-thread",
 					{ threadId },
 					{
-						jobId: `refresh-${threadId}`, // collapse dupes across callers
+						jobId: `refresh-${threadId}`,
 						removeOnComplete: true,
 						removeOnFail: false,
 						attempts: 3,
@@ -731,7 +731,7 @@ export const toggleStar = async (
 		"refresh-thread",
 		{ threadId: threadId },
 		{
-			jobId: `refresh-${threadId}`, // collapses duplicates
+			jobId: `refresh-${threadId}`,
 			removeOnComplete: true,
 			removeOnFail: false,
 			attempts: 3,
@@ -772,13 +772,10 @@ export type FetchMailboxThreadsResult = Awaited<
 
 export type FetchMailboxThreadsByIdsResult = {
 	threads: (typeof mailboxThreads.$inferSelect)[];
-	missing?: string[]; // threadIds that weren't present in this mailbox
+	missing?: string[];
 };
 
-/**
- * Returns mailboxThreads rows for the given mailbox+threadIds.
- * Keeps the order of `threadIds` (so it matches your search ranking).
- */
+
 export async function fetchMailboxThreadsList(
 	mailboxId: string,
 	threadIds: string[],
@@ -798,7 +795,6 @@ export async function fetchMailboxThreadsList(
 			),
 	);
 
-	// preserve search order
 	const rank = new Map(threadIds.map((id, i) => [id, i]));
 	rows.sort(
 		(a, b) =>
@@ -806,7 +802,7 @@ export async function fetchMailboxThreadsList(
 			(rank.get(b.threadId) ?? Number.MAX_SAFE_INTEGER),
 	);
 
-	// optional: tell caller which hits didn’t belong to this mailbox
+
 	const found = new Set(rows.map((r) => r.threadId));
 	const missing = threadIds.filter((id) => !found.has(id));
 
@@ -818,7 +814,7 @@ export async function deleteForever(
 	mailboxId: string,
 	imapDelete: boolean,
 	refresh = true,
-	opts?: { emptyAll?: boolean }, // NEW
+	opts?: { emptyAll?: boolean },
 ) {
 	const { emptyAll = false } = opts ?? {};
 	const { smtpQueue, searchIngestQueue } = await getRedis();
@@ -834,7 +830,6 @@ export async function deleteForever(
 				removeOnFail: true,
 			},
 		);
-		// no per-thread refresh here; your rebuild/refresh-thread will catch up
 		if (refresh) revalidatePath("/mail");
 		return;
 	}
@@ -916,7 +911,6 @@ export async function addNewMailboxFolder(
 				? String(decodedForm.parentId)
 				: null;
 
-		// (optional safety) ensure parent (if provided) belongs to same identity
 		if (parentId) {
 			const [parent] = await db
 				.select({ id: mailboxes.id, identityId: mailboxes.identityId })
@@ -939,12 +933,10 @@ export async function addNewMailboxFolder(
 				name,
 				slug: slugify(name.toLowerCase()),
 				isDefault: false,
-				// No IMAP metadata for non-IMAP accounts—leave empty object to be safe with JSONB column
 				metaData: {},
 			})
 			.returning();
 
-		// refresh UI
 		revalidatePath("/dashboard/mail");
 	}
 
@@ -964,7 +956,6 @@ export async function deleteMailboxFolder({
 }): Promise<FormState> {
 	const user = await isSignedIn();
 
-	// 🔹 If not IMAP, just delete locally
 	if (!imapOp) {
 		const [mailbox] = await db
 			.select()
@@ -976,7 +967,7 @@ export async function deleteMailboxFolder({
 		if (mailbox.isDefault)
 			return { success: false, error: "Cannot delete a default folder" } as any;
 
-		// Delete any subfolders first (if you prefer cascade)
+		// Delete any subfolders first
 		await db.delete(mailboxes).where(eq(mailboxes.parentId, mailboxId));
 
 		// Delete this mailbox and any sync info
@@ -987,7 +978,6 @@ export async function deleteMailboxFolder({
 		return { success: true };
 	}
 
-	// 🔵 IMAP case — use queue/worker
 	const [ident] = await db
 		.select({ id: identities.id })
 		.from(identities)
@@ -1046,14 +1036,14 @@ export const moveToFolder = async (
 				"mail:move",
 				{
 					threadId,
-					mailboxId: fromMailboxId, // source
-					op: "move", // <- new op supported in worker
-					toMailboxId, // <- destination
+					mailboxId: fromMailboxId,
+					op: "move",
+					toMailboxId,
 					messageId,
 					moveImap,
 				},
 				{
-					jobId: `move:${threadId}:${fromMailboxId}->${toMailboxId}`, // collapse dupes
+					jobId: `move:${threadId}:${fromMailboxId}->${toMailboxId}`,
 					attempts: 3,
 					backoff: { type: "exponential", delay: 1500 },
 					removeOnComplete: true,
@@ -1080,4 +1070,19 @@ export const moveToFolder = async (
 	);
 
 	if (refresh) revalidatePath("/mail");
+};
+
+
+export const clearImapClients = async (identityId: string) => {
+    const { smtpQueue } = await getRedis();
+    await smtpQueue.add(
+        "imap:stop-idle",
+        { identityId },
+        {
+            removeOnComplete: true,
+            removeOnFail: false,
+            attempts: 3,
+            backoff: { type: "exponential", delay: 1500 },
+        },
+    );
 };

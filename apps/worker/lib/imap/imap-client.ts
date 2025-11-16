@@ -34,6 +34,11 @@ export const initSmtpClient = async (
 			.select()
 			.from(identities)
 			.where(eq(identities.id, identityId));
+
+        if (!identity || !identity.smtpAccountId) {
+            return
+        }
+
 		const [secrets] = await decryptAdminSecrets({
 			linkTable: smtpAccountSecrets,
 			foreignCol: smtpAccountSecrets.accountId,

@@ -55,6 +55,7 @@ export const startBackfill = async (client: ImapFlow, identityId: string) => {
 					const raw = (await msg?.source?.toString()) || "";
 
 					const { seen, answered, flagged } = mapImapFlags(msg.flags);
+                    const flags = Array.from(msg.flags ?? []);
 
 					await parseAndStoreEmail(raw, {
 						ownerId,
@@ -65,6 +66,7 @@ export const startBackfill = async (client: ImapFlow, identityId: string) => {
 							imap: {
 								uid: msg.uid,
 								mailboxPath: path,
+                                flags
 							},
 						},
 						seen,
