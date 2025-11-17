@@ -10,21 +10,18 @@ export function ThemeControls() {
 	const [pending, start] = useTransition();
 
 	async function onThemeChange(t: ThemeName) {
-		// optimistic DOM update for instant feedback
 		document.documentElement.setAttribute("data-theme", t);
 		await setThemeServer(t);
 		start(() => router.refresh());
 	}
 
 	async function onModeChange(m: ThemeMode) {
-		// optimistic DOM update
 		const el = document.documentElement;
 		if (m === "dark") el.classList.add("dark");
 		else if (m === "light") el.classList.remove("dark");
 		else {
 			const prefers = window.matchMedia("(prefers-color-scheme: dark)").matches;
 			el.classList.toggle("dark", prefers);
-			// client can also set a “resolved” cookie if you want:
 			document.cookie = `kurrier.resolved=${prefers ? "dark" : "light"}; Max-Age=31536000; Path=/; SameSite=Lax`;
 		}
 		await setModeServer(m);

@@ -41,10 +41,7 @@ function getScrollParent(el: HTMLElement): HTMLElement {
 
 export function scrollToEditor(
 	el: HTMLElement,
-	{
-		offsetTop = 96, // your sticky header + subject bar height
-		minBottomGap = 48, // ensure some space below the editor
-	} = {},
+	{ offsetTop = 96, minBottomGap = 48 } = {},
 ) {
 	const container = getScrollParent(el);
 	const isWindow = container === (document.scrollingElement as HTMLElement);
@@ -65,7 +62,6 @@ export function scrollToEditor(
 
 	doScroll(targetTop);
 
-	// After layout settles (images/fonts), verify bottom gap once
 	setTimeout(() => {
 		const e2 = el.getBoundingClientRect();
 		const viewH = isWindow
@@ -393,91 +389,6 @@ function EmailRenderer({
 					</div>
 				</div>
 			</div>
-
-			{/*<hr className={"my-12"}/>*/}
-
-			{/*<div className="flex flex-col">*/}
-			{/*    {threadIndex === 0 && (*/}
-			{/*        <h1 className="text-xl font-base">*/}
-			{/*            {message.subject || "No Subject"}*/}
-			{/*        </h1>*/}
-			{/*    )}*/}
-
-			{/*    <div className={"flex justify-between"}>*/}
-			{/*        <div>*/}
-			{/*            <div className={"mt-4 flex gap-1 items-center"}>*/}
-			{/*                <div className={"text-sm font-semibold capitalize"}>*/}
-			{/*                    {getMessageName(message, "from") ??*/}
-			{/*                        slugify(String(getMessageAddress(message, "from")), {*/}
-			{/*                            separator: " ",*/}
-			{/*                        })}*/}
-			{/*                </div>*/}
-			{/*                <div*/}
-			{/*                    className={"text-xs"}*/}
-			{/*                >{`<${getMessageAddress(message, "from") ?? getMessageName(message, "from")}>`}</div>*/}
-			{/*            </div>*/}
-			{/*            <div className={"flex gap-1 items-center"}>*/}
-			{/*                <div className={"text-xs"}>*/}
-			{/*                    to{" "}*/}
-			{/*                    {`<${getMessageAddress(message, "to") ?? getMessageName(message, "to")}>`}*/}
-			{/*                </div>*/}
-			{/*            </div>*/}
-			{/*        </div>*/}
-
-			{/*        <div className={"flex gap-4 items-center"}>*/}
-			{/*            <div className={"text-xs"}>{formatted}</div>*/}
-
-			{/*            <ActionIcon*/}
-			{/*                variant={"transparent"}*/}
-			{/*                onClick={() => {*/}
-			{/*                    setShowEditor(!showEditor);*/}
-			{/*                }}*/}
-			{/*            >*/}
-			{/*                <Reply size={18} />*/}
-			{/*            </ActionIcon>*/}
-
-			{/*            <div className={"cursor-pointer"}>*/}
-			{/*                <Menu shadow="md" width={175} position={"left-start"}>*/}
-			{/*                    <Menu.Target>*/}
-			{/*                        <EllipsisVertical size={18} />*/}
-			{/*                    </Menu.Target>*/}
-
-			{/*                    <Menu.Dropdown>*/}
-			{/*                        <Menu.Item*/}
-			{/*                            leftSection={<Reply size={14} />}*/}
-			{/*                            onClick={() => {*/}
-			{/*                                setShowEditorMode("reply");*/}
-			{/*                                setShowEditor(true);*/}
-			{/*                            }}*/}
-			{/*                        >*/}
-			{/*                            Reply*/}
-			{/*                        </Menu.Item>*/}
-			{/*                        <Menu.Item*/}
-			{/*                            leftSection={<Forward size={14} />}*/}
-			{/*                            onClick={() => {*/}
-			{/*                                setShowEditorMode("forward");*/}
-			{/*                                setShowEditor(true);*/}
-			{/*                            }}*/}
-			{/*                        >*/}
-			{/*                            Forward*/}
-			{/*                        </Menu.Item>*/}
-			{/*                        <Menu.Divider />*/}
-
-			{/*                        <Menu.Item*/}
-			{/*                            leftSection={<Download size={14} />}*/}
-			{/*                            onClick={downloadEml}*/}
-			{/*                        >*/}
-			{/*                            Download*/}
-			{/*                        </Menu.Item>*/}
-			{/*                        <Menu.Item leftSection={<Code size={14} />} onClick={open}>*/}
-			{/*                            Show Original*/}
-			{/*                        </Menu.Item>*/}
-			{/*                    </Menu.Dropdown>*/}
-			{/*                </Menu>*/}
-			{/*            </div>*/}
-			{/*        </div>*/}
-			{/*    </div>*/}
-			{/*</div>*/}
 
 			{children}
 

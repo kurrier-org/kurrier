@@ -18,7 +18,7 @@ import { FetchIdentityMailboxListResult } from "@/lib/actions/mailbox";
 import { MailboxKind } from "@schema";
 
 type Mailbox = {
-	slug: string | null; // "inbox", "sent", ... or custom
+	slug: string | null;
 	kind:
 		| "inbox"
 		| "sent"
@@ -28,18 +28,13 @@ type Mailbox = {
 		| "trash"
 		| "outbox"
 		| "custom";
-	name?: string | null; // label for custom
-	unreadCount?: number | null; // optional
+	name?: string | null;
+	unreadCount?: number | null;
 };
 
 export function UnifiedMailboxNav({
-	// mailboxes,
-	// identityPublicId,
 	identityMailboxes,
-	onCreateLabel,
 }: {
-	// mailboxes: MailboxEntity[];
-	// identityPublicId: string;
 	identityMailboxes: FetchIdentityMailboxListResult;
 	onCreateLabel?: () => void;
 }) {

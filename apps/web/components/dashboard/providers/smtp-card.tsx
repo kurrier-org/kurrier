@@ -7,7 +7,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-// import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import * as React from "react";
 import { modals } from "@mantine/modals";
@@ -57,12 +56,7 @@ export default function SMTPCard({
 							</div>
 
 							<CardAction className="mt-3 lg:mt-0">
-								<Button
-									// variant="default"
-									size="sm"
-									onClick={openAddModal}
-									className="gap-2"
-								>
+								<Button size="sm" onClick={openAddModal} className="gap-2">
 									<Plus className="h-4 w-4" />
 									Add SMTP Account
 								</Button>

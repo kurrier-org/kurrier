@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import * as React from "react";
 import {
-	deleteMailboxFolder,
 	FetchIdentityMailboxListResult,
 	FetchMailboxUnreadCountsResult,
 } from "@/lib/actions/mailbox";
@@ -78,7 +77,6 @@ function buildTree(
 	const byId = new Map<string, TreeMailbox>();
 	const roots: TreeMailbox[] = [];
 
-	// 1️⃣ Build nodes
 	for (const r of rows) {
 		byId.set(r.id, {
 			id: r.id,
@@ -100,7 +98,6 @@ function buildTree(
 		}
 	}
 
-	// 3️⃣ Sort by system order, then alphabetically
 	const sortRec = (arr: TreeMailbox[]) => {
 		arr.sort(
 			(a, b) =>
@@ -154,7 +151,6 @@ export default function IdentityMailboxesList({
 		return (
 			<div>
 				<div className="flex items-center">
-					{/* caret */}
 					{hasChildren ? (
 						<button
 							onClick={() => setOpen((v) => !v)}

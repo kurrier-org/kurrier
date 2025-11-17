@@ -7,7 +7,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { Edit, ExternalLink, Globe, Play, Trash, Unplug } from "lucide-react";
+import { Edit, ExternalLink, Globe, Play } from "lucide-react";
 import * as React from "react";
 import {
 	FetchDecryptedSecretsResult,
@@ -16,10 +16,8 @@ import {
 } from "@/lib/actions/dashboard";
 import ProviderEditForm from "@/components/dashboard/providers/provider-edit-form";
 import { modals } from "@mantine/modals";
-import NewSmtpAccountForm from "@/components/dashboard/providers/new-smtp-account-form";
-import { ActionIcon, Button } from "@mantine/core";
+import { Button } from "@mantine/core";
 import { useMemo, useState } from "react";
-import { VerifyResult } from "@providers";
 import { toast } from "sonner";
 import { parseSecret } from "@/lib/utils";
 import IsVerifiedStatus from "@/components/dashboard/providers/is-verified-status";
@@ -36,47 +34,6 @@ export default function ProviderCard({
 	const decryptedValues = useMemo(() => {
 		return parseSecret(decryptedSecret);
 	}, [decryptedSecret]);
-
-	// const openUnplug = () => {
-	//     const openModalId = modals.open({
-	//         title: (
-	//             <div className="font-semibold text-brand-foreground">
-	//                 Unplug {spec.name} Account
-	//             </div>
-	//         ),
-	//         size: "lg",
-	//         children: (
-	//             <CardContent className={"my-6"}>
-	//                 <div className="space-y-3 flex flex-col gap-12">
-	//                     Warning: This action will remove the kurrier related assets from your {spec.name} account and from your
-	//                     dashboard. You can re-add the account later if needed.
-	//
-	//                     <Button
-	//                         // onClick={() => initTestAccount()}
-	//                         onClick={initDisconnect}
-	//                         loading={disconnecting}
-	//                         size={"xs"}
-	//                         color={"red"}
-	//                         leftSection={<Unplug className="size-4" />}
-	//                         // className="h-8 px-3 text-xs lg:h-9 lg:px-4 lg:text-sm gap-2"
-	//                     >
-	//                         Disconnect Connection
-	//                     </Button>
-	//                 </div>
-	//             </CardContent>
-	//         ),
-	//     });
-	// }
-	//
-	// const [disconnecting, setDisconnecting] = useState(false);
-	// const initDisconnect = async () => {
-	//     setDisconnecting(true)
-	//     const { data: res } = await disconnectProviderAccount(
-	//         userProvider.type,
-	//         decryptedSecret,
-	//     );
-	//
-	// }
 
 	const openEdit = () => {
 		const openModalId = modals.open({
@@ -202,13 +159,9 @@ export default function ProviderCard({
 									onClick={openEdit}
 									size={"xs"}
 									leftSection={<Edit className="size-4" />}
-									// className="h-8 px-3 text-xs lg:h-9 lg:px-4 lg:text-sm gap-2"
 								>
 									Edit
 								</Button>
-								{/*<ActionIcon onClick={openUnplug} color={"red"}>*/}
-								{/*    <Unplug size={18} />*/}
-								{/*</ActionIcon>*/}
 							</CardAction>
 						</div>
 					</div>
@@ -217,21 +170,6 @@ export default function ProviderCard({
 						statusName={""}
 					/>
 				</CardHeader>
-
-				{/*<CardContent className="space-y-4 mb-16">*/}
-				{/*	<div className="text-xs uppercase tracking-wider text-muted-foreground">*/}
-				{/*		Required ENV*/}
-				{/*	</div>*/}
-
-				{/*	<div className="space-y-3">*/}
-				{/*		<input type={"hidden"} name={"providerId"} value={userProvider.id} />*/}
-				{/*		<ProviderEditForm*/}
-				{/*			spec={spec}*/}
-				{/*			providerId={userProvider.id}*/}
-				{/*			decryptedSecrets={decryptedSecrets}*/}
-				{/*		/>*/}
-				{/*	</div>*/}
-				{/*</CardContent>*/}
 			</Card>
 		</div>
 	);

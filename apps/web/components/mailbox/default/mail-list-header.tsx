@@ -131,7 +131,6 @@ function MailListHeader({
 	return (
 		<>
 			<div className="sticky top-0 z-10 flex items-center bg-background/95 px-3 py-2 backdrop-blur rounded-t-2xl">
-				{/* Select all checkbox */}
 				<input
 					type="checkbox"
 					onChange={(e) => {
@@ -151,10 +150,8 @@ function MailListHeader({
 					className="h-4 w-4 rounded border-muted-foreground/40"
 				/>
 
-				{/* Spacer pushes actions to right */}
 				<div className="flex-1" />
 
-				{/* Right actions: reload + compose */}
 				<div className="flex items-center gap-2 ml-auto">
 					<Tooltip label="Sync" withArrow>
 						<ActionIcon

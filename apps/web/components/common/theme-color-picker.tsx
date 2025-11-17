@@ -44,7 +44,6 @@ function ThemeColorPicker({ onComplete }: { onComplete?: () => void }) {
 										? "ring-1 ring-offset-1 ring-[color:var(--color-brand-500)]"
 										: ""
 								}`}
-								// Optional subtle scale for the active one:
 								style={{ transform: isActive ? "scale(1.08)" : "scale(1)" }}
 							/>
 						</Tooltip>

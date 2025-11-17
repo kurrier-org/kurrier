@@ -2,7 +2,6 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import * as React from "react";
-// import {ProviderHint} from "@/app/dashboard/(shell)/identities/page";
 import { PROVIDER_CONFIG } from "@/components/dashboard/identities/PROVIDER_CONFIG";
 
 export default function ProviderBadge({

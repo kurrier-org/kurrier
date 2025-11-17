@@ -7,7 +7,6 @@ import type { MessageEntity } from "@db";
 import { ActionIcon } from "@mantine/core";
 import { Ellipsis } from "lucide-react";
 
-/** Base, professional-looking email styles */
 const BASE_CSS = `
 :host {
   --bg: #ffffff;
@@ -89,7 +88,6 @@ const BASE_CSS = `
 }
 `;
 
-/** When hiding quoted content entirely */
 const QUOTE_HIDE_CSS = `
 /* Gmail / generic */
 blockquote,
@@ -108,7 +106,6 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 	const hostRef = useRef<HTMLDivElement>(null);
 	const [hideQuotes, setHideQuotes] = useState(true);
 
-	// Heuristic: does the message contain typical quoted markers?
 	const hasQuotes = useMemo(() => {
 		const html = message.html || "";
 		if (!html.trim()) return false;
@@ -123,7 +120,6 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 		let shadow = hostRef.current.shadowRoot;
 		if (!shadow) shadow = hostRef.current.attachShadow({ mode: "open" });
 
-		// Prefer HTML; fall back to text (escaped) with basic <pre>-like formatting
 		const rawHtml =
 			message.html && message.html.trim()
 				? message.html
@@ -140,13 +136,11 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 			USE_PROFILES: { html: true },
 		});
 
-		// Inject styles + content
 		shadow.innerHTML = `
       <style>${BASE_CSS}${hideQuotes ? QUOTE_HIDE_CSS : ""}</style>
       <article class="email-root">${safeHtml}</article>
     `;
 
-		// Post-process links for safety
 		const root = shadow.querySelector(".email-root") as HTMLElement | null;
 		if (root) {
 			const links = root.querySelectorAll<HTMLAnchorElement>("a[href]");

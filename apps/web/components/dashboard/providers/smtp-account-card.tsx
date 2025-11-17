@@ -7,11 +7,10 @@ import {
 import { modals } from "@mantine/modals";
 import NewSmtpAccountForm from "@/components/dashboard/providers/new-smtp-account-form";
 import { cn, parseSecret } from "@/lib/utils";
-import { Lock, Mail, Pencil, Play, ShieldCheck, Trash2 } from "lucide-react";
+import { Lock, Pencil, Play, ShieldCheck, Trash2 } from "lucide-react";
 import { ActionIcon, Button } from "@mantine/core";
 import { toast } from "sonner";
 import IsVerifiedStatus from "@/components/dashboard/providers/is-verified-status";
-import { VerifyResult } from "@providers";
 
 function SmtpAccountCard({
 	smtpSecret,
@@ -32,10 +31,6 @@ function SmtpAccountCard({
 					<NewSmtpAccountForm
 						smtpSecret={smtpSecret}
 						onCompleted={() => modals.close(openModalId)}
-						// onCompleted={(res: VerifyResult) => {
-						//     initiateSMTPTest(res)
-						//     modals.close(openModalId)
-						// }}
 					/>
 				</div>
 			),
@@ -70,12 +65,10 @@ function SmtpAccountCard({
 
 	const [testing, setTesting] = useState(false);
 
-	// const initiateSMTPTest = async (verifyResponse?: VerifyResult) => {
 	const initiateVerifySMTP = async () => {
 		setTesting(true);
 
 		try {
-			// const res = verifyResponse ? verifyResponse : await testSmtpAccount(smtpSecret);
 			const { data: res } = await verifySmtpAccount(smtpSecret);
 
 			if (res?.meta?.send) {

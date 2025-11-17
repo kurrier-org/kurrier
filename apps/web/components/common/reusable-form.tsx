@@ -29,15 +29,13 @@ export type ReusableFormProps = BaseFormProps & {
 
 type SubmitButtonProps = {
 	submitLabel?: string;
-	inlineSubmit?: boolean; // if true, renders inside grid
+	inlineSubmit?: boolean;
 	wrapperClasses?: string;
 	className?: string;
 	fullWidth?: boolean;
-	// extra props to pass through to Mantine <Button>
 	buttonProps?: ComponentProps<typeof MantineButton>;
 };
 
-/** Mantine Select that also submits to server actions via a hidden input */
 function SelectField({
 	name,
 	placeholder,
@@ -58,12 +56,10 @@ function SelectField({
 	const [val, setVal] = React.useState<string>(defaultValue ?? "");
 	return (
 		<>
-			{/* hidden input ensures it’s included in FormData on submit */}
 			<input type="hidden" name={name} value={val} />
 			<MantineSelect
 				className={className}
 				placeholder={placeholder}
-				// data={options.map((o) => ({ value: o.value, label: o.label }))}
 				data={options}
 				value={val || null}
 				onChange={(v) => {

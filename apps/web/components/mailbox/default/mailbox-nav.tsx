@@ -17,7 +17,7 @@ import {
 import { MailboxEntity } from "@db";
 
 type Mailbox = {
-	slug: string | null; // "inbox", "sent", ... or custom
+	slug: string | null;
 	kind:
 		| "inbox"
 		| "sent"
@@ -27,8 +27,8 @@ type Mailbox = {
 		| "trash"
 		| "outbox"
 		| "custom";
-	name?: string | null; // label for custom
-	unreadCount?: number | null; // optional
+	name?: string | null;
+	unreadCount?: number | null;
 };
 
 export function MailboxNav({
@@ -106,7 +106,6 @@ export function MailboxNav({
 
 	return (
 		<div className="space-y-4 px-2">
-			{/* System folders */}
 			<div className="space-y-1">
 				{system.map((m) => (
 					<Item key={m.slug ?? m.kind} m={m} />

@@ -58,18 +58,12 @@ export const createMantineTheme = ({
 	const override: MantineThemeOverride = {
 		colors: palettes,
 		primaryColor: "brand",
-		primaryShade: { light: 6, dark: 4 }, // maps to brand-600 (light) / brand-400 (dark)
+		primaryShade: { light: 6, dark: 4 },
 		// defaultRadius: 'md',
 		fontFamily: "var(--font-sans, Inter, system-ui, sans-serif)",
 		headings: {
 			fontFamily: "var(--font-sans, Inter, system-ui, sans-serif)",
 		},
-		// shadows: {
-		//     md: '0 6px 16px rgba(0,0,0,.08)',
-		//     xl: '0 12px 32px rgba(0,0,0,.14)',
-		// },
-		// keep Mantine surfaces in sync with your CSS vars
-		// (Mantine uses tokens; we can hint via colorScheme + CSS vars on <html>)
 	};
 
 	return {
