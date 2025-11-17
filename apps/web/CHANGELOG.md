@@ -1,5 +1,11 @@
 # web
 
+## 0.1.50
+
+### Patch Changes
+
+- [`d01304c`](https://github.com/kurrier-org/kurrier/commit/d01304c9af4d564ff97b0d12c622505a4a377ceb) Thanks [@krokhale](https://github.com/krokhale)! - Added support for labels
+
 ## 0.1.49
 
 ### Patch Changes
