@@ -1,5 +1,11 @@
 # @kurrier/schema
 
+## 1.0.19
+
+### Patch Changes
+
+- [`9d16b52`](https://github.com/kurrier-org/kurrier/commit/9d16b5248238858d299b703e52c99a878ab06ebf) Thanks [@krokhale](https://github.com/krokhale)! - Added support for labels
+
 ## 1.0.18
 
 ### Patch Changes
