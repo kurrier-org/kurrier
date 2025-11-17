@@ -16,7 +16,7 @@ function LabelRowTag({
 	const { labelSlug } = useParams();
 	return labelThreads
 		.filter(({ label }) => {
-			return labelSlug ? label.slug.toLowerCase() !== labelSlug : true;
+			return labelSlug ? label?.slug?.toLowerCase() !== labelSlug : true;
 		})
 		.map(({ label }) => (
 			<Badge
