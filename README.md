@@ -1,3 +1,6 @@
+### 🎉 Kurrier now supports Labels - organize your inbox your way
+
+---
 
 Kurrier is a modern, self-hosted webmail built for people who don't want the hassle to run their own email stack, yet want control over their data and privacy and ability to connect and manage multiple providers and email identities.
 It connects to standard protocols and providers — IMAP, SMTP, SES, SendGrid, Mailgun, and more — giving you a single, fast interface to turn any email service provider into a full-featured webmail.
@@ -33,7 +36,12 @@ Here’s a look at Kurrier in action — a clean, modern webmail built to connec
 ### 📨 Webmail View
 A unified fast, minimal interface for reading and managing your emails across accounts.
 
-![Kurrier Webmail View](https://www.kurrier.org/light-mailbox-github.png)
+![Kurrier Webmail View](https://www.kurrier.org/light-label-demo.png)
+
+---
+Dark Mode:
+
+![Kurrier Webmail View](https://www.kurrier.org/dark-label-demo.png)
 
 ### 🔌 Providers View
 Connect and manage IMAP, SMTP, SES, SendGrid, Mailgun, and more — all from one dashboard.

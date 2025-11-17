@@ -62,7 +62,7 @@ export default function KurrierFeatures() {
 				<div className="mx-auto max-w-7xl px-6 lg:px-8">
 					<img
 						alt="Kurrier dashboard preview (light)"
-						src="/light-mailbox.png"
+						src="/light-label-demo.png"
 						width={2432}
 						height={1442}
 						className="block dark:hidden mb-[-12%] rounded-xl shadow-2xl ring-1 ring-gray-900/10"
@@ -71,7 +71,7 @@ export default function KurrierFeatures() {
 					{/* Dark mode image */}
 					<img
 						alt="Kurrier dashboard preview (dark)"
-						src="/dark-mailbox.png"
+						src="/dark-label-demo.png"
 						width={2432}
 						height={1442}
 						className="hidden dark:block mb-[-12%] rounded-xl shadow-2xl ring-1 ring-gray-100/10 dark:shadow-gray-900/40"
