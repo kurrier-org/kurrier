@@ -8,11 +8,9 @@ export const fromName = (message: MessageEntity) => {
 	if (!from) return null;
 
 	if (typeof from === "string") {
-		// string form has no display name, return just the email part before @ if you want
 		return from.split("@")[0] ?? null;
 	}
 
-	// object form with parsed name
 	return from.value?.[0]?.name ?? null;
 };
 
@@ -25,7 +23,6 @@ export const fromAddress = (message: MessageEntity) => {
 		return from;
 	}
 
-	// object form with parsed email
 	return from.value?.[0]?.address ?? null;
 };
 
@@ -38,12 +35,10 @@ export const getMessageName = (
 	if (!value) return null;
 
 	if (typeof value === "string") {
-		// string form has no display name; fallback to part before @
 		const beforeAt = value.split("@")[0];
 		return beforeAt || null;
 	}
 
-	// object form with parsed name
 	return value.value?.[0]?.name ?? null;
 };
 
@@ -62,7 +57,6 @@ export const getMessageAddress = (
 		return value;
 	}
 
-	// object form with parsed email address
 	return value.value?.[0]?.address ?? null;
 };
 
@@ -71,10 +65,9 @@ export function sanitizeFilename(name: string): string {
 	const base = dot > 0 ? name.slice(0, dot) : name;
 	const ext = dot > 0 ? name.slice(dot) : "";
 
-	// slugify ensures ASCII, strips unsafe chars, collapses spaces
 	const cleanBase = slugify(base, {
-		separator: "-", // or '_' if you prefer underscores
-		decamelize: false, // keep as-is
+		separator: "-",
+		decamelize: false,
 		preserveLeadingUnderscore: true,
 	});
 
@@ -88,3 +81,22 @@ export const encodeMailboxPath = (path: string) => {
 export const decodeMailboxPath = (slug: string) => {
 	return decodeURIComponent(slug.replaceAll("~", "%2F"));
 };
+
+export const DEFAULT_COLORS_SWATCH = [
+	"#2e2e2e",
+	"#868e96",
+	"#fa5252",
+	"#e64980",
+	"#be4bdb",
+	"#7950f2",
+	"#4c6ef5",
+	"#228be6",
+	"#15aabf",
+	"#12b886",
+	"#40c057",
+	"#82c91e",
+	"#fab005",
+	"#fd7e14",
+];
+
+export const PAGE_SIZE = 50;

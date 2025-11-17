@@ -40,7 +40,7 @@ import { z } from "zod";
 import slugify from "@sindresorhus/slugify";
 import { rlsClient } from "@/lib/actions/clients";
 import { v4 as uuidv4 } from "uuid";
-import {backfillMailboxes, clearImapClients} from "@/lib/actions/mailbox";
+import { backfillMailboxes, clearImapClients } from "@/lib/actions/mailbox";
 import { kvGet } from "@common";
 import { nanoid } from "nanoid";
 
@@ -639,15 +639,14 @@ export const deleteEmailIdentity = async (
 				});
 			}
 		} else {
-            await clearImapClients(userIdentity.identities.id);
-        }
+			await clearImapClients(userIdentity.identities.id);
+		}
 
 		await rls((tx) =>
 			tx
 				.delete(identities)
 				.where(eq(identities.id, String(userIdentity.identities.id))),
 		);
-
 
 		revalidatePath(DASHBOARD_PATH);
 		return { success: true, message: "Deleted email identity" };
@@ -791,14 +790,7 @@ export const getDashboardStats = async () => {
 		const rls = await rlsClient();
 
 		const data = await rls(async (tx) => {
-			const [
-				[mp],
-				[sa],
-				[vd],
-				[ai],
-				[epTotal],
-				[ep24h],
-			] = await Promise.all([
+			const [[mp], [sa], [vd], [ai], [epTotal], [ep24h]] = await Promise.all([
 				tx.select({ count: count() }).from(providers),
 				tx.select({ count: count() }).from(smtpAccounts),
 				tx

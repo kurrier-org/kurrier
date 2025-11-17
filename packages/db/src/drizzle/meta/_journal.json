@@ -57,6 +57,13 @@
 			"when": 1763231397924,
 			"tag": "0007_dizzy_centennial",
 			"breakpoints": true
+		},
+		{
+			"idx": 8,
+			"version": "7",
+			"when": 1763310067161,
+			"tag": "0008_cheerful_bedlam",
+			"breakpoints": true
 		}
 	]
 }

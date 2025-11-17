@@ -34,12 +34,14 @@ import ThemeColorPicker from "@/components/common/theme-color-picker";
 import IdentityMailboxesList from "@/components/dashboard/identity-mailboxes-list";
 import {
 	FetchIdentityMailboxListResult,
+	FetchLabelsResult,
 	FetchMailboxUnreadCountsResult,
 } from "@/lib/actions/mailbox";
 import ThemeSwitch from "@/components/common/theme-switch";
 import Link from "next/link";
 import { useMediaQuery } from "@mantine/hooks";
 import { Divider } from "@mantine/core";
+import LabelHome from "@/components/dashboard/labels/label-home";
 
 type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	publicConfig: PublicConfig;
@@ -47,6 +49,7 @@ type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	avatar: string;
 	identityMailboxes: FetchIdentityMailboxListResult;
 	unreadCounts: FetchMailboxUnreadCountsResult;
+	globalLabels: FetchLabelsResult;
 };
 
 export function AppSidebar({ ...props }: UnifiedSidebarProps) {
@@ -56,6 +59,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 		avatar,
 		identityMailboxes,
 		unreadCounts,
+		globalLabels,
 		...restProps
 	} = props;
 
@@ -193,15 +197,18 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 												}}
 											/>
 										) : (
-											<IdentityMailboxesList
-												identityMailboxes={identityMailboxes}
-												unreadCounts={unreadCounts}
-												onComplete={() => {
-													if (isMobile) {
-														toggleSidebar();
-													}
-												}}
-											/>
+											<>
+												<IdentityMailboxesList
+													identityMailboxes={identityMailboxes}
+													unreadCounts={unreadCounts}
+													onComplete={() => {
+														if (isMobile) {
+															toggleSidebar();
+														}
+													}}
+												/>
+												<LabelHome globalLabels={globalLabels} />
+											</>
 										)}
 									</>
 								) : (
@@ -255,10 +262,13 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 							{isOnPlatform ? (
 								<NavMain items={data.navPlatform} />
 							) : (
-								<IdentityMailboxesList
-									identityMailboxes={identityMailboxes}
-									unreadCounts={unreadCounts}
-								/>
+								<>
+									<IdentityMailboxesList
+										identityMailboxes={identityMailboxes}
+										unreadCounts={unreadCounts}
+									/>
+									<LabelHome globalLabels={globalLabels} />
+								</>
 							)}
 						</SidebarGroupContent>
 					</SidebarGroup>

@@ -1,14 +1,15 @@
 "use client";
 import React from "react";
 import { Mail, MailOpen, Paperclip, Trash2 } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { MailboxEntity, MailboxSyncEntity } from "@db";
 import {
+	FetchLabelsResult,
+	FetchMailboxThreadLabelsResult,
 	FetchMailboxThreadsResult,
 	markAsRead,
 	markAsUnread,
 	moveToTrash,
-	revalidateMailbox,
 	toggleStar,
 } from "@/lib/actions/mailbox";
 import { IconStar, IconStarFilled } from "@tabler/icons-react";
@@ -18,16 +19,22 @@ type Props = {
 	activeMailbox: MailboxEntity;
 	identityPublicId: string;
 	mailboxSync: MailboxSyncEntity | undefined;
+	globalLabels: FetchLabelsResult;
+	labelsByThreadId: FetchMailboxThreadLabelsResult;
 };
 import { Temporal } from "@js-temporal/polyfill";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { toast } from "sonner";
+import LabelHoverButtons from "@/components/dashboard/labels/label-hover-buttons";
+import LabelRowTag from "@/components/dashboard/labels/label-row-tag";
 
 export default function WebmailListItem({
 	mailboxThreadItem,
 	activeMailbox,
 	identityPublicId,
 	mailboxSync,
+	globalLabels,
+	labelsByThreadId,
 }: Props) {
 	function formatDateLabel(input?: string | number | Date) {
 		const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -73,24 +80,19 @@ export default function WebmailListItem({
 	const dateLabel = formatDateLabel(date);
 
 	const pathname = usePathname();
-	const searchParams = useSearchParams();
 
 	const openThread = async () => {
 		const url = pathname.match("/dashboard/mail")
 			? `/dashboard/mail/${identityPublicId}/${activeMailbox.slug}/threads/${mailboxThreadItem.threadId}`
 			: `/mail/${identityPublicId}/${activeMailbox.slug}/threads/${mailboxThreadItem.threadId}`;
 		router.push(url);
-		// router.refresh()
-		// await revalidateMailbox(`${pathname}?${searchParams.toString()}`);
 	};
 
-	// Width reserved on the right so text never collides with the overlay actions
-	const ACTIONS_W = "96px"; // ~ 3 icons + gaps
+	const ACTIONS_W = "96px";
 
 	function getAllNames(p: typeof mailboxThreadItem.participants) {
 		const lists = [p?.from ?? [], p?.to ?? [], p?.cc ?? [], p?.bcc ?? []];
 
-		// keep stable order: from → to → cc → bcc; dedupe by email (case-insensitive)
 		const seen = new Set<string>();
 		const merged: { n?: string | null; e: string }[] = [];
 
@@ -102,7 +104,7 @@ export default function WebmailListItem({
 				if (seen.has(key)) continue;
 				seen.add(key);
 				merged.push({ n: x.n, e });
-				if (merged.length >= 6) break; // cap to keep json small & UI tidy
+				if (merged.length >= 6) break;
 			}
 			if (merged.length >= 6) break;
 		}
@@ -134,12 +136,13 @@ export default function WebmailListItem({
 		<>
 			<li
 				className={[
-					"relative group grid cursor-pointer", // relative → for absolute overlay
-					"grid-cols-[auto_auto_minmax(16rem,1fr)_minmax(10rem,2fr)_auto]",
+					"relative group grid cursor-pointer",
+					// "grid-cols-[auto_auto_minmax(16rem,1fr)_minmax(10rem,2fr)_auto]",
+					"grid-cols-[auto_auto_20rem_minmax(10rem,2fr)_auto]",
+					// "grid-cols-[auto_auto_minmax(8rem,12rem)_minmax(10rem,2fr)_auto]",
 					"items-center gap-3 px-3 py-2 transition-colors hover:bg-muted/50",
 					isRead ? "bg-muted/50" : "font-semibold",
-					// threadItem.unreadCount > 0 ? "font-semibold" : "",
-					`pr-[${ACTIONS_W}]`, // reserve space for overlay
+					`pr-[${ACTIONS_W}]`,
 				].join(" ")}
 			>
 				<div className="flex items-center">
@@ -194,6 +197,11 @@ export default function WebmailListItem({
 					onClick={openThread}
 					className="flex min-w-0 items-center gap-1 pr-2"
 				>
+					<LabelRowTag
+						threadId={mailboxThreadItem.threadId}
+						labelsByThreadId={labelsByThreadId}
+						isRead={isRead}
+					/>
 					<span className="truncate">{mailboxThreadItem.subject}</span>
 					<span className="mx-1 text-muted-foreground">–</span>
 					<span className="truncate text-muted-foreground font-normal">
@@ -219,11 +227,17 @@ export default function WebmailListItem({
 					className={[
 						"pointer-events-none absolute inset-y-0 right-3 flex items-center justify-end gap-1 bg-muted",
 						`w-[${ACTIONS_W}]`,
-						"opacity-0 transition-opacity duration-150",
+						"opacity-0 transition-opacity duration-100",
 						"group-hover:opacity-100 group-hover:pointer-events-auto px-3 rounded-l-4xl",
 					].join(" ")}
 					onClick={(e) => e.stopPropagation()}
 				>
+					<LabelHoverButtons
+						mailboxThreadItem={mailboxThreadItem}
+						labelsByThreadId={labelsByThreadId}
+						allLabels={globalLabels}
+					/>
+
 					{canMarkAsUnread && (
 						<button
 							onClick={async () => {

@@ -35,9 +35,9 @@ export const initSmtpClient = async (
 			.from(identities)
 			.where(eq(identities.id, identityId));
 
-        if (!identity || !identity.smtpAccountId) {
-            return
-        }
+		if (!identity || !identity.smtpAccountId) {
+			return;
+		}
 
 		const [secrets] = await decryptAdminSecrets({
 			linkTable: smtpAccountSecrets,

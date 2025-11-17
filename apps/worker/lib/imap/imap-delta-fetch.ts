@@ -74,32 +74,32 @@ export const deltaFetch = async (
 				const uid = msg.uid;
 				const raw = (await msg.source?.toString()) || "";
 
-                const flags = msg.flags ?? new Set<string>();
-                const isSeen = flags.has("\\Seen");
-                const isFlagged = flags.has("\\Flagged");
-                const isAnswered = flags.has("\\Answered");
+				const flags = msg.flags ?? new Set<string>();
+				const isSeen = flags.has("\\Seen");
+				const isFlagged = flags.has("\\Flagged");
+				const isAnswered = flags.has("\\Answered");
 
-                if (!messageId) {
-                    console.warn(
-                        `[deltaFetch] Missing Message-ID — path=${path} uid=${uid}`,
-                    );
-                    return await parseAndStoreEmail(raw, {
-                        ownerId,
-                        mailboxId: row.id,
-                        rawStorageKey: `eml/${ownerId}/${row.id}/${uid}.eml`,
-                        emlKey: String(msg.id),
-                        metaData: {
-                            imap: {
-                                uid,
-                                mailboxPath: path,
-                                flags: [...flags],
-                            },
-                        },
-                        seen: isSeen,
-                        flagged: isFlagged,
-                        answered: isAnswered,
-                    });
-                }
+				if (!messageId) {
+					console.warn(
+						`[deltaFetch] Missing Message-ID — path=${path} uid=${uid}`,
+					);
+					return await parseAndStoreEmail(raw, {
+						ownerId,
+						mailboxId: row.id,
+						rawStorageKey: `eml/${ownerId}/${row.id}/${uid}.eml`,
+						emlKey: String(msg.id),
+						metaData: {
+							imap: {
+								uid,
+								mailboxPath: path,
+								flags: [...flags],
+							},
+						},
+						seen: isSeen,
+						flagged: isFlagged,
+						answered: isAnswered,
+					});
+				}
 
 				// Check if we already have this message anywhere for this owner
 				const [existing] = await db
@@ -199,22 +199,22 @@ export const deltaFetch = async (
 					return;
 				}
 
-                await parseAndStoreEmail(raw, {
-                    ownerId,
-                    mailboxId: row.id,
-                    rawStorageKey: `eml/${ownerId}/${row.id}/${uid}.eml`,
-                    emlKey: String(msg.id),
-                    metaData: {
-                        imap: {
-                            uid,
-                            mailboxPath: path,
-                            flags: [...flags],
-                        },
-                    },
-                    seen: isSeen,
-                    flagged: isFlagged,
-                    answered: isAnswered,
-                });
+				await parseAndStoreEmail(raw, {
+					ownerId,
+					mailboxId: row.id,
+					rawStorageKey: `eml/${ownerId}/${row.id}/${uid}.eml`,
+					emlKey: String(msg.id),
+					metaData: {
+						imap: {
+							uid,
+							mailboxPath: path,
+							flags: [...flags],
+						},
+					},
+					seen: isSeen,
+					flagged: isFlagged,
+					answered: isAnswered,
+				});
 
 				return undefined as any;
 			},

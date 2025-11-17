@@ -9,6 +9,8 @@ import {
 	mailboxSync,
 	mailboxThreads,
 	webhooks,
+	labels,
+	mailboxThreadLabels,
 } from "./schema";
 import { decryptedSecrets } from "./supabase-schema";
 import { z } from "zod";
@@ -73,3 +75,9 @@ export type WebhookSelectEntity = typeof webhooks.$inferSelect;
 export type WebhookInsertEntity = typeof webhooks.$inferInsert;
 
 export const IdentityUpdateSchema = createUpdateSchema(identities);
+
+export const LabelInsertSchema = createInsertSchema(labels);
+export type LabelCreate = typeof labels.$inferInsert;
+export type LabelEntity = typeof labels.$inferSelect;
+
+export type MailboxThreadLabelEntity = typeof mailboxThreadLabels.$inferSelect;

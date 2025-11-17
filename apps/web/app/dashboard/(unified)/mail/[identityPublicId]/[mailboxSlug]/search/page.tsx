@@ -1,6 +1,8 @@
 import {
 	fetchIdentityMailboxList,
+	fetchLabels,
 	fetchMailbox,
+	fetchMailboxThreadLabels,
 	FetchMailboxThreadsByIdsResult,
 	fetchMailboxThreadsList,
 	initSearch,
@@ -9,8 +11,7 @@ import { getPublicEnv, ThreadHit } from "@schema";
 import { isSignedIn } from "@/lib/actions/auth";
 import SearchPagination from "@/components/mailbox/default/search-pagination";
 import WebmailList from "@/components/mailbox/default/webmail-list";
-
-const PAGE_SIZE = 50;
+import { PAGE_SIZE } from "@common/mail-client";
 
 export default async function SearchPage({
 	params,
@@ -52,7 +53,6 @@ export default async function SearchPage({
 	const total = totalThreads || items.length;
 	const totalPages = Math.max(1, Math.ceil((total || 1) / PAGE_SIZE));
 
-	// DO NOT slice here—items are already page-scoped
 	const pageItems = items;
 
 	const threadIds = pageItems.map((i) => i.threadId);
@@ -62,6 +62,11 @@ export default async function SearchPage({
 			: { threads: [] };
 
 	const identityMailboxes = await fetchIdentityMailboxList();
+
+	const globalLabels = await fetchLabels();
+
+	const labelsByThreadId =
+		threads.length > 0 ? await fetchMailboxThreadLabels(threads) : {};
 
 	return (
 		<div className="p-4 space-y-4">
@@ -99,6 +104,8 @@ export default async function SearchPage({
 						activeMailbox={activeMailbox}
 						identityPublicId={identityPublicId}
 						identityMailboxes={identityMailboxes}
+						globalLabels={globalLabels}
+						labelsByThreadId={labelsByThreadId}
 					/>
 				</>
 			)}
