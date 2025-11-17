@@ -86,7 +86,7 @@ function LabelHoverButtons({
 							<div className="flex flex-col gap-0.5">
 								{filteredLabels.map((label) => {
 									const checked = labelThreads.some(
-										(lt) => lt?.label?.id === label.id,
+										(lt) => lt?.label?.id === label?.id,
 									);
 
 									return (
