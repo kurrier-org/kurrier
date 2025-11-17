@@ -1,5 +1,11 @@
 # @kurrier/db
 
+## 1.0.11
+
+### Patch Changes
+
+- [#243](https://github.com/kurrier-org/kurrier/pull/243) [`d8ef2ea`](https://github.com/kurrier-org/kurrier/commit/d8ef2ea35463f612fd13acdfc7e62dfda336f1c1) Thanks [@krokhale](https://github.com/krokhale)! - Added Support for Labels
+
 ## 1.0.10
 
 ### Patch Changes
