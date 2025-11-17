@@ -30,6 +30,11 @@ Ready to try it out? Follow the next sections to get your instance running:
 Here’s a look at Kurrier in action — a clean, modern webmail built to connect all your email providers in one place.
 
 
+### 📨 Webmail View
+A unified fast, minimal interface for reading and managing your emails across accounts.
+
+![Kurrier Webmail View](https://www.kurrier.org/light-mailbox-github.png)
+
 ### 🔌 Providers View
 Connect and manage IMAP, SMTP, SES, SendGrid, Mailgun, and more — all from one dashboard.
 
@@ -41,10 +46,6 @@ Easily switch between multiple sender identities and manage your connected accou
 
 ![Kurrier Identity View](https://www.kurrier.org/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdoc-identities.ea020d9f.png&w=1920&q=100)
 
-### 📨 Webmail View
-A unified fast, minimal interface for reading and managing your emails across accounts.
-
-![Kurrier Webmail View](https://www.kurrier.org/light-mailbox-github.png)
 
 ## 💙 Support Kurrier
 
