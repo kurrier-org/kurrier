@@ -4,6 +4,8 @@ import { MailboxEntity, MailboxSyncEntity } from "@db";
 import { PublicConfig } from "@schema";
 import {
 	FetchIdentityMailboxListResult,
+	FetchLabelsResult,
+	FetchMailboxThreadLabelsResult,
 	FetchMailboxThreadsResult,
 } from "@/lib/actions/mailbox";
 import MailListHeader from "@/components/mailbox/default/mail-list-header";
@@ -20,6 +22,8 @@ type WebListProps = {
 	activeMailbox: MailboxEntity;
 	identityPublicId: string;
 	identityMailboxes: FetchIdentityMailboxListResult;
+	globalLabels: FetchLabelsResult;
+	labelsByThreadId: FetchMailboxThreadLabelsResult;
 	mailboxSync?: MailboxSyncEntity;
 };
 
@@ -30,6 +34,8 @@ export default function WebmailList({
 	mailboxSync,
 	publicConfig,
 	identityMailboxes,
+	globalLabels,
+	labelsByThreadId,
 }: WebListProps) {
 	useEffect(() => {
 		if (mailboxSync) {
@@ -67,7 +73,6 @@ export default function WebmailList({
 							activeMailbox={activeMailbox}
 						/>
 
-						{/*<ul role="list" className="divide-y bg-white rounded-4xl">*/}
 						<ul role="list" className="divide-y rounded-4xl">
 							{mailboxThreads.map((mailboxThreadItem) =>
 								isMobile ? (
@@ -79,6 +84,7 @@ export default function WebmailList({
 										activeMailbox={activeMailbox}
 										identityPublicId={identityPublicId}
 										mailboxSync={mailboxSync}
+										labelsByThreadId={labelsByThreadId}
 									/>
 								) : (
 									<WebmailListItem
@@ -89,6 +95,8 @@ export default function WebmailList({
 										activeMailbox={activeMailbox}
 										identityPublicId={identityPublicId}
 										mailboxSync={mailboxSync}
+										globalLabels={globalLabels}
+										labelsByThreadId={labelsByThreadId}
 									/>
 								),
 							)}

@@ -168,21 +168,16 @@ export default function IdentityMailboxesList({
 							)}
 						</button>
 					) : (
-						<span className="w-4 mr-1" />
+						<span className="w-4" />
 					)}
 
-					{/* row container: link grows, menu stays at far right */}
-					<div
-						className="flex w-full items-center"
-						style={{ paddingLeft: 8 + depth * 14 }}
-					>
-						{/* clickable area */}
+					<div className="flex w-full items-start">
 						<Link
 							href={href}
 							onClick={onComplete ? () => onComplete() : undefined}
 							aria-disabled={!m.selectable}
 							className={cn(
-								"flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-sm",
+								"flex min-w-0 flex-1 items-center gap-2 rounded-md py-1.5 pl-2 text-sm",
 								"hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
 								isActive && "bg-sidebar-accent text-sidebar-accent-foreground",
 								!m.selectable &&
@@ -196,7 +191,6 @@ export default function IdentityMailboxesList({
 							</span>
 						</Link>
 
-						{/* always-visible menu (outside Link, so no accidental navigation) */}
 						{m.kind === "custom" && (
 							<Menu withinPortal position="right-start" offset={4}>
 								<Menu.Target>
@@ -206,7 +200,7 @@ export default function IdentityMailboxesList({
 											e.stopPropagation(); // don’t toggle parent handlers
 										}}
 										className={cn(
-											"rounded p-1 transition",
+											"rounded p-1 mt-1.25 transition",
 											"hover:bg-sidebar-accent/60",
 										)}
 										aria-label={`Actions for ${m.name ?? "folder"}`}

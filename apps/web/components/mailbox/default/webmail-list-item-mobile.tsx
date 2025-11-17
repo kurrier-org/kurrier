@@ -4,6 +4,7 @@ import { Mail, MailOpen, Paperclip, Trash2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import type { MailboxEntity, MailboxSyncEntity } from "@db";
 import {
+	FetchMailboxThreadLabelsResult,
 	FetchMailboxThreadsResult,
 	markAsRead,
 	markAsUnread,
@@ -14,12 +15,14 @@ import { IconStar, IconStarFilled } from "@tabler/icons-react";
 import { Temporal } from "@js-temporal/polyfill";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { toast } from "sonner";
+import LabelRowTag from "@/components/dashboard/labels/label-row-tag";
 
 type Props = {
 	mailboxThreadItem: FetchMailboxThreadsResult[number];
 	activeMailbox: MailboxEntity;
 	identityPublicId: string;
 	mailboxSync: MailboxSyncEntity | undefined;
+	labelsByThreadId: FetchMailboxThreadLabelsResult;
 };
 
 export default function WebmailListItemMobile({
@@ -27,6 +30,7 @@ export default function WebmailListItemMobile({
 	activeMailbox,
 	identityPublicId,
 	mailboxSync,
+	labelsByThreadId,
 }: Props) {
 	const router = useRouter();
 
@@ -161,6 +165,11 @@ export default function WebmailListItemMobile({
 					)}
 				</div>
 				<div className="flex items-center gap-1 truncate text-muted-foreground font-normal text-sm">
+					<LabelRowTag
+						threadId={mailboxThreadItem.threadId}
+						labelsByThreadId={labelsByThreadId}
+						isRead={isRead}
+					/>
 					<span className="truncate">{mailboxThreadItem.subject}</span>
 					<span className="hidden sm:inline mx-1 text-muted-foreground">–</span>
 					<span className="truncate">{mailboxThreadItem.previewText}</span>

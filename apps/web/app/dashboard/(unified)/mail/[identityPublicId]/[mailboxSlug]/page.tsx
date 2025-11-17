@@ -1,7 +1,9 @@
 import {
 	deltaFetch,
 	fetchIdentityMailboxList,
+	fetchLabels,
 	fetchMailbox,
+	fetchMailboxThreadLabels,
 	fetchMailboxThreads,
 } from "@/lib/actions/mailbox";
 import { getPublicEnv } from "@schema";
@@ -17,7 +19,7 @@ async function Page({
 }) {
 	const { page } = await searchParams;
 	const { identityPublicId, mailboxSlug } = await params;
-	const { activeMailbox, count, identity, mailboxSync } = await fetchMailbox(
+	const { activeMailbox, count, mailboxSync } = await fetchMailbox(
 		identityPublicId,
 		mailboxSlug,
 	);
@@ -33,8 +35,9 @@ async function Page({
 		String(mailboxSlug),
 		Number(page),
 	);
-
+	const labelsByThreadId = await fetchMailboxThreadLabels(mailboxThreads);
 	const identityMailboxes = await fetchIdentityMailboxList();
+	const globalLabels = await fetchLabels();
 
 	return (
 		<>
@@ -46,6 +49,8 @@ async function Page({
 					identityPublicId={identityPublicId}
 					mailboxSync={mailboxSync}
 					identityMailboxes={identityMailboxes}
+					globalLabels={globalLabels}
+					labelsByThreadId={labelsByThreadId}
 				/>
 
 				<MailPagination
@@ -54,13 +59,6 @@ async function Page({
 					identityPublicId={identityPublicId}
 					page={Number(page)}
 				/>
-
-				{/*{Array.from({ length: 24 }).map((_, index) => (*/}
-				{/*	<div*/}
-				{/*		key={index}*/}
-				{/*		className="bg-muted/50 aspect-video h-12 w-full rounded-lg"*/}
-				{/*	/>*/}
-				{/*))}*/}
 			</div>
 		</>
 	);

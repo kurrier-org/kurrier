@@ -2,6 +2,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/ui/dashboards/unified/default/app-sidebar";
 import {
 	fetchIdentityMailboxList,
+	fetchLabelsWithCounts,
 	fetchMailboxUnreadCounts,
 } from "@/lib/actions/mailbox";
 import { getPublicEnv } from "@schema";
@@ -18,6 +19,7 @@ export default async function DashboardLayout({
 	const publicConfig = getPublicEnv();
 	const user = await isSignedIn();
 	const avatar = await getGravatarUrl(String(user?.email));
+	const globalLabels = await fetchLabelsWithCounts();
 
 	return (
 		<>
@@ -34,6 +36,7 @@ export default async function DashboardLayout({
 					avatar={avatar}
 					identityMailboxes={identityMailboxes}
 					unreadCounts={unreadCounts}
+					globalLabels={globalLabels}
 				/>
 				<SidebarInset>{children}</SidebarInset>
 			</SidebarProvider>

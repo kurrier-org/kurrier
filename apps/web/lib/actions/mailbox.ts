@@ -5,8 +5,14 @@ import { rlsClient } from "@/lib/actions/clients";
 import {
 	db,
 	identities,
+	LabelCreate,
+	LabelEntity,
+	LabelInsertSchema,
+	labels,
 	mailboxes,
 	mailboxSync,
+	MailboxThreadLabelEntity,
+	mailboxThreadLabels,
 	mailboxThreads,
 	messageAttachments,
 	messages,
@@ -14,7 +20,12 @@ import {
 } from "@db";
 import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { FormState, getServerEnv, SearchThreadsResponse } from "@schema";
+import {
+	FormState,
+	getServerEnv,
+	handleAction,
+	SearchThreadsResponse,
+} from "@schema";
 import { decode } from "decode-formdata";
 import { toArray } from "@/lib/utils";
 import { Queue, QueueEvents } from "bullmq";
@@ -55,6 +66,7 @@ import Typesense, { Client } from "typesense";
 import { isSignedIn } from "@/lib/actions/auth";
 import slugify from "@sindresorhus/slugify";
 import { redirect } from "next/navigation";
+import { PAGE_SIZE } from "@common/mail-client";
 let typeSenseClient: Client | null = null;
 function getTypeSenseClient(): Client {
 	if (typeSenseClient) return typeSenseClient;
@@ -316,7 +328,7 @@ export const initSearch = async (
 			sort_by: "createdAt:desc",
 			group_by: "threadId",
 			group_limit: 1,
-			per_page: 50,
+			per_page: PAGE_SIZE,
 			page,
 		})) as any;
 
@@ -381,16 +393,16 @@ export const backfillAccount = async (identityId: string) => {
 			},
 		},
 	);
-    await smtpQueue.add(
-        "imap:start-idle",
-        { identityId },
-        {
-            removeOnComplete: true,
-            removeOnFail: false,
-            attempts: 3,
-            backoff: { type: "exponential", delay: 1500 },
-        },
-    );
+	await smtpQueue.add(
+		"imap:start-idle",
+		{ identityId },
+		{
+			removeOnComplete: true,
+			removeOnFail: false,
+			attempts: 3,
+			backoff: { type: "exponential", delay: 1500 },
+		},
+	);
 };
 
 export const fetchWebMailThreadDetail = cache(async (threadId: string) => {
@@ -521,7 +533,6 @@ export const markAsUnread = async (
 			.where(
 				and(inArray(messages.threadId, ids), eq(messages.mailboxId, mailboxId)),
 			);
-
 
 		const grouped = await tx
 			.select({
@@ -760,8 +771,8 @@ export const fetchMailboxThreads = async (
 				),
 			)
 			.orderBy(desc(mailboxThreads.lastActivityAt))
-			.offset((page - 1) * 50)
-			.limit(50);
+			.offset((page - 1) * PAGE_SIZE)
+			.limit(PAGE_SIZE);
 	});
 	return threads;
 };
@@ -774,7 +785,6 @@ export type FetchMailboxThreadsByIdsResult = {
 	threads: (typeof mailboxThreads.$inferSelect)[];
 	missing?: string[];
 };
-
 
 export async function fetchMailboxThreadsList(
 	mailboxId: string,
@@ -801,7 +811,6 @@ export async function fetchMailboxThreadsList(
 			(rank.get(a.threadId) ?? Number.MAX_SAFE_INTEGER) -
 			(rank.get(b.threadId) ?? Number.MAX_SAFE_INTEGER),
 	);
-
 
 	const found = new Set(rows.map((r) => r.threadId));
 	const missing = threadIds.filter((id) => !found.has(id));
@@ -1072,17 +1081,289 @@ export const moveToFolder = async (
 	if (refresh) revalidatePath("/mail");
 };
 
-
 export const clearImapClients = async (identityId: string) => {
-    const { smtpQueue } = await getRedis();
-    await smtpQueue.add(
-        "imap:stop-idle",
-        { identityId },
-        {
-            removeOnComplete: true,
-            removeOnFail: false,
-            attempts: 3,
-            backoff: { type: "exponential", delay: 1500 },
-        },
-    );
+	const { smtpQueue } = await getRedis();
+	await smtpQueue.add(
+		"imap:stop-idle",
+		{ identityId },
+		{
+			removeOnComplete: true,
+			removeOnFail: false,
+			attempts: 3,
+			backoff: { type: "exponential", delay: 1500 },
+		},
+	);
+};
+
+export const fetchLabels = async () => {
+	const rls = await rlsClient();
+	const globalLabels = await rls((tx) =>
+		tx.select().from(labels).orderBy(asc(labels.name)),
+	);
+	return globalLabels;
+};
+
+export type LabelWithCount = LabelEntity & {
+	threadCount: number;
+};
+
+export const fetchLabelsWithCounts = async (): Promise<LabelWithCount[]> => {
+	const rls = await rlsClient();
+
+	const allLabels = await rls((tx) =>
+		tx.select().from(labels).orderBy(asc(labels.name)),
+	);
+
+	const counts = await rls((tx) =>
+		tx
+			.select({
+				labelId: mailboxThreadLabels.labelId,
+				threadCount: sql<number>`count(*)`,
+			})
+			.from(mailboxThreadLabels)
+			.groupBy(mailboxThreadLabels.labelId),
+	);
+
+	const countsById = new Map<string, number>();
+	for (const row of counts) {
+		countsById.set(row.labelId, Number(row.threadCount));
+	}
+
+	return allLabels.map((l) => ({
+		...l,
+		threadCount: countsById.get(l.id) ?? 0,
+	}));
+};
+
+export type FetchLabelsWithCountResult = Awaited<
+	ReturnType<typeof fetchLabelsWithCounts>
+>;
+export type FetchLabelsResult = Awaited<ReturnType<typeof fetchLabels>>;
+
+export async function addNewLabel(
+	_prev: FormState,
+	formData: FormData,
+): Promise<FormState> {
+	return handleAction(async () => {
+		const decodedForm = decode(formData);
+		const payload = LabelInsertSchema.parse({
+			name: decodedForm.name,
+			colorBg: decodedForm.color,
+			slug: slugify(String(decodedForm.name)),
+		});
+		if (decodedForm.parentId) {
+			payload.parentId = decodedForm.parentId;
+		}
+
+		const rls = await rlsClient();
+		const newLabelName = await rls((tx) =>
+			tx
+				.insert(labels)
+				.values(payload as LabelCreate)
+				.returning(),
+		);
+		revalidatePath("/dashboard/mail");
+		return { success: true, data: newLabelName };
+	});
+}
+
+export async function addLabelToThread({
+	threadId,
+	mailboxId,
+	labelId,
+}: {
+	threadId: string;
+	mailboxId: string;
+	labelId: string;
+}): Promise<FormState> {
+	return handleAction(async () => {
+		const rls = await rlsClient();
+		await rls((tx) =>
+			tx.insert(mailboxThreadLabels).values({
+				threadId,
+				mailboxId,
+				labelId,
+			}),
+		);
+		revalidatePath("/dashboard/mail");
+		return { success: true };
+	});
+}
+
+export async function removeLabelFromThread({
+	threadId,
+	mailboxId,
+	labelId,
+}: {
+	threadId: string;
+	mailboxId: string;
+	labelId: string;
+}): Promise<FormState> {
+	return handleAction(async () => {
+		const rls = await rlsClient();
+		await rls((tx) =>
+			tx
+				.delete(mailboxThreadLabels)
+				.where(
+					and(
+						eq(mailboxThreadLabels.threadId, threadId),
+						eq(mailboxThreadLabels.mailboxId, mailboxId),
+						eq(mailboxThreadLabels.labelId, labelId),
+					),
+				)
+				.returning(),
+		);
+		revalidatePath("/dashboard/mail");
+		return { success: true };
+	});
+}
+
+export const fetchMailboxThreadLabels = async (
+	threads: FetchMailboxThreadsResult,
+) => {
+	const threadIds = threads.map((t) => t.threadId);
+	if (threadIds.length === 0) return {};
+	const rls = await rlsClient();
+	const rows = await rls((tx) =>
+		tx
+			.select({
+				mt: mailboxThreadLabels,
+				l: labels,
+			})
+			.from(mailboxThreadLabels)
+			.innerJoin(labels, eq(mailboxThreadLabels.labelId, labels.id))
+			.where(inArray(mailboxThreadLabels.threadId, threadIds)),
+	);
+
+	const byThreadId: Record<
+		string,
+		{ mt: MailboxThreadLabelEntity; label?: LabelEntity }[]
+	> = {};
+
+	for (const { mt, l } of rows) {
+		const threadId = mt.threadId;
+
+		if (!byThreadId[threadId]) {
+			byThreadId[threadId] = [];
+		}
+
+		byThreadId[threadId].push({
+			mt,
+			label: l,
+		});
+	}
+
+	return byThreadId;
+};
+
+export type FetchMailboxThreadLabelsResult = Awaited<
+	ReturnType<typeof fetchMailboxThreadLabels>
+>;
+
+export const fetchMailboxThreadsByLabel = async (
+	identityPublicId: string,
+	mailboxSlug: string,
+	labelSlug: string,
+	page: number,
+) => {
+	const rls = await rlsClient();
+	const pageNum = page && page > 0 ? page : 1;
+
+	const rows = await rls((tx) =>
+		tx
+			.select({
+				mt: mailboxThreads,
+			})
+			.from(mailboxThreads)
+			.innerJoin(
+				mailboxThreadLabels,
+				and(
+					eq(mailboxThreadLabels.threadId, mailboxThreads.threadId),
+					eq(mailboxThreadLabels.mailboxId, mailboxThreads.mailboxId),
+				),
+			)
+			.innerJoin(labels, eq(mailboxThreadLabels.labelId, labels.id))
+			.where(
+				and(
+					eq(mailboxThreads.identityPublicId, identityPublicId),
+					eq(mailboxThreads.mailboxSlug, mailboxSlug),
+					eq(labels.slug, labelSlug),
+				),
+			)
+			.orderBy(desc(mailboxThreads.lastActivityAt))
+			.offset((pageNum - 1) * PAGE_SIZE)
+			.limit(PAGE_SIZE),
+	);
+
+	const [{ total }] = await rls((tx) =>
+		tx
+			.select({ total: sql<number>`count(*)` })
+			.from(mailboxThreadLabels)
+			.innerJoin(
+				mailboxThreads,
+				and(
+					eq(mailboxThreadLabels.threadId, mailboxThreads.threadId),
+					eq(mailboxThreadLabels.mailboxId, mailboxThreads.mailboxId),
+				),
+			)
+			.innerJoin(labels, eq(mailboxThreadLabels.labelId, labels.id))
+			.where(
+				and(
+					eq(mailboxThreads.identityPublicId, identityPublicId),
+					eq(mailboxThreads.mailboxSlug, mailboxSlug),
+					eq(labels.slug, labelSlug),
+				),
+			),
+	);
+	const threads = rows.map((r) => r.mt);
+	return { threads, total };
+};
+
+export type FetchMailboxThreadsByLabelResult = Awaited<
+	ReturnType<typeof fetchMailboxThreadsByLabel>
+>;
+
+export const deleteLabel = async ({ id }: { id: string }) => {
+	try {
+		const rls = await rlsClient();
+
+		await rls((tx) => tx.delete(labels).where(eq(labels.id, id)));
+		revalidatePath("/dashboard/mail");
+		return { success: true };
+	} catch (err: any) {
+		return { success: false, error: err?.message ?? "Unknown error" };
+	}
+};
+
+export const updateLabel = async ({
+	id,
+	name,
+	parentId,
+	color,
+}: {
+	id: string;
+	name: string;
+	parentId: string | null;
+	color: string;
+}) => {
+	try {
+		const rls = await rlsClient();
+
+		await rls((tx) =>
+			tx
+				.update(labels)
+				.set({
+					name,
+					parentId,
+					colorBg: color,
+					updatedAt: new Date(),
+				})
+				.where(eq(labels.id, id)),
+		);
+
+		revalidatePath("/dashboard/mail");
+		return { success: true };
+	} catch (err: any) {
+		return { success: false, error: err?.message ?? "Unknown error" };
+	}
 };

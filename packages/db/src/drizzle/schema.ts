@@ -11,7 +11,6 @@ import {
 	jsonb,
 	integer,
 	index,
-	pgSchema,
 	bigint,
 	numeric,
 	primaryKey,
@@ -143,7 +142,6 @@ export const providerSecrets = pgTable(
 		secretId: uuid("secret_id")
 			.references(() => secretsMeta.id, { onDelete: "cascade" })
 			.notNull(),
-		// keyName: varchar("key_name", { length: 120 }).notNull(),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),
@@ -232,7 +230,6 @@ export const smtpAccounts = pgTable(
 			.notNull(),
 	},
 	(t) => [
-		// uniqueIndex("uniq_smtp_label_per_user").on(t.ownerId, t.label),
 		pgPolicy("smtp_select_own", {
 			for: "select",
 			to: authenticatedRole,
@@ -275,7 +272,6 @@ export const smtpAccountSecrets = pgTable(
 			.notNull(),
 	},
 	(t) => [
-		// RLS via ownership of the parent account + ownership of the secret
 		pgPolicy("smtpsec_select_own", {
 			for: "select",
 			to: authenticatedRole,
@@ -362,12 +358,9 @@ export const identities = pgTable(
 			.notNull(),
 	},
 	(t) => [
-		// avoid duplicates per user for same kind+value
 		uniqueIndex("uniq_identity_per_user").on(t.ownerId, t.kind, t.value),
-		// uniqueIndex("uniq_identity_per_user").on(t.ownerId, t.kind, t.value),
 		uniqueIndex("uniq_identity_public_id").on(t.publicId),
 
-		// RLS: standard owner controls
 		pgPolicy("identities_select_own", {
 			for: "select",
 			to: authenticatedRole,
@@ -468,7 +461,6 @@ export const mailboxSync = pgTable(
 			.references(() => mailboxes.id, { onDelete: "cascade" })
 			.notNull(),
 
-		// IMAP cursors / invariants
 		uidValidity: bigint("uid_validity", { mode: "bigint" }).notNull(),
 		lastSeenUid: bigint("last_seen_uid", { mode: "number" })
 			.notNull()
@@ -477,10 +469,8 @@ export const mailboxSync = pgTable(
 			.notNull()
 			.default(0),
 
-		// CONDSTORE/QRESYNC: allow very large modseq as exact integer
 		highestModseq: numeric("highest_modseq", { precision: 20, scale: 0 }),
 
-		// Worker state
 		phase: mailboxSyncPhaseEnum("phase").notNull().default("BOOTSTRAP"),
 		syncedAt: timestamp("synced_at", { withTimezone: true }),
 		error: text("error"),
@@ -490,13 +480,10 @@ export const mailboxSync = pgTable(
 			.notNull(),
 		updatedAt: timestamp("updated_at", { withTimezone: true })
 			.defaultNow()
-			// keep updatedAt fresh on UPDATEs
 			.$onUpdateFn(() => sql`now()`),
 	},
 	(table) => ({
-		// Ensure exactly one sync row per mailbox
 		uxMailbox: uniqueIndex("ux_mailbox_sync_mailbox").on(table.mailboxId),
-		// Helpful indexes for queries
 		ixIdentity: index("ix_mailbox_sync_identity").on(table.identityId),
 		ixPhase: index("ix_mailbox_sync_phase").on(table.phase),
 	}),
@@ -516,16 +503,13 @@ export const messageAttachments = pgTable(
 			.references(() => messages.id, { onDelete: "cascade" })
 			.notNull(),
 
-		// Storage location
 		bucketId: text("bucket_id").notNull().default("attachments"),
 		path: text("path").notNull(), // e.g. "private/<userId>/<messageId>/<uuid>.<ext>"
 
-		// Metadata
 		filenameOriginal: text("filename_original"),
 		contentType: text("content_type"),
 		sizeBytes: integer("size_bytes"),
 
-		// Inline/CID support
 		cid: text("cid"),
 		isInline: boolean("is_inline").notNull().default(false),
 		checksum: text("checksum"),
@@ -542,7 +526,6 @@ export const messageAttachments = pgTable(
 		uniqueIndex("uniq_bucket_path").on(t.bucketId, t.path),
 		index("idx_msg_attachments_cid").on(t.cid),
 
-		// RLS: owner can CRUD their own attachments
 		pgPolicy("message_attachments_select_own", {
 			for: "select",
 			to: authenticatedRole,
@@ -583,7 +566,6 @@ export const messages = pgTable(
 			.$defaultFn(() => nanoid(10)),
 
 		messageId: text("message_id").notNull(),
-		// messageId: text("message_id"),
 		inReplyTo: text("in_reply_to"),
 		references: text("references").array(),
 		threadId: uuid("thread_id")
@@ -593,7 +575,6 @@ export const messages = pgTable(
 			.$type<Array<{ name?: string; email: string }>>()
 			.default(sql`'[]'::jsonb`),
 		deliveredTo: text("delivered_to"),
-		// priority: text("priority"),
 		priority: MessagePriorityEnum("priority").default(sql`null`),
 		html: text("html"),
 
@@ -637,7 +618,6 @@ export const messages = pgTable(
 		index("idx_messages_priority").on(t.priority),
 
 		uniqueIndex("uniq_mailbox_message_id").on(t.mailboxId, t.messageId),
-		// index("idx_messages_thread_date").on(t.threadId, t.date),
 		index("idx_messages_in_reply_to").on(t.inReplyTo),
 
 		index("ix_messages_thread_flagged").on(t.threadId, t.flagged),
@@ -669,7 +649,6 @@ export const messages = pgTable(
 	],
 ).enableRLS();
 
-// threads.ts
 export const threads = pgTable(
 	"threads",
 	{
@@ -679,10 +658,6 @@ export const threads = pgTable(
 			.references(() => users.id)
 			.notNull()
 			.default(sql`auth.uid()`),
-
-		// mailboxId: uuid("mailbox_id")
-		// 	.references(() => mailboxes.id, { onDelete: "cascade" })
-		// 	.notNull(),
 
 		lastMessageDate: timestamp("last_message_date", { withTimezone: true }), // nullable until first msg written
 		lastMessageId: uuid("last_message_id")
@@ -699,17 +674,9 @@ export const threads = pgTable(
 			.notNull(),
 	},
 	(t) => [
-		// sorting & pagination helper (DESC not expressible in Drizzle index; include id for tie-break)
-		// index("idx_threads_mailbox_lastdate").on(
-		//     t.mailboxId,
-		//     t.lastMessageDate,
-		//     t.id,
-		// ),
 		index("idx_threads_owner_lastdate").on(t.ownerId, t.lastMessageDate, t.id),
-		// index("idx_threads_mailbox_updated").on(t.mailboxId, t.updatedAt),
 		index("idx_threads_owner_id").on(t.ownerId, t.id),
 
-		// RLS
 		pgPolicy("threads_select_own", {
 			for: "select",
 			to: authenticatedRole,
@@ -737,7 +704,6 @@ export const threads = pgTable(
 export const mailboxThreads = pgTable(
 	"mailbox_threads",
 	{
-		// Composite identity: a specific view of a thread in a mailbox
 		threadId: uuid("thread_id")
 			.references(() => threads.id, { onDelete: "cascade" })
 			.notNull(),
@@ -746,7 +712,6 @@ export const mailboxThreads = pgTable(
 			.references(() => mailboxes.id, { onDelete: "cascade" })
 			.notNull(),
 
-		// Ownership / routing
 		ownerId: uuid("owner_id")
 			.references(() => users.id)
 			.notNull()
@@ -759,7 +724,6 @@ export const mailboxThreads = pgTable(
 		identityPublicId: text("identity_public_id").notNull(),
 		mailboxSlug: text("mailbox_slug"),
 
-		// Presentation / summary
 		subject: text("subject"),
 		previewText: text("preview_text"), // keep truncation in app/trigger
 
@@ -768,7 +732,6 @@ export const mailboxThreads = pgTable(
 		}).notNull(),
 		firstMessageAt: timestamp("first_message_at", { withTimezone: true }),
 
-		// Aggregates scoped to this mailbox
 		messageCount: integer("message_count").notNull().default(0),
 		unreadCount: integer("unread_count").notNull().default(0),
 
@@ -791,31 +754,25 @@ export const mailboxThreads = pgTable(
 	},
 
 	(t) => [
-		// One row per (thread, mailbox)
 		primaryKey({
 			name: "pk_mailbox_threads",
 			columns: [t.threadId, t.mailboxId],
 		}),
 
-		// Hot mailbox list ordering
 		index("ix_mbth_mailbox_activity").on(
 			t.mailboxId,
 			t.lastActivityAt,
 			t.threadId,
 		),
 
-		// Resolve by identity + slug / identityPublicId quickly
 		index("ix_mbth_identity_slug").on(t.identityId, t.mailboxSlug),
 		index("ix_mbth_identity_public_id").on(t.identityPublicId),
 
-		// Fast tabs
 		index("ix_mbth_mailbox_unread").on(t.mailboxId, t.unreadCount),
 		index("ix_mbth_mailbox_starred").on(t.mailboxId, t.starred),
 
-		// Defensive: still enforce uniqueness (redundant with PK, but explicit)
 		uniqueIndex("ux_mbth_thread_mailbox").on(t.threadId, t.mailboxId),
 
-		// RLS mirrors your existing policies
 		pgPolicy("mbth_select_own", {
 			for: "select",
 			to: authenticatedRole,
@@ -958,6 +915,125 @@ export const webhooks = pgTable(
 			withCheck: sql`${t.ownerId} = ${authUid}`,
 		}),
 		pgPolicy("webhooks_delete_own", {
+			for: "delete",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+	],
+).enableRLS();
+
+export const labels = pgTable(
+	"labels",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+
+		ownerId: uuid("owner_id")
+			.references(() => users.id)
+			.notNull()
+			.default(sql`auth.uid()`),
+
+		publicId: text("public_id")
+			.notNull()
+			.$defaultFn(() => nanoid(10)),
+
+		name: text("name").notNull(),
+		slug: text("slug").notNull(),
+
+		parentId: uuid("parent_id")
+			.references(() => labels.id, { onDelete: "cascade" })
+			.default(null),
+
+		colorBg: text("color_bg"),
+		colorText: text("color_text"),
+
+		isSystem: boolean("is_system").notNull().default(false),
+
+		metaData: jsonb("meta").$type<Record<string, any> | null>().default(null),
+
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		uniqueIndex("uniq_label_owner_slug").on(t.ownerId, t.slug),
+
+		pgPolicy("labels_select_own", {
+			for: "select",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("labels_insert_own", {
+			for: "insert",
+			to: authenticatedRole,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("labels_update_own", {
+			for: "update",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("labels_delete_own", {
+			for: "delete",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+	],
+).enableRLS();
+
+export const mailboxThreadLabels = pgTable(
+	"mailbox_thread_labels",
+	{
+		threadId: uuid("thread_id")
+			.references(() => threads.id, { onDelete: "cascade" })
+			.notNull(),
+
+		mailboxId: uuid("mailbox_id")
+			.references(() => mailboxes.id, { onDelete: "cascade" })
+			.notNull(),
+
+		labelId: uuid("label_id")
+			.references(() => labels.id, { onDelete: "cascade" })
+			.notNull(),
+
+		ownerId: uuid("owner_id")
+			.references(() => users.id)
+			.notNull()
+			.default(sql`auth.uid()`),
+
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		primaryKey({
+			name: "pk_mailbox_thread_labels",
+			columns: [t.threadId, t.mailboxId, t.labelId],
+		}),
+
+		index("ix_mbtlabel_mailbox_label").on(t.mailboxId, t.labelId),
+		index("ix_mbtlabel_label").on(t.labelId),
+
+		pgPolicy("mbtlabel_select_own", {
+			for: "select",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("mbtlabel_insert_own", {
+			for: "insert",
+			to: authenticatedRole,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("mbtlabel_update_own", {
+			for: "update",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("mbtlabel_delete_own", {
 			for: "delete",
 			to: authenticatedRole,
 			using: sql`${t.ownerId} = ${authUid}`,

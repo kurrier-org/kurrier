@@ -7,7 +7,7 @@ async function detectDelimiter(client: ImapFlow): Promise<string> {
 	for await (const mbx of await client.list()) {
 		if (mbx?.delimiter) return mbx.delimiter;
 	}
-	return "/"; // safe default
+	return "/";
 }
 
 function sanitizeName(name: string, delimiter: string) {
@@ -26,7 +26,6 @@ export async function addNewFolder(
 ) {
 	if (!data?.name?.trim()) throw new Error("Folder name is required");
 
-	// Step 1: derive parent info if provided
 	let parentPath = "";
 	let delimiter = "/";
 

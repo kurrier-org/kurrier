@@ -169,15 +169,15 @@ export async function parseAndStoreEmail(
 		(decoratedParsed as any).metaData = opts.metaData;
 	}
 
-    if (typeof opts.seen === "boolean") {
-        (decoratedParsed as any).seen = opts.seen;
-    }
-    if (typeof opts.answered === "boolean") {
-        (decoratedParsed as any).answered = opts.answered;
-    }
-    if (typeof opts.flagged === "boolean") {
-        (decoratedParsed as any).flagged = opts.flagged;
-    }
+	if (typeof opts.seen === "boolean") {
+		(decoratedParsed as any).seen = opts.seen;
+	}
+	if (typeof opts.answered === "boolean") {
+		(decoratedParsed as any).answered = opts.answered;
+	}
+	if (typeof opts.flagged === "boolean") {
+		(decoratedParsed as any).flagged = opts.flagged;
+	}
 
 	const messagePayload = MessageInsertSchema.parse(decoratedParsed);
 	const [message] = await db
