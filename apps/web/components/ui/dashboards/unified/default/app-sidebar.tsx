@@ -34,7 +34,7 @@ import ThemeColorPicker from "@/components/common/theme-color-picker";
 import IdentityMailboxesList from "@/components/dashboard/identity-mailboxes-list";
 import {
 	FetchIdentityMailboxListResult,
-	FetchLabelsResult,
+	FetchLabelsWithCountResult,
 	FetchMailboxUnreadCountsResult,
 } from "@/lib/actions/mailbox";
 import ThemeSwitch from "@/components/common/theme-switch";
@@ -49,7 +49,7 @@ type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	avatar: string;
 	identityMailboxes: FetchIdentityMailboxListResult;
 	unreadCounts: FetchMailboxUnreadCountsResult;
-	globalLabels: FetchLabelsResult;
+	globalLabels: FetchLabelsWithCountResult;
 };
 
 export function AppSidebar({ ...props }: UnifiedSidebarProps) {

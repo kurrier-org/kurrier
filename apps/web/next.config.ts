@@ -4,9 +4,6 @@ const nextConfig: NextConfig = {
 	devIndicators: false,
 	output: "standalone",
 	reactCompiler: true,
-    typescript: {
-        ignoreBuildErrors: false,
-    },
 	async rewrites() {
 		return {
 			beforeFiles: [

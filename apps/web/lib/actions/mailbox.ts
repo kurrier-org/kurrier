@@ -1103,11 +1103,7 @@ export const fetchLabels = async () => {
 	return globalLabels;
 };
 
-export type LabelWithCount = LabelEntity & {
-	threadCount: number;
-};
-
-export const fetchLabelsWithCounts = async (): Promise<LabelWithCount[]> => {
+export const fetchLabelsWithCounts = async () => {
 	const rls = await rlsClient();
 
 	const allLabels = await rls((tx) =>
@@ -1146,24 +1142,24 @@ export async function addNewLabel(
 ): Promise<FormState> {
 	return handleAction(async () => {
 		const decodedForm = decode(formData);
+
 		const payload = LabelInsertSchema.parse({
 			name: decodedForm.name,
 			colorBg: decodedForm.color,
 			slug: slugify(String(decodedForm.name)),
+			parentId: decodedForm.parentId ? String(decodedForm.parentId) : undefined,
 		});
-		if (decodedForm.parentId) {
-			payload.parentId = decodedForm.parentId;
-		}
 
 		const rls = await rlsClient();
-		const newLabelName = await rls((tx) =>
+		const newLabelRows = await rls((tx) =>
 			tx
 				.insert(labels)
 				.values(payload as LabelCreate)
 				.returning(),
 		);
+
 		revalidatePath("/dashboard/mail");
-		return { success: true, data: newLabelName };
+		return { success: true, data: newLabelRows };
 	});
 }
 
