@@ -1,5 +1,9 @@
 ### 🎉 Kurrier now supports Labels - organize your inbox your way
 
+### 🎉 Kurrier now supports CalDAV & CardDAV - sync your calendars and contacts across all your devices. Coming soon: Coming soon: full Calendar & Contacts management in the web UI.
+
+![Kurrier Webmail View](https://www.kurrier.org/cal-dav.png)
+
 ---
 
 Kurrier is a modern, self-hosted webmail built for people who don't want the hassle to run their own email stack, yet want control over their data and privacy and ability to connect and manage multiple providers and email identities.
