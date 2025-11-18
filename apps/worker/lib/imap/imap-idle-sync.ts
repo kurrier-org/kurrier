@@ -11,6 +11,7 @@ async function handleFlagsUpdate(
 	mailboxPath: string,
 	isFlagged: boolean,
 	isSeen: boolean,
+	isAnswered: boolean,
 ) {
 	console.log(
 		`[realtime:${identityId}] handleFlagsUpdate uid=${uid} mailboxPath=${mailboxPath} flagged=${isFlagged} seen=${isSeen}`,
@@ -65,6 +66,7 @@ async function handleFlagsUpdate(
 			.set({
 				flagged: isFlagged,
 				seen: isSeen,
+				answered: isAnswered,
 				updatedAt: now,
 			})
 			.where(eq(messages.id, message.id));
@@ -220,7 +222,8 @@ function attachRealtimeEventHandlers(
 		}
 		const isFlagged = ev.flags.has("\\Flagged");
 		const isSeen = ev.flags.has("\\Seen");
-		await handleFlagsUpdate(identityId, uid, ev.path, isFlagged, isSeen);
+        const isAnswered = ev.flags.has("\\Answered");
+		await handleFlagsUpdate(identityId, uid, ev.path, isFlagged, isSeen, isAnswered);
 	});
 
 	client.on("expunge", async (ev) => {
@@ -332,32 +335,3 @@ export const imapIdleSync = async (
 		);
 	}
 };
-
-// export const imapIdleSync = async (idleImapInstances: Map<string, ImapFlow>, imapInstances: Map<string, ImapFlow>) => {
-//
-//     const identityRows = await db.select().from(identities).where(
-//         isNotNull(identities.smtpAccountId),
-//     );
-//
-//     for (const identity of identityRows) {
-//         const identityId = identity.id;
-//
-//         const client = await initSmtpClient(identityId, idleImapInstances);
-//         if (!client?.authenticated || !client?.usable) {
-//             console.log(`[imapIdleSync] identity=${identityId} not usable`);
-//             continue;
-//         }
-//
-//         const ownerId = identity?.ownerId;
-//         if (!ownerId) continue;
-//
-//         if ((client as any).__kurrierRealtimeStarted) {
-//             console.log(`[imapIdleSync] identity=${identityId} realtime already active`);
-//             continue;
-//         }
-//
-//         (client as any).__kurrierRealtimeStarted = true;
-//         await startRealtimeSyncForIdentity(identityId, client, imapInstances);
-//     }
-// };
-//
