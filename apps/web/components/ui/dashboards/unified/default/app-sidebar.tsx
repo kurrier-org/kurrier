@@ -3,7 +3,6 @@
 import * as React from "react";
 import {
 	Command,
-	File,
 	Inbox,
 	Key,
 	LayoutDashboard,

@@ -38,7 +38,6 @@ export function NavMain({
 }) {
 
     const pathName = usePathname();
-    console.log("pathName", pathName)
 
 	return (
 		<SidebarGroup>
