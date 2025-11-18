@@ -42,6 +42,7 @@ import Link from "next/link";
 import { useMediaQuery } from "@mantine/hooks";
 import { Divider } from "@mantine/core";
 import LabelHome from "@/components/dashboard/labels/label-home";
+import {IconFrame} from "@tabler/icons-react";
 
 type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	publicConfig: PublicConfig;
@@ -81,7 +82,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 			{
 				title: "Platform",
 				url: "/dashboard/platform/overview",
-				icon: File,
+				icon: IconFrame,
 				isActive: false,
 			},
 		],
@@ -113,14 +114,11 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 		],
 	};
 
-	// Note: I'm using state to show active item.
-	// IRL you should use the url/router.
-	const [activeItem, setActiveItem] = React.useState(data.navMain[0]);
-	// const [mails, setMails] = React.useState(data.mails);
+    const pathName = usePathname();
+	const [activeItem, setActiveItem] = React.useState(pathName.match(/platform/) ? data.navMain[1] : data.navMain[0]);
 	const { setOpen, toggleSidebar } = useSidebar();
 
 	const router = useRouter();
-	const pathName = usePathname();
 	const isOnPlatform = pathName?.includes("/platform");
 
 	return (

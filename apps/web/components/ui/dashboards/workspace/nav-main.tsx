@@ -19,7 +19,7 @@ import {
 	SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
-
+import { usePathname } from "next/navigation";
 export function NavMain({
 	items,
 	onComplete,
@@ -36,6 +36,10 @@ export function NavMain({
 	}[];
 	onComplete?: () => void;
 }) {
+
+    const pathName = usePathname();
+    console.log("pathName", pathName)
+
 	return (
 		<SidebarGroup>
 			<SidebarGroupLabel>Platform</SidebarGroupLabel>
@@ -48,7 +52,7 @@ export function NavMain({
 						onClick={onComplete ? () => onComplete() : undefined}
 					>
 						<SidebarMenuItem>
-							<SidebarMenuButton asChild tooltip={item.title}>
+							<SidebarMenuButton asChild tooltip={item.title} className={"dark:hover:bg-neutral-800 hover:bg-neutral-100 px-2.5 md:px-2 " + (pathName === item.url ? "bg-neutral-200 dark:bg-neutral-800" : "")}>
 								<Link href={item.url}>
 									<item.icon />
 									<span>{item.title}</span>
