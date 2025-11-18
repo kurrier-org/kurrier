@@ -2,12 +2,12 @@
 
 import * as React from "react";
 import {
-	Command,
-	Inbox,
-	Key,
-	LayoutDashboard,
-	Plug,
-	Send,
+    Command, FolderSync,
+    Inbox,
+    Key,
+    LayoutDashboard,
+    Plug,
+    Send,
 } from "lucide-react";
 
 import { NavUser } from "@/components/ui/dashboards/workspace/nav-user";
@@ -41,7 +41,7 @@ import Link from "next/link";
 import { useMediaQuery } from "@mantine/hooks";
 import { Divider } from "@mantine/core";
 import LabelHome from "@/components/dashboard/labels/label-home";
-import {IconFrame} from "@tabler/icons-react";
+import { IconFrame } from "@tabler/icons-react";
 
 type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	publicConfig: PublicConfig;
@@ -104,6 +104,12 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				icon: Send,
 				items: [],
 			},
+            {
+                title: "Sync Services",
+                url: "/dashboard/platform/sync-services",
+                icon: FolderSync,
+                items: [],
+            },
 			{
 				title: "API Keys",
 				url: "/dashboard/platform/api-keys",
