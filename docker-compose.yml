@@ -1,7 +1,7 @@
 name: kurrier
 services:
   web:
-    image: ghcr.io/kurrier-org/kurrier-web:v0.0.84
+    image: ghcr.io/kurrier-org/kurrier-web:v0.0.85
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-3000}:3000"
@@ -35,7 +35,7 @@ services:
       - ./radicale_config:/config
 
   worker:
-    image: ghcr.io/kurrier-org/kurrier-worker:v0.0.84
+    image: ghcr.io/kurrier-org/kurrier-worker:v0.0.85
     restart: unless-stopped
     ports:
       - "${NITRO_PORT:-3001}:3001"
