@@ -10,12 +10,7 @@ services:
         condition: service_healthy
     healthcheck:
       test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "fetch('http://web:3000').then((r) => {if (r.status !== 200) throw new Error(r.status)})"
-        ]
+        ["CMD","node","-e","fetch('http://web:3000').then((r) => {if (r.status !== 200) throw new Error(r.status)})"]
     profiles: ["app"]
     environment:
       WEB_PORT: ${WEB_PORT}
@@ -35,6 +30,9 @@ services:
       TYPESENSE_HOST: ${TYPESENSE_HOST}
       SEARCH_REBUILD_ON_BOOT: ${SEARCH_REBUILD_ON_BOOT}
       WORKER_URL: ${WORKER_URL}
+      RADICALE_URL: http://radicale:5232
+    volumes:
+      - ./radicale_config:/config
 
   worker:
     image: ghcr.io/kurrier-org/kurrier-worker:v0.0.84
@@ -68,6 +66,7 @@ services:
       TYPESENSE_HOST: ${TYPESENSE_HOST}
       SEARCH_REBUILD_ON_BOOT: ${SEARCH_REBUILD_ON_BOOT}
       LOCAL_TUNNEL_URL: ${LOCAL_TUNNEL_URL}
+      RADICALE_URL: http://radicale:5232
 
   redis:
     image: redis:8.2.2
@@ -115,18 +114,25 @@ services:
     entrypoint: [ "/bin/bash", "/scripts/db-bootstrap.sh" ]
     restart: "no"
 
+  radicale:
+    image: tomsquest/docker-radicale:3.2.3.0
+    container_name: kurrier-radicale
+    restart: unless-stopped
+    ports:
+      - "5232:5232"
+    environment:
+      TZ: ${TZ:-UTC}
+    volumes:
+      - ./radicale_data:/data
+      - ./radicale_config:/config
+
   studio:
     container_name: supabase-studio
     image: supabase/studio:2025.11.10-sha-5291fe3
     restart: unless-stopped
     healthcheck:
       test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "fetch('http://studio:3000/api/platform/profile').then((r) => {if (r.status !== 200) throw new Error(r.status)})"
-        ]
+        ["CMD","node","-e","fetch('http://studio:3000/api/platform/profile').then((r) => {if (r.status !== 200) throw new Error(r.status)})"]
       timeout: 10s
       interval: 5s
       retries: 3
@@ -176,14 +182,7 @@ services:
     restart: unless-stopped
     healthcheck:
       test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:9999/health"
-        ]
+        ["CMD","wget","--no-verbose","--tries=1","--spider","http://localhost:9999/health"]
       timeout: 5s
       interval: 5s
       retries: 3
@@ -248,14 +247,7 @@ services:
       - ./volumes/storage:/var/lib/storage:z
     healthcheck:
       test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://storage:5000/status"
-        ]
+        ["CMD","wget","--no-verbose","--tries=1","--spider","http://storage:5000/status"]
       timeout: 5s
       interval: 5s
       retries: 3
@@ -312,14 +304,7 @@ services:
       - db-config:/etc/postgresql-custom
     healthcheck:
       test:
-        [
-          "CMD",
-          "pg_isready",
-          "-U",
-          "postgres",
-          "-h",
-          "localhost"
-        ]
+        ["CMD","pg_isready","-U","postgres","-h","localhost"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -335,13 +320,7 @@ services:
       JWT_EXP: ${JWT_EXPIRY}
       RLS_CLIENT_PASSWORD: ${RLS_CLIENT_PASSWORD}
     command:
-      [
-        "postgres",
-        "-c",
-        "config_file=/etc/postgresql/postgresql.conf",
-        "-c",
-        "log_min_messages=fatal" # prevents Realtime polling queries from appearing in logs
-      ]
+      ["postgres","-c","config_file=/etc/postgresql/postgresql.conf","-c","log_min_messages=fatal"]
 
   supavisor:
     container_name: supabase-pooler
@@ -354,15 +333,7 @@ services:
       - ./volumes/pooler/pooler.exs:/etc/pooler/pooler.exs:ro,z
     healthcheck:
       test:
-        [
-          "CMD",
-          "curl",
-          "-sSfL",
-          "--head",
-          "-o",
-          "/dev/null",
-          "http://127.0.0.1:4000/api/health"
-        ]
+        ["CMD","curl","-sSfL","--head","-o","/dev/null","http://127.0.0.1:4000/api/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -388,11 +359,7 @@ services:
       POOLER_POOL_MODE: transaction
       DB_POOL_SIZE: ${POOLER_DB_POOL_SIZE}
     command:
-      [
-        "/bin/sh",
-        "-c",
-        "/app/bin/migrate && /app/bin/supavisor eval \"$$(cat /etc/pooler/pooler.exs)\" && /app/bin/server"
-      ]
+      ["/bin/sh","-c","/app/bin/migrate && /app/bin/supavisor eval \"$$(cat /etc/pooler/pooler.exs)\" && /app/bin/server"]
 
 volumes:
   db-config:
