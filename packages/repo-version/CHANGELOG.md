@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.85
+
+### Patch Changes
+
+- [#253](https://github.com/kurrier-org/kurrier/pull/253) [`9acaf4f`](https://github.com/kurrier-org/kurrier/commit/9acaf4fa00c4f8ea38306191bad03b77771d20b9) Thanks [@krokhale](https://github.com/krokhale)! - Added support for caldav and calcard server
+
 ## 0.0.84
 
 ### Patch Changes
