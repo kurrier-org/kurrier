@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Container } from "@/components/common/containers";
-import { Card, Table, ActionIcon, TextInput, Tooltip } from "@mantine/core";
+import {Card, Table, ActionIcon, TextInput, Tooltip, Button} from "@mantine/core";
 import { IconCopy, IconLockBolt } from "@tabler/icons-react";
 import { toast } from "sonner";
 
@@ -195,24 +195,25 @@ export default function SyncServicesHome({
                                             className="sm:max-w-xs"
                                             autoFocus
                                         />
-                                        <div className="flex gap-2">
-                                            <button
+                                        <div className="flex gap-2 items-center">
+                                            <Button
                                                 type="submit"
+                                                size={"xs"}
                                                 disabled={isSaving}
-                                                className="inline-flex items-center justify-center rounded-md bg-foreground px-3 py-1.5 text-[11px] font-medium text-background hover:opacity-90 disabled:opacity-60"
                                             >
                                                 {isSaving ? "Saving…" : "Save password"}
-                                            </button>
-                                            <button
+                                            </Button>
+                                            <Button
                                                 type="button"
+                                                variant="subtle"
+                                                size={"xs"}
                                                 onClick={() => {
                                                     setShowPasswordForm(false);
                                                     setNewPassword("");
                                                 }}
-                                                className="inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted"
                                             >
                                                 Cancel
-                                            </button>
+                                            </Button>
                                         </div>
                                     </form>
                                 )}

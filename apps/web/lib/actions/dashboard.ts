@@ -925,10 +925,9 @@ export type FetchUserAPIKeysResult = Awaited<
 
 
 
-// const USERS_FILE = "users";
-const USERS_FILE = "/config/users";
 
-export type UpdateDavPasswordResult =
+
+type UpdateDavPasswordResult =
     | { status: "no-user" }
     | { status: "exists"; username: string }
     | { status: "created"; username: string; password: string }
@@ -939,6 +938,7 @@ export const getOrCreateDavPassword = async (
 ): Promise<UpdateDavPasswordResult> => {
     const user = await isSignedIn();
     const email = user?.email?.trim().toLowerCase();
+    const userFile = process.env.NODE_ENV === "development" ? "users" : "/config/users";
 
     if (!email) {
         return { status: "no-user" };
@@ -947,7 +947,7 @@ export const getOrCreateDavPassword = async (
     const davUsername = email.split("@")[0];
     let content = "";
     try {
-        content = await fs.readFileSync(USERS_FILE, "utf8");
+        content = fs.readFileSync(userFile, "utf8");
     } catch (err: any) {
         if (err?.code !== "ENOENT") throw err;
         content = "";
@@ -969,7 +969,7 @@ export const getOrCreateDavPassword = async (
         }
 
         const newContent = lines.join("\n") + "\n";
-        await fs.writeFileSync(USERS_FILE, newContent, "utf8");
+        fs.writeFileSync(userFile, newContent, "utf8");
 
         return {
             status: existingIndex !== -1 ? "updated" : "created",
@@ -988,7 +988,7 @@ export const getOrCreateDavPassword = async (
     lines.push(`${davUsername}:${hash}`);
 
     const newContent = lines.join("\n") + "\n";
-    await fs.writeFileSync(USERS_FILE, newContent, "utf8");
+    fs.writeFileSync(userFile, newContent, "utf8");
 
     return {
         status: "created",
