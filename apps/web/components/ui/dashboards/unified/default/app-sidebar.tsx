@@ -2,12 +2,14 @@
 
 import * as React from "react";
 import {
-    Command, Contact, FolderSync,
-    Inbox,
-    Key,
-    LayoutDashboard,
-    Plug,
-    Send,
+	Command,
+	Contact,
+	FolderSync,
+	Inbox,
+	Key,
+	LayoutDashboard,
+	Plug,
+	Send,
 } from "lucide-react";
 
 import { NavUser } from "@/components/ui/dashboards/workspace/nav-user";
@@ -80,12 +82,12 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				icon: Inbox,
 				isActive: true,
 			},
-            {
-                title: "Contacts",
-                url: "/dashboard/contacts",
-                icon: Contact,
-                isActive: true,
-            },
+			{
+				title: "Contacts",
+				url: "/dashboard/contacts",
+				icon: Contact,
+				isActive: true,
+			},
 			{
 				title: "Platform",
 				url: "/dashboard/platform/overview",
@@ -112,12 +114,12 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				icon: Send,
 				items: [],
 			},
-            {
-                title: "Sync Services",
-                url: "/dashboard/platform/sync-services",
-                icon: FolderSync,
-                items: [],
-            },
+			{
+				title: "Sync Services",
+				url: "/dashboard/platform/sync-services",
+				icon: FolderSync,
+				items: [],
+			},
 			{
 				title: "API Keys",
 				url: "/dashboard/platform/api-keys",
@@ -127,63 +129,68 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 		],
 	};
 
-    const pathName = usePathname();
-    const isOnMail = pathName?.includes("/mail");
-    const isOnPlatform = pathName?.includes("/platform");
-    const isOnContacts = pathName?.includes("/contacts");
+	const pathName = usePathname();
+	const isOnMail = pathName?.includes("/mail");
+	const isOnPlatform = pathName?.includes("/platform");
+	const isOnContacts = pathName?.includes("/contacts");
 
-    type SidebarSection = "mail" | "contacts" | "platform";
+	type SidebarSection = "mail" | "contacts" | "platform";
 
-    const section: SidebarSection = isOnPlatform
-        ? "platform"
-        : isOnContacts
-            ? "contacts"
-            : "mail";
+	const section: SidebarSection = isOnPlatform
+		? "platform"
+		: isOnContacts
+			? "contacts"
+			: "mail";
 
-    const [activeItem, setActiveItem] = React.useState(() => {
-        if (section === "platform") {
-            return data.navMain.find((i) => i.url.includes("/platform")) ?? data.navMain[0];
-        }
-        if (section === "contacts") {
-            return data.navMain.find((i) => i.url.includes("/contacts")) ?? data.navMain[0];
-        }
-        return data.navMain.find((i) => i.url.includes("/mail")) ?? data.navMain[0];
-    });
+	const [activeItem, setActiveItem] = React.useState(() => {
+		if (section === "platform") {
+			return (
+				data.navMain.find((i) => i.url.includes("/platform")) ?? data.navMain[0]
+			);
+		}
+		if (section === "contacts") {
+			return (
+				data.navMain.find((i) => i.url.includes("/contacts")) ?? data.navMain[0]
+			);
+		}
+		return data.navMain.find((i) => i.url.includes("/mail")) ?? data.navMain[0];
+	});
 
-    React.useEffect(() => {
-        if (section === "platform") {
-            setActiveItem(
-                data.navMain.find((i) => i.url.includes("/platform")) ?? data.navMain[0],
-            );
-        } else if (section === "contacts") {
-            setActiveItem(
-                data.navMain.find((i) => i.url.includes("/contacts")) ?? data.navMain[0],
-            );
-        } else {
-            setActiveItem(
-                data.navMain.find((i) => i.url.includes("/mail")) ?? data.navMain[0],
-            );
-        }
-    }, [section, pathName, data.navMain]);
+	React.useEffect(() => {
+		if (section === "platform") {
+			setActiveItem(
+				data.navMain.find((i) => i.url.includes("/platform")) ??
+					data.navMain[0],
+			);
+		} else if (section === "contacts") {
+			setActiveItem(
+				data.navMain.find((i) => i.url.includes("/contacts")) ??
+					data.navMain[0],
+			);
+		} else {
+			setActiveItem(
+				data.navMain.find((i) => i.url.includes("/mail")) ?? data.navMain[0],
+			);
+		}
+	}, [section, pathName, data.navMain]);
 
 	const { setOpen, toggleSidebar } = useSidebar();
 
 	const router = useRouter();
 
-
-    const desktopSectionContent: Record<SidebarSection, React.ReactNode> = {
-        mail: (
-            <>
-                <IdentityMailboxesList
-                    identityMailboxes={identityMailboxes}
-                    unreadCounts={unreadCounts}
-                />
-                <LabelHome globalLabels={globalLabels} />
-            </>
-        ),
-        contacts: <ContactsNav labels={[]} />,
-        platform: <NavMain items={data.navPlatform} />,
-    };
+	const desktopSectionContent: Record<SidebarSection, React.ReactNode> = {
+		mail: (
+			<>
+				<IdentityMailboxesList
+					identityMailboxes={identityMailboxes}
+					unreadCounts={unreadCounts}
+				/>
+				<LabelHome globalLabels={globalLabels} />
+			</>
+		),
+		contacts: <ContactsNav labels={[]} />,
+		platform: <NavMain items={data.navPlatform} />,
+	};
 
 	return (
 		<Sidebar
@@ -240,7 +247,13 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 											isActive={activeItem?.title === item.title}
 											className={"px-2.5 md:px-2"}
 										>
-											<item.icon className={item.title === activeItem?.title ? "text-brand dark:text-white" : ""} />
+											<item.icon
+												className={
+													item.title === activeItem?.title
+														? "text-brand dark:text-white"
+														: ""
+												}
+											/>
 											<span>{item.title}</span>
 										</SidebarMenuButton>
 									</SidebarMenuItem>
@@ -249,7 +262,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 								{isMobile ? (
 									<>
 										<Divider variant={"dashed"} my={"xl"} />
-                                        {desktopSectionContent[section]}
+										{desktopSectionContent[section]}
 									</>
 								) : (
 									<hr className="my-2 border-border" />
@@ -295,16 +308,16 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 							<ComposeMail publicConfig={publicConfig} />
 						</div>
 					)}
-                    {isOnContacts && (
-                        <div className={"-mt-1"}>
-                            <NewContact publicConfig={publicConfig} />
-                        </div>
-                    )}
+					{isOnContacts && (
+						<div className={"-mt-1"}>
+							<NewContact publicConfig={publicConfig} />
+						</div>
+					)}
 				</SidebarHeader>
 				<SidebarContent>
 					<SidebarGroup className="px-0">
 						<SidebarGroupContent>
-                            {desktopSectionContent[section]}
+							{desktopSectionContent[section]}
 						</SidebarGroupContent>
 					</SidebarGroup>
 				</SidebarContent>

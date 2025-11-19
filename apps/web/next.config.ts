@@ -20,18 +20,18 @@ const nextConfig: NextConfig = {
 					destination: `${process.env.WORKER_URL}:3001/api/kurrier/:path*`,
 				},
 
-                {
-                    source: '/.well-known/caldav',
-                    destination: `${process.env.RADICALE_URL}/:path*`,
-                },
-                {
-                    source: '/.well-known/carddav',
-                    destination: `${process.env.RADICALE_URL}/:path*`,
-                },
-                {
-                    source: "/api/dav/:path*",
-                    destination: `${process.env.RADICALE_URL}/:path*`,
-                },
+				{
+					source: "/.well-known/caldav",
+					destination: `${process.env.RADICALE_URL}/:path*`,
+				},
+				{
+					source: "/.well-known/carddav",
+					destination: `${process.env.RADICALE_URL}/:path*`,
+				},
+				{
+					source: "/api/dav/:path*",
+					destination: `${process.env.RADICALE_URL}/:path*`,
+				},
 			],
 			afterFiles: [],
 			fallback: [],

@@ -1,9 +1,7 @@
-import React from 'react';
+import React from "react";
 
 function Page() {
-    return <>
-        Contacts
-    </>
+	return <>Contacts</>;
 }
 
 export default Page;

@@ -1,9 +1,7 @@
-import React from 'react';
+import React from "react";
 
 function ContactsList() {
-    return <>
-        Contacts List
-    </>
+	return <>Contacts List</>;
 }
 
 export default ContactsList;
