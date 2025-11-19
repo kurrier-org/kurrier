@@ -2,12 +2,14 @@
 
 import * as React from "react";
 import {
-    Command, FolderSync,
-    Inbox,
-    Key,
-    LayoutDashboard,
-    Plug,
-    Send,
+	Command,
+	Contact,
+	FolderSync,
+	Inbox,
+	Key,
+	LayoutDashboard,
+	Plug,
+	Send,
 } from "lucide-react";
 
 import { NavUser } from "@/components/ui/dashboards/workspace/nav-user";
@@ -42,6 +44,8 @@ import { useMediaQuery } from "@mantine/hooks";
 import { Divider } from "@mantine/core";
 import LabelHome from "@/components/dashboard/labels/label-home";
 import { IconFrame } from "@tabler/icons-react";
+import ContactsNav from "@/components/dashboard/contacts/contacts-sidebar";
+import NewContact from "@/components/dashboard/contacts/new-contact";
 
 type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	publicConfig: PublicConfig;
@@ -79,6 +83,12 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				isActive: true,
 			},
 			{
+				title: "Contacts",
+				url: "/dashboard/contacts",
+				icon: Contact,
+				isActive: true,
+			},
+			{
 				title: "Platform",
 				url: "/dashboard/platform/overview",
 				icon: IconFrame,
@@ -104,12 +114,12 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				icon: Send,
 				items: [],
 			},
-            {
-                title: "Sync Services",
-                url: "/dashboard/platform/sync-services",
-                icon: FolderSync,
-                items: [],
-            },
+			{
+				title: "Sync Services",
+				url: "/dashboard/platform/sync-services",
+				icon: FolderSync,
+				items: [],
+			},
 			{
 				title: "API Keys",
 				url: "/dashboard/platform/api-keys",
@@ -119,12 +129,68 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 		],
 	};
 
-    const pathName = usePathname();
-	const [activeItem, setActiveItem] = React.useState(pathName.match(/platform/) ? data.navMain[1] : data.navMain[0]);
+	const pathName = usePathname();
+	const isOnMail = pathName?.includes("/mail");
+	const isOnPlatform = pathName?.includes("/platform");
+	const isOnContacts = pathName?.includes("/contacts");
+
+	type SidebarSection = "mail" | "contacts" | "platform";
+
+	const section: SidebarSection = isOnPlatform
+		? "platform"
+		: isOnContacts
+			? "contacts"
+			: "mail";
+
+	const [activeItem, setActiveItem] = React.useState(() => {
+		if (section === "platform") {
+			return (
+				data.navMain.find((i) => i.url.includes("/platform")) ?? data.navMain[0]
+			);
+		}
+		if (section === "contacts") {
+			return (
+				data.navMain.find((i) => i.url.includes("/contacts")) ?? data.navMain[0]
+			);
+		}
+		return data.navMain.find((i) => i.url.includes("/mail")) ?? data.navMain[0];
+	});
+
+	React.useEffect(() => {
+		if (section === "platform") {
+			setActiveItem(
+				data.navMain.find((i) => i.url.includes("/platform")) ??
+					data.navMain[0],
+			);
+		} else if (section === "contacts") {
+			setActiveItem(
+				data.navMain.find((i) => i.url.includes("/contacts")) ??
+					data.navMain[0],
+			);
+		} else {
+			setActiveItem(
+				data.navMain.find((i) => i.url.includes("/mail")) ?? data.navMain[0],
+			);
+		}
+	}, [section, pathName, data.navMain]);
+
 	const { setOpen, toggleSidebar } = useSidebar();
 
 	const router = useRouter();
-	const isOnPlatform = pathName?.includes("/platform");
+
+	const desktopSectionContent: Record<SidebarSection, React.ReactNode> = {
+		mail: (
+			<>
+				<IdentityMailboxesList
+					identityMailboxes={identityMailboxes}
+					unreadCounts={unreadCounts}
+				/>
+				<LabelHome globalLabels={globalLabels} />
+			</>
+		),
+		contacts: <ContactsNav labels={[]} />,
+		platform: <NavMain items={data.navPlatform} />,
+	};
 
 	return (
 		<Sidebar
@@ -179,9 +245,15 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 												router.push(item.url);
 											}}
 											isActive={activeItem?.title === item.title}
-											className="px-2.5 md:px-2"
+											className={"px-2.5 md:px-2"}
 										>
-											<item.icon />
+											<item.icon
+												className={
+													item.title === activeItem?.title
+														? "text-brand dark:text-white"
+														: ""
+												}
+											/>
 											<span>{item.title}</span>
 										</SidebarMenuButton>
 									</SidebarMenuItem>
@@ -190,29 +262,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 								{isMobile ? (
 									<>
 										<Divider variant={"dashed"} my={"xl"} />
-										{isOnPlatform ? (
-											<NavMain
-												items={data.navPlatform}
-												onComplete={() => {
-													if (isMobile) {
-														toggleSidebar();
-													}
-												}}
-											/>
-										) : (
-											<>
-												<IdentityMailboxesList
-													identityMailboxes={identityMailboxes}
-													unreadCounts={unreadCounts}
-													onComplete={() => {
-														if (isMobile) {
-															toggleSidebar();
-														}
-													}}
-												/>
-												<LabelHome globalLabels={globalLabels} />
-											</>
-										)}
+										{desktopSectionContent[section]}
 									</>
 								) : (
 									<hr className="my-2 border-border" />
@@ -253,26 +303,21 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 						<KurrierLogo size={36} />
 						<span className="text-lg font-semibold">kurrier</span>
 					</div>
-					{!isOnPlatform && (
+					{isOnMail && (
 						<div className={"-mt-1"}>
 							<ComposeMail publicConfig={publicConfig} />
+						</div>
+					)}
+					{isOnContacts && (
+						<div className={"-mt-1"}>
+							<NewContact publicConfig={publicConfig} />
 						</div>
 					)}
 				</SidebarHeader>
 				<SidebarContent>
 					<SidebarGroup className="px-0">
 						<SidebarGroupContent>
-							{isOnPlatform ? (
-								<NavMain items={data.navPlatform} />
-							) : (
-								<>
-									<IdentityMailboxesList
-										identityMailboxes={identityMailboxes}
-										unreadCounts={unreadCounts}
-									/>
-									<LabelHome globalLabels={globalLabels} />
-								</>
-							)}
+							{desktopSectionContent[section]}
 						</SidebarGroupContent>
 					</SidebarGroup>
 				</SidebarContent>

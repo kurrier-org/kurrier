@@ -41,6 +41,7 @@ yarn-error.log*
 next-env.d.ts
 .idea
 apps/worker/dist
+apps/web/users
 .output
 .nitro
 db/local*

@@ -29,7 +29,7 @@ import {
 	SmtpAccountFormSchema,
 	SYSTEM_MAILBOXES,
 } from "@schema";
-import {currentSession, isSignedIn} from "@/lib/actions/auth";
+import { currentSession, isSignedIn } from "@/lib/actions/auth";
 import { and, count, eq, sql, gte, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { decode } from "decode-formdata";
@@ -923,76 +923,73 @@ export type FetchUserAPIKeysResult = Awaited<
 	ReturnType<typeof fetchUserAPIKeys>
 >;
 
+type UpdateDavPasswordResult =
+	| { status: "no-user" }
+	| { status: "exists"; username: string }
+	| { status: "created"; username: string; password: string }
+	| { status: "updated"; username: string; password: string };
 
+export const getOrCreateDavPassword = async (opts?: {
+	password?: string;
+}): Promise<UpdateDavPasswordResult> => {
+	const user = await isSignedIn();
+	const email = user?.email?.trim().toLowerCase();
+	const userFile =
+		process.env.NODE_ENV === "development" ? "users" : "/config/users";
 
-// const USERS_FILE = "users";
-const USERS_FILE = "/config/users";
+	if (!email) {
+		return { status: "no-user" };
+	}
 
-export type UpdateDavPasswordResult =
-    | { status: "no-user" }
-    | { status: "exists"; username: string }
-    | { status: "created"; username: string; password: string }
-    | { status: "updated"; username: string; password: string };
+	const davUsername = email.split("@")[0];
+	let content = "";
+	try {
+		content = fs.readFileSync(userFile, "utf8");
+	} catch (err: any) {
+		if (err?.code !== "ENOENT") throw err;
+		content = "";
+	}
 
-export const getOrCreateDavPassword = async (
-    opts?: { password?: string },
-): Promise<UpdateDavPasswordResult> => {
-    const user = await isSignedIn();
-    const email = user?.email?.trim().toLowerCase();
+	const lines = content.split(/\r?\n/).filter(Boolean);
+	const existingIndex = lines.findIndex((line) =>
+		line.trim().startsWith(`${davUsername}:`),
+	);
 
-    if (!email) {
-        return { status: "no-user" };
-    }
+	if (opts?.password) {
+		const password = opts.password.trim();
+		const hash = await bcrypt.hash(password, 12);
 
-    const davUsername = email.split("@")[0];
-    let content = "";
-    try {
-        content = await fs.readFileSync(USERS_FILE, "utf8");
-    } catch (err: any) {
-        if (err?.code !== "ENOENT") throw err;
-        content = "";
-    }
+		if (existingIndex !== -1) {
+			lines[existingIndex] = `${davUsername}:${hash}`;
+		} else {
+			lines.push(`${davUsername}:${hash}`);
+		}
 
-    const lines = content.split(/\r?\n/).filter(Boolean);
-    const existingIndex = lines.findIndex((line) =>
-        line.trim().startsWith(`${davUsername}:`)
-    );
+		const newContent = lines.join("\n") + "\n";
+		fs.writeFileSync(userFile, newContent, "utf8");
 
-    if (opts?.password) {
-        const password = opts.password.trim();
-        const hash = await bcrypt.hash(password, 12);
+		return {
+			status: existingIndex !== -1 ? "updated" : "created",
+			username: davUsername,
+			password,
+		};
+	}
 
-        if (existingIndex !== -1) {
-            lines[existingIndex] = `${davUsername}:${hash}`;
-        } else {
-            lines.push(`${davUsername}:${hash}`);
-        }
+	if (existingIndex !== -1) {
+		return { status: "exists", username: davUsername };
+	}
 
-        const newContent = lines.join("\n") + "\n";
-        await fs.writeFileSync(USERS_FILE, newContent, "utf8");
+	const password = randomBytes(18).toString("base64url");
+	const hash = await bcrypt.hash(password, 12);
 
-        return {
-            status: existingIndex !== -1 ? "updated" : "created",
-            username: davUsername,
-            password,
-        };
-    }
+	lines.push(`${davUsername}:${hash}`);
 
-    if (existingIndex !== -1) {
-        return { status: "exists", username: davUsername };
-    }
+	const newContent = lines.join("\n") + "\n";
+	fs.writeFileSync(userFile, newContent, "utf8");
 
-    const password = randomBytes(18).toString("base64url");
-    const hash = await bcrypt.hash(password, 12);
-
-    lines.push(`${davUsername}:${hash}`);
-
-    const newContent = lines.join("\n") + "\n";
-    await fs.writeFileSync(USERS_FILE, newContent, "utf8");
-
-    return {
-        status: "created",
-        username: davUsername,
-        password,
-    };
+	return {
+		status: "created",
+		username: davUsername,
+		password,
+	};
 };

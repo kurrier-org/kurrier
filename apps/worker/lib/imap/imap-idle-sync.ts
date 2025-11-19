@@ -222,8 +222,15 @@ function attachRealtimeEventHandlers(
 		}
 		const isFlagged = ev.flags.has("\\Flagged");
 		const isSeen = ev.flags.has("\\Seen");
-        const isAnswered = ev.flags.has("\\Answered");
-		await handleFlagsUpdate(identityId, uid, ev.path, isFlagged, isSeen, isAnswered);
+		const isAnswered = ev.flags.has("\\Answered");
+		await handleFlagsUpdate(
+			identityId,
+			uid,
+			ev.path,
+			isFlagged,
+			isSeen,
+			isAnswered,
+		);
 	});
 
 	client.on("expunge", async (ev) => {
