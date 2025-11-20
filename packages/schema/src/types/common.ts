@@ -15,3 +15,5 @@ export const apiScopeOptions = apiScopeList.map((scope) => ({
 		}[scope] ?? scope,
 }));
 export const webHookList = ["message.received"] as const;
+export const labelScopesList = ["thread", "contact", "all"] as const;
+export type LabelScope = (typeof labelScopesList)[number];

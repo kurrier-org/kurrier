@@ -10,19 +10,20 @@ import {
 import AddNewLabel from "@/components/dashboard/labels/add-new-label";
 import colors from "tailwindcss/colors";
 import { useParams, useRouter } from "next/navigation";
-import { FetchLabelsWithCountResult } from "@/lib/actions/mailbox";
 import ManageLabels from "@/components/dashboard/labels/manage-labels";
 import { LabelEntity } from "@db";
+import { useDynamicContext } from "@/hooks/use-dynamic-context";
 
 type LabelWithCount = LabelEntity & {
 	threadCount?: number;
+	contactCount?: number;
 };
 
 type LabelNode = {
 	value: string;
 	label: string;
 	slug: string;
-	threadCount: number;
+	count: number;
 	colorBg?: string | null;
 	children?: LabelNode[];
 };
@@ -31,11 +32,12 @@ function buildLabelTree(labels: LabelWithCount[]): LabelNode[] {
 	const nodeById = new Map<string, LabelNode>();
 
 	for (const l of labels) {
+		const count = l.threadCount ?? l.contactCount ?? 0;
 		nodeById.set(l.id, {
 			value: l.id,
 			label: l.name,
 			slug: l.slug,
-			threadCount: l.threadCount ?? 0,
+			count,
 			colorBg: l.colorBg,
 			children: [],
 		});
@@ -68,12 +70,9 @@ function buildLabelTree(labels: LabelWithCount[]): LabelNode[] {
 	return roots;
 }
 
-function LabelHome({
-	globalLabels,
-}: {
-	globalLabels: FetchLabelsWithCountResult;
-}) {
-	const labels = globalLabels as LabelWithCount[];
+function LabelHome() {
+	const { state } = useDynamicContext();
+	const labels = (state.labels ?? []) as LabelWithCount[];
 
 	const treeData = buildLabelTree(labels);
 	const { identityPublicId, mailboxSlug, labelSlug } = useParams();
@@ -96,6 +95,10 @@ function LabelHome({
 		const isSelected = selected === labelNode.value;
 		const Icon = IconLabelFilled;
 		const color = labelNode.colorBg ?? colors.indigo["500"];
+		const routeTo =
+			state.scope === "contact"
+				? `/dashboard/contacts/label/${labelNode.slug}`
+				: `/dashboard/mail/${identityPublicId}/${mailboxSlug}/label/${labelNode.slug}`;
 
 		return (
 			<div
@@ -103,12 +106,9 @@ function LabelHome({
 				onClick={(e) => {
 					elementProps.onClick?.(e);
 					if (selected === labelNode.value) {
-						router.push("/dashboard/mail");
 						return;
 					}
-					router.push(
-						`/dashboard/mail/${identityPublicId}/${mailboxSlug}/label/${labelNode.slug}`,
-					);
+					router.push(routeTo);
 				}}
 				className={`
           flex items-center gap-2 rounded-md px-2 py-1 cursor-pointer
@@ -137,7 +137,7 @@ function LabelHome({
 				<span className="truncate text-sm">{labelNode.label}</span>
 
 				<span className="ml-auto text-xs text-muted-foreground tabular-nums mr-6">
-					{labelNode.threadCount}
+					{labelNode.count}
 				</span>
 			</div>
 		);
@@ -150,8 +150,8 @@ function LabelHome({
 			<div className="mx-3 mt-8 mb-3 flex items-center justify-between">
 				<div className="text-sm font-semibold tracking-tight">Labels</div>
 				<div className="flex gap-2">
-					<AddNewLabel globalLabels={globalLabels} />
-					<ManageLabels globalLabels={globalLabels} />
+					<AddNewLabel globalLabels={labels} />
+					<ManageLabels globalLabels={labels} />
 				</div>
 			</div>
 

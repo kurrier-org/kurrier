@@ -9,7 +9,7 @@ import {
 	FetchLabelsResult,
 	FetchMailboxThreadLabelsResult,
 	removeLabelFromThread,
-} from "@/lib/actions/mailbox";
+} from "@/lib/actions/labels";
 import { useDisclosure } from "@mantine/hooks";
 import AddNewLabel from "@/components/dashboard/labels/add-new-label";
 

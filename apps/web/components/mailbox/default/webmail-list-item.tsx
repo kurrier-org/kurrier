@@ -4,14 +4,16 @@ import { Mail, MailOpen, Paperclip, Trash2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { MailboxEntity, MailboxSyncEntity } from "@db";
 import {
-	FetchLabelsResult,
-	FetchMailboxThreadLabelsResult,
 	FetchMailboxThreadsResult,
 	markAsRead,
 	markAsUnread,
 	moveToTrash,
 	toggleStar,
 } from "@/lib/actions/mailbox";
+import {
+	FetchLabelsResult,
+	FetchMailboxThreadLabelsResult,
+} from "@/lib/actions/labels";
 import { IconStar, IconStarFilled } from "@tabler/icons-react";
 
 type Props = {
@@ -25,8 +27,8 @@ type Props = {
 import { Temporal } from "@js-temporal/polyfill";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { toast } from "sonner";
-import LabelHoverButtons from "@/components/dashboard/labels/label-hover-buttons";
 import LabelRowTag from "@/components/dashboard/labels/label-row-tag";
+import ThreadLabelHoverButtons from "@/components/dashboard/labels/thread-label-hover-buttons";
 
 export default function WebmailListItem({
 	mailboxThreadItem,
@@ -232,7 +234,7 @@ export default function WebmailListItem({
 					].join(" ")}
 					onClick={(e) => e.stopPropagation()}
 				>
-					<LabelHoverButtons
+					<ThreadLabelHoverButtons
 						mailboxThreadItem={mailboxThreadItem}
 						labelsByThreadId={labelsByThreadId}
 						allLabels={globalLabels}

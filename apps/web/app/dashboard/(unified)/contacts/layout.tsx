@@ -3,7 +3,9 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import ContactsShell from "@/components/dashboard/contacts/contacts-shell";
 import { rlsClient } from "@/lib/actions/clients";
-import { contacts } from "@db";
+import { contactLabels, contacts, labels } from "@db";
+import { eq } from "drizzle-orm";
+import { ContactWithFavorite } from "@/components/dashboard/contacts/contacts-list";
 
 export default async function ContactsLayout({
 	children,
@@ -11,7 +13,41 @@ export default async function ContactsLayout({
 	children: React.ReactNode;
 }) {
 	const rls = await rlsClient();
-	const allContacts = await rls((tx) => tx.select().from(contacts));
+
+	const rows = await rls((tx) =>
+		tx
+			.select({
+				contact: contacts,
+				labelSlug: labels.slug,
+			})
+			.from(contacts)
+			.leftJoin(contactLabels, eq(contactLabels.contactId, contacts.id))
+			.leftJoin(labels, eq(labels.id, contactLabels.labelId)),
+	);
+
+	const grouped = new Map<string, ContactWithFavorite & { labels: string[] }>();
+
+	for (const row of rows) {
+		const existing =
+			grouped.get(row.contact.id) ??
+			({
+				...row.contact,
+				isFavorite: false,
+				labels: [],
+			} as ContactWithFavorite & { labels: string[] });
+
+		if (row.labelSlug && !existing.labels.includes(row.labelSlug)) {
+			existing.labels.push(row.labelSlug);
+		}
+
+		if (row.labelSlug === "favorite") {
+			existing.isFavorite = true;
+		}
+
+		grouped.set(row.contact.id, existing);
+	}
+
+	const allContacts = Array.from(grouped.values());
 
 	return (
 		<>

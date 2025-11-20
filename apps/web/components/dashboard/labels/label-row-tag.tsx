@@ -1,7 +1,7 @@
 import React from "react";
 import { Badge } from "@mantine/core";
 import { useParams } from "next/navigation";
-import { FetchMailboxThreadLabelsResult } from "@/lib/actions/mailbox";
+import { FetchMailboxThreadLabelsResult } from "@/lib/actions/labels";
 
 type LabelRowTagProps = {
 	threadId: string;

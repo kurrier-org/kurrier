@@ -5,9 +5,10 @@ import { Modal, ActionIcon, ColorPicker } from "@mantine/core";
 import * as React from "react";
 import { ReusableForm } from "@/components/common/reusable-form";
 import { IconPlus } from "@tabler/icons-react";
-import { addNewLabel, FetchLabelsResult } from "@/lib/actions/mailbox";
+import { addNewLabel, FetchLabelsResult } from "@/lib/actions/labels";
 import ReusableFormCustomWrapper from "@/components/common/reusable-form-custom-wrapper";
 import { DEFAULT_COLORS_SWATCH } from "@common/mail-client";
+import { useDynamicContext } from "@/hooks/use-dynamic-context";
 
 function useLabelOptions({ labels }: { labels: any[] }) {
 	const options = labels.map((l) => ({
@@ -26,6 +27,7 @@ export default function AddNewLabel({
 	const [opened, { open, close }] = useDisclosure(false);
 
 	const { options: labelOptions } = useLabelOptions({ labels: globalLabels });
+	const { state } = useDynamicContext();
 
 	const fields = [
 		{
@@ -45,6 +47,12 @@ export default function AddNewLabel({
 			props: {
 				className: "w-full",
 			},
+		},
+		{
+			name: "scope",
+			type: "hidden",
+			wrapperClasses: "hidden",
+			props: { hidden: true, defaultValue: state.scope },
 		},
 		{
 			name: "color",

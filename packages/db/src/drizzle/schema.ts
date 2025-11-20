@@ -23,6 +23,7 @@ import {
 	apiScopeList,
 	identityStatusList,
 	identityTypesList,
+	labelScopesList,
 	mailboxKindsList,
 	mailboxSyncPhase,
 	messagePriorityList,
@@ -50,6 +51,7 @@ export const mailboxSyncPhaseEnum = pgEnum(
 
 export const ApiScopeEnum = pgEnum("api_scope", apiScopeList);
 export const WebHookEnum = pgEnum("webhook_list", webHookList);
+export const LabelScopeEnum = pgEnum("label_scope", labelScopesList);
 
 export const secretsMeta = pgTable(
 	"secrets_meta",
@@ -950,6 +952,8 @@ export const labels = pgTable(
 
 		metaData: jsonb("meta").$type<Record<string, any> | null>().default(null),
 
+		scope: LabelScopeEnum("scope").notNull().default("thread"),
+
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),
@@ -958,7 +962,7 @@ export const labels = pgTable(
 			.notNull(),
 	},
 	(t) => [
-		uniqueIndex("uniq_label_owner_slug").on(t.ownerId, t.slug),
+		uniqueIndex("uniq_label_owner_scope_slug").on(t.ownerId, t.scope, t.slug),
 
 		pgPolicy("labels_select_own", {
 			for: "select",
@@ -1111,6 +1115,52 @@ export const contacts = pgTable(
 			withCheck: sql`${t.ownerId} = ${authUid}`,
 		}),
 		pgPolicy("contacts_delete_own", {
+			for: "delete",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+	],
+).enableRLS();
+
+export const contactLabels = pgTable(
+	"contact_labels",
+	{
+		contactId: uuid("contact_id")
+			.references(() => contacts.id, { onDelete: "cascade" })
+			.notNull(),
+
+		labelId: uuid("label_id")
+			.references(() => labels.id, { onDelete: "cascade" })
+			.notNull(),
+
+		ownerId: uuid("owner_id")
+			.references(() => users.id)
+			.notNull()
+			.default(sql`auth.uid()`),
+
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		primaryKey({
+			name: "pk_contact_labels",
+			columns: [t.contactId, t.labelId],
+		}),
+
+		index("ix_contact_labels_label").on(t.labelId),
+
+		pgPolicy("contact_labels_select_own", {
+			for: "select",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("contact_labels_insert_own", {
+			for: "insert",
+			to: authenticatedRole,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("contact_labels_delete_own", {
 			for: "delete",
 			to: authenticatedRole,
 			using: sql`${t.ownerId} = ${authUid}`,

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { IconTrash } from "@tabler/icons-react";
-import { Button } from "@mantine/core";
+import { ActionIcon } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { ContactEntity } from "@db";
 import { useRouter } from "next/navigation";
@@ -46,14 +46,14 @@ function DeleteContactButton({
 	};
 
 	return (
-		<Button
+		<ActionIcon
 			onClick={confirmDeleteContact}
-			size="xs"
-			leftSection={<IconTrash size={14} stroke={1.5} />}
-			variant="light"
+			size="md"
+			className={"-mt-1"}
+			variant={"subtle"}
 		>
-			Remove
-		</Button>
+			<IconTrash size={14} stroke={1.5} />
+		</ActionIcon>
 	);
 }
 
