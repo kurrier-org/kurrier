@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {Users, UploadCloud, Tag, Plus} from "lucide-react";
+import { Users, UploadCloud, Tag, Plus } from "lucide-react";
 
 import {
 	SidebarGroup,
@@ -29,11 +29,11 @@ export default function ContactsNav({
 	const pathName = usePathname();
 
 	const mainItems = [
-        {
-            title: "New Contact",
-            url: "/dashboard/contacts/new",
-            icon: Plus,
-        },
+		{
+			title: "New Contact",
+			url: "/dashboard/contacts/new",
+			icon: Plus,
+		},
 		{
 			title: "All contacts",
 			url: "/dashboard/contacts",

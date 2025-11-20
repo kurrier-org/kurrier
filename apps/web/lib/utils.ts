@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { FetchDecryptedSecretsResult } from "@/lib/actions/dashboard";
-import imageCompression from 'browser-image-compression';
+import imageCompression from "browser-image-compression";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -36,28 +36,28 @@ export const toArray = (v: string | string[] | undefined | null) =>
 
 type ThumbReturn = "dataUrl" | "file" | "arrayBuffer";
 export async function createThumbnail(
-    file: File,
-    format: ThumbReturn = "dataUrl",
-    maxWidthOrHeight = 1920,
-    maxSizeMB = 0.025
+	file: File,
+	format: ThumbReturn = "dataUrl",
+	maxWidthOrHeight = 1920,
+	maxSizeMB = 0.025,
 ): Promise<string | File | ArrayBuffer> {
-    const compressed = await imageCompression(file, {
-        maxWidthOrHeight,
-        maxSizeMB,
-        initialQuality: 1,
-        useWebWorker: true
-    });
+	const compressed = await imageCompression(file, {
+		maxWidthOrHeight,
+		maxSizeMB,
+		initialQuality: 1,
+		useWebWorker: true,
+	});
 
-    if (format === "file") return compressed;
+	if (format === "file") return compressed;
 
-    if (format === "arrayBuffer") {
-        return compressed.arrayBuffer();
-    }
+	if (format === "arrayBuffer") {
+		return compressed.arrayBuffer();
+	}
 
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(compressed);
-    });
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => resolve(reader.result as string);
+		reader.onerror = reject;
+		reader.readAsDataURL(compressed);
+	});
 }

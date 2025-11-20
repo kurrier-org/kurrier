@@ -15,7 +15,7 @@ import {
 } from "@schema/types/themes";
 import { getPublicEnv } from "@schema";
 import "@mantine/core/styles.css";
-import '@mantine/dates/styles.css';
+import "@mantine/dates/styles.css";
 import {
 	ColorSchemeScript,
 	MantineProvider,
