@@ -67,7 +67,7 @@ function SelectField({
 					onChange && onChange(v ?? "");
 				}}
 				disabled={disabled}
-				searchable={false}
+				searchable={true}
 				allowDeselect={false}
 				withCheckIcon={false}
 				checkIconPosition="right"
@@ -154,7 +154,6 @@ export function ReusableForm({
 							{el ? (
 								el
 							) : (props as any)?.type === "hidden" ? (
-								// native hidden input
 								<input name={name!} {...(props as any)} />
 							) : (
 								<>

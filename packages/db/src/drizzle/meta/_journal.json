@@ -64,6 +64,20 @@
 			"when": 1763310067161,
 			"tag": "0008_cheerful_bedlam",
 			"breakpoints": true
+		},
+		{
+			"idx": 9,
+			"version": "7",
+			"when": 1763578698477,
+			"tag": "0009_brief_barracuda",
+			"breakpoints": true
+		},
+		{
+			"idx": 10,
+			"version": "7",
+			"when": 1763627326902,
+			"tag": "0010_flaky_living_tribunal",
+			"breakpoints": true
 		}
 	]
 }

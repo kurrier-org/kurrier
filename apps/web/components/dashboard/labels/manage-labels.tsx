@@ -163,13 +163,6 @@ export default function ManageLabels({
 								</div>
 							</div>
 						)}
-
-						{!selectedLabel && (
-							<p className="text-xs text-muted-foreground">
-								Select a label above to rename it, change its color or delete
-								it.
-							</p>
-						)}
 					</section>
 				</div>
 			</Modal>

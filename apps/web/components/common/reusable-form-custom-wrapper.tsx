@@ -9,7 +9,7 @@ function ReusableFormCustomWrapper({
 }) {
 	const Component = component;
 
-	const [value, setValue] = useState(rest.defaultValue ?? "");
+	const [value, setValue] = useState(rest.defaultValue ?? undefined);
 
 	useEffect(() => {
 		if (rest.defaultValue !== undefined) {

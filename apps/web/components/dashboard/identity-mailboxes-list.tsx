@@ -176,6 +176,9 @@ export default function IdentityMailboxesList({
 								"flex min-w-0 flex-1 items-center gap-2 rounded-md py-1.5 pl-2 text-sm",
 								"hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
 								isActive && "bg-sidebar-accent text-sidebar-accent-foreground",
+								isActive
+									? "text-brand dark:text-white bg-brand-100 dark:bg-neutral-800 hover:text-brand hover:bg-brand-100"
+									: "",
 								!m.selectable &&
 									"opacity-60 pointer-events-none cursor-default",
 							)}

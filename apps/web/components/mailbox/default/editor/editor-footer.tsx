@@ -178,8 +178,6 @@ export default function EditorFooter() {
 
 	const removeUpload = (path: string) => {
 		setUploads((prev) => prev.filter((u) => u.path !== path));
-		// Optionally: also delete from storage if desired
-		// await supabase.storage.from('attachments').remove([path]);
 	};
 
 	return (
