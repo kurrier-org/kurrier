@@ -45,7 +45,7 @@ import { Divider } from "@mantine/core";
 import LabelHome from "@/components/dashboard/labels/label-home";
 import { IconFrame } from "@tabler/icons-react";
 import ContactsNav from "@/components/dashboard/contacts/contacts-sidebar";
-import NewContact from "@/components/dashboard/contacts/new-contact";
+import NewContactButton from "@/components/dashboard/contacts/new-contact-button";
 
 type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	publicConfig: PublicConfig;
@@ -310,7 +310,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 					)}
 					{isOnContacts && (
 						<div className={"-mt-1"}>
-							<NewContact publicConfig={publicConfig} />
+							<NewContactButton hideOnMobile={true} />
 						</div>
 					)}
 				</SidebarHeader>

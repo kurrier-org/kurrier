@@ -1040,3 +1040,80 @@ export const mailboxThreadLabels = pgTable(
 		}),
 	],
 ).enableRLS();
+
+export const contacts = pgTable(
+    "contacts",
+    {
+        id: uuid("id").defaultRandom().primaryKey(),
+        ownerId: uuid("owner_id")
+            .references(() => users.id)
+            .notNull()
+            .default(sql`auth.uid()`),
+        publicId: text("public_id")
+            .notNull()
+            .$defaultFn(() => nanoid(10)),
+        profilePicture: text("profile_picture"),
+        profilePictureXs: text("profile_picture_xs"),
+        firstName: text("first_name").notNull(),
+        lastName: text("last_name"),
+        company: text("company"),
+        jobTitle: text("job_title"),
+        department: text("department"),
+        emails: jsonb("emails")
+            .$type<{ address: string }[]>()
+            .notNull()
+            .default([]),
+        phones: jsonb("phones")
+            .$type<{ code: string | null; number: string }[]>()
+            .notNull()
+            .default([]),
+        addresses: jsonb("addresses")
+            .$type<{
+                country: string | null;
+                streetAddress: string | null;
+                streetAddressLine2: string | null;
+                city: string | null;
+                state: string | null;
+                code: string | null;
+            }[]>()
+            .notNull()
+            .default([]),
+        dob: text("dob"),
+        notes: text("notes"),
+        metaData: jsonb("meta")
+            .$type<Record<string, any> | null>()
+            .default(null),
+        createdAt: timestamp("created_at", { withTimezone: true })
+            .defaultNow()
+            .notNull(),
+        updatedAt: timestamp("updated_at", { withTimezone: true })
+            .defaultNow()
+            .$onUpdateFn(() => sql`now()`),
+    },
+    (t) => [
+        uniqueIndex("ux_contacts_owner_public_id").on(t.ownerId, t.publicId),
+        index("ix_contacts_owner").on(t.ownerId),
+        index("ix_contacts_name").on(t.ownerId, t.lastName, t.firstName),
+        pgPolicy("contacts_select_own", {
+            for: "select",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("contacts_insert_own", {
+            for: "insert",
+            to: authenticatedRole,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("contacts_update_own", {
+            for: "update",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("contacts_delete_own", {
+            for: "delete",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+    ],
+).enableRLS();

@@ -1,16 +1,16 @@
 import {
-	providers,
-	smtpAccounts,
-	identities,
-	mailboxes,
-	messages,
-	threads,
-	messageAttachments,
-	mailboxSync,
-	mailboxThreads,
-	webhooks,
-	labels,
-	mailboxThreadLabels,
+    providers,
+    smtpAccounts,
+    identities,
+    mailboxes,
+    messages,
+    threads,
+    messageAttachments,
+    mailboxSync,
+    mailboxThreads,
+    webhooks,
+    labels,
+    mailboxThreadLabels, contacts,
 } from "./schema";
 import { decryptedSecrets } from "./supabase-schema";
 import { z } from "zod";
@@ -81,3 +81,7 @@ export type LabelCreate = typeof labels.$inferInsert;
 export type LabelEntity = typeof labels.$inferSelect;
 
 export type MailboxThreadLabelEntity = typeof mailboxThreadLabels.$inferSelect;
+
+export const ContactInsertSchema = createInsertSchema(contacts);
+export type ContactCreate = typeof contacts.$inferInsert;
+export type ContactEntity = typeof contacts.$inferSelect;

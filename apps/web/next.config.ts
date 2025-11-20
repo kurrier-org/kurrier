@@ -4,6 +4,15 @@ const nextConfig: NextConfig = {
 	devIndicators: false,
 	output: "standalone",
 	reactCompiler: true,
+    images: {
+        remotePatterns: [{
+            protocol: "https",
+            hostname: "**",
+        },{
+            protocol: "http",
+            hostname: "**",
+        }],
+    },
 	async rewrites() {
 		return {
 			beforeFiles: [

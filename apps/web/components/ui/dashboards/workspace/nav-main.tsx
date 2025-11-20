@@ -54,10 +54,9 @@ export function NavMain({
 								asChild
 								tooltip={item.title}
 								className={
-									"dark:hover:bg-neutral-800 hover:bg-neutral-100 px-2.5 md:px-2 " +
-									(pathName === item.url
-										? "bg-neutral-200 dark:bg-neutral-800"
-										: "")
+                                    (pathName === item.url
+                                        ? "text-brand dark:text-white bg-brand-100 dark:bg-neutral-800 hover:text-brand hover:bg-brand-100"
+                                        : "")
 								}
 							>
 								<Link href={item.url}>
