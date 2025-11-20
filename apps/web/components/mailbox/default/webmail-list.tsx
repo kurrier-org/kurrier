@@ -4,10 +4,12 @@ import { MailboxEntity, MailboxSyncEntity } from "@db";
 import { PublicConfig } from "@schema";
 import {
 	FetchIdentityMailboxListResult,
-	FetchLabelsResult,
-	FetchMailboxThreadLabelsResult,
 	FetchMailboxThreadsResult,
 } from "@/lib/actions/mailbox";
+import {
+	FetchLabelsResult,
+	FetchMailboxThreadLabelsResult,
+} from "@/lib/actions/labels";
 import MailListHeader from "@/components/mailbox/default/mail-list-header";
 import WebmailListItem from "@/components/mailbox/default/webmail-list-item";
 import { useEffect } from "react";

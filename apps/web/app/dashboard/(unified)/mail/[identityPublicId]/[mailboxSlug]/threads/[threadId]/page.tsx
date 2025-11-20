@@ -1,9 +1,5 @@
 import React from "react";
-import {
-	fetchMailbox,
-	fetchWebMailThreadDetail,
-	markAsRead,
-} from "@/lib/actions/mailbox";
+import { fetchMailbox, fetchWebMailThreadDetail } from "@/lib/actions/mailbox";
 import ThreadItem from "@/components/mailbox/default/thread-item";
 import { Divider } from "@mantine/core";
 

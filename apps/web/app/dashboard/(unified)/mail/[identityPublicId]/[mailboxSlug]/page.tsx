@@ -1,11 +1,10 @@
 import {
 	deltaFetch,
 	fetchIdentityMailboxList,
-	fetchLabels,
 	fetchMailbox,
-	fetchMailboxThreadLabels,
 	fetchMailboxThreads,
 } from "@/lib/actions/mailbox";
+import { fetchLabels, fetchMailboxThreadLabels } from "@/lib/actions/labels";
 import { getPublicEnv } from "@schema";
 import MailPagination from "@/components/mailbox/default/mail-pagination";
 import WebmailList from "@/components/mailbox/default/webmail-list";

@@ -15,16 +15,18 @@ import {
 	updateLabel,
 	deleteLabel,
 	FetchLabelsResult,
-} from "@/lib/actions/mailbox";
+} from "@/lib/actions/labels";
 import { DEFAULT_COLORS_SWATCH } from "@common/mail-client";
 import { toast } from "sonner";
 import colors from "tailwindcss/colors";
 
 function useLabelOptions({ labels }: { labels: FetchLabelsResult }) {
-	const options = labels.map((l) => ({
-		label: l.name,
-		value: l.id,
-	}));
+	const options = labels
+		.filter((l) => !l.isSystem)
+		.map((l) => ({
+			label: l.name,
+			value: l.id,
+		}));
 
 	return { options };
 }
@@ -69,6 +71,7 @@ export default function ManageLabels({
 				parentId: editParentId || null,
 				color: editColor,
 			});
+			close();
 		} finally {
 			setIsSubmitting(false);
 			toast.success("Label updated");
@@ -78,7 +81,7 @@ export default function ManageLabels({
 	const handleDelete = async () => {
 		if (!editLabelId) return;
 		const ok = window.confirm(
-			"Delete this label? Messages will remain, but this label will be removed from them.",
+			"Delete this label? This action cannot be undone.",
 		);
 		if (!ok) return;
 

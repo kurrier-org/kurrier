@@ -28,16 +28,19 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import KurrierLogo from "@/components/common/kurrier-logo";
 import ComposeMail from "@/components/mailbox/default/compose-mail";
-import { PublicConfig } from "@schema";
+import { LabelScope, PublicConfig } from "@schema";
 import { UserResponse } from "@supabase/supabase-js";
 import { NavMain } from "@/components/ui/dashboards/workspace/nav-main";
 import ThemeColorPicker from "@/components/common/theme-color-picker";
 import IdentityMailboxesList from "@/components/dashboard/identity-mailboxes-list";
 import {
 	FetchIdentityMailboxListResult,
-	FetchLabelsWithCountResult,
 	FetchMailboxUnreadCountsResult,
 } from "@/lib/actions/mailbox";
+import {
+	FetchContactLabelsWithCountResult,
+	FetchLabelsWithCountResult,
+} from "@/lib/actions/labels";
 import ThemeSwitch from "@/components/common/theme-switch";
 import Link from "next/link";
 import { useMediaQuery } from "@mantine/hooks";
@@ -46,6 +49,7 @@ import LabelHome from "@/components/dashboard/labels/label-home";
 import { IconFrame } from "@tabler/icons-react";
 import ContactsNav from "@/components/dashboard/contacts/contacts-sidebar";
 import NewContactButton from "@/components/dashboard/contacts/new-contact-button";
+import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
 
 type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	publicConfig: PublicConfig;
@@ -54,6 +58,7 @@ type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	identityMailboxes: FetchIdentityMailboxListResult;
 	unreadCounts: FetchMailboxUnreadCountsResult;
 	globalLabels: FetchLabelsWithCountResult;
+	contactLabels: FetchContactLabelsWithCountResult;
 };
 
 export function AppSidebar({ ...props }: UnifiedSidebarProps) {
@@ -64,6 +69,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 		identityMailboxes,
 		unreadCounts,
 		globalLabels,
+		contactLabels,
 		...restProps
 	} = props;
 
@@ -185,10 +191,27 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 					identityMailboxes={identityMailboxes}
 					unreadCounts={unreadCounts}
 				/>
-				<LabelHome globalLabels={globalLabels} />
+				{/*<LabelHome globalLabels={globalLabels} />*/}
+				<DynamicContextProvider
+					initialState={{ labels: globalLabels, scope: "thread" as LabelScope }}
+				>
+					<LabelHome />
+				</DynamicContextProvider>
 			</>
 		),
-		contacts: <ContactsNav labels={[]} />,
+		contacts: (
+			<>
+				<ContactsNav />
+				<DynamicContextProvider
+					initialState={{
+						labels: contactLabels,
+						scope: "contact" as LabelScope,
+					}}
+				>
+					<LabelHome />
+				</DynamicContextProvider>
+			</>
+		),
 		platform: <NavMain items={data.navPlatform} />,
 	};
 

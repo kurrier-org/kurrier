@@ -1,10 +1,9 @@
+import { fetchIdentityMailboxList, fetchMailbox } from "@/lib/actions/mailbox";
 import {
-	fetchIdentityMailboxList,
-	fetchMailbox,
 	fetchLabels,
 	fetchMailboxThreadLabels,
 	fetchMailboxThreadsByLabel,
-} from "@/lib/actions/mailbox";
+} from "@/lib/actions/labels";
 import { getPublicEnv } from "@schema";
 import WebmailList from "@/components/mailbox/default/webmail-list";
 import LabelPagination from "@/components/dashboard/labels/label-pagination";

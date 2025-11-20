@@ -4,13 +4,13 @@ import { Mail, MailOpen, Paperclip, Trash2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import type { MailboxEntity, MailboxSyncEntity } from "@db";
 import {
-	FetchMailboxThreadLabelsResult,
 	FetchMailboxThreadsResult,
 	markAsRead,
 	markAsUnread,
 	moveToTrash,
 	toggleStar,
 } from "@/lib/actions/mailbox";
+import { FetchMailboxThreadLabelsResult } from "@/lib/actions/labels";
 import { IconStar, IconStarFilled } from "@tabler/icons-react";
 import { Temporal } from "@js-temporal/polyfill";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";

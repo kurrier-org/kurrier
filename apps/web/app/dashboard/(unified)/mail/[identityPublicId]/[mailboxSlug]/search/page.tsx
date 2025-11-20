@@ -1,12 +1,11 @@
 import {
 	fetchIdentityMailboxList,
-	fetchLabels,
 	fetchMailbox,
-	fetchMailboxThreadLabels,
 	FetchMailboxThreadsByIdsResult,
 	fetchMailboxThreadsList,
 	initSearch,
 } from "@/lib/actions/mailbox";
+import { fetchLabels, fetchMailboxThreadLabels } from "@/lib/actions/labels";
 import { getPublicEnv, ThreadHit } from "@schema";
 import { isSignedIn } from "@/lib/actions/auth";
 import SearchPagination from "@/components/mailbox/default/search-pagination";

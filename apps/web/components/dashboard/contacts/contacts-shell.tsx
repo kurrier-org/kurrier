@@ -1,7 +1,8 @@
 import React from "react";
-import ContactsList from "@/components/dashboard/contacts/contacts-list";
+import ContactsList, {
+	ContactWithFavorite,
+} from "@/components/dashboard/contacts/contacts-list";
 import NewContactButton from "@/components/dashboard/contacts/new-contact-button";
-import { ContactEntity } from "@db";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ContactsShell({
@@ -9,7 +10,7 @@ export default async function ContactsShell({
 	userContacts,
 }: {
 	children: React.ReactNode;
-	userContacts: ContactEntity[];
+	userContacts: ContactWithFavorite[];
 }) {
 	const userProfileImages = userContacts
 		.map((contact) => contact.profilePictureXs)
