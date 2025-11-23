@@ -1,21 +1,22 @@
 "use server";
 
 import {
-    apiKeys,
-    createSecret, davAccounts,
-    getSecret,
-    identities,
-    IdentityCreate,
-    IdentityEntity,
-    IdentityInsertSchema,
-    mailboxes,
-    messages,
-    providers,
-    providerSecrets,
-    secretsMeta,
-    smtpAccounts,
-    smtpAccountSecrets,
-    updateSecret,
+	apiKeys,
+	createSecret,
+	davAccounts,
+	getSecret,
+	identities,
+	IdentityCreate,
+	IdentityEntity,
+	IdentityInsertSchema,
+	mailboxes,
+	messages,
+	providers,
+	providerSecrets,
+	secretsMeta,
+	smtpAccounts,
+	smtpAccountSecrets,
+	updateSecret,
 } from "@db";
 import {
 	apiScopeList,
@@ -43,7 +44,7 @@ import { v4 as uuidv4 } from "uuid";
 import { backfillMailboxes, clearImapClients } from "@/lib/actions/mailbox";
 import { kvGet } from "@common";
 import { nanoid } from "nanoid";
-import {getRedis} from "@/lib/actions/get-redis";
+import { getRedis } from "@/lib/actions/get-redis";
 
 const DASHBOARD_PATH = "/dashboard/providers";
 const CURRENT_API_VERSION = 1;
@@ -922,34 +923,33 @@ export type FetchUserAPIKeysResult = Awaited<
 >;
 
 export const fetchUserDavAccounts = async () => {
-    const rls = await rlsClient();
-    const session = await currentSession();
+	const rls = await rlsClient();
+	const session = await currentSession();
 
-    const [row] = await rls((tx) =>
-        tx
-            .select({
-                account: davAccounts,
-                metaId: secretsMeta.id,
-            })
-            .from(davAccounts)
-            .leftJoin(secretsMeta, eq(davAccounts.secretId, secretsMeta.id))
-            .orderBy(desc(davAccounts.createdAt))
-            .limit(1),
-    );
+	const [row] = await rls((tx) =>
+		tx
+			.select({
+				account: davAccounts,
+				metaId: secretsMeta.id,
+			})
+			.from(davAccounts)
+			.leftJoin(secretsMeta, eq(davAccounts.secretId, secretsMeta.id))
+			.orderBy(desc(davAccounts.createdAt))
+			.limit(1),
+	);
 
-    const { vault } = await getSecret(session, String(row.metaId));
-    return {
-        ...row.account,
-        vault: vault?.decrypted_secret || null,
-    };
+	const { vault } = await getSecret(session, String(row.metaId));
+	return {
+		...row.account,
+		vault: vault?.decrypted_secret || null,
+	};
 };
 
-
 export const regenerateDavPassword = async () => {
-    const {davEvents, davQueue} = await getRedis()
-    const user = await isSignedIn();
-    const job = await davQueue.add("dav:update-password", {userId: user?.id})
-    await job.waitUntilFinished(davEvents);
-    revalidatePath("/dashboard/platform/sync-services");
-    return job.returnvalue;
+	const { davEvents, davQueue } = await getRedis();
+	const user = await isSignedIn();
+	const job = await davQueue.add("dav:update-password", { userId: user?.id });
+	await job.waitUntilFinished(davEvents);
+	revalidatePath("/dashboard/platform/sync-services");
+	return job.returnvalue;
 };

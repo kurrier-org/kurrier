@@ -79,31 +79,31 @@ export async function createSecret(
 }
 
 export async function createSecretAdmin(input: {
-    ownerId: string;
-    name: string;
-    value: string;
-    description?: string | null;
+	ownerId: string;
+	name: string;
+	value: string;
+	description?: string | null;
 }) {
-    const db = createDb();
+	const db = createDb();
 
-    const vaultId = await db.transaction((tx) =>
-        vaultCreateSecret(tx, {
-            name: input.name,
-            secret: input.value,
-        }),
-    );
+	const vaultId = await db.transaction((tx) =>
+		vaultCreateSecret(tx, {
+			name: input.name,
+			secret: input.value,
+		}),
+	);
 
-    const [row] = await db
-        .insert(secretsMeta)
-        .values({
-            ownerId: input.ownerId,
-            name: input.name,
-            description: input.description ?? null,
-            vaultSecret: vaultId,
-        })
-        .returning();
+	const [row] = await db
+		.insert(secretsMeta)
+		.values({
+			ownerId: input.ownerId,
+			name: input.name,
+			description: input.description ?? null,
+			vaultSecret: vaultId,
+		})
+		.returning();
 
-    return row;
+	return row;
 }
 
 export async function getSecretAdmin(id: string) {
@@ -190,50 +190,48 @@ export async function deleteSecret(session: AuthSession, id: string) {
 	await rls((tx) => tx.delete(secretsMeta).where(eq(secretsMeta.id, id)));
 }
 
-
 export async function updateSecretAdmin(
-    id: string,
-    input: { value?: string; name?: string }
+	id: string,
+	input: { value?: string; name?: string },
 ) {
-    const db = createDb();
-    const meta = await db
-        .select()
-        .from(secretsMeta)
-        .where(eq(secretsMeta.id, id))
-        .limit(1)
-        .then((r) => r[0]);
+	const db = createDb();
+	const meta = await db
+		.select()
+		.from(secretsMeta)
+		.where(eq(secretsMeta.id, id))
+		.limit(1)
+		.then((r) => r[0]);
 
-    if (!meta) {
-        throw new Error("Secret metadata not found");
-    }
-    if (input.value !== undefined) {
-        await db.transaction((tx) =>
-            vaultUpdateSecret(tx, meta.vaultSecret, input.value!)
-        );
-    }
-    if (input.name !== undefined) {
-        const rows = await db
-            .update(secretsMeta)
-            .set({ name: input.name })
-            .where(eq(secretsMeta.id, id))
-            .returning();
+	if (!meta) {
+		throw new Error("Secret metadata not found");
+	}
+	if (input.value !== undefined) {
+		await db.transaction((tx) =>
+			vaultUpdateSecret(tx, meta.vaultSecret, input.value!),
+		);
+	}
+	if (input.name !== undefined) {
+		const rows = await db
+			.update(secretsMeta)
+			.set({ name: input.name })
+			.where(eq(secretsMeta.id, id))
+			.returning();
 
-        return rows[0]!;
-    }
-    return meta;
+		return rows[0]!;
+	}
+	return meta;
 }
 
-
 export async function deleteSecretAdmin(id: string) {
-    const db = createDb();
-    const meta = await db
-        .select()
-        .from(secretsMeta)
-        .where(eq(secretsMeta.id, id))
-        .limit(1)
-        .then((rows) => rows[0]);
+	const db = createDb();
+	const meta = await db
+		.select()
+		.from(secretsMeta)
+		.where(eq(secretsMeta.id, id))
+		.limit(1)
+		.then((rows) => rows[0]);
 
-    if (!meta) return;
-    await db.transaction((tx) => vaultDeleteSecret(tx, meta.vaultSecret));
-    await db.delete(secretsMeta).where(eq(secretsMeta.id, id));
+	if (!meta) return;
+	await db.transaction((tx) => vaultDeleteSecret(tx, meta.vaultSecret));
+	await db.delete(secretsMeta).where(eq(secretsMeta.id, id));
 }

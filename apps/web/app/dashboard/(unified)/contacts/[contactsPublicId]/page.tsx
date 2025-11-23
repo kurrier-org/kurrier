@@ -19,8 +19,8 @@ import { LabelScope } from "@schema";
 import { Star } from "lucide-react";
 import Form from "next/form";
 import { getCountryDataList, TCountryCode } from "countries-list";
-import {getRedis} from "@/lib/actions/get-redis";
-import {isSignedIn} from "@/lib/actions/auth";
+import { getRedis } from "@/lib/actions/get-redis";
+import { isSignedIn } from "@/lib/actions/auth";
 
 async function Page({ params }: { params: { contactsPublicId: string } }) {
 	const { contactsPublicId } = await params;
@@ -57,9 +57,12 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 
 	const onDeleteAction = async (id: string) => {
 		"use server";
-        const {davQueue} = await getRedis()
-        const user = await isSignedIn()
-        await davQueue.add("dav:delete-contact", {contactId: id, ownerId: user?.id})
+		const { davQueue } = await getRedis();
+		const user = await isSignedIn();
+		await davQueue.add("dav:delete-contact", {
+			contactId: id,
+			ownerId: user?.id,
+		});
 		const rls = await rlsClient();
 		await rls((tx) => tx.delete(contacts).where(eq(contacts.id, id)));
 		revalidatePath("/dashboard/contacts");

@@ -14,11 +14,7 @@ import {
 } from "@db";
 import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import {
-	FormState,
-	getServerEnv,
-	SearchThreadsResponse,
-} from "@schema";
+import { FormState, getServerEnv, SearchThreadsResponse } from "@schema";
 import { decode } from "decode-formdata";
 import { toArray } from "@/lib/utils";
 
@@ -27,7 +23,7 @@ import { isSignedIn } from "@/lib/actions/auth";
 import slugify from "@sindresorhus/slugify";
 import { redirect } from "next/navigation";
 import { PAGE_SIZE } from "@common/mail-client";
-import {getRedis} from "@/lib/actions/get-redis";
+import { getRedis } from "@/lib/actions/get-redis";
 let typeSenseClient: Client | null = null;
 function getTypeSenseClient(): Client {
 	if (typeSenseClient) return typeSenseClient;

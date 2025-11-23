@@ -147,19 +147,19 @@ export default function SyncServicesHome({
 							</div>
 
 							<div className="pt-1">
-                                <Button
-                                    type="button"
-                                    loading={isSaving}
-                                    onClick={async () => {
-                                        setIsSaving(true)
-                                        await regenerateDavPassword()
-                                        setIsSaving(false)
-                                    }}
-                                    size={"xs"}
-                                    leftSection={<IconLockBolt size={18} />}
-                                >
-                                    {password ? "Regenerate password" : "Generate password"}
-                                </Button>
+								<Button
+									type="button"
+									loading={isSaving}
+									onClick={async () => {
+										setIsSaving(true);
+										await regenerateDavPassword();
+										setIsSaving(false);
+									}}
+									size={"xs"}
+									leftSection={<IconLockBolt size={18} />}
+								>
+									{password ? "Regenerate password" : "Generate password"}
+								</Button>
 							</div>
 						</div>
 					</div>

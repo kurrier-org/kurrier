@@ -8,7 +8,7 @@ import { rlsClient } from "@/lib/actions/clients";
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { createClient } from "@/lib/supabase/server";
-import {getRedis} from "@/lib/actions/get-redis";
+import { getRedis } from "@/lib/actions/get-redis";
 
 async function Page({ params }: { params: { contactsPublicId: string } }) {
 	const { contactsPublicId } = await params;
@@ -60,8 +60,11 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 			revalidatePath(`/dashboard/contacts/${contactsPublicId}`);
 			revalidatePath("/dashboard/contacts");
 
-            const {davQueue} = await getRedis()
-            davQueue.add("dav:update-contact", {contactId: updatedContact.id, ownerId: updatedContact.ownerId})
+			const { davQueue } = await getRedis();
+			davQueue.add("dav:update-contact", {
+				contactId: updatedContact.id,
+				ownerId: updatedContact.ownerId,
+			});
 
 			return { success: true, data: updatedContact };
 		});

@@ -32,7 +32,10 @@ const commonWorkerQueue = new Queue("common-worker", redisConnection);
 const commonWorkerEvents = new QueueEvents("common-worker", redisConnection);
 
 const migrationWorkerQueue = new Queue("migration-worker", redisConnection);
-const migrationWorkerEvents = new QueueEvents("migration-worker", redisConnection);
+const migrationWorkerEvents = new QueueEvents(
+	"migration-worker",
+	redisConnection,
+);
 
 export async function getRedis() {
 	await Promise.all([
@@ -40,7 +43,7 @@ export async function getRedis() {
 		sendMailEvents.waitUntilReady(),
 		searchIngestEvents.waitUntilReady(),
 		commonWorkerEvents.waitUntilReady(),
-        migrationWorkerEvents.waitUntilReady(),
+		migrationWorkerEvents.waitUntilReady(),
 	]);
 	return {
 		connection: redis,
@@ -52,7 +55,7 @@ export async function getRedis() {
 		searchIngestEvents,
 		commonWorkerQueue,
 		commonWorkerEvents,
-        migrationWorkerQueue,
-        migrationWorkerEvents,
+		migrationWorkerQueue,
+		migrationWorkerEvents,
 	};
 }

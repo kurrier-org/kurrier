@@ -1086,27 +1086,28 @@ export const contacts = pgTable(
 			.default([]),
 		dob: text("dob"),
 		notes: text("notes"),
-        addressBookId: uuid("address_book_id")
-            .references(() => addressBooks.id, { onDelete: "set null" }),
+		addressBookId: uuid("address_book_id").references(() => addressBooks.id, {
+			onDelete: "set null",
+		}),
 
-        davEtag: text("dav_etag"),
-        davUri: text("dav_uri"),
+		davEtag: text("dav_etag"),
+		davUri: text("dav_uri"),
 
 		metaData: jsonb("meta").$type<Record<string, any> | null>().default(null),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),
-        updatedAt: timestamp("updated_at", { withTimezone: true })
-            .defaultNow()
-            .notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
 	},
 	(t) => [
 		uniqueIndex("ux_contacts_owner_public_id").on(t.ownerId, t.publicId),
 		index("ix_contacts_owner").on(t.ownerId),
 		index("ix_contacts_name").on(t.ownerId, t.lastName, t.firstName),
-        uniqueIndex("ux_contacts_owner_dav_uri")
-            .on(t.ownerId, t.davUri)
-            .where(sql`${t.davUri} IS NOT NULL`),
+		uniqueIndex("ux_contacts_owner_dav_uri")
+			.on(t.ownerId, t.davUri)
+			.where(sql`${t.davUri} IS NOT NULL`),
 
 		pgPolicy("contacts_select_own", {
 			for: "select",
@@ -1178,145 +1179,141 @@ export const contactLabels = pgTable(
 	],
 ).enableRLS();
 
-
 export const appMigrations = pgTable(
-    "app_migrations",
-    {
-        id: uuid("id").defaultRandom().primaryKey(),
-        ownerId: uuid("owner_id")
-            .references(() => users.id)
-            .notNull()
-            .default(sql`auth.uid()`),
-        version: text("version").notNull(),
-        scope: text("scope").notNull().default("default"),
-        createdAt: timestamp("created_at", { withTimezone: true })
-            .defaultNow()
-            .notNull(),
-    },
-    (t) => [
-        uniqueIndex("ux_app_migrations_owner_version").on(t.ownerId, t.version),
-        pgPolicy("app_migrations_select_own", {
-            for: "select",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("app_migrations_insert_own", {
-            for: "insert",
-            to: authenticatedRole,
-            withCheck: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("app_migrations_update_own", {
-            for: "update",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-            withCheck: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("app_migrations_delete_own", {
-            for: "delete",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-        }),
-    ],
+	"app_migrations",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		ownerId: uuid("owner_id")
+			.references(() => users.id)
+			.notNull()
+			.default(sql`auth.uid()`),
+		version: text("version").notNull(),
+		scope: text("scope").notNull().default("default"),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		uniqueIndex("ux_app_migrations_owner_version").on(t.ownerId, t.version),
+		pgPolicy("app_migrations_select_own", {
+			for: "select",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("app_migrations_insert_own", {
+			for: "insert",
+			to: authenticatedRole,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("app_migrations_update_own", {
+			for: "update",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("app_migrations_delete_own", {
+			for: "delete",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+	],
 ).enableRLS();
 
-
-
-
 export const davAccounts = pgTable(
-    "dav_accounts",
-    {
-        id: uuid("id").defaultRandom().primaryKey(),
-        ownerId: uuid("owner_id")
-            .references(() => users.id)
-            .notNull()
-            .default(sql`auth.uid()`),
-        username: text("username").notNull(),
-        secretId: uuid("secret_id")
-            .references(() => secretsMeta.id, { onDelete: "cascade" })
-            .notNull(),
-        basePath: text("base_path").notNull().default("/"),
-        createdAt: timestamp("created_at", { withTimezone: true })
-            .defaultNow()
-            .notNull(),
-        updatedAt: timestamp("updated_at", { withTimezone: true })
-            .defaultNow()
-            .notNull(),
-    },
-    (t) => [
-        uniqueIndex("ux_dav_accounts_owner_username").on(t.ownerId, t.username),
-        pgPolicy("dav_accounts_select_own", {
-            for: "select",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("dav_accounts_insert_own", {
-            for: "insert",
-            to: authenticatedRole,
-            withCheck: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("dav_accounts_update_own", {
-            for: "update",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-            withCheck: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("dav_accounts_delete_own", {
-            for: "delete",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-        }),
-    ],
+	"dav_accounts",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		ownerId: uuid("owner_id")
+			.references(() => users.id)
+			.notNull()
+			.default(sql`auth.uid()`),
+		username: text("username").notNull(),
+		secretId: uuid("secret_id")
+			.references(() => secretsMeta.id, { onDelete: "cascade" })
+			.notNull(),
+		basePath: text("base_path").notNull().default("/"),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		uniqueIndex("ux_dav_accounts_owner_username").on(t.ownerId, t.username),
+		pgPolicy("dav_accounts_select_own", {
+			for: "select",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("dav_accounts_insert_own", {
+			for: "insert",
+			to: authenticatedRole,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("dav_accounts_update_own", {
+			for: "update",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("dav_accounts_delete_own", {
+			for: "delete",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+	],
 ).enableRLS();
 
 export const addressBooks = pgTable(
-    "address_books",
-    {
-        id: uuid("id").defaultRandom().primaryKey(),
-        ownerId: uuid("owner_id")
-            .references(() => users.id)
-            .notNull()
-            .default(sql`auth.uid()`),
-        davAccountId: uuid("dav_account_id")
-            .references(() => davAccounts.id, { onDelete: "cascade" })
-            .notNull(),
-        davSyncToken: text("dav_sync_token"),
-        name: text("name").notNull(),
-        slug: text("slug").notNull(),
-        remotePath: text("remote_path").notNull(),
-        isDefault: boolean("is_default").notNull().default(true),
-        createdAt: timestamp("created_at", { withTimezone: true })
-            .defaultNow()
-            .notNull(),
-        updatedAt: timestamp("updated_at", { withTimezone: true })
-            .defaultNow()
-            .notNull(),
-    },
-    (t) => [
-        uniqueIndex("ux_address_books_owner_slug").on(t.ownerId, t.slug),
-        index("ix_address_books_owner").on(t.ownerId),
-        index("ix_address_books_dav_account").on(t.davAccountId),
-        index("ix_address_books_default").on(t.ownerId, t.isDefault),
+	"address_books",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		ownerId: uuid("owner_id")
+			.references(() => users.id)
+			.notNull()
+			.default(sql`auth.uid()`),
+		davAccountId: uuid("dav_account_id")
+			.references(() => davAccounts.id, { onDelete: "cascade" })
+			.notNull(),
+		davSyncToken: text("dav_sync_token"),
+		name: text("name").notNull(),
+		slug: text("slug").notNull(),
+		remotePath: text("remote_path").notNull(),
+		isDefault: boolean("is_default").notNull().default(true),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		uniqueIndex("ux_address_books_owner_slug").on(t.ownerId, t.slug),
+		index("ix_address_books_owner").on(t.ownerId),
+		index("ix_address_books_dav_account").on(t.davAccountId),
+		index("ix_address_books_default").on(t.ownerId, t.isDefault),
 
-        pgPolicy("address_books_select_own", {
-            for: "select",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("address_books_insert_own", {
-            for: "insert",
-            to: authenticatedRole,
-            withCheck: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("address_books_update_own", {
-            for: "update",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-            withCheck: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("address_books_delete_own", {
-            for: "delete",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-        }),
-    ],
+		pgPolicy("address_books_select_own", {
+			for: "select",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("address_books_insert_own", {
+			for: "insert",
+			to: authenticatedRole,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("address_books_update_own", {
+			for: "update",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("address_books_delete_own", {
+			for: "delete",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+	],
 ).enableRLS();
