@@ -16,6 +16,15 @@ const nextConfig: NextConfig = {
 			},
 		],
 	},
+    async redirects() {
+        return [
+            {
+                permanent: true,
+                source: "/api/studio",
+                destination: `${process.env.API_URL}`
+            },
+        ]
+    },
 	async rewrites() {
 		return {
 			beforeFiles: [
@@ -32,18 +41,38 @@ const nextConfig: NextConfig = {
 					destination: `${process.env.WORKER_URL}:3001/api/kurrier/:path*`,
 				},
 
-				{
-					source: "/.well-known/caldav",
-					destination: `${process.env.RADICALE_URL}/:path*`,
-				},
-				{
-					source: "/.well-known/carddav",
-					destination: `${process.env.RADICALE_URL}/:path*`,
-				},
-				{
-					source: "/api/dav/:path*",
-					destination: `${process.env.RADICALE_URL}/:path*`,
-				},
+
+
+                {
+                    source: "/api/dav",
+                    destination: `${process.env.DAV_URL}/dav.php`,
+                },
+                {
+                    source: "/api/dav/:path*",
+                    destination: `${process.env.DAV_URL}/dav.php/:path*`,
+                },
+                {
+                    source: "/dav.php/:path*",
+                    destination: `${process.env.DAV_URL}/dav.php/:path*`,
+                },
+                {
+                    source: "/principals/:path*",
+                    destination: `${process.env.DAV_URL}/dav.php/principals/:path*`,
+                },
+                // {
+                //     source: "/.well-known/carddav",
+                //     destination: `${DAV}/dav.php/principals/kurrier/`,
+                // },
+                {
+                    source: "/.well-known/caldav",
+                    destination: `${process.env.DAV_URL}/dav.php`,
+                },
+                {
+                    source: "/.well-known/carddav",
+                    destination: `${process.env.DAV_URL}/dav.php`,
+                },
+
+
 			],
 			afterFiles: [],
 			fallback: [],
