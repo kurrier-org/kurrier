@@ -423,6 +423,16 @@ importers:
       nitropack:
         specifier: ^2.12.6
         version: 2.12.9(@libsql/client@0.15.15)(better-sqlite3@12.4.5)(drizzle-orm@0.44.7(@libsql/client@0.15.15)(@types/better-sqlite3@7.6.13)(@types/pg@8.15.6)(better-sqlite3@12.4.5)(pg@8.16.3)(postgres@3.4.7))
+    optionalDependencies:
+      '@libsql/linux-arm64-gnu':
+        specifier: ^0.5.22
+        version: 0.5.22
+      '@libsql/linux-x64-gnu':
+        specifier: ^0.5.22
+        version: 0.5.22
+      '@libsql/linux-x64-musl':
+        specifier: ^0.5.22
+        version: 0.5.22
 
   packages/common: {}
 
