@@ -13,7 +13,7 @@ import {
 import { IconCopy, IconLockBolt } from "@tabler/icons-react";
 import { toast } from "sonner";
 
-import { getOrCreateDavPassword } from "@/lib/actions/dashboard";
+import { regenerateDavPassword } from "@/lib/actions/dashboard";
 
 type SyncServicesProps = {
 	username: string;
@@ -26,10 +26,7 @@ export default function SyncServicesHome({
 	password,
 	baseDavUrl,
 }: SyncServicesProps) {
-	const [currentPassword, setCurrentPassword] = React.useState(password ?? "");
 	const [isSaving, setIsSaving] = React.useState(false);
-	const [newPassword, setNewPassword] = React.useState("");
-	const [showPasswordForm, setShowPasswordForm] = React.useState(false);
 
 	const handleCopy = (value: string, label: string) => {
 		if (!value) {
@@ -40,38 +37,9 @@ export default function SyncServicesHome({
 		toast.success(`Copied ${label}`);
 	};
 
-	const handlePasswordSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		const trimmed = newPassword.trim();
-		if (!trimmed) {
-			toast.error("Please enter a new password.");
-			return;
-		}
-
-		setIsSaving(true);
-		try {
-			const updated = await getOrCreateDavPassword({ password: trimmed });
-
-			if (updated.status === "created" || updated.status === "updated") {
-				setCurrentPassword(updated.password ?? trimmed);
-				toast.success("DAV password updated");
-			} else {
-				toast.error("Could not update DAV password");
-			}
-
-			setNewPassword("");
-			setShowPasswordForm(false);
-		} catch (err) {
-			console.error(err);
-			toast.error("Failed to update DAV password");
-		} finally {
-			setIsSaving(false);
-		}
-	};
-
 	const base = baseDavUrl?.replace(/\/+$/, "") || "";
 
-	const userRoot = `${base}/api/dav/${encodeURIComponent(username)}`;
+	const userRoot = `${base}/api/dav`;
 	const wellKnownCal = `${base}/.well-known/caldav`;
 	const wellKnownCard = `${base}/.well-known/carddav`;
 
@@ -152,7 +120,7 @@ export default function SyncServicesHome({
 							</label>
 
 							<TextInput
-								value={currentPassword}
+								value={password}
 								readOnly
 								type="text"
 								placeholder="Generate a DAV password to see it here."
@@ -162,7 +130,7 @@ export default function SyncServicesHome({
 										<ActionIcon
 											variant="subtle"
 											onClick={() =>
-												handleCopy(currentPassword, "DAV password")
+												handleCopy(String(password), "DAV password")
 											}
 										>
 											<IconCopy size={16} />
@@ -179,46 +147,19 @@ export default function SyncServicesHome({
 							</div>
 
 							<div className="pt-1">
-								{!showPasswordForm ? (
-									<button
-										type="button"
-										onClick={() => setShowPasswordForm(true)}
-										className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium text-foreground hover:bg-muted transition"
-									>
-										<IconLockBolt size={18} />
-										{currentPassword ? "Rotate password" : "Generate password"}
-									</button>
-								) : (
-									<form
-										onSubmit={handlePasswordSubmit}
-										className="flex flex-col gap-2 sm:flex-row sm:items-center"
-									>
-										<TextInput
-											placeholder="Enter new DAV password"
-											value={newPassword}
-											onChange={(e) => setNewPassword(e.currentTarget.value)}
-											size="xs"
-											className="sm:max-w-xs"
-											autoFocus
-										/>
-										<div className="flex gap-2 items-center">
-											<Button type="submit" size={"xs"} disabled={isSaving}>
-												{isSaving ? "Saving…" : "Save password"}
-											</Button>
-											<Button
-												type="button"
-												variant="subtle"
-												size={"xs"}
-												onClick={() => {
-													setShowPasswordForm(false);
-													setNewPassword("");
-												}}
-											>
-												Cancel
-											</Button>
-										</div>
-									</form>
-								)}
+								<Button
+									type="button"
+									loading={isSaving}
+									onClick={async () => {
+										setIsSaving(true);
+										await regenerateDavPassword();
+										setIsSaving(false);
+									}}
+									size={"xs"}
+									leftSection={<IconLockBolt size={18} />}
+								>
+									{password ? "Regenerate password" : "Generate password"}
+								</Button>
 							</div>
 						</div>
 					</div>

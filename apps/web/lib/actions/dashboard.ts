@@ -3,6 +3,7 @@
 import {
 	apiKeys,
 	createSecret,
+	davAccounts,
 	getSecret,
 	identities,
 	IdentityCreate,
@@ -43,9 +44,7 @@ import { v4 as uuidv4 } from "uuid";
 import { backfillMailboxes, clearImapClients } from "@/lib/actions/mailbox";
 import { kvGet } from "@common";
 import { nanoid } from "nanoid";
-import * as fs from "node:fs";
-import bcrypt from "bcrypt";
-import { randomBytes } from "node:crypto";
+import { getRedis } from "@/lib/actions/get-redis";
 
 const DASHBOARD_PATH = "/dashboard/providers";
 const CURRENT_API_VERSION = 1;
@@ -923,73 +922,34 @@ export type FetchUserAPIKeysResult = Awaited<
 	ReturnType<typeof fetchUserAPIKeys>
 >;
 
-type UpdateDavPasswordResult =
-	| { status: "no-user" }
-	| { status: "exists"; username: string }
-	| { status: "created"; username: string; password: string }
-	| { status: "updated"; username: string; password: string };
+export const fetchUserDavAccounts = async () => {
+	const rls = await rlsClient();
+	const session = await currentSession();
 
-export const getOrCreateDavPassword = async (opts?: {
-	password?: string;
-}): Promise<UpdateDavPasswordResult> => {
-	const user = await isSignedIn();
-	const email = user?.email?.trim().toLowerCase();
-	const userFile =
-		process.env.NODE_ENV === "development" ? "users" : "/config/users";
-
-	if (!email) {
-		return { status: "no-user" };
-	}
-
-	const davUsername = email.split("@")[0];
-	let content = "";
-	try {
-		content = fs.readFileSync(userFile, "utf8");
-	} catch (err: any) {
-		if (err?.code !== "ENOENT") throw err;
-		content = "";
-	}
-
-	const lines = content.split(/\r?\n/).filter(Boolean);
-	const existingIndex = lines.findIndex((line) =>
-		line.trim().startsWith(`${davUsername}:`),
+	const [row] = await rls((tx) =>
+		tx
+			.select({
+				account: davAccounts,
+				metaId: secretsMeta.id,
+			})
+			.from(davAccounts)
+			.leftJoin(secretsMeta, eq(davAccounts.secretId, secretsMeta.id))
+			.orderBy(desc(davAccounts.createdAt))
+			.limit(1),
 	);
 
-	if (opts?.password) {
-		const password = opts.password.trim();
-		const hash = await bcrypt.hash(password, 12);
-
-		if (existingIndex !== -1) {
-			lines[existingIndex] = `${davUsername}:${hash}`;
-		} else {
-			lines.push(`${davUsername}:${hash}`);
-		}
-
-		const newContent = lines.join("\n") + "\n";
-		fs.writeFileSync(userFile, newContent, "utf8");
-
-		return {
-			status: existingIndex !== -1 ? "updated" : "created",
-			username: davUsername,
-			password,
-		};
-	}
-
-	if (existingIndex !== -1) {
-		return { status: "exists", username: davUsername };
-	}
-
-	const password = randomBytes(18).toString("base64url");
-	const hash = await bcrypt.hash(password, 12);
-
-	lines.push(`${davUsername}:${hash}`);
-
-	const newContent = lines.join("\n") + "\n";
-	fs.writeFileSync(userFile, newContent, "utf8");
-
+	const { vault } = await getSecret(session, String(row.metaId));
 	return {
-		status: "created",
-		username: davUsername,
-		password,
+		...row.account,
+		vault: vault?.decrypted_secret || null,
 	};
+};
+
+export const regenerateDavPassword = async () => {
+	const { davEvents, davQueue } = await getRedis();
+	const user = await isSignedIn();
+	const job = await davQueue.add("dav:update-password", { userId: user?.id });
+	await job.waitUntilFinished(davEvents);
+	revalidatePath("/dashboard/platform/sync-services");
+	return job.returnvalue;
 };

@@ -10,7 +10,7 @@ const Loading = (props: {
 			className={`h-full min-h-screen flex justify-center items-center w-full ${props.wrapperClassNames}`}
 		>
 			<LoaderCircle
-				className={`animate-spin text-brand-foreground w-8 h-8 ${props.loadingClassNames}`}
+				className={`animate-spin text-brand dark:text-brand-foreground w-8 h-8 ${props.loadingClassNames}`}
 			/>
 		</div>
 	);

@@ -12,6 +12,7 @@ import {
 	labels,
 	mailboxThreadLabels,
 	contacts,
+	addressBooks,
 } from "./schema";
 import { decryptedSecrets } from "./supabase-schema";
 import { z } from "zod";
@@ -86,3 +87,5 @@ export type MailboxThreadLabelEntity = typeof mailboxThreadLabels.$inferSelect;
 export const ContactInsertSchema = createInsertSchema(contacts);
 export type ContactCreate = typeof contacts.$inferInsert;
 export type ContactEntity = typeof contacts.$inferSelect;
+
+export type AddressBookEntity = typeof addressBooks.$inferSelect;

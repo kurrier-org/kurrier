@@ -13,13 +13,14 @@ import { ContactLabelHoverButtons } from "@/components/dashboard/labels/contact-
 import {
 	fetchContactLabelsByContactIds,
 	fetchLabels,
-	getOrCreateSystemLabel,
 	toggleFavoriteContact,
 } from "@/lib/actions/labels";
 import { LabelScope } from "@schema";
 import { Star } from "lucide-react";
 import Form from "next/form";
 import { getCountryDataList, TCountryCode } from "countries-list";
+import { getRedis } from "@/lib/actions/get-redis";
+import { isSignedIn } from "@/lib/actions/auth";
 
 async function Page({ params }: { params: { contactsPublicId: string } }) {
 	const { contactsPublicId } = await params;
@@ -36,12 +37,6 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 			</div>
 		);
 	}
-
-	await getOrCreateSystemLabel({
-		name: "Favorite",
-		colorBg: "#facc15",
-		scope: "contact" as LabelScope,
-	});
 
 	const initials =
 		[contact.firstName, contact.lastName]
@@ -62,6 +57,12 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 
 	const onDeleteAction = async (id: string) => {
 		"use server";
+		const { davQueue } = await getRedis();
+		const user = await isSignedIn();
+		await davQueue.add("dav:delete-contact", {
+			contactId: id,
+			ownerId: user?.id,
+		});
 		const rls = await rlsClient();
 		await rls((tx) => tx.delete(contacts).where(eq(contacts.id, id)));
 		revalidatePath("/dashboard/contacts");
@@ -225,7 +226,7 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 								<span>Contact details</span>
 							</div>
 							{(emails.length > 0 || phones.length > 0) && (
-								<span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-medium text-primary dark:bg-primary/25 dark:text-primary-foreground/90">
+								<span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-medium text-brand dark:bg-brand/25 dark:text-brand-foreground/90">
 									<span className="h-1.5 w-1.5 rounded-full bg-emerald-400 dark:bg-emerald-300" />
 									{emails.length > 0 && phones.length > 0
 										? "Email & phone on file"

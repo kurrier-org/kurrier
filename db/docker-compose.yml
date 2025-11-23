@@ -30,9 +30,7 @@ services:
       TYPESENSE_HOST: ${TYPESENSE_HOST}
       SEARCH_REBUILD_ON_BOOT: ${SEARCH_REBUILD_ON_BOOT}
       WORKER_URL: ${WORKER_URL}
-      RADICALE_URL: http://radicale:5232
-    volumes:
-      - ./radicale_config:/config
+      DAV_URL: http://dav:5232
 
   worker:
     image: ghcr.io/kurrier-org/kurrier-worker:v0.0.85
@@ -43,8 +41,6 @@ services:
       db:
         condition: service_healthy
       web:
-        condition: service_healthy
-      studio:
         condition: service_healthy
     profiles: ["app"]
     environment:
@@ -66,7 +62,10 @@ services:
       TYPESENSE_HOST: ${TYPESENSE_HOST}
       SEARCH_REBUILD_ON_BOOT: ${SEARCH_REBUILD_ON_BOOT}
       LOCAL_TUNNEL_URL: ${LOCAL_TUNNEL_URL}
-      RADICALE_URL: http://radicale:5232
+      DAV_URL: http://dav:5232
+    volumes:
+      - ./dav_config:/dav-config
+      - ./dav_data:/dav-data
 
   redis:
     image: redis:8.2.2
@@ -114,45 +113,14 @@ services:
     entrypoint: [ "/bin/bash", "/scripts/db-bootstrap.sh" ]
     restart: "no"
 
-  radicale:
-    image: tomsquest/docker-radicale:3.2.3.0
-    container_name: kurrier-radicale
-    restart: unless-stopped
+  dav:
+    image: ckulka/baikal:nginx
+    restart: always
     ports:
-      - "5232:5232"
-    environment:
-      TZ: ${TZ:-UTC}
+      - "5232:80"
     volumes:
-      - ./radicale_data:/data
-      - ./radicale_config:/config
-
-  studio:
-    container_name: supabase-studio
-    image: supabase/studio:2025.11.10-sha-5291fe3
-    restart: unless-stopped
-    healthcheck:
-      test:
-        ["CMD","node","-e","fetch('http://studio:3000/api/platform/profile').then((r) => {if (r.status !== 200) throw new Error(r.status)})"]
-      timeout: 10s
-      interval: 5s
-      retries: 3
-    environment:
-      HOSTNAME: "::"
-      STUDIO_PG_META_URL: http://meta:8080
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      PG_META_CRYPTO_KEY: ${PG_META_CRYPTO_KEY}
-      DEFAULT_ORGANIZATION_NAME: ${STUDIO_DEFAULT_ORGANIZATION}
-      DEFAULT_PROJECT_NAME: ${STUDIO_DEFAULT_PROJECT}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      SUPABASE_URL: http://kong:8000
-      SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL}
-      SUPABASE_ANON_KEY: ${ANON_KEY}
-      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
-      AUTH_JWT_SECRET: ${JWT_SECRET}
-      LOGFLARE_PRIVATE_ACCESS_TOKEN: ${LOGFLARE_PRIVATE_ACCESS_TOKEN}
-      LOGFLARE_URL: http://analytics:4000
-      NEXT_PUBLIC_ENABLE_LOGS: true
-      NEXT_ANALYTICS_BACKEND_PROVIDER: postgres
+      - ./dav_config:/var/www/baikal/config
+      - ./dav_data:/var/www/baikal/Specific
 
   kong:
     container_name: supabase-kong
