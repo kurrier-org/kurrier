@@ -49,3 +49,5 @@ db/get-docker.sh
 db/redis_data
 db/typesense-data
 db/volumes
+db/dav_config
+db/dav_data
