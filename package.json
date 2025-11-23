@@ -8,6 +8,7 @@
 		"dev:worker": "dotenvx run -f db/.env.develop -- pnpm --prefix apps/worker dev",
 		"dev": "concurrently \"pnpm run dev:web\" \"pnpm run dev:worker\" \"pnpm run dev:docs\"",
 		"build": "dotenvx run -f db/.env.develop -- pnpm --prefix apps/web build",
+		"build:worker": "dotenvx run -f db/.env.develop -- pnpm --prefix apps/worker build",
 		"deploy:docs": "git subtree push --prefix apps/docs dokku-docs main",
 		"build:develop": "dotenvx run -f db/.env.develop -- pnpm --prefix apps/web build",
 		"lint": "biome check",
