@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.87
+
+### Patch Changes
+
+- [`9a35973`](https://github.com/kurrier-org/kurrier/commit/9a359730b24bd9db67aa8e7f24177289bbde2f6f) Thanks [@krokhale](https://github.com/krokhale)! - added support for contact syncing via CardDAV and the contacts pane on dashboard
+
 ## 0.0.86
 
 ### Patch Changes
