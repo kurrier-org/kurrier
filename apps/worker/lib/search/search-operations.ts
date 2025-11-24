@@ -3,7 +3,7 @@ import { messagesSearchSchema } from "@schema";
 import { db, mailboxThreads, messages } from "@db";
 import { toSearchDoc } from "../../lib/search/search-common";
 import { getMessageAddress, getMessageName } from "@common/mail-client";
-import { and, eq } from "drizzle-orm";
+import {and, eq, inArray} from "drizzle-orm";
 
 let collectionReady = false;
 
@@ -87,7 +87,7 @@ async function fetchJoinedByMessageId(
 			mailboxThreads,
 			and(
 				eq(messages.threadId, mailboxThreads.threadId),
-				eq(messages.mailboxId, mailboxThreads.mailboxId), // ✅ ensure mailbox-scoped join
+				eq(messages.mailboxId, mailboxThreads.mailboxId),
 			),
 		)
 		.where(eq(messages.id, messageId))
@@ -103,6 +103,42 @@ export async function indexMessage(messageId: string) {
 	const doc = rowToDoc(row);
 	await ensureCollection();
 	await client.collections("messages").documents().upsert(doc);
+}
+
+
+export async function indexManyMessages(messageIds: string[]) {
+    if (messageIds.length === 0) return;
+
+    const rows = await db
+        .select({
+            m: messages,
+            mt_subject: mailboxThreads.subject,
+            mt_preview: mailboxThreads.previewText,
+            mt_lastActivityAt: mailboxThreads.lastActivityAt,
+            mt_messageCount: mailboxThreads.messageCount,
+            mt_unreadCount: mailboxThreads.unreadCount,
+            mt_hasAttachments: mailboxThreads.hasAttachments,
+            mt_participants: mailboxThreads.participants,
+            mt_starred: mailboxThreads.starred,
+        })
+        .from(messages)
+        .leftJoin(
+            mailboxThreads,
+            and(
+                eq(messages.threadId, mailboxThreads.threadId),
+                eq(messages.mailboxId, mailboxThreads.mailboxId),
+            )
+        )
+        .where(inArray(messages.id, messageIds));
+
+    const docs = rows.map(rowToDoc);
+    if (docs.length === 0) return;
+
+    await ensureCollection();
+    await client
+        .collections("messages")
+        .documents()
+        .import(docs, { action: "upsert" });
 }
 
 /** Delete a single message from Typesense */
@@ -134,7 +170,7 @@ export async function refreshThread(threadId: string) {
 			mailboxThreads,
 			and(
 				eq(messages.threadId, mailboxThreads.threadId),
-				eq(messages.mailboxId, mailboxThreads.mailboxId), // ✅ consistent join
+				eq(messages.mailboxId, mailboxThreads.mailboxId),
 			),
 		)
 		.where(eq(messages.threadId, threadId));
