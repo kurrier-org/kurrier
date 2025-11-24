@@ -5,7 +5,7 @@ import { rlsClient } from "@/lib/actions/clients";
 import { contacts } from "@db";
 import { createClient } from "@/lib/supabase/server";
 import { ActionIcon } from "@mantine/core";
-import { IconEdit, IconLabelFilled } from "@tabler/icons-react";
+import {IconEdit, IconLabelFilled, IconLocation, IconMap} from "@tabler/icons-react";
 import Link from "next/link";
 import DeleteContactButton from "@/components/dashboard/contacts/delete-contact-button";
 import { revalidatePath } from "next/cache";
@@ -219,7 +219,7 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 					<section className="relative overflow-hidden rounded-2xl bg-primary/5 px-4 py-4 transition-colors dark:bg-primary/15 sm:px-6 sm:py-5">
 						<div className="pointer-events-none absolute inset-y-4 left-0 w-[3px] rounded-full bg-primary/50 dark:bg-primary/70" />
 						<header className="mb-4 flex flex-wrap items-center justify-between gap-3">
-							<div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary dark:text-primary/90">
+							<div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand dark:text-brand-foreground/90">
 								<span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/25">
 									<span className="h-1.5 w-1.5 rounded-full bg-primary" />
 								</span>
@@ -344,9 +344,9 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 							<header className="mb-4 flex items-center justify-between gap-3">
 								<div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
 									<span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-[12px] text-primary dark:bg-primary/20">
-										⬤
+										<IconMap size={16} />
 									</span>
-									<span>Addresses</span>
+									<span className={"text-brand dark:text-brand-foreground/90"}>Addresses</span>
 								</div>
 								<span className="text-[11px] text-muted-foreground/70">
 									{addresses.length}{" "}
@@ -396,7 +396,7 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 								<span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-[13px] text-primary dark:bg-primary/20">
 									✎
 								</span>
-								<span>Notes</span>
+								<span className={"text-brand dark:text-brand-foreground/90"}>Notes</span>
 							</h3>
 							<div className="rounded-xl bg-white/80 px-4 py-3 text-sm leading-relaxed text-foreground/90 dark:bg-slate-900/80 dark:text-slate-50">
 								{contact.notes}
