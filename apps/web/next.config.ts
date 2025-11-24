@@ -16,15 +16,6 @@ const nextConfig: NextConfig = {
 			},
 		],
 	},
-	async redirects() {
-		return [
-			{
-				permanent: true,
-				source: "/api/studio",
-				destination: `${process.env.API_URL}`,
-			},
-		];
-	},
 	async rewrites() {
 		return {
 			beforeFiles: [
