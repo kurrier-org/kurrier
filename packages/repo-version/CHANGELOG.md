@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.92
+
+### Patch Changes
+
+- [`625c4b2`](https://github.com/kurrier-org/kurrier/commit/625c4b2ebb49285f8ea508926a09351b26b4b57b) Thanks [@krokhale](https://github.com/krokhale)! - updated docs and instructions
+
 ## 0.0.91
 
 ### Patch Changes
