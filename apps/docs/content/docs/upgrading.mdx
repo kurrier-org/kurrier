@@ -19,3 +19,19 @@ Any database migrations will be handled automatically during the startup process
 
 In case there are breaking changes, or changes that require manual intervention, these will be documented in the release notes and on this page.
 In case you encounter any issues after upgrading, refer to the troubleshooting section in the documentation or seek help from the community.
+
+---
+To ensure a smooth transition, please follow these additional steps:
+1. Backup your database before proceeding with the upgrade. (Basically the db folder)
+2. Run this command to apply necessary migrations for the Contacts feature:
+
+---
+### Upgrading from version v0.0.85 and earlier
+```bash
+cd kurrier/db
+cp -r ./init/dav_config/ dav_config
+cp -r ./init/dav_data/ dav_data
+```
+
+
+
