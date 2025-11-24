@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.91
+
+### Patch Changes
+
+- [#281](https://github.com/kurrier-org/kurrier/pull/281) [`4dc3dac`](https://github.com/kurrier-org/kurrier/commit/4dc3dacaa14bf4ee90ef2a25a57f97c27fb9556f) Thanks [@krokhale](https://github.com/krokhale)! - performance improvements and batching search ingestion
+
 ## 0.0.90
 
 ### Patch Changes
