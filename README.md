@@ -1,8 +1,8 @@
+### 🎉 Full CardDAV support is now live — sync your contacts across all your devices. Calendar syncing via CalDAV is also supported, with a full web UI coming soon.
+
+![Kurrier Webmail View](https://www.kurrier.org/docs-contact.png)
+
 ### 🎉 Kurrier now supports Labels - organize your inbox your way
-
-### 🎉 Kurrier now supports CalDAV & CardDAV - sync your calendars and contacts across all your devices. Coming soon: full Calendar & Contacts management in the web UI.
-
-![Kurrier Webmail View](https://www.kurrier.org/cal-dav.png)
 
 ---
 
