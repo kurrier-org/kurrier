@@ -4,10 +4,36 @@ import { authUsers } from "drizzle-orm/supabase";
 import { desc, eq } from "drizzle-orm";
 import { kvGet, kvSet, APP_VERSION } from "@common";
 import { runMigrationsForUser } from "../../lib/migrations/run-migration";
+import {getRedis} from "../../lib/get-redis";
+import {Worker} from "bullmq";
 
 const isProd = process.env.NODE_ENV === "production";
 
 async function runAllUserMigrations() {
+
+    const { connection } = await getRedis();
+    const worker = new Worker(
+        "migration-worker",
+        async (job) => {
+            switch (job.name) {
+                case "migration:run-for-user-after-signup":
+                    return runMigrationsForUser(job.data.userId);
+                default:
+                    return { success: true, skipped: true };
+            }
+        },
+        { connection },
+    );
+    worker.on("completed", (job) => {
+        console.info(`Migration job ${job.id} (${job.name}) completed`);
+    });
+
+    worker.on("failed", (job, err) => {
+        console.error(`Migration job ${job?.id} (${job?.name}) failed: ${err.message}`);
+    });
+
+
+
     console.log("Starting per-user migrations…");
     const users = await db.select().from(authUsers);
 
