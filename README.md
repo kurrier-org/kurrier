@@ -69,6 +69,9 @@ If you find it useful, consider supporting its development — your contribution
 Every bit of support helps keep Kurrier sustainable and open for everyone.  
 Thank you for helping make privacy-friendly email more accessible.
 
+### Commercial Support
+Need help integrating or customizing Kurrier? I’m available for consulting here: [**Click here**](https://www.krishnarokhale.com)
+
 ### Contributing
 
 Kurrier is an open-source project and contributions are welcome! If you’re interested in helping out, please check out the [contributing guidelines](https://www.kurrier.org/docs/contributing).
