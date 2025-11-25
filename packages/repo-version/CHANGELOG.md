@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.96
+
+### Patch Changes
+
+- [`f0c99a7`](https://github.com/kurrier-org/kurrier/commit/f0c99a73f38312e5c7eb8ea2d6bba0d7b24a1c52) Thanks [@krokhale](https://github.com/krokhale)! - enhanced rich contact dropdown for compose mail and automatic contact ingestion for incoming mail
+
 ## 0.0.95
 
 ### Patch Changes
