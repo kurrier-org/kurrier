@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Kurrier Discussions
+    url: https://github.com/kurrier-org/kurrier/discussions
+    about: Please ask general questions here.
