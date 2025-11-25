@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.95
+
+### Patch Changes
+
+- [`c344850`](https://github.com/kurrier-org/kurrier/commit/c34485028aa695944c4a5dc6b9cd13a96eb0c90d) Thanks [@krokhale](https://github.com/krokhale)! - Stability fixes for the migration pipeline
+
 ## 0.0.94
 
 ### Patch Changes
