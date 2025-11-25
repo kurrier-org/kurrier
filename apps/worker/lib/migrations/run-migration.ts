@@ -6,7 +6,7 @@ type Semver = string;
 
 function getVersionsBetween(fromV: Semver | null, toV: Semver): string[] {
 	const versionDirs = Object.keys(MIGRATION_REGISTRY) as Semver[];
-    const sorted = [...versionDirs].sort(compareSemver);
+	const sorted = [...versionDirs].sort(compareSemver);
 
 	const filtered = sorted.filter((v) => {
 		if (compareSemver(v, toV) === 1) return false;
@@ -19,8 +19,8 @@ function getVersionsBetween(fromV: Semver | null, toV: Semver): string[] {
 
 export async function runMigrationsForUser(
 	userId: string,
-    fromVersion: Semver | null = null,
-    toVersion: Semver = APP_VERSION,
+	fromVersion: Semver | null = null,
+	toVersion: Semver = APP_VERSION,
 ) {
 	const versions = getVersionsBetween(fromVersion, toVersion);
 	for (const version of versions) {

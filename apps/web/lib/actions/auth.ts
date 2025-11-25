@@ -7,8 +7,8 @@ import { redirect } from "next/navigation";
 import { AuthSession } from "@supabase/supabase-js";
 import * as crypto from "node:crypto";
 import { Queue, QueueEvents } from "bullmq";
-import {getRedis} from "@/lib/actions/get-redis";
-import {APP_VERSION} from "@common";
+import { getRedis } from "@/lib/actions/get-redis";
+import { APP_VERSION } from "@common";
 
 const initProviders = async (userId: string) => {
 	const { REDIS_PASSWORD, REDIS_HOST, REDIS_PORT } = getServerEnv();
@@ -53,23 +53,23 @@ export async function login(
 }
 
 const applyPendingMigrations = async (userId: string) => {
-    const { migrationWorkerQueue, migrationWorkerEvents } = await getRedis();
-    const job = await migrationWorkerQueue.add(
-        "migration:run-for-user-after-signup",
-        { userId },
-        {
-            attempts: 3,
-            backoff: {
-                type: "exponential",
-                delay: 3000,
-            },
-            removeOnComplete: { age: 60 },
-            removeOnFail: false,
-            jobId: `migration:${userId}:${APP_VERSION}`,
-        },
-    );
-    await job.waitUntilFinished(migrationWorkerEvents);
-    return
+	const { migrationWorkerQueue, migrationWorkerEvents } = await getRedis();
+	const job = await migrationWorkerQueue.add(
+		"migration:run-for-user-after-signup",
+		{ userId },
+		{
+			attempts: 3,
+			backoff: {
+				type: "exponential",
+				delay: 3000,
+			},
+			removeOnComplete: { age: 60 },
+			removeOnFail: false,
+			jobId: `migration:${userId}:${APP_VERSION}`,
+		},
+	);
+	await job.waitUntilFinished(migrationWorkerEvents);
+	return;
 };
 
 export async function signup(
@@ -90,9 +90,9 @@ export async function signup(
 		};
 	}
 
-    const userId = String(data?.user?.id);
+	const userId = String(data?.user?.id);
 	await initProviders(userId);
-    await applyPendingMigrations(userId)
+	await applyPendingMigrations(userId);
 
 	if (data) {
 		redirect("/dashboard/platform/overview");

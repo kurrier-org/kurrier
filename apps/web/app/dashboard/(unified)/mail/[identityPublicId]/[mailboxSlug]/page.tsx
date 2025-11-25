@@ -22,7 +22,7 @@ async function Page({
 		mailboxSlug,
 	);
 
-    // TODO: We have IMAP IDLE detection support in the worker now. We probably don't need this?
+	// TODO: We have IMAP IDLE detection support in the worker now. We probably don't need this?
 	// if (mailboxSync) {
 	// 	if (mailboxSync.phase === "IDLE") {
 	// 		await deltaFetch({ identityId: activeMailbox.identityId });

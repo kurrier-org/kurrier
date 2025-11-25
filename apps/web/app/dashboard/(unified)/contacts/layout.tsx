@@ -6,7 +6,7 @@ import { rlsClient } from "@/lib/actions/clients";
 import { contactLabels, contacts, labels } from "@db";
 import { eq } from "drizzle-orm";
 import { ContactWithFavorite } from "@/components/dashboard/contacts/contacts-list";
-import {createClient} from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function ContactsLayout({
 	children,
@@ -50,13 +50,13 @@ export default async function ContactsLayout({
 
 	const allContacts = Array.from(grouped.values());
 
-    const userProfileImages = allContacts
-        .map((contact) => contact.profilePictureXs)
-        .filter(Boolean) as string[];
-    const supabase = await createClient();
-    const { data } = await supabase.storage
-        .from("attachments")
-        .createSignedUrls(userProfileImages, 600);
+	const userProfileImages = allContacts
+		.map((contact) => contact.profilePictureXs)
+		.filter(Boolean) as string[];
+	const supabase = await createClient();
+	const { data } = await supabase.storage
+		.from("attachments")
+		.createSignedUrls(userProfileImages, 600);
 
 	return (
 		<>
@@ -69,7 +69,9 @@ export default async function ContactsLayout({
 				<h1 className="text-sm font-semibold text-foreground/80">Contacts</h1>
 			</header>
 
-			<ContactsShell userContacts={allContacts} profileImages={data}>{children}</ContactsShell>
+			<ContactsShell userContacts={allContacts} profileImages={data}>
+				{children}
+			</ContactsShell>
 		</>
 	);
 }

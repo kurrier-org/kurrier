@@ -4,9 +4,10 @@ import { Worker } from "bullmq";
 import { getRedis } from "../../lib/get-redis";
 import { rebuild } from "../../lib/search/search-rebuild";
 import {
-    indexMessage,
-    deleteMessage,
-    refreshThread, indexManyMessages,
+	indexMessage,
+	deleteMessage,
+	refreshThread,
+	indexManyMessages,
 } from "../../lib/search/search-operations";
 
 import { getServerEnv } from "@schema";
@@ -26,11 +27,11 @@ export default defineNitroPlugin(async () => {
 					await indexMessage(messageId);
 					return { success: true };
 				}
-                case "addBatch": {
-                    const { messageIds } = job.data as { messageIds: string[] };
-                    await indexManyMessages(messageIds);
-                    return { success: true };
-                }
+				case "addBatch": {
+					const { messageIds } = job.data as { messageIds: string[] };
+					await indexManyMessages(messageIds);
+					return { success: true };
+				}
 				case "remove": {
 					const { messageId } = job.data as { messageId: string };
 					await deleteMessage(messageId);

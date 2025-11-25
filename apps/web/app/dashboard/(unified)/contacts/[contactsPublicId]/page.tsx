@@ -5,7 +5,12 @@ import { rlsClient } from "@/lib/actions/clients";
 import { contacts } from "@db";
 import { createClient } from "@/lib/supabase/server";
 import { ActionIcon } from "@mantine/core";
-import {IconEdit, IconLabelFilled, IconLocation, IconMap} from "@tabler/icons-react";
+import {
+	IconEdit,
+	IconLabelFilled,
+	IconLocation,
+	IconMap,
+} from "@tabler/icons-react";
 import Link from "next/link";
 import DeleteContactButton from "@/components/dashboard/contacts/delete-contact-button";
 import { revalidatePath } from "next/cache";
@@ -346,7 +351,9 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 									<span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-[12px] text-primary dark:bg-primary/20">
 										<IconMap size={16} />
 									</span>
-									<span className={"text-brand dark:text-brand-foreground/90"}>Addresses</span>
+									<span className={"text-brand dark:text-brand-foreground/90"}>
+										Addresses
+									</span>
 								</div>
 								<span className="text-[11px] text-muted-foreground/70">
 									{addresses.length}{" "}
@@ -396,7 +403,9 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 								<span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-[13px] text-primary dark:bg-primary/20">
 									✎
 								</span>
-								<span className={"text-brand dark:text-brand-foreground/90"}>Notes</span>
+								<span className={"text-brand dark:text-brand-foreground/90"}>
+									Notes
+								</span>
 							</h3>
 							<div className="rounded-xl bg-white/80 px-4 py-3 text-sm leading-relaxed text-foreground/90 dark:bg-slate-900/80 dark:text-slate-50">
 								{contact.notes}
