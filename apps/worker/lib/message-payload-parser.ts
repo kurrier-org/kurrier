@@ -7,7 +7,7 @@ import {
     MessageInsertSchema,
     MessageCreate,
     MessageAttachmentCreate,
-    MessageAttachmentInsertSchema,
+    MessageAttachmentInsertSchema, contacts, ContactCreate,
 } from "@db";
 import { createClient } from "@supabase/supabase-js";
 import { getPublicEnv, getServerEnv } from "@schema";
@@ -15,6 +15,7 @@ import { generateSnippet, upsertMailboxThreadItem } from "@common";
 import { randomUUID } from "crypto";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { getRedis } from "../lib/get-redis";
+import slugify from "@sindresorhus/slugify";
 
 const publicConfig = getPublicEnv();
 const serverConfig = getServerEnv();
@@ -151,6 +152,83 @@ export async function createOrInitializeThread(
     });
 }
 
+
+function getFromAddress(parsed: ParsedMail) {
+    const from = parsed.from?.value?.[0];
+    if (!from?.address) return null;
+    return {
+        email: from.address.trim().toLowerCase(),
+        name: (from.name || "").trim() || null,
+    };
+}
+
+export async function upsertContactsFromMessage(
+    ownerId: string,
+    parsed: ParsedMail
+) {
+    const addr = getFromAddress(parsed);
+    if (!addr) return;
+
+    const email = addr.email;
+    const displayName = addr.name;
+
+    const existing = await db
+        .select()
+        .from(contacts)
+        .where(
+            and(
+                eq(contacts.ownerId, ownerId),
+                sql`${contacts.emails}::jsonb @> ${JSON.stringify([{ address: email }])}::jsonb`
+            )
+        )
+        .limit(1);
+
+    if (existing.length === 0) {
+        let firstName = "Unknown";
+        let lastName: string | null = null;
+
+        if (displayName) {
+            const parts = displayName.split(" ").filter(Boolean);
+            firstName = parts[0] || "Unknown";
+            lastName = parts.length > 1 ? parts.slice(1).join(" ") : null;
+        }
+
+        const newContact = {
+            ownerId,
+            firstName,
+            lastName,
+            emails: [{ address: email }],
+            slug: slugify(displayName || email),
+            profilePictureXs: null,
+        };
+
+        await db.insert(contacts).values(newContact as ContactCreate);
+        return;
+    }
+
+    const contact = existing[0];
+
+    const hasName = contact.firstName || contact.lastName;
+    if (hasName || !displayName) {
+        return;
+    }
+
+    const parts = displayName.split(" ").filter(Boolean);
+    const firstName = parts[0] || contact.firstName || "Unknown";
+    const lastName = parts.length > 1 ? parts.slice(1).join(" ") : null;
+
+    await db
+        .update(contacts)
+        .set({
+            firstName,
+            lastName,
+        })
+        .where(eq(contacts.id, contact.id));
+}
+
+
+
+
 /**
  * Parse raw email, create thread, insert message + attachments.
  */
@@ -243,7 +321,7 @@ export async function parseAndStoreEmail(
         .returning();
 
     if (!message) return null;
-
+    await upsertContactsFromMessage(ownerId, parsed);
     await upsertMailboxThreadItem(message.id);
 
     const msgDate = message.createdAt ?? new Date();

@@ -150,8 +150,9 @@ export default function ComposeMail({
 							role="dialog"
 							aria-modal="true"
 							className={[
-								"fixed z-[1000] bg-background border shadow-xl rounded-2xl overflow-hidden",
+								"fixed z-[1000] bg-background border shadow-xl rounded-lg overflow-hidden",
 								"right-4 bottom-4",
+								// expanded ? "w-[720px] h-[70vh]" : "w-[520px] h-auto",
 								expanded ? "w-[720px] h-[70vh]" : "w-[520px] h-auto",
 								"transition-[width,height] duration-200 ease-out",
 								"motion-safe:transition-opacity motion-safe:duration-200 motion-safe:ease-out motion-safe:transition-transform",
@@ -163,7 +164,7 @@ export default function ComposeMail({
 							onClick={(e) => e.stopPropagation()}
 						>
 							<div className="flex items-center justify-between border-b px-4 py-2">
-								<div className="text-sm font-medium">New Message</div>
+								{/*<div className="text-sm font-medium">New Message</div>*/}
 								<div className="flex items-center gap-2">
 									<IconBtn
 										label={minimized ? "Restore" : "Minimize"}
@@ -194,9 +195,9 @@ export default function ComposeMail({
 										ref={editorRef}
 										publicConfig={publicConfig}
 										message={null}
-										onReady={() =>
-											requestAnimationFrame(() => editorRef.current?.focus())
-										}
+										// onReady={() =>
+										// 	requestAnimationFrame(() => editorRef.current?.focus())
+										// }
 										showEditorMode={showEditorMode}
 										handleClose={handleClose}
 									/>

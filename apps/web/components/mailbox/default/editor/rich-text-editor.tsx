@@ -29,6 +29,7 @@ import EditorHeader from "@/components/mailbox/default/editor/editor-header";
 import EditorFooter from "@/components/mailbox/default/editor/editor-footer";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { MessageEntity } from "@db";
+import {FocusTrap} from "@mantine/core";
 
 function formatWhen(d: Date) {
 	return Temporal.Instant.from(d.toISOString())
@@ -78,6 +79,8 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(
 			showEditorMode: "reply" | "forward" | "compose";
 		}>();
 
+        const [focusOnSubject, setFocusOnSubject] = useState<boolean>(false);
+
 		return (
 			<div ref={containerRef} className="scroll-mt-[72px]">
 				<RichTextEditor
@@ -88,8 +91,10 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(
 							: "!border !rounded-t-md !border-neutral-200"
 					}
 				>
-					<EditorHeader />
-					<RichTextEditor.Content className="prose min-h-52 text-sm p-2 leading-5" />
+					<EditorHeader focusOnSubject={setFocusOnSubject} />
+                    <FocusTrap active={focusOnSubject}>
+                        <RichTextEditor.Content className="prose min-h-96 text-sm p-2 leading-5" />
+                    </FocusTrap>
 					<EditorFooter />
 				</RichTextEditor>
 

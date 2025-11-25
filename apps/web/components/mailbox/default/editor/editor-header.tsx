@@ -1,20 +1,21 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import {
-	ActionIcon,
-	Select,
-	SelectProps,
-	TagsInput,
-	Group,
-	Text,
-	Input,
+    ActionIcon,
+    Select,
+    SelectProps,
+    TagsInput,
+    Group,
+    Text,
+    Input, FocusTrap, FocusTrapInitialFocus,
 } from "@mantine/core";
 import { Forward, Reply } from "lucide-react";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { MessageEntity } from "@db";
 import { getMessageAddress } from "@common/mail-client";
 import { useMediaQuery } from "@mantine/hooks";
+import EmailHeaderContacts from "@/components/mailbox/default/editor/email-header-contacts";
 
-function EditorHeader() {
+function EditorHeader({focusOnSubject}: {focusOnSubject?: () => void}) {
 	const { state } = useDynamicContext<{
 		isPending: boolean;
 		message: MessageEntity;
@@ -73,15 +74,15 @@ function EditorHeader() {
 
 	const isMobile = useMediaQuery("(max-width: 768px)");
 
+    const [subjectFocus, setSubjectFocus] = useState<boolean>(false);
+
 	return isMobile ? (
 		<>
-			{/* Row 1: Select | To | Cc/Bcc */}
 			<div
 				className="border-b px-3 py-2 grid gap-3
                   grid-cols-1
                   sm:grid-cols-[auto,1fr,auto] sm:items-start"
 			>
-				{/* Left: reply/forward select */}
 				{state.message ? (
 					<div className="sm:pt-1">
 						<Select
@@ -106,22 +107,19 @@ function EditorHeader() {
 					<input type="hidden" name="mode" value={mode} />
 				)}
 
-				{/* Middle: To */}
+
 				<div className="grid items-center gap-2 sm:grid-cols-[40px,1fr]">
 					<span className="text-[13px] text-muted-foreground sm:text-right leading-6">
 						To
 					</span>
-					<TagsInput
-						defaultValue={toEmail ? [toEmail] : []}
-						maxTags={1}
-						name="to"
-						size="sm"
-						variant="unstyled"
-						className="min-h-[28px] text-sm"
-					/>
+                    <EmailHeaderContacts name={"to"} maxTags={1} toEmail={toEmail} onChange={(value) => {
+                        if (value.length > 0) {
+                            setSubjectFocus(true);
+                        }
+                    }} />
 				</div>
 
-				{/* Right: Cc / Bcc (same row) */}
+
 				<div className="flex items-center justify-end gap-4 text-primary text-sm">
 					{!ccActive && (
 						<button
@@ -148,17 +146,16 @@ function EditorHeader() {
 				</div>
 			</div>
 
-			{/* Row 2+: Cc / Bcc (only when active) */}
 			{ccActive && (
 				<div className="border-b px-3 py-2 grid items-center gap-2 sm:grid-cols-[72px,1fr]">
 					<span className="text-[13px] text-muted-foreground sm:text-right leading-6">
 						Cc
 					</span>
-					<TagsInput
-						name="cc"
-						variant="unstyled"
-						className="min-h-[28px] text-sm"
-					/>
+                    <EmailHeaderContacts name={"cc"} toEmail={toEmail} onChange={(value) => {
+                        if (value.length > 0) {
+                            setSubjectFocus(true);
+                        }
+                    }} />
 				</div>
 			)}
 
@@ -167,15 +164,14 @@ function EditorHeader() {
 					<span className="text-[13px] text-muted-foreground sm:text-right leading-6">
 						Bcc
 					</span>
-					<TagsInput
-						name="bcc"
-						variant="unstyled"
-						className="min-h-[28px] text-sm"
-					/>
+                    <EmailHeaderContacts name={"bcc"} toEmail={toEmail} onChange={(value) => {
+                        if (value.length > 0) {
+                            setSubjectFocus(true);
+                        }
+                    }} />
 				</div>
 			)}
 
-			{/* Subject */}
 			<div className="border-b px-3 py-2 grid items-center gap-2 sm:grid-cols-[72px,1fr]">
 				<span className="text-[13px] text-muted-foreground sm:text-right leading-6">
 					Subject
@@ -220,26 +216,32 @@ function EditorHeader() {
 					<div className="flex gap- items-stretch flex-col justify-start">
 						<div className="flex items-center gap-2">
 							<span className="text-sm text-muted-foreground">To</span>
-							<TagsInput
-								defaultValue={toEmail ? [toEmail] : []}
-								maxTags={1}
-								name={"to"}
-								size="sm"
-								variant="unstyled"
-							/>
+                            <EmailHeaderContacts name={"to"} maxTags={1} toEmail={toEmail} onChange={(value) => {
+                                if (value.length > 0) {
+                                    setSubjectFocus(true);
+                                }
+                            }} />
 						</div>
 
 						{ccActive && (
 							<div className="flex items-center gap-2">
 								<span className="text-sm text-muted-foreground">Cc</span>
-								<TagsInput name={"cc"} variant="unstyled" />
+                                <EmailHeaderContacts name={"cc"} toEmail={toEmail} onChange={(value) => {
+                                    if (value.length > 0) {
+                                        setSubjectFocus(true);
+                                    }
+                                }} />
 							</div>
 						)}
 
 						{bccActive && (
 							<div className="flex items-center gap-2">
 								<span className="text-sm text-muted-foreground">Bcc</span>
-								<TagsInput name={"bcc"} variant="unstyled" />
+                                <EmailHeaderContacts name={"bcc"} toEmail={toEmail} onChange={(value) => {
+                                    if (value.length > 0) {
+                                        setSubjectFocus(true);
+                                    }
+                                }} />
 							</div>
 						)}
 					</div>
@@ -266,13 +268,22 @@ function EditorHeader() {
 			</div>
 			<div className={"border-b flex justify-start items-center px-2 gap-2"}>
 				<span className="text-sm text-muted-foreground">Subject</span>
-				<Input
-					variant={"unstyled"}
-					className={"w-full"}
-					name={"subject"}
-					value={subject}
-					onChange={(e) => setSubject(e.currentTarget.value)}
-				/>
+                <FocusTrap active={subjectFocus}>
+                    <Input
+                        variant={"unstyled"}
+                        className={"w-full"}
+                        name={"subject"}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === "Tab") {
+                                e.preventDefault();
+                                setSubjectFocus(false)
+                                focusOnSubject && focusOnSubject()
+                            }
+                        }}
+                        value={subject}
+                        onChange={(e) => setSubject(e.currentTarget.value)}
+                    />
+                </FocusTrap>
 			</div>
 		</>
 	);
