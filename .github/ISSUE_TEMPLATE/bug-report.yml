@@ -1,0 +1,41 @@
+name: Bug report
+description: File a bug report for Kurrier
+labels: [bug]
+
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the issue.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: |
+        - Kurrier version:
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ### Logs (required)
+        From the directory containing your `docker-compose.yml`, run:
+
+        ```bash
+        docker compose logs --timestamps --no-color > kurrier-logs.txt
+        ```
+
+        Then attach **kurrier-logs.txt** to this issue.
+
+  - type: checkboxes
+    id: logs_confirm
+    attributes:
+      label: Confirm
+      options:
+        - label: I have attached `kurrier-logs.txt`
+          required: true
