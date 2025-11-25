@@ -3,16 +3,17 @@
 import { cache } from "react";
 import { rlsClient } from "@/lib/actions/clients";
 import {
-	db,
-	identities,
-	mailboxes,
-	mailboxSync,
-	mailboxThreads,
-	messageAttachments,
-	messages,
-	threads,
+    contacts,
+    db,
+    identities,
+    mailboxes,
+    mailboxSync,
+    mailboxThreads,
+    messageAttachments,
+    messages,
+    threads,
 } from "@db";
-import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
+import {and, asc, count, desc, eq, ilike, inArray, or, sql} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { FormState, getServerEnv, SearchThreadsResponse } from "@schema";
 import { decode } from "decode-formdata";
@@ -24,6 +25,8 @@ import slugify from "@sindresorhus/slugify";
 import { redirect } from "next/navigation";
 import { PAGE_SIZE } from "@common/mail-client";
 import { getRedis } from "@/lib/actions/get-redis";
+import {createClient} from "@/lib/supabase/server";
+
 let typeSenseClient: Client | null = null;
 function getTypeSenseClient(): Client {
 	if (typeSenseClient) return typeSenseClient;
@@ -1050,4 +1053,71 @@ export const clearImapClients = async (identityId: string) => {
 			backoff: { type: "exponential", delay: 1500 },
 		},
 	);
+};
+
+
+
+type ComposeContact = {
+    id: string;
+    name: string;
+    email: string;
+    avatar: string | null;
+};
+export const searchContactsForCompose = async (
+    searchValue: string,
+) => {
+    const q = searchValue.trim();
+    if (!q) return [];
+
+    const prefix = `${q}%`;
+    const emailLike = `%${q}%`;
+
+    const rows = await db
+        .select({
+            id: contacts.id,
+            firstName: contacts.firstName,
+            lastName: contacts.lastName,
+            emails: contacts.emails,
+            profilePictureXs: contacts.profilePictureXs,
+        })
+        .from(contacts)
+        .where(
+            and(
+                or(
+                    ilike(contacts.firstName, prefix),
+                    ilike(contacts.lastName, prefix),
+                    sql`${contacts.emails}::text ILIKE ${emailLike}`
+                )
+            )
+        )
+        .orderBy(contacts.lastName, contacts.firstName)
+        .limit(5)
+
+    const suggestions: ComposeContact[] = [];
+
+    const supabase = await createClient();
+    for (const row of rows) {
+        const fullName = [row.firstName, row.lastName].filter(Boolean).join(" ");
+        const emails = (row.emails ?? []) as { address: string }[];
+
+        for (const e of emails) {
+            if (!e.address) continue;
+            let avatarUrl: string | null = null;
+            if (row.profilePictureXs) {
+                const { data } = await supabase.storage
+                    .from("attachments")
+                    .createSignedUrl(String(row.profilePictureXs), 60000);
+                avatarUrl = data?.signedUrl || null;
+            }
+
+            suggestions.push({
+                id: row.id,
+                name: fullName || e.address,
+                email: e.address,
+                avatar: avatarUrl,
+            });
+        }
+    }
+
+    return suggestions.slice(0, 20);
 };

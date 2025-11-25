@@ -1,5 +1,4 @@
 import {
-	deltaFetch,
 	fetchIdentityMailboxList,
 	fetchMailbox,
 	fetchMailboxThreads,
@@ -22,11 +21,13 @@ async function Page({
 		identityPublicId,
 		mailboxSlug,
 	);
-	if (mailboxSync) {
-		if (mailboxSync.phase === "IDLE") {
-			await deltaFetch({ identityId: activeMailbox.identityId });
-		}
-	}
+
+    // TODO: We have IMAP IDLE detection support in the worker now. We probably don't need this?
+	// if (mailboxSync) {
+	// 	if (mailboxSync.phase === "IDLE") {
+	// 		await deltaFetch({ identityId: activeMailbox.identityId });
+	// 	}
+	// }
 
 	const publicConfig = getPublicEnv();
 	const mailboxThreads = await fetchMailboxThreads(
