@@ -16,7 +16,7 @@ export const seedAccount = async (userId: string) => {
 
 	if (existingDavAccount) return existingDavAccount;
 
-	const davUsername = "kurrier";
+	const davUsername = `kurrier-${userId}`;
 	const davPassword = randomUUID();
 	const secretName = `dav-${randomUUID()}`;
 	const secretIdRow = await createSecretAdmin({

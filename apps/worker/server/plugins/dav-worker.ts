@@ -6,6 +6,7 @@ import { createContact } from "../../lib/dav/dav-create-contact";
 import { updateContact } from "../../lib/dav/dav-update-contact";
 import { deleteContact } from "../../lib/dav/dav-delete-contact";
 import { seedAccount } from "../../lib/dav/dav-seed-account";
+import { createAccount } from "../../lib/dav/dav-create-account";
 import { davSyncDb } from "../../lib/dav/sync/dav-sync-db";
 export default defineNitroPlugin(async (nitroApp) => {
 	const { connection } = await getRedis();
@@ -21,6 +22,8 @@ export default defineNitroPlugin(async (nitroApp) => {
 				job.id,
 			);
 			switch (job.name) {
+                case "dav:create-account":
+                    return createAccount(job.data.userId);
 				case "dav:seed-account":
 					return seedAccount(job.data.userId);
 				case "dav:update-password":
@@ -29,6 +32,32 @@ export default defineNitroPlugin(async (nitroApp) => {
 					return createContact(job.data.contactId, job.data.ownerId);
 				case "dav:update-contact":
 					return updateContact(job.data.contactId, job.data.ownerId);
+                case "dav:create-contacts-batch": {
+                    const { ownerId, contactIds } = job.data;
+
+                    console.log(
+                        `[DAV WORKER] Processing contacts batch (${contactIds.length})`
+                    );
+                    const results = [];
+                    for (const id of contactIds) {
+                        try {
+                            const r = await createContact(id, ownerId);
+                            results.push({ id, success: true, result: r });
+                        } catch (err: any) {
+                            results.push({
+                                id,
+                                success: false,
+                                error: err?.message ?? err,
+                            });
+                        }
+                    }
+
+                    return {
+                        ok: true,
+                        total: contactIds.length,
+                        results,
+                    };
+                }
 				case "dav:delete-contact":
 					return deleteContact({
 						contactId: job.data.contactId,
@@ -41,7 +70,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 					return { success: true, skipped: true };
 			}
 		},
-		{ connection },
+		{ connection, concurrency: 1 },
 	);
 
 	worker.on("completed", (job) => {
