@@ -6,28 +6,27 @@ export const providersList = [
 	"mailgun",
 	"postmark",
 	"sendgrid",
+    "jmap"
 ] as const;
 export const ProvidersEnum = z.enum(providersList);
 export type Providers = z.infer<typeof ProvidersEnum>;
 
-/** UI label for each provider key */
 export const ProviderLabels: Record<Providers, string> = {
 	smtp: "Generic SMTP",
 	ses: "Amazon SES",
 	mailgun: "Mailgun",
 	postmark: "Postmark",
 	sendgrid: "SendGrid",
+	jmap: "Generic JMAP",
 };
 
-/** Minimal spec used by the Providers page */
 export type ProviderSpec = {
-	key: Exclude<Providers, "smtp">; // SMTP is shown separately
+	key: Exclude<Providers, "smtp">;
 	name: string;
 	docsUrl: string;
 	requiredEnv: string[];
 };
 
-/** Catalog for API providers (non-SMTP) */
 export const PROVIDERS: ProviderSpec[] = [
 	{
 		key: "ses",
@@ -60,7 +59,6 @@ export const PROVIDERS: ProviderSpec[] = [
 	},
 ];
 
-/** SMTP block used by the SMTP card */
 export const SMTP_SPEC = {
 	key: "smtp" as const,
 	name: ProviderLabels.smtp,
@@ -83,7 +81,21 @@ export const SMTP_SPEC = {
 		"IMAP_SECURE",
 	] as const,
 	help:
-		"Works with cPanel, Office365, and most mail hosts. Provide host, port, and credentials. " +
-		"Use SMTP_SECURE=true for implicit TLS (port 465); leave empty/false for STARTTLS (587). " +
-		"IMAP vars are optional and only needed if you plan to receive/sync messages.",
+		"Works with most mail hosts. IMAP vars are optional and only needed if you plan to receive/sync messages. "
+};
+
+
+export const JMAP_SPEC = {
+    key: "jmap" as const,
+    name: ProviderLabels.jmap,
+    docsUrl: "https://datatracker.ietf.org/doc/html/rfc8620",
+    requiredEnv: [
+        "JMAP_HOST",
+        "JMAP_PORT",
+        "JMAP_USERNAME",
+        "JMAP_PASSWORD",
+    ] as const,
+    optionalEnv: [] as const,
+    help:
+        "Works with any JMAP-compatible email server. Provide host, port, and credentials to connect via JMAP protocol.",
 };
