@@ -32,10 +32,10 @@ const commonWorkerQueue = new Queue("common-worker", redisConnection);
 const commonWorkerEvents = new QueueEvents("common-worker", redisConnection);
 
 const migrationWorkerQueue = new Queue("migration-worker", redisConnection);
-const migrationWorkerEvents = new QueueEvents(
-	"migration-worker",
-	redisConnection,
-);
+const migrationWorkerEvents = new QueueEvents("migration-worker", redisConnection);
+
+const davWorkerQueue = new Queue("dav-worker", redisConnection);
+const davWorkerEvents = new QueueEvents("dav-worker", redisConnection,);
 
 export async function getRedis() {
 	await Promise.all([
@@ -44,6 +44,7 @@ export async function getRedis() {
 		searchIngestEvents.waitUntilReady(),
 		commonWorkerEvents.waitUntilReady(),
 		migrationWorkerEvents.waitUntilReady(),
+		davWorkerEvents.waitUntilReady(),
 	]);
 	return {
 		connection: redis,
@@ -57,5 +58,7 @@ export async function getRedis() {
 		commonWorkerEvents,
 		migrationWorkerQueue,
 		migrationWorkerEvents,
+        davWorkerQueue,
+		davWorkerEvents
 	};
 }

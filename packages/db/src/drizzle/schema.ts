@@ -1277,6 +1277,7 @@ export const addressBooks = pgTable(
 			.references(() => davAccounts.id, { onDelete: "cascade" })
 			.notNull(),
 		davSyncToken: text("dav_sync_token"),
+		davAddressBookId: integer("dav_address_book_id"),
 		name: text("name").notNull(),
 		slug: text("slug").notNull(),
 		remotePath: text("remote_path").notNull(),
