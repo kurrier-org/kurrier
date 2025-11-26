@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.97
+
+### Patch Changes
+
+- [`0d95c11`](https://github.com/kurrier-org/kurrier/commit/0d95c1173eb137b35b45e66e1cbafebf8407539f) Thanks [@krokhale](https://github.com/krokhale)! - added support for multiple dav accounts and streamlined the jobs and worker for dav server
+
 ## 0.0.96
 
 ### Patch Changes
