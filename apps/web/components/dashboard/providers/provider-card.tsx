@@ -121,37 +121,30 @@ export default function ProviderCard({
 									{spec.name}
 								</CardTitle>
 								<p className="text-sm text-muted-foreground">
-									Managed securely in a secure Vault. Verify by adding or
+									Managed securely in a secure encrypted Vault. Verify by adding or
 									removing stored credentials.
 								</p>
 							</div>
 						</div>
 
-						{/* Actions BELOW (unchanged) */}
 						<div className="flex flex-wrap gap-2">
 							<CardAction className="flex w-full flex-wrap gap-2 lg:w-auto lg:flex-nowrap lg:justify-end">
-								{/*<StatusBadge ok={allGood} />*/}
-
 								<Button
 									variant="outline"
-									// asChild
 									component={"a"}
 									size={"xs"}
 									href={spec.docsUrl}
 									target="_blank"
-									// className="h-8 px-3 text-xs lg:h-9 lg:px-4 lg:text-sm"
 									leftSection={<ExternalLink className="size-4" />}
 								>
 									Docs
 								</Button>
 
 								<Button
-									// onClick={() => initTestAccount()}
 									onClick={initVerifyAccount}
 									loading={testing}
 									size={"xs"}
 									leftSection={<Play className="size-4" />}
-									// className="h-8 px-3 text-xs lg:h-9 lg:px-4 lg:text-sm gap-2"
 								>
 									Verify Connection
 								</Button>

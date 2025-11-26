@@ -48,7 +48,7 @@ export default function SMTPCard({
 								<CardTitle className="text-xl">{SMTP_SPEC.name}</CardTitle>
 								<p className="text-sm text-muted-foreground mt-1">
 									Manage app-level SMTP accounts. Secrets are stored in your
-									vault and linked to accounts here.
+                                    encrypted vault and linked to accounts here.
 								</p>
 								<p className="text-xs text-muted-foreground/80 mt-1">
 									{SMTP_SPEC.help}

@@ -7,6 +7,7 @@ import ProviderCardShell from "@/components/dashboard/providers/provider-card-sh
 import { smtpAccountSecrets } from "@db";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
+import JMAPCard from "@/components/dashboard/providers/jmap-card";
 
 export default async function ProvidersPage() {
 	const userProviders = await syncProviders();
@@ -50,9 +51,14 @@ export default async function ProvidersPage() {
 							/>
 						))}
 					</div>
-					<div className="grid gap-6 my-8">
-						<SMTPCard smtpSecrets={smtpSecrets} />
-					</div>
+                    <div className={"grid grid-cols-12 mt-8 gap-6"}>
+                        <div className={"col-span-6"}>
+                            <SMTPCard smtpSecrets={smtpSecrets} />
+                        </div>
+                        <div className={"col-span-6"}>
+                            <JMAPCard smtpSecrets={smtpSecrets} />
+                        </div>
+                    </div>
 				</Container>
 			</div>
 		</>
