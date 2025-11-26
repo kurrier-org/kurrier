@@ -80,7 +80,7 @@ export default function JMAPCard({ smtpSecrets }: {
                                     className="gap-2"
                                 >
                                     <Plus className="h-4 w-4" />
-                                    Add SMTP Account
+                                    Add JMAP Account
                                 </Button>
                             </div>
                         )}
