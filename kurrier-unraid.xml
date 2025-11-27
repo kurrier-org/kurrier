@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<Container>
+    <Name>kurrier</Name>
+    <Repository>https://github.com/kurrier-org/kurrier</Repository>
+    <Registry>https://github.com/orgs/kurrier-org/packages</Registry>
+    <Network>bridge</Network>
+    <Privileged>false</Privileged>
+    <Support>https://github.com/kurrier-org/kurrier/discussions</Support>
+    <Project>https://github.com/kurrier-org/kurrier</Project>
+
+    <Overview>
+        Kurrier is a modern, self-hosted webmail built for people who don't want the hassle to run their own email stack, yet want control over their data and privacy and ability to connect and manage multiple providers and email identities.
+        It connects to standard protocols and providers — IMAP, SMTP, SES, SendGrid, Mailgun, and more — giving you a single, fast interface to turn any email service provider into a full-featured webmail.
+
+        **Setup instructions**
+        You must supply env variables based on our example here:
+        https://www.kurrier.org/docs/installation
+    </Overview>
+
+    <WebUI>http://[IP]:[PORT:3000]</WebUI>
+    <DonateText>Support Kurrier</DonateText>
+    <DonateLink>https://buy.stripe.com/dRmfZje75d4OaGG8ux3Nm00</DonateLink>
+
+    <Icon>https://www.kurrier.org/kurrier-logo.png</Icon>
+    <TemplateURL>https://github.com/kurrier-org/kurrier/blob/main/kurrier-unraid.xml</TemplateURL>
+
+</Container>
