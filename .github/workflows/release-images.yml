@@ -13,7 +13,6 @@ jobs:
       contents: read
       packages: write
 
-    # <-- expose the resolved tag as a job-level output
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
 
@@ -38,17 +37,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "SOURCE_SHA=${SOURCE_SHA}"
           TAG="$(git tag --points-at "${SOURCE_SHA}" \
                  | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
                  | head -n1 || true)"
           if [ -z "${TAG}" ]; then
-            echo "No vX.Y.Z tag found for ${SOURCE_SHA}"
-            git tag --points-at "${SOURCE_SHA}" || true
             exit 1
           fi
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "Resolved tag: ${TAG}"
 
       - name: Checkout the exact tag
         run: git checkout ${{ steps.tag.outputs.tag }}
@@ -56,12 +51,22 @@ jobs:
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
+      # Login to GHCR
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
 
       - name: Build & push ${{ matrix.service }}
         uses: docker/build-push-action@v6
@@ -73,6 +78,8 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/kurrier-${{ matrix.service }}:${{ steps.tag.outputs.tag }}
             ghcr.io/${{ github.repository_owner }}/kurrier-${{ matrix.service }}:latest
+            docker.io/${{ secrets.DOCKERHUB_USERNAME }}/kurrier-${{ matrix.service }}:${{ steps.tag.outputs.tag }}
+            docker.io/${{ secrets.DOCKERHUB_USERNAME }}/kurrier-${{ matrix.service }}:latest
           build-args: |
             NODE_ENV=production
           provenance: true
@@ -83,13 +90,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    # only run if a tag was actually resolved
     if: ${{ needs.build-and-push.outputs.tag != '' }}
     steps:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.build-and-push.outputs.tag }}   # <-- use the output
+          tag_name: ${{ needs.build-and-push.outputs.tag }}
           name:     ${{ needs.build-and-push.outputs.tag }}
           generate_release_notes: true
         env:
