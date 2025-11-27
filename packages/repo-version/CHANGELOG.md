@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.98
+
+### Patch Changes
+
+- [`b55d4fc`](https://github.com/kurrier-org/kurrier/commit/b55d4fc24abfecd665de7e6404d8fe2f58e63f95) Thanks [@krokhale](https://github.com/krokhale)! - added dockerhub build
+
 ## 0.0.97
 
 ### Patch Changes
