@@ -2,14 +2,13 @@
 
 import * as React from "react";
 import {
-	Command,
-	Contact,
-	FolderSync,
-	Inbox,
-	Key,
-	LayoutDashboard,
-	Plug,
-	Send,
+    Calendar, Command, Contact,
+    FolderSync,
+    Inbox,
+    Key,
+    LayoutDashboard,
+    Plug,
+    Send,
 } from "lucide-react";
 
 import { NavUser } from "@/components/ui/dashboards/workspace/nav-user";
@@ -27,38 +26,25 @@ import {
 } from "@/components/ui/sidebar";
 import { usePathname, useRouter } from "next/navigation";
 import KurrierLogo from "@/components/common/kurrier-logo";
-import ComposeMail from "@/components/mailbox/default/compose-mail";
-import { LabelScope, PublicConfig } from "@schema";
+import { PublicConfig } from "@schema";
 import { UserResponse } from "@supabase/supabase-js";
-import { NavMain } from "@/components/ui/dashboards/workspace/nav-main";
 import ThemeColorPicker from "@/components/common/theme-color-picker";
-import IdentityMailboxesList from "@/components/dashboard/identity-mailboxes-list";
 import {
 	FetchIdentityMailboxListResult,
-	FetchMailboxUnreadCountsResult,
 } from "@/lib/actions/mailbox";
-import {
-	FetchContactLabelsWithCountResult,
-	FetchLabelsWithCountResult,
-} from "@/lib/actions/labels";
 import ThemeSwitch from "@/components/common/theme-switch";
 import Link from "next/link";
 import { useMediaQuery } from "@mantine/hooks";
 import { Divider } from "@mantine/core";
-import LabelHome from "@/components/dashboard/labels/label-home";
 import { IconFrame } from "@tabler/icons-react";
-import ContactsNav from "@/components/dashboard/contacts/contacts-sidebar";
-import NewContactButton from "@/components/dashboard/contacts/new-contact-button";
-import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
 
 type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	publicConfig: PublicConfig;
 	user: UserResponse["data"]["user"];
 	avatar: string;
 	identityMailboxes: FetchIdentityMailboxListResult;
-	unreadCounts: FetchMailboxUnreadCountsResult;
-	globalLabels: FetchLabelsWithCountResult;
-	contactLabels: FetchContactLabelsWithCountResult;
+    sidebarSectionContent?: React.ReactNode;
+    sidebarTopContent?: React.ReactNode;
 };
 
 export function AppSidebar({ ...props }: UnifiedSidebarProps) {
@@ -67,9 +53,8 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 		user,
 		avatar,
 		identityMailboxes,
-		unreadCounts,
-		globalLabels,
-		contactLabels,
+        sidebarSectionContent,
+        sidebarTopContent,
 		...restProps
 	} = props;
 
@@ -94,6 +79,12 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				icon: Contact,
 				isActive: true,
 			},
+            {
+                title: "Calendar",
+                url: "/dashboard/calendar",
+                icon: Calendar,
+                isActive: true,
+            },
 			{
 				title: "Platform",
 				url: "/dashboard/platform/overview",
@@ -101,52 +92,55 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				isActive: false,
 			},
 		],
-		navPlatform: [
-			{
-				title: "Overview",
-				url: "/dashboard/platform/overview",
-				icon: LayoutDashboard,
-				items: [],
-			},
-			{
-				title: "Providers",
-				url: "/dashboard/platform/providers",
-				icon: Plug,
-				items: [],
-			},
-			{
-				title: "Identities",
-				url: "/dashboard/platform/identities",
-				icon: Send,
-				items: [],
-			},
-			{
-				title: "Sync Services",
-				url: "/dashboard/platform/sync-services",
-				icon: FolderSync,
-				items: [],
-			},
-			{
-				title: "API Keys",
-				url: "/dashboard/platform/api-keys",
-				icon: Key,
-				items: [],
-			},
-		],
+		// navPlatform: [
+		// 	{
+		// 		title: "Overview",
+		// 		url: "/dashboard/platform/overview",
+		// 		icon: LayoutDashboard,
+		// 		items: [],
+		// 	},
+		// 	{
+		// 		title: "Providers",
+		// 		url: "/dashboard/platform/providers",
+		// 		icon: Plug,
+		// 		items: [],
+		// 	},
+		// 	{
+		// 		title: "Identities",
+		// 		url: "/dashboard/platform/identities",
+		// 		icon: Send,
+		// 		items: [],
+		// 	},
+		// 	{
+		// 		title: "Sync Services",
+		// 		url: "/dashboard/platform/sync-services",
+		// 		icon: FolderSync,
+		// 		items: [],
+		// 	},
+		// 	{
+		// 		title: "API Keys",
+		// 		url: "/dashboard/platform/api-keys",
+		// 		icon: Key,
+		// 		items: [],
+		// 	},
+		// ],
 	};
 
 	const pathName = usePathname();
 	const isOnMail = pathName?.includes("/mail");
 	const isOnPlatform = pathName?.includes("/platform");
 	const isOnContacts = pathName?.includes("/contacts");
+	const isOnCalendar = pathName?.includes("/calendar");
 
-	type SidebarSection = "mail" | "contacts" | "platform";
+	type SidebarSection = "mail" | "contacts" | "platform" | "calendar";
 
-	const section: SidebarSection = isOnPlatform
-		? "platform"
-		: isOnContacts
-			? "contacts"
-			: "mail";
+    const section: SidebarSection = isOnPlatform
+        ? "platform"
+        : isOnContacts
+            ? "contacts"
+            : isOnCalendar
+                ? "calendar"
+                : "mail";
 
 	const [activeItem, setActiveItem] = React.useState(() => {
 		if (section === "platform") {
@@ -159,6 +153,11 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				data.navMain.find((i) => i.url.includes("/contacts")) ?? data.navMain[0]
 			);
 		}
+        if (section === "calendar") {
+            return (
+                data.navMain.find((i) => i.url.includes("/calendar")) ?? data.navMain[0]
+            );
+        }
 		return data.navMain.find((i) => i.url.includes("/mail")) ?? data.navMain[0];
 	});
 
@@ -168,6 +167,11 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				data.navMain.find((i) => i.url.includes("/platform")) ??
 					data.navMain[0],
 			);
+		} else if (section === "calendar") {
+            setActiveItem(
+                data.navMain.find((i) => i.url.includes("/calendar")) ??
+                data.navMain[0],
+            );
 		} else if (section === "contacts") {
 			setActiveItem(
 				data.navMain.find((i) => i.url.includes("/contacts")) ??
@@ -181,39 +185,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 	}, [section, pathName, data.navMain]);
 
 	const { setOpen, toggleSidebar } = useSidebar();
-
 	const router = useRouter();
-
-	const desktopSectionContent: Record<SidebarSection, React.ReactNode> = {
-		mail: (
-			<>
-				<IdentityMailboxesList
-					identityMailboxes={identityMailboxes}
-					unreadCounts={unreadCounts}
-				/>
-				{/*<LabelHome globalLabels={globalLabels} />*/}
-				<DynamicContextProvider
-					initialState={{ labels: globalLabels, scope: "thread" as LabelScope }}
-				>
-					<LabelHome />
-				</DynamicContextProvider>
-			</>
-		),
-		contacts: (
-			<>
-				<ContactsNav />
-				<DynamicContextProvider
-					initialState={{
-						labels: contactLabels,
-						scope: "contact" as LabelScope,
-					}}
-				>
-					<LabelHome />
-				</DynamicContextProvider>
-			</>
-		),
-		platform: <NavMain items={data.navPlatform} />,
-	};
 
 	return (
 		<Sidebar
@@ -285,7 +257,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 								{isMobile ? (
 									<>
 										<Divider variant={"dashed"} my={"xl"} />
-										{desktopSectionContent[section]}
+                                        {sidebarSectionContent}
 									</>
 								) : (
 									<hr className="my-2 border-border" />
@@ -326,21 +298,12 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 						<KurrierLogo size={36} />
 						<span className="text-lg font-semibold">kurrier</span>
 					</div>
-					{isOnMail && (
-						<div className={"-mt-1"}>
-							<ComposeMail publicConfig={publicConfig} />
-						</div>
-					)}
-					{isOnContacts && (
-						<div className={"-mt-1"}>
-							<NewContactButton hideOnMobile={true} />
-						</div>
-					)}
+                    {sidebarTopContent}
 				</SidebarHeader>
 				<SidebarContent>
 					<SidebarGroup className="px-0">
 						<SidebarGroupContent>
-							{desktopSectionContent[section]}
+                            {sidebarSectionContent}
 						</SidebarGroupContent>
 					</SidebarGroup>
 				</SidebarContent>

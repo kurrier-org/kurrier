@@ -61,3 +61,23 @@ export async function createThumbnail(
 		reader.readAsDataURL(compressed);
 	});
 }
+
+// export function setCssVar(name: string, value: string) {
+//     document.documentElement.style.setProperty(name, value);
+// }
+//
+// export function getCssVar(name: string) {
+//     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+// }
+//
+
+export function setSidebarWidth(width: string) {
+    if (typeof document === "undefined") return;
+
+    const el = document.querySelector<HTMLElement>(
+        '[data-slot="sidebar-wrapper"]',
+    );
+    if (!el) return;
+
+    el.style.setProperty("--sidebar-width", width);
+}

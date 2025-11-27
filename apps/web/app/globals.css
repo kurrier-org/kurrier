@@ -392,6 +392,10 @@
 }
 
 @theme inline {
+
+    --text-xxs: 0.625rem;
+
+
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 
@@ -461,4 +465,9 @@
 			transform: translateY(calc(-100% - var(--gap)));
 		}
 	}
+}
+
+.sidebar-animation {
+    transition: width 500ms ease-in-out;
+    transition-property: width, flex-basis;
 }
