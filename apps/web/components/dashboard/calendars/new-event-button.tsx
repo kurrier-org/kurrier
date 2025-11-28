@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { X, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ActionIcon } from "@mantine/core";
 import { useIsMobile } from "@/hooks/use-mobile";
