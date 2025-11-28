@@ -471,3 +471,20 @@
     transition: width 500ms ease-in-out;
     transition-property: width, flex-basis;
 }
+
+@layer utilities {
+    @keyframes weekFade {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-weekFade {
+        animation: weekFade 0.35s ease forwards;
+    }
+}

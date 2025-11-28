@@ -39,6 +39,7 @@
 		"@supabase/supabase-js": "^2.75.0",
 		"bullmq": "^5.61.0",
 		"crypto": "^1.0.1",
+		"dayjs": "^1.11.19",
 		"drizzle-orm": "^0.44.6",
 		"drizzle-zod": "^0.8.3",
 		"ioredis": "^5.8.1",

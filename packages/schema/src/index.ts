@@ -8,3 +8,4 @@ export * from "./types/mail";
 export * from "./types/search";
 export * from "./types/common";
 export * from "./types/api";
+export * from "./types/calendar";

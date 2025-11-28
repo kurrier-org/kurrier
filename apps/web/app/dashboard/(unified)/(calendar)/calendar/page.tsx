@@ -1,7 +1,8 @@
+import {WeekGrid} from "@/components/dashboard/calendars/week-view";
+import React from "react";
+
 export default function Page() {
-	return (
-		<div className={"flex items-center justify-center my-24 text-sm"}>
-			Please select a contact to view details.
-		</div>
-	);
+	return <>
+        <WeekGrid />
+    </>
 }
