@@ -1,2 +1,2 @@
-import ContactPage from "@/app/dashboard/(unified)/contacts/[contactsPublicId]/page";
+import ContactPage from "@/app/dashboard/(unified)/(contacts)/contacts/[contactsPublicId]/page";
 export default ContactPage;

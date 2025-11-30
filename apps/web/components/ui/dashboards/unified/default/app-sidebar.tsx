@@ -79,12 +79,13 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				icon: Contact,
 				isActive: true,
 			},
-            {
-                title: "Calendar",
-                url: "/dashboard/calendar",
-                icon: Calendar,
-                isActive: true,
-            },
+            // Disable calendar for now
+            // {
+            //     title: "Calendar",
+            //     url: "/dashboard/calendar",
+            //     icon: Calendar,
+            //     isActive: true,
+            // },
 			{
 				title: "Platform",
 				url: "/dashboard/platform/overview",

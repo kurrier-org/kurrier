@@ -1,4 +1,4 @@
-import {z} from "zod/index";
+import { z } from "zod";
 import type { Dayjs } from "dayjs";
 
 
