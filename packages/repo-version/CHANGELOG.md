@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.100
+
+### Patch Changes
+
+- [`b190b80`](https://github.com/kurrier-org/kurrier/commit/b190b80b7639b63d2a6b30aa8012859755bbfbc5) Thanks [@krokhale](https://github.com/krokhale)! - Disable calendar for BETA
+
 ## 0.0.99
 
 ### Patch Changes
