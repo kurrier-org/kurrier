@@ -39,15 +39,16 @@ export default function WebmailList({
 	globalLabels,
 	labelsByThreadId,
 }: WebListProps) {
-	useEffect(() => {
-		if (mailboxSync) {
-			if (mailboxSync?.phase !== "IDLE") {
-				toast.info("Mailbox Busy", {
-					description: "Mailbox is currently syncing",
-				});
-			}
-		}
-	}, [mailboxSync, mailboxSync?.phase]);
+    // Disable mailbox busy toast for now
+	// useEffect(() => {
+	// 	if (mailboxSync) {
+	// 		if (mailboxSync?.phase !== "IDLE") {
+	// 			toast.info("Mailbox Busy", {
+	// 				description: "Mailbox is currently syncing",
+	// 			});
+	// 		}
+	// 	}
+	// }, [mailboxSync, mailboxSync?.phase]);
 
 	const isMobile = useMediaQuery("(max-width: 768px)");
 

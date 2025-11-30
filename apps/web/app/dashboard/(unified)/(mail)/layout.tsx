@@ -41,7 +41,7 @@ export default async function DashboardLayout({
                 user={user}
                 avatar={avatar}
                 identityMailboxes={identityMailboxes}
-                sidebarTopContent={<div className={"-mt-1"}>
+                sidebarTopContent={<div key={"side-bar-top-content"} className={"-mt-1"}>
                     <ComposeMail publicConfig={publicConfig} />
                 </div>}
                 sidebarSectionContent={<>

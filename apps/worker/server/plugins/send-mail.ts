@@ -439,5 +439,10 @@ export default defineNitroPlugin(async (nitroApp) => {
 	nitroApp.hooks.hookOnce("close", async () => {
 		console.log("Closing nitro server...");
 		console.log("Task is done!");
+        try {
+            await worker.close();
+        } catch (err: any) {
+            console.error("Error closing send mail worker:", err?.message ?? err);
+        }
 	});
 });

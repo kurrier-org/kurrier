@@ -85,19 +85,19 @@ export const fetchMailbox = cache(
 		const mailboxList = await rls((tx) =>
 			tx.select().from(mailboxes).where(eq(mailboxes.identityId, identity.id)),
 		);
-		const [messagesCount] = await rls((tx) =>
+		const [messagesCount] = activeMailbox?.id ? await rls((tx) =>
 			tx
 				.select({ count: count() })
 				.from(messages)
 				.where(eq(messages.mailboxId, activeMailbox.id)),
-		);
+		) : [{ count: 0 }];
 
-		const [sync] = await rls((tx) => {
+		const [sync] = activeMailbox ? await rls((tx) => {
 			return tx
 				.select()
 				.from(mailboxSync)
 				.where(eq(mailboxSync.mailboxId, activeMailbox.id));
-		});
+		}) : [null];
 
 		return {
 			activeMailbox,
@@ -269,7 +269,11 @@ export async function sendMail(
 
 export const deltaFetch = async ({ identityId }: { identityId: string }) => {
 	const { smtpQueue, smtpEvents } = await getRedis();
-	const job = await smtpQueue.add("delta-fetch", { identityId });
+	const job = await smtpQueue.add("delta-fetch", { identityId }, {
+        jobId: `delta-fetch-${identityId}`,
+        removeOnComplete: true,
+        removeOnFail: true,
+    });
 	await job.waitUntilFinished(smtpEvents);
 };
 
@@ -334,10 +338,10 @@ export const initSearch = async (
 export const backfillMailboxes = async (identityId: string) => {
 	const { smtpQueue, smtpEvents } = await getRedis();
 	const job = await smtpQueue.add(
-		"backfill-mailboxes",
+		"imap:backfill-discover",
 		{ identityId },
 		{
-			jobId: `backfill-mailboxes-${identityId}`,
+			jobId: `imap-backfill-discover-${identityId}`,
 			attempts: 3,
 			backoff: {
 				type: "exponential",
@@ -351,18 +355,15 @@ export const backfillMailboxes = async (identityId: string) => {
 
 export const backfillAccount = async (identityId: string) => {
 	const { smtpQueue } = await getRedis();
-	await smtpQueue.add(
-		"backfill",
-		{ identityId },
-		{
-			jobId: `backfill-${identityId}`,
-			attempts: 3,
-			backoff: {
-				type: "exponential",
-				delay: 1000,
-			},
-		},
-	);
+    await smtpQueue.add(
+        "imap:backfill-tick",
+        {},
+        {
+            removeOnComplete: true,
+            removeOnFail: true,
+            jobId: "imap-backfill-tick-on-demand",
+        },
+    );
 	await smtpQueue.add(
 		"imap:start-idle",
 		{ identityId },

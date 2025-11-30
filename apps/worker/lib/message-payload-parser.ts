@@ -27,7 +27,7 @@ const supabase = createClient(
 );
 
 const SEARCH_BATCH_SIZE = 100;
-const WEBHOOK_BATCH_SIZE = 100;
+// const WEBHOOK_BATCH_SIZE = 100;
 const FLUSH_INTERVAL_MS = 1000;
 
 type SearchJob = { messageId: string, contactId: string | null, ownerId?: string };
@@ -394,12 +394,14 @@ export async function parseAndStoreEmail(
 		scheduleFlush();
 	}
 
-	webhookBuffer.push({ message, rawEmail });
-	if (webhookBuffer.length >= WEBHOOK_BATCH_SIZE) {
-		await flushBatches();
-	} else {
-		scheduleFlush();
-	}
+    // Disable webhook batching for now - causes too much delay
+
+	// webhookBuffer.push({ message, rawEmail });
+	// if (webhookBuffer.length >= WEBHOOK_BATCH_SIZE) {
+	// 	await flushBatches();
+	// } else {
+	// 	scheduleFlush();
+	// }
 
 	return message;
 }

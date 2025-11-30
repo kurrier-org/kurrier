@@ -8,8 +8,8 @@ export async function syncMailbox(opts: {
 	identityId: string;
 	mailboxId: string;
 	path: string;
-	window?: number; // default 500
-	politeWaitMs?: number; // default 20ms
+	window?: number;
+	politeWaitMs?: number;
 	onMessage: (
 		msg: FetchMessageObject,
 		path: string,
@@ -27,7 +27,6 @@ export async function syncMailbox(opts: {
 		onMessage,
 	} = opts;
 
-	// await client.mailboxOpen(path, { readOnly: true });
 	const lock = await client.getMailboxLock(path);
 	try {
 		const [sync] = await db
@@ -44,7 +43,6 @@ export async function syncMailbox(opts: {
 
 		let lastSeen = Number(sync.lastSeenUid || 0);
 
-		// What's the current head?
 		const box = await client.mailboxOpen(path, { readOnly: true });
 		const currentTop = Math.max(0, (box.uidNext ?? 1) - 1);
 		if (currentTop <= lastSeen) return; // nothing new

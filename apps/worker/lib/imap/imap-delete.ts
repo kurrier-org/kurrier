@@ -4,7 +4,6 @@ import { initSmtpClient } from "./imap-client";
 import { db, messages, mailboxThreads, mailboxes, threads } from "@db";
 import { and, eq, inArray, notExists, sql } from "drizzle-orm";
 
-/** Helper: delete UIDs in a mailbox (IMAP) safely under a lock */
 async function deleteUids(
 	client: ImapFlow,
 	mailboxPath: string,
@@ -46,14 +45,12 @@ export async function deleteMail(
 	const { mailboxId, emptyAll, imapDelete } = data;
 	if (!mailboxId) return;
 
-	// 1) Resolve mailbox + IMAP client for the owning identity
 	const [box] = await db
 		.select()
 		.from(mailboxes)
 		.where(eq(mailboxes.id, mailboxId));
 	if (!box) return;
 
-	// Read IMAP path (fallback to mailbox name if meta is missing)
 	const mailboxPath: string =
 		(box.metaData as any)?.imap?.path || box.name || "";
 
@@ -64,12 +61,10 @@ export async function deleteMail(
 	}
 
 	if (emptyAll) {
-		// --- IMAP side ---
 		if (imapDelete && client) {
 			try {
 				const lock = await client.getMailboxLock(String(mailboxPath));
 				try {
-					// returns number[] | false -> normalize to []
 					const allUids: number[] =
 						(await client.search({ all: true }, { uid: true })) || [];
 					if (allUids.length) {
@@ -80,11 +75,9 @@ export async function deleteMail(
 				}
 			} catch (err) {
 				console.error("[deleteMail] emptyAll IMAP delete failed:", err);
-				// continue to DB cleanup to keep local state consistent
 			}
 		}
 
-		// gather message ids + affected threads for this mailbox
 		const rows = await db
 			.select({ id: messages.id, threadId: messages.threadId })
 			.from(messages)
@@ -98,7 +91,6 @@ export async function deleteMail(
 				await tx.delete(messages).where(inArray(messages.id, allMessageIds));
 			}
 			if (affectedThreadIds.length) {
-				// remove per-mailbox projections
 				await tx
 					.delete(mailboxThreads)
 					.where(
@@ -108,7 +100,6 @@ export async function deleteMail(
 						),
 					);
 
-				// remove orphan threads (no messages anywhere)
 				await tx
 					.delete(threads)
 					.where(
@@ -128,7 +119,6 @@ export async function deleteMail(
 		return;
 	}
 
-	// ============== B) DELETE BY THREAD ID(S) ==================
 	const threadIds = Array.isArray(data.threadId)
 		? data.threadId.filter(Boolean)
 		: data.threadId
@@ -137,8 +127,6 @@ export async function deleteMail(
 
 	if (!threadIds.length) return;
 
-	// --- IMAP side ---
-	// fetch messages in these threads for this mailbox to collect UIDs
 	const msgRows = await db
 		.select({
 			id: messages.id,
@@ -154,7 +142,6 @@ export async function deleteMail(
 		);
 
 	if (imapDelete && client) {
-		// delete on IMAP grouped by mailboxPath
 		try {
 			const byPath = collectUidsByMailboxPath(msgRows);
 			for (const [path, uids] of byPath) {
@@ -163,11 +150,9 @@ export async function deleteMail(
 			}
 		} catch (err) {
 			console.error("[deleteMail] IMAP per-thread delete failed:", err);
-			// proceed with DB cleanup; delta sync can reconcile later
 		}
 	}
 
-	// --- DB side ---
 	const allMessageIds = msgRows.map((r) => r.id);
 
 	await db.transaction(async (tx) => {
@@ -175,7 +160,6 @@ export async function deleteMail(
 			await tx.delete(messages).where(inArray(messages.id, allMessageIds));
 		}
 
-		// remove per-mailbox projections for just these threads in this mailbox
 		await tx
 			.delete(mailboxThreads)
 			.where(
@@ -185,7 +169,6 @@ export async function deleteMail(
 				),
 			);
 
-		// remove orphan threads (no messages anywhere)
 		await tx
 			.delete(threads)
 			.where(
