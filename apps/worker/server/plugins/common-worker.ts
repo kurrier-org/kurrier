@@ -40,7 +40,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 	);
 
 	worker.on("completed", async (job) => {
-		console.log(`${job.id} has completed!`);
+		console.log(`[COMMON] ${job.name} ${job.id} has completed!`);
 	});
 
 	worker.on("failed", (job, err) => {

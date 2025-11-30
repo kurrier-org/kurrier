@@ -43,6 +43,36 @@ export async function kvDel(key: string) {
 	return redis.del(PREFIX + key);
 }
 
+export async function kvIncrBy(key: string, amount: number) {
+    const fullKey = PREFIX + key;
+    return redis.incrby(fullKey, amount);
+}
+
+export async function kvIncrByTTL(
+    key: string,
+    amount: number,
+    ttlSec: number,
+): Promise<number> {
+    const fullKey = PREFIX + key;
+
+    const tx = redis.multi();
+    tx.incrby(fullKey, amount);
+    tx.expire(fullKey, ttlSec);
+
+    const res = await tx.exec();
+    if (!res) {
+        throw new Error("Redis transaction aborted");
+    }
+    const [incrResult] = res;
+    const [err, val] = incrResult;
+
+    if (err) {
+        throw err;
+    }
+
+    return Number(val);
+}
+
 export async function initRedis() {
 	return {
 		connection: redisConnection,

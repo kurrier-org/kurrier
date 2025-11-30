@@ -13,7 +13,7 @@ import {
 import { getServerEnv } from "@schema";
 const { SEARCH_REBUILD_ON_BOOT } = getServerEnv();
 
-export default defineNitroPlugin(async () => {
+export default defineNitroPlugin(async (nitroApp) => {
 	console.log("[typesense] boot");
 
 	const connection = (await getRedis()).connection;
@@ -54,7 +54,7 @@ export default defineNitroPlugin(async () => {
 	);
 
 	worker.on("completed", async (job) => {
-		console.log(`${job.id} has completed!`);
+		console.log(`[SEARCH] ${job.id} has completed!`);
 	});
 
 	worker.on("failed", (job, err) => {
@@ -62,4 +62,14 @@ export default defineNitroPlugin(async () => {
 	});
 
 	if (SEARCH_REBUILD_ON_BOOT === "true") await rebuild();
+
+    nitroApp.hooks.hookOnce("close", async () => {
+        console.info("Closing nitro server...");
+        console.info("Shutting down search worker!");
+        try {
+            await worker.close();
+        } catch (err: any) {
+            console.error("Error closing search worker:", err?.message ?? err);
+        }
+    });
 });

@@ -19,16 +19,16 @@ import {
 	updateSecret,
 } from "@db";
 import {
-	apiScopeList,
-	DomainIdentityFormSchema,
-	FormState,
-	getPublicEnv,
-	handleAction,
-	MailboxKindDisplay,
-	ProviderAccountFormSchema,
-	Providers,
-	SmtpAccountFormSchema,
-	SYSTEM_MAILBOXES,
+    apiScopeList, defaultImapQuota,
+    DomainIdentityFormSchema,
+    FormState,
+    getPublicEnv,
+    handleAction,
+    MailboxKindDisplay,
+    ProviderAccountFormSchema,
+    Providers,
+    SmtpAccountFormSchema,
+    SYSTEM_MAILBOXES,
 } from "@schema";
 import { currentSession, isSignedIn } from "@/lib/actions/auth";
 import { and, count, eq, sql, gte, desc } from "drizzle-orm";
@@ -489,6 +489,9 @@ export async function addNewEmailIdentity(
 
 		if (data.smtpAccountId) {
 			const identityData = IdentityInsertSchema.parse(data);
+            identityData.metaData = {
+                dailyQuota: Number(data.dailyQuota) || defaultImapQuota,
+            }
 			const [identity] = await rls((tx) =>
 				tx
 					.insert(identities)

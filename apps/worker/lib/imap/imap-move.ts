@@ -79,7 +79,6 @@ export const moveMail = async (
 		);
 	if (threadMsgs.length === 0) return;
 
-	// IMAP move (if applicable)
 	if (moveImap) {
 		type Group = { path: string; uids: number[]; messageIds: string[] };
 		const byPath = new Map<string, Group>();

@@ -158,13 +158,13 @@ function MailListHeader({
 							variant="subtle"
 							onClick={reload}
 							title="Sync"
-							disabled={
-								mailboxSync
-									? !identityIdRef.current ||
-										reloading ||
-										mailboxSync?.phase !== "IDLE"
-									: !identityIdRef.current || reloading
-							}
+							// disabled={
+							// 	mailboxSync
+							// 		? !identityIdRef.current ||
+							// 			reloading ||
+							// 			mailboxSync?.phase !== "IDLE"
+							// 		: !identityIdRef.current || reloading
+							// }
 							className="h-8 w-8"
 						>
 							<RotateCw className={reloading ? "animate-spin" : ""} size={16} />
