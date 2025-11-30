@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 0.0.99
+
+### Patch Changes
+
+- [`f189666`](https://github.com/kurrier-org/kurrier/commit/f1896660a73664dfa4ca8c56aacfe49ca3029c6d) Thanks [@krokhale](https://github.com/krokhale)! - refactored the backfill process and added worker pipeline and imap quota limits for the backfill process (BETA)
+
 ## 0.0.98
 
 ### Patch Changes
