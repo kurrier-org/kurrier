@@ -237,8 +237,14 @@ async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 export const startFullBackfill = async (
     imapInstances: Map<string, ImapFlow>,
 ) => {
-    const identitiesRows = await db.select().from(identities);
-    for (const identity of identitiesRows) {
+    const identitiesRows = await db.select().from(identities).where(
+        eq(identities.kind, "email")
+    );
+    const filteredRows = identitiesRows.filter((id) => {
+        return !!id.smtpAccountId
+    })
+
+    for (const identity of filteredRows) {
         const dailyQuotaBytes = getDailyQuota(identity as IdentityEntity);
         const quota = getOrInitQuota(identity.id, dailyQuotaBytes);
 

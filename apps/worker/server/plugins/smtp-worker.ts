@@ -69,11 +69,11 @@ export default defineNitroPlugin(async (nitroApp) => {
 
 
 			} else if (job.name === "imap:backfill-tick") {
-                console.log(`IMAP Backfill Tick triggered`);
+                console.info(`IMAP Backfill Tick triggered`);
                 await startFullBackfill(imapInstances).catch((err) => {
                     console.error(`imap:backfill-tick job failed:`, err);
                 })
-                console.log("IMAP Backfill Tick completed");
+                console.info("IMAP Backfill Tick completed");
                 return { success: true };
 
 			} else if (job.name === "imap:backfill-discover") {
@@ -94,12 +94,6 @@ export default defineNitroPlugin(async (nitroApp) => {
 				if (client) {
 					await deleteFolder(job.data, client);
 				}
-			} else if (job.name === "backfill") {
-				// const identityId = job.data.identityId;
-				// const client = await initSmtpClient(identityId, imapInstances);
-				// if (client?.authenticated && client?.usable) {
-				// 	await startBackfill(client, identityId);
-				// }
 			} else if (job.name === "imap:start-idle") {
 				const identityId = job.data.identityId as string;
 				await startRealtimeForIdentity(
@@ -127,7 +121,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 
     await scheduler.upsertJobScheduler(
         "imap-backfill-scheduler",
-        { pattern: "0 */2 * * * *" },
+        { every: 120000 },
         "imap:backfill-tick",
         {},
         {

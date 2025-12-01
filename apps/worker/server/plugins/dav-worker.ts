@@ -84,7 +84,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 	const scheduler = new JobScheduler("dav-worker", { connection });
 	await scheduler.upsertJobScheduler(
 		"dav-sync-scheduler",
-		{ every: 60000 },
+		{ every: 120000 },
 		"dav:sync",
 		{},
 		{
