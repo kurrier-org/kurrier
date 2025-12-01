@@ -1,5 +1,11 @@
 # @kurrier/worker
 
+## 0.1.30
+
+### Patch Changes
+
+- [`d883ece`](https://github.com/kurrier-org/kurrier/commit/d883ece0c4c0c4c36a050a3045ea8fd956fe681b) Thanks [@krokhale](https://github.com/krokhale)! - Minor cleanup and stability fixes for the new BETA ingestion pipeline
+
 ## 0.1.29
 
 ### Patch Changes
