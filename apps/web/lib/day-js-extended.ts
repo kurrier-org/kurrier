@@ -20,3 +20,8 @@ dayjs.extend(isSameOrAfter);
 dayjs.extend(advancedFormat);
 
 export const dayjsExtended = dayjs;
+
+export function getDayjsTz(defaultTz: string) {
+    return (input?: any) =>
+        input ? dayjs(input).tz(defaultTz) : dayjs().tz(defaultTz);
+}

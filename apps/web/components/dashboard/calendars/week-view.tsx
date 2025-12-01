@@ -1,9 +1,10 @@
 "use client";
 import React from "react";
-import dayjs from "dayjs";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { CalendarState } from "@schema";
-import {useParams} from "next/navigation";
+import { useParams } from "next/navigation";
+import CalendarDayHourBox from "@/components/dashboard/calendars/calendar-day-hour-box";
+import {getDayjsTz} from "@/lib/day-js-extended";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
@@ -15,17 +16,17 @@ function formatHourLabel(hour: number) {
 }
 
 export function WeekGrid() {
-    const { state } = useDynamicContext();
+    const { state } = useDynamicContext<CalendarState>();
     const params = useParams()
-    const { userTz } = (state as CalendarState) ?? {};
+    const dayjsTz = getDayjsTz(state.defaultCalendar.timezone)
 
     const baseDay =
         params.year && params.month && params.day
-            ? dayjs()
+            ? dayjsTz()
                 .year(Number(params.year))
                 .month(Number(params.month) - 1)
                 .date(Number(params.day))
-            : dayjs();
+            : dayjsTz();
 
     const startOfWeek = baseDay.startOf("week");
 
@@ -34,18 +35,17 @@ export function WeekGrid() {
         return {
             label: d.format("ddd").toUpperCase(),
             date: d.date(),
-            isSameDay: d.isSame(dayjs(), "day"),
+            isSameDay: d.isSame(dayjsTz(), "day"),
+            day: d,
         };
     });
-
-    const tzLabel = userTz ?? "Local";
 
     return (
         <div className="w-full h-full">
             <div className="overflow-hidden text-xs text-neutral-700">
                 <div className="grid grid-cols-[64px_repeat(7,1fr)] border-b dark:border-neutral-700 border-neutral-200 bg-neutral-50 dark:bg-neutral-800 w-full">
-                    <div className="flex items-center justify-start px-3 py-2 text-xxs text-neutral-500 dark:text-brand-foreground">
-                        {tzLabel}
+                    <div className="flex items-center justify-start px-3 py-2 text-xxs text-neutral-500 dark:text-brand-foreground cursor-default" title={state.calendarTzName}>
+                        {state.calendarTzAbbr}
                     </div>
                     {weekDays.map((d) => (
                         <div
@@ -75,18 +75,18 @@ export function WeekGrid() {
                             ))}
                         </div>
 
+
                         {weekDays.map((day, dayIndex) => (
                             <div
                                 key={`${day.label}-${dayIndex}`}
                                 className="relative border-r last:border-r-0 border-neutral-200 dark:border-neutral-700"
                             >
                                 {HOURS.map((hour) => (
-                                    <div
+                                    <CalendarDayHourBox
                                         key={`${dayIndex}-${hour}`}
-                                        className="h-12 border-b border-neutral-100 relative dark:border-neutral-700"
-                                    >
-                                        {/* event blocks will go here */}
-                                    </div>
+                                        day={day.day}
+                                        hour={hour}
+                                    />
                                 ))}
                             </div>
                         ))}

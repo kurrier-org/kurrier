@@ -19,17 +19,17 @@ import { users } from "./supabase-schema";
 import { authenticatedRole, authUid } from "drizzle-orm/supabase";
 import { sql } from "drizzle-orm";
 import {
-	AddressObjectJSON,
-	apiScopeList,
-	identityStatusList,
-	identityTypesList,
-	labelScopesList,
-	mailboxKindsList,
-	mailboxSyncPhase,
-	messagePriorityList,
-	messageStatesList,
-	providersList,
-	webHookList,
+    AddressObjectJSON,
+    apiScopeList, calendarBusyStatusList, calendarEventStatusList,
+    identityStatusList,
+    identityTypesList,
+    labelScopesList,
+    mailboxKindsList,
+    mailboxSyncPhase,
+    messagePriorityList,
+    messageStatesList,
+    providersList,
+    webHookList,
 } from "@schema";
 import { DnsRecord } from "@providers";
 import { nanoid } from "nanoid";
@@ -52,6 +52,9 @@ export const mailboxSyncPhaseEnum = pgEnum(
 export const ApiScopeEnum = pgEnum("api_scope", apiScopeList);
 export const WebHookEnum = pgEnum("webhook_list", webHookList);
 export const LabelScopeEnum = pgEnum("label_scope", labelScopesList);
+
+export const CalendarEventStatusEnum = pgEnum("calendar_event_status", calendarEventStatusList);
+export const CalendarBusyStatusEnum = pgEnum("calendar_busy_status", calendarBusyStatusList);
 
 export const secretsMeta = pgTable(
 	"secrets_meta",
@@ -1317,4 +1320,136 @@ export const addressBooks = pgTable(
 			using: sql`${t.ownerId} = ${authUid}`,
 		}),
 	],
+).enableRLS();
+
+
+
+// Calendar Tables
+
+export const calendars = pgTable(
+    "calendars",
+    {
+        id: uuid("id").defaultRandom().primaryKey(),
+        ownerId: uuid("owner_id")
+            .references(() => users.id)
+            .notNull()
+            .default(sql`auth.uid()`),
+        publicId: text("public_id")
+            .notNull()
+            .$defaultFn(() => nanoid(10)),
+
+        davAccountId: uuid("dav_account_id")
+            .references(() => davAccounts.id, { onDelete: "cascade" })
+            .notNull(),
+        davSyncToken: text("dav_sync_token"),
+        davCalendarId: integer("dav_calendar_id"),
+        remotePath: text("remote_path").notNull(),
+
+        name: text("name").notNull(),
+        slug: text("slug").notNull(),
+        color: text("color"),
+        timezone: text("timezone").notNull().default("UTC"),
+        isDefault: boolean("is_default").notNull().default(false),
+
+        createdAt: timestamp("created_at", { withTimezone: true })
+            .defaultNow()
+            .notNull(),
+        updatedAt: timestamp("updated_at", { withTimezone: true })
+            .defaultNow()
+            .notNull(),
+    },
+    (t) => [
+        uniqueIndex("ux_calendars_owner_slug").on(t.ownerId, t.slug),
+        index("ix_calendars_owner").on(t.ownerId),
+        index("ix_calendars_dav_account").on(t.davAccountId),
+        index("ix_calendars_default").on(t.ownerId, t.isDefault),
+
+        pgPolicy("calendars_select_own", {
+            for: "select",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("calendars_insert_own", {
+            for: "insert",
+            to: authenticatedRole,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("calendars_update_own", {
+            for: "update",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("calendars_delete_own", {
+            for: "delete",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+    ],
+).enableRLS();
+
+export const calendarEvents = pgTable(
+    "calendar_events",
+    {
+        id: uuid("id").defaultRandom().primaryKey(),
+        ownerId: uuid("owner_id")
+            .references(() => users.id)
+            .notNull()
+            .default(sql`auth.uid()`),
+
+        calendarId: uuid("calendar_id")
+            .references(() => calendars.id, { onDelete: "cascade" })
+            .notNull(),
+
+        title: text("title").notNull(),
+        description: text("description"),
+        location: text("location"),
+
+        isAllDay: boolean("is_all_day").notNull().default(false),
+
+        startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+        endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+
+        status: CalendarEventStatusEnum("status")
+            .notNull()
+            .default("confirmed"),
+
+        busyStatus: CalendarBusyStatusEnum("busy_status")
+            .notNull()
+            .default("busy"),
+
+        createdAt: timestamp("created_at", { withTimezone: true })
+            .defaultNow()
+            .notNull(),
+        updatedAt: timestamp("updated_at", { withTimezone: true })
+            .defaultNow()
+            .notNull(),
+    },
+    (t) => [
+        index("ix_calendar_events_owner").on(t.ownerId),
+        index("ix_calendar_events_calendar").on(t.calendarId),
+        index("ix_calendar_events_calendar_start").on(t.calendarId, t.startsAt),
+
+        pgPolicy("calendar_events_select_own", {
+            for: "select",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("calendar_events_insert_own", {
+            for: "insert",
+            to: authenticatedRole,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("calendar_events_update_own", {
+            for: "update",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("calendar_events_delete_own", {
+            for: "delete",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+    ],
 ).enableRLS();

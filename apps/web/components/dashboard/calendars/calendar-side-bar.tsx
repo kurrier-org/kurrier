@@ -5,10 +5,12 @@ import { DatePicker, type DatePickerProps } from "@mantine/dates";
 import dayjs, { Dayjs } from "dayjs";
 import { setSidebarWidth } from "@/lib/utils";
 import { useParams, useRouter } from "next/navigation";
+import { CalendarEntity } from "@db";
 
-function CalendarSideBar() {
+function CalendarSideBar({defaultCalendar}: {defaultCalendar: CalendarEntity}) {
     const today = dayjs();
     const params = useParams();
+    const publicId = params.calendarPublicId || defaultCalendar?.publicId;
     const router = useRouter();
 
     const activeView = (params.view as string) || "week";
@@ -76,6 +78,13 @@ function CalendarSideBar() {
         }
 
         const newDay = dayjs(value);
+        if (newDay.isSame(dayjs(), "day")) {
+            setSelected(today);
+            setCalendarDate(today.toDate());
+            router.push("/dashboard/calendar");
+            return;
+        }
+
         setSelected(newDay);
         setCalendarDate(newDay.toDate());
 
@@ -83,7 +92,7 @@ function CalendarSideBar() {
         const month = newDay.month() + 1;
         const day = newDay.date();
 
-        router.push(`/dashboard/calendar/${activeView}/${year}/${month}/${day}`);
+        router.push(`/dashboard/calendar/${publicId}/${activeView}/${year}/${month}/${day}`);
     };
 
     return (
@@ -100,7 +109,7 @@ function CalendarSideBar() {
                             onClick={() => {
                                 setSelected(today);
                                 setCalendarDate(today.toDate());
-                                router.push("/dashboard/calendar");
+                                router.push(`/dashboard/calendar`);
                             }}
                         >
                             Today

@@ -12,7 +12,7 @@ function CalendarTopBar() {
 
     const {theme} =  useAppearance()
     const router = useRouter()
-    const { setState } = useDynamicContext()
+    const { state, setState } = useDynamicContext<CalendarState>()
     const {view} = useParams()
     const params = useParams()
     const activeView = view ?? "week"
@@ -66,7 +66,7 @@ function CalendarTopBar() {
         if (next.isSame(dayjs(), "day")) {
             router.push(`/dashboard/calendar`);
         } else {
-            router.push(`/dashboard/calendar/${activeView}/${year}/${month}/${day}`);
+            router.push(`/dashboard/calendar/${state.defaultCalendar.publicId}/${activeView}/${year}/${month}/${day}`);
         }
     };
 
@@ -74,10 +74,6 @@ function CalendarTopBar() {
     const next = () => shiftCurrentDay(1);
 
     const goToToday = () => {
-        setState((prev: CalendarState) => ({
-            ...prev,
-            currentDay: dayjs(),
-        }));
         if(activeView === "week") {
             router.push(`/dashboard/calendar`);
         } else {

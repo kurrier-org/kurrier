@@ -134,6 +134,20 @@
       "when": 1764122627240,
       "tag": "0018_clumsy_serpent_society",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1764336065435,
+      "tag": "0019_crazy_blink",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1764336254386,
+      "tag": "0020_minor_cloak",
+      "breakpoints": true
     }
   ]
 }

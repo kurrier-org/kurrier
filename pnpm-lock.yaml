@@ -29,6 +29,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.75.0
         version: 2.81.1
+      '@vvo/tzdb':
+        specifier: ^6.197.0
+        version: 6.197.0
       bullmq:
         specifier: ^5.61.0
         version: 5.63.2
@@ -3137,6 +3140,9 @@ packages:
     resolution: {integrity: sha512-UEq+eF0ocEf9WQCV1gktxKhha36KDs7jln5qii6UpPf5clMqDc0p3E7d9l2Smx0i9Pm1qpq4S4lLfNl97bbv6w==}
     engines: {node: '>=18'}
     hasBin: true
+
+  '@vvo/tzdb@6.197.0':
+    resolution: {integrity: sha512-SB2jDs9lnYvYaGbzj/KMJrq7YSRshbtL4z1pN5evvzMlKWpAnsEtSVcXd5p5mY5NGwc+/dm0iv4wZxlg9vtr5w==}
 
   '@zone-eu/mailsplit@5.4.7':
     resolution: {integrity: sha512-jApX86aDgolMz08pP20/J2zcns02NSK3zSiYouf01QQg4250L+GUAWSWicmS7eRvs+Z7wP7QfXrnkaTBGrIpwQ==}
@@ -9490,6 +9496,8 @@ snapshots:
       - encoding
       - rollup
       - supports-color
+
+  '@vvo/tzdb@6.197.0': {}
 
   '@zone-eu/mailsplit@5.4.7':
     dependencies:

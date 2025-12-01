@@ -9,6 +9,7 @@ import CalendarSideBar from "@/components/dashboard/calendars/calendar-side-bar"
 import NewContactButton from "@/components/dashboard/contacts/new-contact-button";
 import * as React from "react";
 import NewEventButton from "@/components/dashboard/calendars/new-event-button";
+import {fetchDefaultCalendar} from "@/lib/actions/calendar";
 
 export default async function DashboardLayout({
 	children,
@@ -21,6 +22,7 @@ export default async function DashboardLayout({
         isSignedIn(),
     ]);
     const avatar = await getGravatarUrl(String(user?.email));
+    const defaultCalendar = await fetchDefaultCalendar();
 
 	return (
 		<>
@@ -29,7 +31,7 @@ export default async function DashboardLayout({
                 user={user}
                 avatar={avatar}
                 identityMailboxes={identityMailboxes}
-                sidebarSectionContent={<CalendarSideBar />}
+                sidebarSectionContent={<CalendarSideBar defaultCalendar={defaultCalendar} />}
                 sidebarTopContent={<>
                     <div className={"-mt-1"}>
                         <NewEventButton hideOnMobile={true} />

@@ -4,10 +4,20 @@ import { Separator } from "@/components/ui/separator";
 import CalendarTopBar from "@/components/dashboard/calendars/calendar-top-bar";
 import {DynamicContextProvider} from "@/hooks/use-dynamic-context";
 import {CalendarState} from "@schema";
+import {fetchDefaultCalendar} from "@/lib/actions/calendar";
+import {getTimeZones} from "@vvo/tzdb";
 
-export default async function ContactsLayout({ children }: { children: React.ReactNode }) {
+export default async function CalendarLayout({ children }: { children: React.ReactNode }) {
 
-    const initialState: CalendarState = {}
+    const defaultCalendar = await fetchDefaultCalendar();
+    const timeZones = getTimeZones({ includeUtc: true });
+    let defaultTzAbbr = "UTC";
+    const abbr = timeZones.find((tz) => tz.name === defaultCalendar.timezone)?.abbreviation;
+    const tzAbbr = abbr ?? defaultTzAbbr
+    const tzName = timeZones.find((tz) => tz.abbreviation === tzAbbr)?.name ?? tzAbbr;
+
+    const initialState: CalendarState = {defaultCalendar, calendarTzAbbr: tzAbbr, calendarTzName: tzName};
+
 
 	return (
 		<>
