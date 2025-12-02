@@ -11,6 +11,7 @@
 		"build:worker": "dotenvx run -f db/.env.develop -- pnpm --prefix apps/worker build",
 		"deploy:docs": "git subtree push --prefix apps/docs dokku-docs main",
 		"build:develop": "dotenvx run -f db/.env.develop -- pnpm --prefix apps/web build",
+        "deploy:db": "git subtree split --prefix=db -b deploy && git push origin deploy",
 		"lint": "biome check",
 		"format": "biome format --write",
 		"changeset": "changeset",
