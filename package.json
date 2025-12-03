@@ -38,6 +38,7 @@
 		"@aws-sdk/client-sts": "^3.910.0",
 		"@sindresorhus/slugify": "^3.0.0",
 		"@supabase/supabase-js": "^2.75.0",
+		"@vvo/tzdb": "^6.197.0",
 		"bullmq": "^5.61.0",
 		"crypto": "^1.0.1",
 		"dayjs": "^1.11.19",

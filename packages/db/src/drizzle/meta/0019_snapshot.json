@@ -1,6 +1,6 @@
 {
-	"id": "93e35732-80f4-4112-a203-e614a2e3b54b",
-	"prevId": "0c80f2f6-0fb7-47ce-b7b2-844f1c0acde3",
+	"id": "6e397453-a6d6-44c8-97cc-f741c196a3df",
+	"prevId": "93e35732-80f4-4112-a203-e614a2e3b54b",
 	"version": "7",
 	"dialect": "postgresql",
 	"tables": {
@@ -552,6 +552,428 @@
 					"for": "DELETE",
 					"to": ["authenticated"],
 					"using": "\"app_migrations\".\"owner_id\" = (select auth.uid())"
+				}
+			},
+			"checkConstraints": {},
+			"isRLSEnabled": true
+		},
+		"public.calendar_events": {
+			"name": "calendar_events",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"owner_id": {
+					"name": "owner_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "auth.uid()"
+				},
+				"calendar_id": {
+					"name": "calendar_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"title": {
+					"name": "title",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"description": {
+					"name": "description",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"location": {
+					"name": "location",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"is_all_day": {
+					"name": "is_all_day",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": true,
+					"default": false
+				},
+				"starts_at": {
+					"name": "starts_at",
+					"type": "timestamp with time zone",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"ends_at": {
+					"name": "ends_at",
+					"type": "timestamp with time zone",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"status": {
+					"name": "status",
+					"type": "calendar_event_status",
+					"typeSchema": "public",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "'confirmed'"
+				},
+				"busy_status": {
+					"name": "busy_status",
+					"type": "calendar_busy_status",
+					"typeSchema": "public",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "'busy'"
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp with time zone",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp with time zone",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {
+				"ix_calendar_events_owner": {
+					"name": "ix_calendar_events_owner",
+					"columns": [
+						{
+							"expression": "owner_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"ix_calendar_events_calendar": {
+					"name": "ix_calendar_events_calendar",
+					"columns": [
+						{
+							"expression": "calendar_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"ix_calendar_events_calendar_start": {
+					"name": "ix_calendar_events_calendar_start",
+					"columns": [
+						{
+							"expression": "calendar_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						},
+						{
+							"expression": "starts_at",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				}
+			},
+			"foreignKeys": {
+				"calendar_events_owner_id_users_id_fk": {
+					"name": "calendar_events_owner_id_users_id_fk",
+					"tableFrom": "calendar_events",
+					"tableTo": "users",
+					"schemaTo": "auth",
+					"columnsFrom": ["owner_id"],
+					"columnsTo": ["id"],
+					"onDelete": "no action",
+					"onUpdate": "no action"
+				},
+				"calendar_events_calendar_id_calendars_id_fk": {
+					"name": "calendar_events_calendar_id_calendars_id_fk",
+					"tableFrom": "calendar_events",
+					"tableTo": "calendars",
+					"columnsFrom": ["calendar_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {
+				"calendar_events_select_own": {
+					"name": "calendar_events_select_own",
+					"as": "PERMISSIVE",
+					"for": "SELECT",
+					"to": ["authenticated"],
+					"using": "\"calendar_events\".\"owner_id\" = (select auth.uid())"
+				},
+				"calendar_events_insert_own": {
+					"name": "calendar_events_insert_own",
+					"as": "PERMISSIVE",
+					"for": "INSERT",
+					"to": ["authenticated"],
+					"withCheck": "\"calendar_events\".\"owner_id\" = (select auth.uid())"
+				},
+				"calendar_events_update_own": {
+					"name": "calendar_events_update_own",
+					"as": "PERMISSIVE",
+					"for": "UPDATE",
+					"to": ["authenticated"],
+					"using": "\"calendar_events\".\"owner_id\" = (select auth.uid())",
+					"withCheck": "\"calendar_events\".\"owner_id\" = (select auth.uid())"
+				},
+				"calendar_events_delete_own": {
+					"name": "calendar_events_delete_own",
+					"as": "PERMISSIVE",
+					"for": "DELETE",
+					"to": ["authenticated"],
+					"using": "\"calendar_events\".\"owner_id\" = (select auth.uid())"
+				}
+			},
+			"checkConstraints": {},
+			"isRLSEnabled": true
+		},
+		"public.calendars": {
+			"name": "calendars",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"owner_id": {
+					"name": "owner_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "auth.uid()"
+				},
+				"dav_account_id": {
+					"name": "dav_account_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"dav_sync_token": {
+					"name": "dav_sync_token",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"dav_calendar_id": {
+					"name": "dav_calendar_id",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"remote_path": {
+					"name": "remote_path",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"name": {
+					"name": "name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"slug": {
+					"name": "slug",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"color": {
+					"name": "color",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"timezone": {
+					"name": "timezone",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "'UTC'"
+				},
+				"is_default": {
+					"name": "is_default",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": true,
+					"default": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp with time zone",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp with time zone",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {
+				"ux_calendars_owner_slug": {
+					"name": "ux_calendars_owner_slug",
+					"columns": [
+						{
+							"expression": "owner_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						},
+						{
+							"expression": "slug",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": true,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"ix_calendars_owner": {
+					"name": "ix_calendars_owner",
+					"columns": [
+						{
+							"expression": "owner_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"ix_calendars_dav_account": {
+					"name": "ix_calendars_dav_account",
+					"columns": [
+						{
+							"expression": "dav_account_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"ix_calendars_default": {
+					"name": "ix_calendars_default",
+					"columns": [
+						{
+							"expression": "owner_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						},
+						{
+							"expression": "is_default",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				}
+			},
+			"foreignKeys": {
+				"calendars_owner_id_users_id_fk": {
+					"name": "calendars_owner_id_users_id_fk",
+					"tableFrom": "calendars",
+					"tableTo": "users",
+					"schemaTo": "auth",
+					"columnsFrom": ["owner_id"],
+					"columnsTo": ["id"],
+					"onDelete": "no action",
+					"onUpdate": "no action"
+				},
+				"calendars_dav_account_id_dav_accounts_id_fk": {
+					"name": "calendars_dav_account_id_dav_accounts_id_fk",
+					"tableFrom": "calendars",
+					"tableTo": "dav_accounts",
+					"columnsFrom": ["dav_account_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {
+				"calendars_select_own": {
+					"name": "calendars_select_own",
+					"as": "PERMISSIVE",
+					"for": "SELECT",
+					"to": ["authenticated"],
+					"using": "\"calendars\".\"owner_id\" = (select auth.uid())"
+				},
+				"calendars_insert_own": {
+					"name": "calendars_insert_own",
+					"as": "PERMISSIVE",
+					"for": "INSERT",
+					"to": ["authenticated"],
+					"withCheck": "\"calendars\".\"owner_id\" = (select auth.uid())"
+				},
+				"calendars_update_own": {
+					"name": "calendars_update_own",
+					"as": "PERMISSIVE",
+					"for": "UPDATE",
+					"to": ["authenticated"],
+					"using": "\"calendars\".\"owner_id\" = (select auth.uid())",
+					"withCheck": "\"calendars\".\"owner_id\" = (select auth.uid())"
+				},
+				"calendars_delete_own": {
+					"name": "calendars_delete_own",
+					"as": "PERMISSIVE",
+					"for": "DELETE",
+					"to": ["authenticated"],
+					"using": "\"calendars\".\"owner_id\" = (select auth.uid())"
 				}
 			},
 			"checkConstraints": {},
@@ -3791,6 +4213,16 @@
 				"templates:read",
 				"templates:write"
 			]
+		},
+		"public.calendar_busy_status": {
+			"name": "calendar_busy_status",
+			"schema": "public",
+			"values": ["busy", "free", "tentative", "out_of_office"]
+		},
+		"public.calendar_event_status": {
+			"name": "calendar_event_status",
+			"schema": "public",
+			"values": ["confirmed", "tentative", "cancelled"]
 		},
 		"public.identity_kind": {
 			"name": "identity_kind",

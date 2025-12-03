@@ -22,8 +22,8 @@ export default defineNitroPlugin(async (nitroApp) => {
 				job.id,
 			);
 			switch (job.name) {
-                case "dav:create-account":
-                    return createAccount(job.data.userId);
+				case "dav:create-account":
+					return createAccount(job.data.userId);
 				case "dav:seed-account":
 					return seedAccount(job.data.userId);
 				case "dav:update-password":
@@ -32,32 +32,32 @@ export default defineNitroPlugin(async (nitroApp) => {
 					return createContact(job.data.contactId, job.data.ownerId);
 				case "dav:update-contact":
 					return updateContact(job.data.contactId, job.data.ownerId);
-                case "dav:create-contacts-batch": {
-                    const { ownerId, contactIds } = job.data;
+				case "dav:create-contacts-batch": {
+					const { ownerId, contactIds } = job.data;
 
-                    console.log(
-                        `[DAV WORKER] Processing contacts batch (${contactIds.length})`
-                    );
-                    const results = [];
-                    for (const id of contactIds) {
-                        try {
-                            const r = await createContact(id, ownerId);
-                            results.push({ id, success: true, result: r });
-                        } catch (err: any) {
-                            results.push({
-                                id,
-                                success: false,
-                                error: err?.message ?? err,
-                            });
-                        }
-                    }
+					console.log(
+						`[DAV WORKER] Processing contacts batch (${contactIds.length})`,
+					);
+					const results = [];
+					for (const id of contactIds) {
+						try {
+							const r = await createContact(id, ownerId);
+							results.push({ id, success: true, result: r });
+						} catch (err: any) {
+							results.push({
+								id,
+								success: false,
+								error: err?.message ?? err,
+							});
+						}
+					}
 
-                    return {
-                        ok: true,
-                        total: contactIds.length,
-                        results,
-                    };
-                }
+					return {
+						ok: true,
+						total: contactIds.length,
+						results,
+					};
+				}
 				case "dav:delete-contact":
 					return deleteContact({
 						contactId: job.data.contactId,

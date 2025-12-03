@@ -72,12 +72,12 @@ export async function createThumbnail(
 //
 
 export function setSidebarWidth(width: string) {
-    if (typeof document === "undefined") return;
+	if (typeof document === "undefined") return;
 
-    const el = document.querySelector<HTMLElement>(
-        '[data-slot="sidebar-wrapper"]',
-    );
-    if (!el) return;
+	const el = document.querySelector<HTMLElement>(
+		'[data-slot="sidebar-wrapper"]',
+	);
+	if (!el) return;
 
-    el.style.setProperty("--sidebar-width", width);
+	el.style.setProperty("--sidebar-width", width);
 }

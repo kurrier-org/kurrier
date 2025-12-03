@@ -13,6 +13,8 @@ import {
 	mailboxThreadLabels,
 	contacts,
 	addressBooks,
+	calendars,
+	calendarEvents,
 } from "./schema";
 import { decryptedSecrets } from "./supabase-schema";
 import { z } from "zod";
@@ -89,3 +91,10 @@ export type ContactCreate = typeof contacts.$inferInsert;
 export type ContactEntity = typeof contacts.$inferSelect;
 
 export type AddressBookEntity = typeof addressBooks.$inferSelect;
+
+export const CalendarInsertSchema = createInsertSchema(calendars);
+export type CalendarEntity = typeof calendars.$inferSelect;
+
+export const CalendarEventInsertSchema = createInsertSchema(calendarEvents);
+export const CalendarEventUpdateSchema = createUpdateSchema(calendarEvents);
+export type CalendarEventEntity = typeof calendarEvents.$inferSelect;

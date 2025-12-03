@@ -30,7 +30,11 @@ const SEARCH_BATCH_SIZE = 100;
 // const WEBHOOK_BATCH_SIZE = 100;
 const FLUSH_INTERVAL_MS = 1000;
 
-type SearchJob = { messageId: string, contactId: string | null, ownerId?: string };
+type SearchJob = {
+	messageId: string;
+	contactId: string | null;
+	ownerId?: string;
+};
 type WebhookJob = { message: any; rawEmail: string };
 
 let searchBuffer: SearchJob[] = [];
@@ -41,12 +45,13 @@ async function flushBatches() {
 	if (!searchBuffer.length && !webhookBuffer.length) return;
 
 	try {
-		const { searchIngestQueue, commonWorkerQueue, davWorkerQueue } = await getRedis();
+		const { searchIngestQueue, commonWorkerQueue, davWorkerQueue } =
+			await getRedis();
 
 		if (searchBuffer.length) {
 			const messageIds = searchBuffer.map((job) => job.messageId);
 			const contactIds = searchBuffer.map((job) => job.contactId);
-            const ownerId = searchBuffer[0].ownerId;
+			const ownerId = searchBuffer[0].ownerId;
 
 			await searchIngestQueue.add(
 				"addBatch",
@@ -54,17 +59,17 @@ async function flushBatches() {
 				{ removeOnComplete: true },
 			);
 
-            await davWorkerQueue.add(
-                "dav:create-contacts-batch",
-                {
-                    contactIds: contactIds,
-                    ownerId
-                },
-                {
-                    removeOnComplete: true,
-                    removeOnFail: true,
-                }
-            );
+			await davWorkerQueue.add(
+				"dav:create-contacts-batch",
+				{
+					contactIds: contactIds,
+					ownerId,
+				},
+				{
+					removeOnComplete: true,
+					removeOnFail: true,
+				},
+			);
 
 			searchBuffer = [];
 		}
@@ -184,7 +189,7 @@ export async function upsertContactsFromMessage(
 	const addr = getFromAddress(parsed);
 	if (!addr) return;
 
-    let contactId: string | null = null;
+	let contactId: string | null = null;
 	const email = addr.email;
 	const displayName = addr.name;
 
@@ -218,8 +223,11 @@ export async function upsertContactsFromMessage(
 			profilePictureXs: null,
 		};
 
-		const [contact] = await db.insert(contacts).values(newContact as ContactCreate).returning();
-        contactId = contact.id;
+		const [contact] = await db
+			.insert(contacts)
+			.values(newContact as ContactCreate)
+			.returning();
+		contactId = contact.id;
 		return contactId;
 	}
 
@@ -241,9 +249,9 @@ export async function upsertContactsFromMessage(
 			lastName,
 		})
 		.where(eq(contacts.id, contact.id));
-    contactId = contact.id;
+	contactId = contact.id;
 
-    return contactId;
+	return contactId;
 }
 
 /**
@@ -387,7 +395,11 @@ export async function parseAndStoreEmail(
 		await db.insert(messageAttachments).values(parsedRow).returning();
 	}
 
-	searchBuffer.push({ messageId: message.id, contactId: String(contactId), ownerId });
+	searchBuffer.push({
+		messageId: message.id,
+		contactId: String(contactId),
+		ownerId,
+	});
 	if (searchBuffer.length >= SEARCH_BATCH_SIZE) {
 		await flushBatches();
 	} else {
