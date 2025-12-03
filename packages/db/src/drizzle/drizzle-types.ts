@@ -1,18 +1,20 @@
 import {
-    providers,
-    smtpAccounts,
-    identities,
-    mailboxes,
-    messages,
-    threads,
-    messageAttachments,
-    mailboxSync,
-    mailboxThreads,
-    webhooks,
-    labels,
-    mailboxThreadLabels,
-    contacts,
-    addressBooks, calendars,
+	providers,
+	smtpAccounts,
+	identities,
+	mailboxes,
+	messages,
+	threads,
+	messageAttachments,
+	mailboxSync,
+	mailboxThreads,
+	webhooks,
+	labels,
+	mailboxThreadLabels,
+	contacts,
+	addressBooks,
+	calendars,
+	calendarEvents,
 } from "./schema";
 import { decryptedSecrets } from "./supabase-schema";
 import { z } from "zod";
@@ -92,3 +94,7 @@ export type AddressBookEntity = typeof addressBooks.$inferSelect;
 
 export const CalendarInsertSchema = createInsertSchema(calendars);
 export type CalendarEntity = typeof calendars.$inferSelect;
+
+export const CalendarEventInsertSchema = createInsertSchema(calendarEvents);
+export const CalendarEventUpdateSchema = createUpdateSchema(calendarEvents);
+export type CalendarEventEntity = typeof calendarEvents.$inferSelect;

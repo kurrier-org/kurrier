@@ -2,7 +2,7 @@ import { db, labels } from "@db";
 import { and, eq } from "drizzle-orm";
 import { LabelScope } from "@schema";
 // import { seedAccount } from "../../../lib/dav/dav-seed-account";
-import {createAccount} from "../../../lib/dav/dav-create-account";
+import { createAccount } from "../../../lib/dav/dav-create-account";
 
 const seedFavoriteLabel = async (userId: string) => {
 	const [existing] = await db

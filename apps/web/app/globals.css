@@ -392,9 +392,7 @@
 }
 
 @theme inline {
-
-    --text-xxs: 0.625rem;
-
+	--text-xxs: 0.625rem;
 
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
@@ -468,23 +466,23 @@
 }
 
 .sidebar-animation {
-    transition: width 500ms ease-in-out;
-    transition-property: width, flex-basis;
+	transition: width 500ms ease-in-out;
+	transition-property: width, flex-basis;
 }
 
 @layer utilities {
-    @keyframes weekFade {
-        from {
-            opacity: 0;
-            transform: translateY(6px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
+	@keyframes weekFade {
+		from {
+			opacity: 0;
+			transform: translateY(6px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
 
-    .animate-weekFade {
-        animation: weekFade 0.35s ease forwards;
-    }
+	.animate-weekFade {
+		animation: weekFade 0.35s ease forwards;
+	}
 }

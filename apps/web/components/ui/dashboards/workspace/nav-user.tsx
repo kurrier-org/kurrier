@@ -1,13 +1,6 @@
 "use client";
 
-import {
-	BadgeCheck,
-	Bell,
-	ChevronsUpDown,
-	CreditCard,
-	LogOut,
-	Sparkles,
-} from "lucide-react";
+import { ChevronsUpDown, LogOut } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -26,16 +19,23 @@ import {
 } from "@/components/ui/sidebar";
 import { UserResponse } from "@supabase/supabase-js";
 import { Avatar as MantineAvatar } from "@mantine/core";
-import { signOut } from "@/lib/actions/auth";
+import { getGravatarUrl, signOut } from "@/lib/actions/auth";
+import { useEffect, useState } from "react";
 
-export function NavUser({
-	user,
-	avatar,
-}: {
-	user: UserResponse["data"]["user"];
-	avatar: string;
-}) {
+export function NavUser({ user }: { user: UserResponse["data"]["user"] }) {
 	const { isMobile } = useSidebar();
+	const [gravatarUrl, setGravatarUrl] = useState<string | null>(null);
+
+	const fetchGravatar = async () => {
+		const avatar = await getGravatarUrl(String(user?.email));
+		setGravatarUrl(avatar);
+	};
+
+	useEffect(() => {
+		if (user) {
+			fetchGravatar();
+		}
+	}, [user]);
 
 	return (
 		<SidebarMenu>
@@ -47,8 +47,10 @@ export function NavUser({
 							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground md:h-8 md:p-0"
 						>
 							<Avatar className="h-8 w-8 rounded-lg">
-								<AvatarImage src={avatar} alt={user?.email} />
-								<AvatarFallback className="rounded-lg">CN</AvatarFallback>
+								{gravatarUrl && (
+									<AvatarImage src={gravatarUrl} alt={user?.email} />
+								)}
+								<AvatarFallback className="rounded-lg">K</AvatarFallback>
 							</Avatar>
 							<div className="grid flex-1 text-left text-sm leading-tight">
 								<span className="truncate font-medium">{user?.email}</span>
@@ -66,7 +68,9 @@ export function NavUser({
 						<DropdownMenuLabel className="p-0 font-normal">
 							<div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
 								<Avatar className="h-8 w-8 rounded-lg">
-									<AvatarImage src={avatar} alt={user?.email} />
+									{gravatarUrl && (
+										<AvatarImage src={gravatarUrl} alt={user?.email} />
+									)}
 									<MantineAvatar name={user?.email} color="initials" />
 								</Avatar>
 								<div className="grid flex-1 text-left text-sm leading-tight">
