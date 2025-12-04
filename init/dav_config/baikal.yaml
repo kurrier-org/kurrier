@@ -1,6 +1,6 @@
 system:
     configured_version: 0.10.1
-    timezone: Europe/Paris
+    timezone: UTC
     card_enabled: true
     cal_enabled: true
     dav_auth_type: Digest
@@ -16,7 +16,7 @@ database:
     mysql_dbname: ''
     mysql_username: ''
     mysql_password: ''
-    encryption_key: 785d0a668cb856cefed490b9a18d5332
+    encryption_key: d91aa22860b46307805b82e74cf3372d
     pgsql_host: ''
     pgsql_dbname: ''
     pgsql_username: ''
