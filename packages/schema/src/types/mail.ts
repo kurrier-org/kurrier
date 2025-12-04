@@ -112,12 +112,12 @@ export type MailerSendMailOptions = {
 };
 
 export const imapQuotaList = [
-    { label: "250 MB / day", value: 250 * 1024 * 1024 },
-    { label: "500 MB / day", value: 500 * 1024 * 1024 },
-    { label: "1 GB / day", value: 1 * 1024 * 1024 * 1024 },
-    { label: "2 GB / day", value: 2 * 1024 * 1024 * 1024 },
-    { label: "3 GB / day", value: 3 * 1024 * 1024 * 1024 },
-    { label: "5 GB / day", value: 5 * 1024 * 1024 * 1024 },
+	{ label: "250 MB / day", value: 250 * 1024 * 1024 },
+	{ label: "500 MB / day", value: 500 * 1024 * 1024 },
+	{ label: "1 GB / day", value: 1 * 1024 * 1024 * 1024 },
+	{ label: "2 GB / day", value: 2 * 1024 * 1024 * 1024 },
+	{ label: "3 GB / day", value: 3 * 1024 * 1024 * 1024 },
+	{ label: "5 GB / day", value: 5 * 1024 * 1024 * 1024 },
 ] as const;
 
 export const defaultImapQuota = 500 * 1024 * 1024;

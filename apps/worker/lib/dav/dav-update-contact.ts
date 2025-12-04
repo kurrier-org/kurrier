@@ -43,7 +43,6 @@ export async function updateContactViaHttp(opts: {
 		"Content-Type": "text/vcard; charset=utf-8",
 	};
 
-	// const ifMatch = etag;
 	const ifMatch = `"${etag}"`;
 	if (ifMatch) {
 		headers["If-Match"] = ifMatch;

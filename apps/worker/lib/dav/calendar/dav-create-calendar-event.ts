@@ -1,25 +1,26 @@
+import DigestFetch from "digest-fetch";
 import {
 	db,
-	contacts,
-	addressBooks,
 	davAccounts,
 	secretsMeta,
 	getSecretAdmin,
+	calendarEvents,
+	calendars,
 } from "@db";
 import { and, desc, eq } from "drizzle-orm";
-import DigestFetch from "digest-fetch";
-import { buildVCard } from "./dav-build-card";
-import { normalizeEtag } from "./sync/dav-sync-db";
+import { getDayjsTz } from "@common";
+import { normalizeEtag } from "../sync/dav-sync-db";
+import { buildICalEvent } from "./dav-build-cal-event";
 
-export async function createContactViaHttp(opts: {
-	carddata: string;
+async function createCalendarObjectViaHttp(opts: {
+	icalData: string;
 	davBaseUrl: string;
 	username: string;
 	password: string;
 	collectionPath: string;
 	davUri: string;
 }) {
-	const { carddata, davBaseUrl, username, password, collectionPath, davUri } =
+	const { icalData, davBaseUrl, username, password, collectionPath, davUri } =
 		opts;
 
 	const client = new DigestFetch(username, password);
@@ -32,16 +33,16 @@ export async function createContactViaHttp(opts: {
 	const res = await digestFetch(url, {
 		method: "PUT",
 		headers: {
-			"Content-Type": "text/vcard; charset=utf-8",
+			"Content-Type": "text/calendar; charset=utf-8",
 			"If-None-Match": "*",
 		},
-		body: carddata,
+		body: icalData,
 	});
 
 	if (!(res.status === 200 || res.status === 201 || res.status === 204)) {
 		const text = await res.text().catch(() => "");
 		throw new Error(
-			`CardDAV PUT failed (${res.status} ${res.statusText}): ${text}`,
+			`CalDAV PUT failed (${res.status} ${res.statusText}): ${text}`,
 		);
 	}
 
@@ -49,28 +50,27 @@ export async function createContactViaHttp(opts: {
 	return { etag };
 }
 
-export const createContact = async (contactId: string, ownerId: string) => {
-	const [contact] = await db
+export const createCalendarEvent = async (eventId: string) => {
+	const [event] = await db
 		.select()
-		.from(contacts)
-		.where(and(eq(contacts.id, contactId), eq(contacts.ownerId, ownerId)));
+		.from(calendarEvents)
+		.where(eq(calendarEvents.id, eventId));
 
-	if (!contact) return;
+	if (!event) return;
 
-	const [book] = await db
+	const [calendar] = await db
 		.select()
-		.from(addressBooks)
+		.from(calendars)
 		.where(
-			and(eq(addressBooks.ownerId, ownerId), eq(addressBooks.isDefault, true)),
+			and(eq(calendars.ownerId, event.ownerId), eq(calendars.isDefault, true)),
 		);
 
-	if (!book) return;
-	const parts = book.remotePath.split("/");
-	if (parts.length !== 3 || parts[0] !== "addressbooks") return;
+	if (!calendar) return;
+
+	const parts = calendar.remotePath.split("/");
+	if (parts.length !== 3 || parts[0] !== "calendars") return;
 
 	const davUsername = parts[1];
-
-	const carddata = await buildVCard(contact);
 
 	const [secretRow] = await db
 		.select({
@@ -78,38 +78,41 @@ export const createContact = async (contactId: string, ownerId: string) => {
 			metaId: secretsMeta.id,
 		})
 		.from(davAccounts)
-		.where(eq(davAccounts.id, book.davAccountId))
+		.where(eq(davAccounts.id, calendar.davAccountId))
 		.leftJoin(secretsMeta, eq(davAccounts.secretId, secretsMeta.id))
 		.orderBy(desc(davAccounts.createdAt));
 
 	const secret = await getSecretAdmin(String(secretRow?.metaId));
 	const passwordFromSecret = secret?.vault?.decrypted_secret;
+
 	if (!passwordFromSecret) {
 		console.error(
 			"No password found in secret for DAV account",
-			book.davAccountId,
+			calendar.davAccountId,
 		);
 		return;
 	}
 
-	const davUri = `${contact.id}.vcf`;
-	const { etag } = await createContactViaHttp({
-		carddata,
+	const dayjsTz = getDayjsTz(calendar.timezone || "UTC");
+	const icalData = buildICalEvent(event, dayjsTz);
+	const davUri = `${event.id}.ics`;
+	const { etag } = await createCalendarObjectViaHttp({
+		icalData,
 		davBaseUrl: `${process.env.DAV_URL}/dav.php`,
 		username: davUsername,
 		password: passwordFromSecret,
-		collectionPath: book.remotePath,
+		collectionPath: calendar.remotePath,
 		davUri,
 	});
 
 	await db
-		.update(contacts)
+		.update(calendarEvents)
 		.set({
 			davUri,
 			davEtag: normalizeEtag(etag),
 			updatedAt: new Date(),
 		})
-		.where(eq(contacts.id, contact.id));
+		.where(eq(calendarEvents.id, event.id));
 
 	return { success: true };
 };

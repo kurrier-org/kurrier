@@ -55,3 +55,6 @@ CREATE POLICY "calendars_update_own" ON "calendars" AS PERMISSIVE FOR UPDATE TO 
 CREATE POLICY "calendars_delete_own" ON "calendars" AS PERMISSIVE FOR DELETE TO "authenticated" USING ("calendars"."owner_id" = (select auth.uid()));
 
 ALTER TABLE "calendars" ADD COLUMN "public_id" text NOT NULL;
+
+ALTER TABLE "calendar_events" ADD COLUMN "dav_etag" text;--> statement-breakpoint
+ALTER TABLE "calendar_events" ADD COLUMN "dav_uri" text;

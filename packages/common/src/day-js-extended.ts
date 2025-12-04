@@ -8,7 +8,6 @@ import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import relativeTime from "dayjs/plugin/relativeTime";
 import advancedFormat from "dayjs/plugin/advancedFormat";
-import { CalendarViewType, ViewParams } from "@schema";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);

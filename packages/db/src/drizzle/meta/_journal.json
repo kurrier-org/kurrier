@@ -148,6 +148,13 @@
 			"when": 1764336254386,
 			"tag": "0020_minor_cloak",
 			"breakpoints": true
+		},
+		{
+			"idx": 21,
+			"version": "7",
+			"when": 1764837055396,
+			"tag": "0021_needy_queen_noir",
+			"breakpoints": true
 		}
 	]
 }

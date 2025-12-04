@@ -4,7 +4,7 @@ import React from "react";
 import type { EventSlotRenderFragment, CalendarState } from "@schema";
 import CalendarAddEventPopover from "@/components/dashboard/calendars/calendar-add-event-popover";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
-import { getDayjsTz } from "@/lib/day-js-extended";
+import { getDayjsTz } from "@common/day-js-extended";
 
 type FragmentCellProps = {
 	fragment: EventSlotRenderFragment;

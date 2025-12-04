@@ -18,10 +18,11 @@ import {
 	ViewParams,
 } from "@schema";
 import { decode } from "decode-formdata";
-import { dayjsExtended, getDayjsTz } from "@/lib/day-js-extended";
 import { revalidatePath } from "next/cache";
 import { Dayjs } from "dayjs";
 import { cache } from "react";
+import { getRedis } from "@/lib/actions/get-redis";
+import { dayjsExtended, getDayjsTz } from "@common/day-js-extended";
 
 export const fetchDefaultCalendar = cache(async () => {
 	const rls = await rlsClient();
@@ -110,9 +111,19 @@ export async function upsertCalendarEvent(
 					.set(parsedPayload)
 					.where(eq(calendarEvents.id, String(eventId))),
 			);
+			const { davQueue } = await getRedis();
+			await davQueue.add("dav:calendar:update-event", {
+				eventId: eventId,
+			});
 		} else {
 			const parsedPayload = CalendarEventInsertSchema.parse(payload);
-			await rls((tx) => tx.insert(calendarEvents).values(parsedPayload));
+			const [calendarEvent] = await rls((tx) =>
+				tx.insert(calendarEvents).values(parsedPayload).returning(),
+			);
+			const { davQueue } = await getRedis();
+			await davQueue.add("dav:calendar:create-event", {
+				eventId: calendarEvent.id,
+			});
 		}
 
 		revalidatePath("/dashboard/calendar");
@@ -279,10 +290,16 @@ export async function eventsByDay(
 
 export const deleteCalendarEvent = async (id: string): Promise<FormState> => {
 	return handleAction(async () => {
+		const { davQueue } = await getRedis();
+		await davQueue.add("dav:calendar:delete-event", {
+			eventId: id,
+		});
+
 		const rls = await rlsClient();
 		await rls((tx) =>
 			tx.delete(calendarEvents).where(eq(calendarEvents.id, id)),
 		);
+
 		revalidatePath("/dashboard/calendar");
 		return {
 			success: true,

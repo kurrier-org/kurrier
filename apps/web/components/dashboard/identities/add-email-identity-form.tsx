@@ -6,7 +6,7 @@ import {
 import { ReusableForm } from "@/components/common/reusable-form";
 import React from "react";
 import { parseSecret } from "@/lib/utils";
-import {imapQuotaList} from "@schema";
+import { imapQuotaList } from "@schema";
 
 function AddEmailIdentityForm({
 	onCompleted,
@@ -60,23 +60,23 @@ function AddEmailIdentityForm({
 					defaultValue: parsedVaultValues.SMTP_USERNAME || "",
 				},
 			},
-            {
-                name: "dailyQuota",
-                label: "Daily IMAP quota (Used for backfilling older mails)",
-                labelSuffix: "(Default: 500 MB per day)",
-                kind: "select" as const,
-                defaultValue: "500",
-                options: imapQuotaList.map((quota) => {
-                    return {
-                        label: quota.label,
-                        value: String(quota.value),
-                    };
-                }),
-                wrapperClasses: "col-span-12",
-                props: {
-                    className: "w-full"
-                },
-            },
+			{
+				name: "dailyQuota",
+				label: "Daily IMAP quota (Used for backfilling older mails)",
+				labelSuffix: "(Default: 500 MB per day)",
+				kind: "select" as const,
+				defaultValue: "500",
+				options: imapQuotaList.map((quota) => {
+					return {
+						label: quota.label,
+						value: String(quota.value),
+					};
+				}),
+				wrapperClasses: "col-span-12",
+				props: {
+					className: "w-full",
+				},
+			},
 			{
 				name: "smtpAccountId",
 				wrapperClasses: "hidden",

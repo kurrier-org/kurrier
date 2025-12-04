@@ -1420,6 +1420,9 @@ export const calendarEvents = pgTable(
 
 		busyStatus: CalendarBusyStatusEnum("busy_status").notNull().default("busy"),
 
+		davEtag: text("dav_etag"),
+		davUri: text("dav_uri"),
+
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),

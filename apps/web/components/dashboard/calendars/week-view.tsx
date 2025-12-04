@@ -8,13 +8,13 @@ import {
 } from "@schema";
 import { useParams } from "next/navigation";
 import CalendarDayHourBox from "@/components/dashboard/calendars/calendar-day-hour-box";
-import { getDayjsTz } from "@/lib/day-js-extended";
 import { CalendarEventEntity } from "@db";
 import {
 	layoutDayFragments,
 	splitFragmentIntoHours,
 } from "@/components/dashboard/calendars/client-helpers";
 import CalendarEventsLayer from "@/components/dashboard/calendars/calendar-events-layer";
+import { getDayjsTz } from "@common/day-js-extended";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 

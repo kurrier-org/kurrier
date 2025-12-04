@@ -66,7 +66,6 @@ export const deltaFetch = async (
 			path: String((row?.metaData as any)?.imap?.path ?? row.name),
 			window: 500,
 			onMessage: async (msg, path: string) => {
-
 				const messageId = msg.envelope?.messageId?.trim() || null;
 				const uid = msg.uid;
 				const raw = (await msg.source?.toString()) || "";
@@ -98,7 +97,6 @@ export const deltaFetch = async (
 					});
 				}
 
-
 				const [existing] = await db
 					.select({
 						id: messages.id,
@@ -113,107 +111,104 @@ export const deltaFetch = async (
 						),
 					);
 
+				if (existing) {
+					if (existing.mailboxId !== row.id) {
+						console.log(
+							`[deltaFetch] Move detected for ${messageId}: ${existing.mailboxId} → ${row.id}`,
+						);
 
+						const all = await db
+							.select({
+								id: messages.id,
+								mailboxId: messages.mailboxId,
+								metaData: messages.metaData,
+								messageId: messages.messageId,
+							})
+							.from(messages)
+							.where(
+								and(
+									eq(messages.threadId, existing.threadId),
+									eq(messages.mailboxId, existing.mailboxId),
+								),
+							);
 
+						for (const m of all) {
+							if (m.mailboxId === row.id) continue;
 
+							const [dup] = await db
+								.select({ id: messages.id })
+								.from(messages)
+								.where(
+									and(
+										eq(messages.ownerId, ownerId),
+										eq(messages.messageId, m.messageId),
+										eq(messages.mailboxId, row.id),
+									),
+								);
 
-                if (existing) {
-                    if (existing.mailboxId !== row.id) {
-                        console.log(
-                            `[deltaFetch] Move detected for ${messageId}: ${existing.mailboxId} → ${row.id}`,
-                        );
+							if (dup?.id) {
+								await db.delete(messages).where(eq(messages.id, m.id));
+								continue;
+							}
 
-                        const all = await db
-                            .select({
-                                id: messages.id,
-                                mailboxId: messages.mailboxId,
-                                metaData: messages.metaData,
-                                messageId: messages.messageId,
-                            })
-                            .from(messages)
-                            .where(
-                                and(
-                                    eq(messages.threadId, existing.threadId),
-                                    eq(messages.mailboxId, existing.mailboxId),
-                                ),
-                            );
+							const updatedMeta = {
+								...(m.metaData as any),
+								imap: {
+									...((m.metaData as any)?.imap || {}),
+									mailboxPath: path,
+								},
+							};
 
-                        for (const m of all) {
-                            if (m.mailboxId === row.id) continue;
+							await db
+								.update(messages)
+								.set({ mailboxId: row.id, metaData: updatedMeta })
+								.where(eq(messages.id, m.id))
+								.catch((e) =>
+									console.error("[deltaFetch] failed message move update", e),
+								);
+						}
 
-                            const [dup] = await db
-                                .select({ id: messages.id })
-                                .from(messages)
-                                .where(
-                                    and(
-                                        eq(messages.ownerId, ownerId),
-                                        eq(messages.messageId, m.messageId),
-                                        eq(messages.mailboxId, row.id),
-                                    ),
-                                );
+						await db
+							.delete(mailboxThreads)
+							.where(eq(mailboxThreads.threadId, existing.threadId));
 
-                            if (dup?.id) {
-                                await db.delete(messages).where(eq(messages.id, m.id));
-                                continue;
-                            }
+						const [newest] = await db
+							.select({ id: messages.id })
+							.from(messages)
+							.where(eq(messages.threadId, existing.threadId))
+							.orderBy(
+								desc(sql`coalesce(${messages.date}, ${messages.createdAt})`),
+							)
+							.limit(1);
 
-                            const updatedMeta = {
-                                ...(m.metaData as any),
-                                imap: {
-                                    ...((m.metaData as any)?.imap || {}),
-                                    mailboxPath: path,
-                                },
-                            };
+						if (newest?.id) {
+							await upsertMailboxThreadItem(newest.id).catch((e) =>
+								console.error("[deltaFetch] upsertMailboxThreadItem failed", e),
+							);
+						}
 
-                            await db
-                                .update(messages)
-                                .set({ mailboxId: row.id, metaData: updatedMeta })
-                                .where(eq(messages.id, m.id))
-                                .catch((e) =>
-                                    console.error("[deltaFetch] failed message move update", e),
-                                );
-                        }
+						try {
+							const { searchIngestQueue } = await getRedis();
+							await searchIngestQueue.add(
+								"refresh-thread",
+								{ threadId: existing.threadId },
+								{
+									jobId: `refresh-${existing.threadId}`,
+									attempts: 3,
+									backoff: { type: "exponential", delay: 1500 },
+									removeOnComplete: true,
+									removeOnFail: false,
+								},
+							);
+						} catch (e) {
+							console.warn("[deltaFetch] enqueue refresh-thread failed", e);
+						}
 
-                        await db
-                            .delete(mailboxThreads)
-                            .where(eq(mailboxThreads.threadId, existing.threadId));
+						return;
+					}
 
-                        const [newest] = await db
-                            .select({ id: messages.id })
-                            .from(messages)
-                            .where(eq(messages.threadId, existing.threadId))
-                            .orderBy(desc(sql`coalesce(${messages.date}, ${messages.createdAt})`))
-                            .limit(1);
-
-                        if (newest?.id) {
-                            await upsertMailboxThreadItem(newest.id).catch((e) =>
-                                console.error("[deltaFetch] upsertMailboxThreadItem failed", e),
-                            );
-                        }
-
-                        try {
-                            const { searchIngestQueue } = await getRedis();
-                            await searchIngestQueue.add(
-                                "refresh-thread",
-                                { threadId: existing.threadId },
-                                {
-                                    jobId: `refresh-${existing.threadId}`,
-                                    attempts: 3,
-                                    backoff: { type: "exponential", delay: 1500 },
-                                    removeOnComplete: true,
-                                    removeOnFail: false,
-                                },
-                            );
-                        } catch (e) {
-                            console.warn("[deltaFetch] enqueue refresh-thread failed", e);
-                        }
-
-                        return;
-                    }
-
-                    return;
-                }
-
+					return;
+				}
 
 				await parseAndStoreEmail(raw, {
 					ownerId,

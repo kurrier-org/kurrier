@@ -63,13 +63,13 @@ export default defineNitroPlugin(async (nitroApp) => {
 
 	if (SEARCH_REBUILD_ON_BOOT === "true") await rebuild();
 
-    nitroApp.hooks.hookOnce("close", async () => {
-        console.info("Closing nitro server...");
-        console.info("Shutting down search worker!");
-        try {
-            await worker.close();
-        } catch (err: any) {
-            console.error("Error closing search worker:", err?.message ?? err);
-        }
-    });
+	nitroApp.hooks.hookOnce("close", async () => {
+		console.info("Closing nitro server...");
+		console.info("Shutting down search worker!");
+		try {
+			await worker.close();
+		} catch (err: any) {
+			console.error("Error closing search worker:", err?.message ?? err);
+		}
+	});
 });

@@ -1,15 +1,15 @@
 import {
 	db,
-	contacts,
-	addressBooks,
+	calendarEvents,
+	calendars,
 	davAccounts,
 	secretsMeta,
 	getSecretAdmin,
 } from "@db";
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import DigestFetch from "digest-fetch";
 
-export async function deleteContactViaHttp(opts: {
+export async function deleteCalendarObjectViaHttp(opts: {
 	davBaseUrl: string;
 	username: string;
 	password: string;
@@ -52,40 +52,32 @@ export async function deleteContactViaHttp(opts: {
 	if (!(res.status === 200 || res.status === 204)) {
 		const text = await res.text().catch(() => "");
 		console.error(
-			`CardDAV DELETE failed (${res.status} ${res.statusText}): ${text}`,
+			`CalDAV DELETE failed (${res.status} ${res.statusText}): ${text}`,
 		);
 	}
 
 	return { success: true };
 }
 
-export const deleteContact = async (payload: {
-	contactId: string;
-	ownerId: string;
-}) => {
-	const { contactId, ownerId } = payload;
-
-	const [contact] = await db
+export const deleteCalendarEvent = async (eventId: string) => {
+	const [event] = await db
 		.select()
-		.from(contacts)
-		.where(and(eq(contacts.id, contactId), eq(contacts.ownerId, ownerId)));
+		.from(calendarEvents)
+		.where(eq(calendarEvents.id, eventId));
 
-	if (!contact) return;
+	if (!event) return;
 
-	const [book] = await db
+	const [calendar] = await db
 		.select()
-		.from(addressBooks)
-		.where(
-			and(eq(addressBooks.ownerId, ownerId), eq(addressBooks.isDefault, true)),
-		);
+		.from(calendars)
+		.where(eq(calendars.id, event.calendarId));
+	if (!calendar) return;
 
-	if (!book) return;
-
-	const parts = book.remotePath.split("/");
-	if (parts.length !== 3 || parts[0] !== "addressbooks") return;
+	const parts = calendar.remotePath.split("/");
+	if (parts.length !== 3 || parts[0] !== "calendars") return;
 
 	const davUsername = parts[1];
-	const davUri = contact.davUri ?? `${contact.id}.vcf`;
+	const davUri = event.davUri ?? `${event.id}.ics`;
 
 	const [secretRow] = await db
 		.select({
@@ -93,7 +85,7 @@ export const deleteContact = async (payload: {
 			metaId: secretsMeta.id,
 		})
 		.from(davAccounts)
-		.where(eq(davAccounts.id, book.davAccountId))
+		.where(eq(davAccounts.id, calendar.davAccountId))
 		.leftJoin(secretsMeta, eq(davAccounts.secretId, secretsMeta.id))
 		.orderBy(desc(davAccounts.createdAt));
 
@@ -102,21 +94,21 @@ export const deleteContact = async (payload: {
 	if (!passwordFromSecret) {
 		console.error(
 			"No password found in secret for DAV account",
-			book.davAccountId,
+			calendar.davAccountId,
 		);
 		return;
 	}
 
-	await deleteContactViaHttp({
+	await deleteCalendarObjectViaHttp({
 		davBaseUrl: `${process.env.DAV_URL}/dav.php`,
 		username: davUsername,
 		password: passwordFromSecret,
-		collectionPath: book.remotePath,
+		collectionPath: calendar.remotePath,
 		davUri,
-		etag: contact.davEtag,
+		etag: event.davEtag,
 	});
 
-	await db.delete(contacts).where(eq(contacts.id, contact.id));
+	await db.delete(calendarEvents).where(eq(calendarEvents.id, event.id));
 
 	return { success: true };
 };

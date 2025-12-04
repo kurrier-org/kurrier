@@ -187,7 +187,7 @@ export async function upsertContactsFromMessage(
 	parsed: ParsedMail,
 ) {
 	const addr = getFromAddress(parsed);
-	if (!addr) return;
+	if (!addr) return null;
 
 	let contactId: string | null = null;
 	const email = addr.email;
@@ -199,7 +199,9 @@ export async function upsertContactsFromMessage(
 		.where(
 			and(
 				eq(contacts.ownerId, ownerId),
-				sql`${contacts.emails}::jsonb @> ${JSON.stringify([{ address: email }])}::jsonb`,
+				sql`${contacts.emails}::jsonb @> ${JSON.stringify([
+					{ address: email },
+				])}::jsonb`,
 			),
 		)
 		.limit(1);
@@ -223,11 +225,31 @@ export async function upsertContactsFromMessage(
 			profilePictureXs: null,
 		};
 
-		const [contact] = await db
+		const inserted = await db
 			.insert(contacts)
 			.values(newContact as ContactCreate)
+			.onConflictDoNothing()
 			.returning();
-		contactId = contact.id;
+
+		if (inserted.length > 0) {
+			contactId = inserted[0].id;
+			return contactId;
+		}
+
+		const [existingAfter] = await db
+			.select()
+			.from(contacts)
+			.where(
+				and(
+					eq(contacts.ownerId, ownerId),
+					sql`${contacts.emails}::jsonb @> ${JSON.stringify([
+						{ address: email },
+					])}::jsonb`,
+				),
+			)
+			.limit(1);
+
+		contactId = existingAfter?.id ?? null;
 		return contactId;
 	}
 
@@ -235,7 +257,7 @@ export async function upsertContactsFromMessage(
 
 	const hasName = contact.firstName || contact.lastName;
 	if (hasName || !displayName) {
-		return;
+		return contact.id;
 	}
 
 	const parts = displayName.split(" ").filter(Boolean);
@@ -249,10 +271,82 @@ export async function upsertContactsFromMessage(
 			lastName,
 		})
 		.where(eq(contacts.id, contact.id));
-	contactId = contact.id;
 
+	contactId = contact.id;
 	return contactId;
 }
+
+// export async function upsertContactsFromMessage(
+// 	ownerId: string,
+// 	parsed: ParsedMail,
+// ) {
+// 	const addr = getFromAddress(parsed);
+// 	if (!addr) return;
+//
+// 	let contactId: string | null = null;
+// 	const email = addr.email;
+// 	const displayName = addr.name;
+//
+// 	const existing = await db
+// 		.select()
+// 		.from(contacts)
+// 		.where(
+// 			and(
+// 				eq(contacts.ownerId, ownerId),
+// 				sql`${contacts.emails}::jsonb @> ${JSON.stringify([{ address: email }])}::jsonb`,
+// 			),
+// 		)
+// 		.limit(1);
+//
+// 	if (existing.length === 0) {
+// 		let firstName = "Unknown";
+// 		let lastName: string | null = null;
+//
+// 		if (displayName) {
+// 			const parts = displayName.split(" ").filter(Boolean);
+// 			firstName = parts[0] || "Unknown";
+// 			lastName = parts.length > 1 ? parts.slice(1).join(" ") : null;
+// 		}
+//
+// 		const newContact = {
+// 			ownerId,
+// 			firstName,
+// 			lastName,
+// 			emails: [{ address: email }],
+// 			slug: slugify(displayName || email),
+// 			profilePictureXs: null,
+// 		};
+//
+// 		const [contact] = await db
+// 			.insert(contacts)
+// 			.values(newContact as ContactCreate)
+// 			.returning();
+// 		contactId = contact.id;
+// 		return contactId;
+// 	}
+//
+// 	const contact = existing[0];
+//
+// 	const hasName = contact.firstName || contact.lastName;
+// 	if (hasName || !displayName) {
+// 		return;
+// 	}
+//
+// 	const parts = displayName.split(" ").filter(Boolean);
+// 	const firstName = parts[0] || contact.firstName || "Unknown";
+// 	const lastName = parts.length > 1 ? parts.slice(1).join(" ") : null;
+//
+// 	await db
+// 		.update(contacts)
+// 		.set({
+// 			firstName,
+// 			lastName,
+// 		})
+// 		.where(eq(contacts.id, contact.id));
+// 	contactId = contact.id;
+//
+// 	return contactId;
+// }
 
 /**
  * Parse raw email, create thread, insert message + attachments.
@@ -406,7 +500,7 @@ export async function parseAndStoreEmail(
 		scheduleFlush();
 	}
 
-    // Disable webhook batching for now - causes too much delay
+	// Disable webhook batching for now - causes too much delay
 
 	// webhookBuffer.push({ message, rawEmail });
 	// if (webhookBuffer.length >= WEBHOOK_BATCH_SIZE) {

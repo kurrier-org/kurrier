@@ -6,7 +6,7 @@ import { useAppearance } from "@/components/providers/appearance-provider";
 import { useParams, useRouter } from "next/navigation";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { CalendarState, calendarViewsList, CalendarViewType } from "@schema";
-import { getDayjsTz } from "@/lib/day-js-extended";
+import { getDayjsTz } from "@common/day-js-extended";
 
 function CalendarTopBar() {
 	const { theme } = useAppearance();

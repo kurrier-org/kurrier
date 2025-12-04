@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Dayjs } from "dayjs";
-import { dayjsExtended } from "@/lib/day-js-extended";
+import { dayjsExtended } from "@common/day-js-extended";
 
 function CalendarBoxIndicatorLayer({
 	start,

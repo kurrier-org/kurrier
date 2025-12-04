@@ -100,7 +100,7 @@ export const createAccount = async (userId: string) => {
 			uri: "default",
 			description: "Default calendar",
 			calendarorder: 0,
-			timezone: "Europe/Paris",
+			timezone: "UTC",
 			transparent: 0,
 			share_invitestatus: 2,
 		});

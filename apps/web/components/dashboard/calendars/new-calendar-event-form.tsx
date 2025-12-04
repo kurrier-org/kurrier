@@ -10,11 +10,12 @@ import {
 } from "@/lib/actions/calendar";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { Dayjs } from "dayjs";
-import { getDayjsTz, getWallTimeDate } from "@/lib/day-js-extended";
 import SearchableContacts from "@/components/dashboard/contacts/searchable-contacts";
-import { ActionIcon, Divider, Select } from "@mantine/core";
+import { ActionIcon, Alert, Divider, Select } from "@mantine/core";
 import { CalendarEventEntity } from "@db";
 import { Trash } from "lucide-react";
+import { getDayjsTz, getWallTimeDate } from "@common/day-js-extended";
+import { IconAlertCircle } from "@tabler/icons-react";
 
 type NewCalendarEventFormProps = {
 	onCompleted: (data: CalendarEventEntity[]) => void;
@@ -121,7 +122,7 @@ function NewCalendarEventForm({
 				data: state.organizers,
 				allowDeselect: false,
 				required: true,
-				defaultValue: state.organizers[0].value,
+				defaultValue: state.organizers[0]?.value,
 			},
 		},
 		{
@@ -135,6 +136,8 @@ function NewCalendarEventForm({
 			},
 		},
 	];
+
+	console.log("state", state);
 
 	return (
 		<>
@@ -161,16 +164,25 @@ function NewCalendarEventForm({
 				</>
 			)}
 
-			<ReusableForm
-				action={upsertCalendarEvent}
-				fields={fields}
-				onSuccess={onCompleted}
-				submitButtonProps={{
-					submitLabel: editEvent ? "Update event" : "Create event",
-					wrapperClasses: "mt-4",
-					fullWidth: true,
-				}}
-			/>
+			{state.organizers.length === 0 ? (
+				<>
+					<Alert icon={<IconAlertCircle />} variant={"filled"}>
+						No organizers(Email Identities) found. <br /> Please add atleast one
+						email identity to create calendar events.
+					</Alert>
+				</>
+			) : (
+				<ReusableForm
+					action={upsertCalendarEvent}
+					fields={fields}
+					onSuccess={onCompleted}
+					submitButtonProps={{
+						submitLabel: editEvent ? "Update event" : "Create event",
+						wrapperClasses: "mt-4",
+						fullWidth: true,
+					}}
+				/>
+			)}
 		</>
 	);
 }

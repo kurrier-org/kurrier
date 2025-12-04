@@ -38,7 +38,11 @@ const createContact = async ({
 	payload.davUri = card.uri;
 	payload.davEtag = normalizeEtag(card.etag);
 
-	const [inserted] = await db.insert(contacts).values(payload).returning();
+	const [inserted] = await db
+		.insert(contacts)
+		.values(payload)
+		.onConflictDoNothing()
+		.returning();
 	return inserted;
 };
 
@@ -100,7 +104,8 @@ const syncBook = async (
 			.select()
 			.from(contacts)
 			.where(
-				and(eq(contacts.addressBookId, book.id), eq(contacts.davUri, card.uri)),
+				// and(eq(contacts.addressBookId, book.id), eq(contacts.davUri, card.uri)),
+				and(eq(contacts.ownerId, book.ownerId), eq(contacts.davUri, card.uri)),
 			);
 
 		if (localContact) {
