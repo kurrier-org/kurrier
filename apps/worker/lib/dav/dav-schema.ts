@@ -157,3 +157,4 @@ export const md5 = (input: string) =>
 	crypto.createHash("md5").update(input).digest("hex");
 
 export type DavCardsEntity = typeof davCards.$inferSelect;
+export type DavCalendarObjectEntity = typeof davCalendarObjects.$inferSelect;

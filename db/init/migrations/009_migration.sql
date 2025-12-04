@@ -58,3 +58,5 @@ ALTER TABLE "calendars" ADD COLUMN "public_id" text NOT NULL;
 
 ALTER TABLE "calendar_events" ADD COLUMN "dav_etag" text;--> statement-breakpoint
 ALTER TABLE "calendar_events" ADD COLUMN "dav_uri" text;
+ALTER TABLE "calendar_events" ADD COLUMN "raw_ics" text;
+CREATE UNIQUE INDEX "ix_calendar_events_owner_dav_uri" ON "calendar_events" USING btree ("owner_id","dav_uri") WHERE "calendar_events"."dav_uri" IS NOT NULL;

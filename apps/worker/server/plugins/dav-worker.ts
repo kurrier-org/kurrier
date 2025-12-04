@@ -10,6 +10,7 @@ import { davSyncDb } from "../../lib/dav/sync/dav-sync-db";
 import { createCalendarEvent } from "../../lib/dav/calendar/dav-create-calendar-event";
 import { deleteCalendarEvent } from "../../lib/dav/calendar/dav-delete-calendar-event";
 import { updateCalendarEvent } from "../../lib/dav/calendar/dav-update-calendar-event";
+import { davSyncCalendarsDb } from "../../lib/dav/calendar/dav-sync-calendar-db";
 
 export default defineNitroPlugin(async (nitroApp) => {
 	const { connection } = await getRedis();
@@ -72,7 +73,9 @@ export default defineNitroPlugin(async (nitroApp) => {
 					});
 				case "dav:sync":
 					console.log("[DAV WORKER] Starting DAV sync job:", job.id);
-					return davSyncDb();
+                    await davSyncDb();
+                    await davSyncCalendarsDb()
+                    return
 				default:
 					return { success: true, skipped: true };
 			}
@@ -91,7 +94,8 @@ export default defineNitroPlugin(async (nitroApp) => {
 	const scheduler = new JobScheduler("dav-worker", { connection });
 	await scheduler.upsertJobScheduler(
 		"dav-sync-scheduler",
-		{ every: 120000 },
+		// { every: 120000 },
+		{ every: 10000 },
 		"dav:sync",
 		{},
 		{

@@ -137,8 +137,6 @@ function NewCalendarEventForm({
 		},
 	];
 
-	console.log("state", state);
-
 	return (
 		<>
 			{editEvent && (

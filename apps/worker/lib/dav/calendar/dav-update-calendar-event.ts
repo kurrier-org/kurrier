@@ -132,6 +132,7 @@ export const updateCalendarEvent = async (eventId: string) => {
 		.update(calendarEvents)
 		.set({
 			davUri,
+            rawIcs: icalData,
 			davEtag: newEtag ?? event.davEtag,
 			updatedAt: new Date(),
 		})

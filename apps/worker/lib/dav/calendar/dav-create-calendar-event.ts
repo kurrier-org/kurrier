@@ -20,8 +20,7 @@ async function createCalendarObjectViaHttp(opts: {
 	collectionPath: string;
 	davUri: string;
 }) {
-	const { icalData, davBaseUrl, username, password, collectionPath, davUri } =
-		opts;
+	const { icalData, davBaseUrl, username, password, collectionPath, davUri } = opts;
 
 	const client = new DigestFetch(username, password);
 	const digestFetch = client.fetch.bind(client);
@@ -110,6 +109,7 @@ export const createCalendarEvent = async (eventId: string) => {
 		.set({
 			davUri,
 			davEtag: normalizeEtag(etag),
+            rawIcs: icalData,
 			updatedAt: new Date(),
 		})
 		.where(eq(calendarEvents.id, event.id));

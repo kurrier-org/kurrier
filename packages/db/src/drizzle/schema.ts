@@ -1423,6 +1423,8 @@ export const calendarEvents = pgTable(
 		davEtag: text("dav_etag"),
 		davUri: text("dav_uri"),
 
+        rawIcs: text("raw_ics"),
+
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),
@@ -1434,6 +1436,9 @@ export const calendarEvents = pgTable(
 		index("ix_calendar_events_owner").on(t.ownerId),
 		index("ix_calendar_events_calendar").on(t.calendarId),
 		index("ix_calendar_events_calendar_start").on(t.calendarId, t.startsAt),
+        uniqueIndex("ix_calendar_events_owner_dav_uri")
+            .on(t.ownerId, t.davUri)
+            .where(sql`${t.davUri} IS NOT NULL`),
 
 		pgPolicy("calendar_events_select_own", {
 			for: "select",

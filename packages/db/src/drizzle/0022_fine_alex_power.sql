@@ -1,0 +1,2 @@
+ALTER TABLE "calendar_events" ADD COLUMN "raw_ics" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "ix_calendar_events_owner_dav_uri" ON "calendar_events" USING btree ("owner_id","dav_uri") WHERE "calendar_events"."dav_uri" IS NOT NULL;

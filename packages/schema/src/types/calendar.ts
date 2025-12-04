@@ -20,6 +20,8 @@ export const calendarEventStatusList = [
 	"cancelled",
 ] as const;
 
+export type CalendarEventStatusType = z.infer<typeof calendarEventStatusList>;
+
 export const calendarBusyStatusList = [
 	"busy",
 	"free",
