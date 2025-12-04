@@ -2,13 +2,15 @@
 
 import * as React from "react";
 import {
-    Calendar, Command, Contact,
-    FolderSync,
-    Inbox,
-    Key,
-    LayoutDashboard,
-    Plug,
-    Send,
+	Calendar,
+	Command,
+	Contact,
+	FolderSync,
+	Inbox,
+	Key,
+	LayoutDashboard,
+	Plug,
+	Send,
 } from "lucide-react";
 
 import { NavUser } from "@/components/ui/dashboards/workspace/nav-user";
@@ -29,9 +31,7 @@ import KurrierLogo from "@/components/common/kurrier-logo";
 import { PublicConfig } from "@schema";
 import { UserResponse } from "@supabase/supabase-js";
 import ThemeColorPicker from "@/components/common/theme-color-picker";
-import {
-	FetchIdentityMailboxListResult,
-} from "@/lib/actions/mailbox";
+import { FetchIdentityMailboxListResult } from "@/lib/actions/mailbox";
 import ThemeSwitch from "@/components/common/theme-switch";
 import Link from "next/link";
 import { useMediaQuery } from "@mantine/hooks";
@@ -41,20 +41,18 @@ import { IconFrame } from "@tabler/icons-react";
 type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	publicConfig: PublicConfig;
 	user: UserResponse["data"]["user"];
-	avatar: string;
 	identityMailboxes: FetchIdentityMailboxListResult;
-    sidebarSectionContent?: React.ReactNode;
-    sidebarTopContent?: React.ReactNode;
+	sidebarSectionContent?: React.ReactNode;
+	sidebarTopContent?: React.ReactNode;
 };
 
 export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 	const {
 		publicConfig,
 		user,
-		avatar,
 		identityMailboxes,
-        sidebarSectionContent,
-        sidebarTopContent,
+		sidebarSectionContent,
+		sidebarTopContent,
 		...restProps
 	} = props;
 
@@ -79,13 +77,12 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				icon: Contact,
 				isActive: true,
 			},
-            // Disable calendar for now
-            // {
-            //     title: "Calendar",
-            //     url: "/dashboard/calendar",
-            //     icon: Calendar,
-            //     isActive: true,
-            // },
+			{
+				title: "Calendar",
+				url: "/dashboard/calendar",
+				icon: Calendar,
+				isActive: true,
+			},
 			{
 				title: "Platform",
 				url: "/dashboard/platform/overview",
@@ -135,13 +132,13 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 
 	type SidebarSection = "mail" | "contacts" | "platform" | "calendar";
 
-    const section: SidebarSection = isOnPlatform
-        ? "platform"
-        : isOnContacts
-            ? "contacts"
-            : isOnCalendar
-                ? "calendar"
-                : "mail";
+	const section: SidebarSection = isOnPlatform
+		? "platform"
+		: isOnContacts
+			? "contacts"
+			: isOnCalendar
+				? "calendar"
+				: "mail";
 
 	const [activeItem, setActiveItem] = React.useState(() => {
 		if (section === "platform") {
@@ -154,11 +151,11 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				data.navMain.find((i) => i.url.includes("/contacts")) ?? data.navMain[0]
 			);
 		}
-        if (section === "calendar") {
-            return (
-                data.navMain.find((i) => i.url.includes("/calendar")) ?? data.navMain[0]
-            );
-        }
+		if (section === "calendar") {
+			return (
+				data.navMain.find((i) => i.url.includes("/calendar")) ?? data.navMain[0]
+			);
+		}
 		return data.navMain.find((i) => i.url.includes("/mail")) ?? data.navMain[0];
 	});
 
@@ -169,10 +166,10 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 					data.navMain[0],
 			);
 		} else if (section === "calendar") {
-            setActiveItem(
-                data.navMain.find((i) => i.url.includes("/calendar")) ??
-                data.navMain[0],
-            );
+			setActiveItem(
+				data.navMain.find((i) => i.url.includes("/calendar")) ??
+					data.navMain[0],
+			);
 		} else if (section === "contacts") {
 			setActiveItem(
 				data.navMain.find((i) => i.url.includes("/contacts")) ??
@@ -258,7 +255,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 								{isMobile ? (
 									<>
 										<Divider variant={"dashed"} my={"xl"} />
-                                        {sidebarSectionContent}
+										{sidebarSectionContent}
 									</>
 								) : (
 									<hr className="my-2 border-border" />
@@ -286,7 +283,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 					</div>
 				</SidebarContent>
 				<SidebarFooter>
-					<NavUser user={user} avatar={avatar} />
+					<NavUser user={user} />
 				</SidebarFooter>
 			</Sidebar>
 
@@ -299,13 +296,11 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 						<KurrierLogo size={36} />
 						<span className="text-lg font-semibold">kurrier</span>
 					</div>
-                    {sidebarTopContent}
+					{sidebarTopContent}
 				</SidebarHeader>
 				<SidebarContent>
 					<SidebarGroup className="px-0">
-						<SidebarGroupContent>
-                            {sidebarSectionContent}
-						</SidebarGroupContent>
+						<SidebarGroupContent>{sidebarSectionContent}</SidebarGroupContent>
 					</SidebarGroup>
 				</SidebarContent>
 			</Sidebar>

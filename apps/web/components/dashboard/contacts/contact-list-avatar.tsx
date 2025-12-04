@@ -16,7 +16,7 @@ const AVATAR_COLORS = [
 
 function ContactListAvatar(props: { signedUrl: string | null; alt: string }) {
 	const { signedUrl, alt } = props;
-	const getColorFromString = async (str: string) => {
+	const getColorFromString = (str: string) => {
 		let hash = 0;
 		for (let i = 0; i < str.length; i++) {
 			hash = str.charCodeAt(i) + ((hash << 5) - hash);

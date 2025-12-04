@@ -9,6 +9,7 @@ import {
 import { and, desc, eq } from "drizzle-orm";
 import DigestFetch from "digest-fetch";
 import { buildVCard } from "./dav-build-card";
+import { normalizeEtag } from "./sync/dav-sync-db";
 
 export async function createContactViaHttp(opts: {
 	carddata: string;
@@ -105,7 +106,7 @@ export const createContact = async (contactId: string, ownerId: string) => {
 		.update(contacts)
 		.set({
 			davUri,
-			davEtag: etag,
+			davEtag: normalizeEtag(etag),
 			updatedAt: new Date(),
 		})
 		.where(eq(contacts.id, contact.id));

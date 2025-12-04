@@ -39,7 +39,7 @@ export default function WebmailList({
 	globalLabels,
 	labelsByThreadId,
 }: WebListProps) {
-    // Disable mailbox busy toast for now
+	// Disable mailbox busy toast for now
 	// useEffect(() => {
 	// 	if (mailboxSync) {
 	// 		if (mailboxSync?.phase !== "IDLE") {

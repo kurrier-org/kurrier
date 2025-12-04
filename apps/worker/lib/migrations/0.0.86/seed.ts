@@ -1,8 +1,7 @@
 import { db, labels } from "@db";
 import { and, eq } from "drizzle-orm";
 import { LabelScope } from "@schema";
-// import { seedAccount } from "../../../lib/dav/dav-seed-account";
-import {createAccount} from "../../../lib/dav/dav-create-account";
+import { createAccount } from "../../../lib/dav/dav-create-account";
 
 const seedFavoriteLabel = async (userId: string) => {
 	const [existing] = await db
@@ -33,7 +32,6 @@ const seedFavoriteLabel = async (userId: string) => {
 
 export default async function seed({ userId }: { userId: string }) {
 	await seedFavoriteLabel(userId);
-	// await seedAccount(userId);
 	await createAccount(userId);
 
 	console.log("Migration 0.0.86 - seed.ts executed");

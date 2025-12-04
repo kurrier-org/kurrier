@@ -27,8 +27,9 @@ export async function deleteContactViaHttp(opts: {
 	const url = `${base}/${collection}/${encodeURIComponent(davUri)}`;
 
 	const headers: Record<string, string> = {};
+	const ifMatch = `"${etag}"`;
 	if (etag) {
-		headers["If-Match"] = etag;
+		headers["If-Match"] = ifMatch;
 	}
 
 	let res = await digestFetch(url, {

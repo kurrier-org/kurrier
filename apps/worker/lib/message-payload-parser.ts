@@ -30,7 +30,11 @@ const SEARCH_BATCH_SIZE = 100;
 // const WEBHOOK_BATCH_SIZE = 100;
 const FLUSH_INTERVAL_MS = 1000;
 
-type SearchJob = { messageId: string, contactId: string | null, ownerId?: string };
+type SearchJob = {
+	messageId: string;
+	contactId: string | null;
+	ownerId?: string;
+};
 type WebhookJob = { message: any; rawEmail: string };
 
 let searchBuffer: SearchJob[] = [];
@@ -41,12 +45,13 @@ async function flushBatches() {
 	if (!searchBuffer.length && !webhookBuffer.length) return;
 
 	try {
-		const { searchIngestQueue, commonWorkerQueue, davWorkerQueue } = await getRedis();
+		const { searchIngestQueue, commonWorkerQueue, davWorkerQueue } =
+			await getRedis();
 
 		if (searchBuffer.length) {
 			const messageIds = searchBuffer.map((job) => job.messageId);
 			const contactIds = searchBuffer.map((job) => job.contactId);
-            const ownerId = searchBuffer[0].ownerId;
+			const ownerId = searchBuffer[0].ownerId;
 
 			await searchIngestQueue.add(
 				"addBatch",
@@ -54,17 +59,17 @@ async function flushBatches() {
 				{ removeOnComplete: true },
 			);
 
-            await davWorkerQueue.add(
-                "dav:create-contacts-batch",
-                {
-                    contactIds: contactIds,
-                    ownerId
-                },
-                {
-                    removeOnComplete: true,
-                    removeOnFail: true,
-                }
-            );
+			await davWorkerQueue.add(
+				"dav:create-contacts-batch",
+				{
+					contactIds: contactIds,
+					ownerId,
+				},
+				{
+					removeOnComplete: true,
+					removeOnFail: true,
+				},
+			);
 
 			searchBuffer = [];
 		}
@@ -182,9 +187,9 @@ export async function upsertContactsFromMessage(
 	parsed: ParsedMail,
 ) {
 	const addr = getFromAddress(parsed);
-	if (!addr) return;
+	if (!addr) return null;
 
-    let contactId: string | null = null;
+	let contactId: string | null = null;
 	const email = addr.email;
 	const displayName = addr.name;
 
@@ -194,7 +199,9 @@ export async function upsertContactsFromMessage(
 		.where(
 			and(
 				eq(contacts.ownerId, ownerId),
-				sql`${contacts.emails}::jsonb @> ${JSON.stringify([{ address: email }])}::jsonb`,
+				sql`${contacts.emails}::jsonb @> ${JSON.stringify([
+					{ address: email },
+				])}::jsonb`,
 			),
 		)
 		.limit(1);
@@ -218,8 +225,31 @@ export async function upsertContactsFromMessage(
 			profilePictureXs: null,
 		};
 
-		const [contact] = await db.insert(contacts).values(newContact as ContactCreate).returning();
-        contactId = contact.id;
+		const inserted = await db
+			.insert(contacts)
+			.values(newContact as ContactCreate)
+			.onConflictDoNothing()
+			.returning();
+
+		if (inserted.length > 0) {
+			contactId = inserted[0].id;
+			return contactId;
+		}
+
+		const [existingAfter] = await db
+			.select()
+			.from(contacts)
+			.where(
+				and(
+					eq(contacts.ownerId, ownerId),
+					sql`${contacts.emails}::jsonb @> ${JSON.stringify([
+						{ address: email },
+					])}::jsonb`,
+				),
+			)
+			.limit(1);
+
+		contactId = existingAfter?.id ?? null;
 		return contactId;
 	}
 
@@ -227,7 +257,7 @@ export async function upsertContactsFromMessage(
 
 	const hasName = contact.firstName || contact.lastName;
 	if (hasName || !displayName) {
-		return;
+		return contact.id;
 	}
 
 	const parts = displayName.split(" ").filter(Boolean);
@@ -241,10 +271,82 @@ export async function upsertContactsFromMessage(
 			lastName,
 		})
 		.where(eq(contacts.id, contact.id));
-    contactId = contact.id;
 
-    return contactId;
+	contactId = contact.id;
+	return contactId;
 }
+
+// export async function upsertContactsFromMessage(
+// 	ownerId: string,
+// 	parsed: ParsedMail,
+// ) {
+// 	const addr = getFromAddress(parsed);
+// 	if (!addr) return;
+//
+// 	let contactId: string | null = null;
+// 	const email = addr.email;
+// 	const displayName = addr.name;
+//
+// 	const existing = await db
+// 		.select()
+// 		.from(contacts)
+// 		.where(
+// 			and(
+// 				eq(contacts.ownerId, ownerId),
+// 				sql`${contacts.emails}::jsonb @> ${JSON.stringify([{ address: email }])}::jsonb`,
+// 			),
+// 		)
+// 		.limit(1);
+//
+// 	if (existing.length === 0) {
+// 		let firstName = "Unknown";
+// 		let lastName: string | null = null;
+//
+// 		if (displayName) {
+// 			const parts = displayName.split(" ").filter(Boolean);
+// 			firstName = parts[0] || "Unknown";
+// 			lastName = parts.length > 1 ? parts.slice(1).join(" ") : null;
+// 		}
+//
+// 		const newContact = {
+// 			ownerId,
+// 			firstName,
+// 			lastName,
+// 			emails: [{ address: email }],
+// 			slug: slugify(displayName || email),
+// 			profilePictureXs: null,
+// 		};
+//
+// 		const [contact] = await db
+// 			.insert(contacts)
+// 			.values(newContact as ContactCreate)
+// 			.returning();
+// 		contactId = contact.id;
+// 		return contactId;
+// 	}
+//
+// 	const contact = existing[0];
+//
+// 	const hasName = contact.firstName || contact.lastName;
+// 	if (hasName || !displayName) {
+// 		return;
+// 	}
+//
+// 	const parts = displayName.split(" ").filter(Boolean);
+// 	const firstName = parts[0] || contact.firstName || "Unknown";
+// 	const lastName = parts.length > 1 ? parts.slice(1).join(" ") : null;
+//
+// 	await db
+// 		.update(contacts)
+// 		.set({
+// 			firstName,
+// 			lastName,
+// 		})
+// 		.where(eq(contacts.id, contact.id));
+// 	contactId = contact.id;
+//
+// 	return contactId;
+// }
 
 /**
  * Parse raw email, create thread, insert message + attachments.
@@ -387,14 +489,18 @@ export async function parseAndStoreEmail(
 		await db.insert(messageAttachments).values(parsedRow).returning();
 	}
 
-	searchBuffer.push({ messageId: message.id, contactId: String(contactId), ownerId });
+	searchBuffer.push({
+		messageId: message.id,
+		contactId: String(contactId),
+		ownerId,
+	});
 	if (searchBuffer.length >= SEARCH_BATCH_SIZE) {
 		await flushBatches();
 	} else {
 		scheduleFlush();
 	}
 
-    // Disable webhook batching for now - causes too much delay
+	// Disable webhook batching for now - causes too much delay
 
 	// webhookBuffer.push({ message, rawEmail });
 	// if (webhookBuffer.length >= WEBHOOK_BATCH_SIZE) {
