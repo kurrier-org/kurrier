@@ -1,9 +1,10 @@
 "use client";
 import React from "react";
 import { Popover } from "@mantine/core";
-import NewCalendarEventForm from "@/components/dashboard/calendars/new-calendar-event-form";
 import { Dayjs } from "dayjs";
-import { toast } from "sonner";
+import CombinedEventView from "@/components/dashboard/calendars/combined-event-view";
+import {toast} from "sonner";
+
 
 function CalendarAddEventPopover({
 	children,
@@ -18,7 +19,9 @@ function CalendarAddEventPopover({
 	end: Dayjs;
 	onChange: (open: boolean) => void;
 }) {
-	return (
+
+
+    return (
 		<Popover
 			opened={opened}
 			onChange={onChange}
@@ -35,14 +38,11 @@ function CalendarAddEventPopover({
 			<Popover.Target>{children}</Popover.Target>
 
 			<Popover.Dropdown className="min-w-sm bg-popover border border-border rounded-xl p-3 shadow-lg">
-				<NewCalendarEventForm
-					start={start}
-					end={end}
-					onCompleted={() => {
-						toast.success("Success");
-						onChange(false);
-					}}
-				/>
+                <CombinedEventView newCalendarEventFormProps={{ start, end, onCompleted: () => {
+                        toast.success("Success");
+                        onChange(false);
+                    }
+                }} />
 			</Popover.Dropdown>
 		</Popover>
 	);

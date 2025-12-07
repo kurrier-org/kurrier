@@ -32,9 +32,13 @@ export default async function CalendarLayout({
 		organizers,
 	};
 
+    const organizersKey = organizers
+        .map((o) => `${o.value}:${o.displayName ?? ""}`)
+        .join("|");
+
 	return (
 		<>
-			<DynamicContextProvider initialState={initialState}>
+			<DynamicContextProvider key={organizersKey} initialState={initialState}>
 				<header className="flex items-center gap-2 border-b  bg-background/60 backdrop-blur py-3 px-4">
 					<SidebarTrigger className="-ml-1" />
 					<Separator

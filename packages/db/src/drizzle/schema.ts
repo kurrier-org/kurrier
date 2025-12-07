@@ -19,19 +19,19 @@ import { users } from "./supabase-schema";
 import { authenticatedRole, authUid } from "drizzle-orm/supabase";
 import { sql } from "drizzle-orm";
 import {
-	AddressObjectJSON,
-	apiScopeList,
-	calendarBusyStatusList,
-	calendarEventStatusList,
-	identityStatusList,
-	identityTypesList,
-	labelScopesList,
-	mailboxKindsList,
-	mailboxSyncPhase,
-	messagePriorityList,
-	messageStatesList,
-	providersList,
-	webHookList,
+    AddressObjectJSON,
+    apiScopeList, calendarAttendeePartstatList, calendarAttendeeRoleList,
+    calendarBusyStatusList,
+    calendarEventStatusList,
+    identityStatusList,
+    identityTypesList,
+    labelScopesList,
+    mailboxKindsList,
+    mailboxSyncPhase,
+    messagePriorityList,
+    messageStatesList,
+    providersList,
+    webHookList,
 } from "@schema";
 import { DnsRecord } from "@providers";
 import { nanoid } from "nanoid";
@@ -55,14 +55,10 @@ export const ApiScopeEnum = pgEnum("api_scope", apiScopeList);
 export const WebHookEnum = pgEnum("webhook_list", webHookList);
 export const LabelScopeEnum = pgEnum("label_scope", labelScopesList);
 
-export const CalendarEventStatusEnum = pgEnum(
-	"calendar_event_status",
-	calendarEventStatusList,
-);
-export const CalendarBusyStatusEnum = pgEnum(
-	"calendar_busy_status",
-	calendarBusyStatusList,
-);
+export const CalendarEventStatusEnum = pgEnum("calendar_event_status", calendarEventStatusList);
+export const CalendarBusyStatusEnum = pgEnum("calendar_busy_status", calendarBusyStatusList);
+export const CalendarAttendeeRoleEnum = pgEnum("calendar_attendee_role", calendarAttendeeRoleList);
+export const CalendarAttendeePartstatEnum = pgEnum("calendar_attendee_partstat", calendarAttendeePartstatList);
 
 export const secretsMeta = pgTable(
 	"secrets_meta",
@@ -351,6 +347,7 @@ export const identities = pgTable(
 			.$defaultFn(() => nanoid(10)),
 
 		value: text("value").notNull(), // domain or email address
+		displayName: text("display_name"),
 		incomingDomain: boolean("incoming_domain").default(false),
 
 		domainIdentityId: uuid("domain_identity_id")
@@ -1407,6 +1404,11 @@ export const calendarEvents = pgTable(
 			.references(() => calendars.id, { onDelete: "cascade" })
 			.notNull(),
 
+        organizerIdentityId: uuid("organizer_identity_id")
+            .references(() => identities.id, { onDelete: "set null" }),
+        organizerEmail: text("organizer_email"),
+        organizerName: text("organizer_name"),
+
 		title: text("title").notNull(),
 		description: text("description"),
 		location: text("location"),
@@ -1424,6 +1426,8 @@ export const calendarEvents = pgTable(
 		davUri: text("dav_uri"),
 
         rawIcs: text("raw_ics"),
+
+        isExternal: boolean("is_external").notNull().default(false),
 
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
@@ -1462,4 +1466,70 @@ export const calendarEvents = pgTable(
 			using: sql`${t.ownerId} = ${authUid}`,
 		}),
 	],
+).enableRLS();
+
+export const calendarEventAttendees = pgTable(
+    "calendar_event_attendees",
+    {
+        id: uuid("id").defaultRandom().primaryKey(),
+
+        ownerId: uuid("owner_id")
+            .references(() => users.id)
+            .notNull()
+            .default(sql`auth.uid()`),
+
+        eventId: uuid("event_id")
+            .references(() => calendarEvents.id, { onDelete: "cascade" })
+            .notNull(),
+
+        contactId: uuid("contact_id")
+            .references(() => contacts.id, { onDelete: "set null" })
+            .default(null),
+
+        email: text("email").notNull(),
+        name: text("name"),
+
+        role: CalendarAttendeeRoleEnum("role")
+            .notNull()
+            .default("req_participant"),
+        partstat: CalendarAttendeePartstatEnum("partstat")
+            .notNull()
+            .default("needs_action"),
+
+        rsvp: boolean("rsvp").notNull().default(false),
+
+        isOrganizer: boolean("is_organizer").notNull().default(false),
+        metaData: jsonb("meta").$type<Record<string, any> | null>().default(null),
+
+        createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    },
+    (t) => [
+        index("ix_event_attendees_owner").on(t.ownerId),
+        index("ix_event_attendees_event").on(t.eventId),
+        index("ix_event_attendees_email").on(t.email),
+        uniqueIndex("ux_event_attendees_event_email").on(t.eventId, t.email),
+
+        pgPolicy("event_attendees_select_own", {
+            for: "select",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("event_attendees_insert_own", {
+            for: "insert",
+            to: authenticatedRole,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("event_attendees_update_own", {
+            for: "update",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("event_attendees_delete_own", {
+            for: "delete",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+    ],
 ).enableRLS();

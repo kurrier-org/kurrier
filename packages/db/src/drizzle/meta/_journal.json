@@ -162,6 +162,41 @@
       "when": 1764853011776,
       "tag": "0022_fine_alex_power",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1764904046955,
+      "tag": "0023_clever_junta",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1764906859117,
+      "tag": "0024_noisy_mattie_franklin",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1764922670862,
+      "tag": "0025_cute_shatterstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1764935314372,
+      "tag": "0026_acoustic_nick_fury",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1765045712068,
+      "tag": "0027_demonic_selene",
+      "breakpoints": true
     }
   ]
 }

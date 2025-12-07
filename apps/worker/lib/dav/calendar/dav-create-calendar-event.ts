@@ -1,16 +1,17 @@
 import DigestFetch from "digest-fetch";
 import {
-	db,
-	davAccounts,
-	secretsMeta,
-	getSecretAdmin,
-	calendarEvents,
-	calendars,
+    db,
+    davAccounts,
+    secretsMeta,
+    getSecretAdmin,
+    calendarEvents,
+    calendars, calendarEventAttendees,
 } from "@db";
 import { and, desc, eq } from "drizzle-orm";
 import { getDayjsTz } from "@common";
 import { normalizeEtag } from "../sync/dav-sync-db";
 import { buildICalEvent } from "./dav-build-cal-event";
+import { getRedis } from "../../../lib/get-redis";
 
 async function createCalendarObjectViaHttp(opts: {
 	icalData: string;
@@ -49,7 +50,7 @@ async function createCalendarObjectViaHttp(opts: {
 	return { etag };
 }
 
-export const createCalendarEvent = async (eventId: string) => {
+export const createCalendarEvent = async (eventId: string, notifyAttendees: boolean) => {
 	const [event] = await db
 		.select()
 		.from(calendarEvents)
@@ -92,8 +93,12 @@ export const createCalendarEvent = async (eventId: string) => {
 		return;
 	}
 
+    const guests = await db.select().from(calendarEventAttendees).where(
+        eq(calendarEventAttendees.eventId, event.id)
+    )
+
 	const dayjsTz = getDayjsTz(calendar.timezone || "UTC");
-	const icalData = buildICalEvent(event, dayjsTz);
+	const icalData = buildICalEvent(event, dayjsTz, guests);
 	const davUri = `${event.id}.ics`;
 	const { etag } = await createCalendarObjectViaHttp({
 		icalData,
@@ -113,6 +118,14 @@ export const createCalendarEvent = async (eventId: string) => {
 			updatedAt: new Date(),
 		})
 		.where(eq(calendarEvents.id, event.id));
+
+    if (notifyAttendees) {
+        const { davWorkerQueue } = await getRedis();
+        await davWorkerQueue.add("dav:calendar:itip-notify", {
+            eventId: event.id,
+            action: "create",
+        });
+    }
 
 	return { success: true };
 };

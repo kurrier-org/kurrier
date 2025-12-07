@@ -44,8 +44,8 @@ function FragmentCell({
 				setState((prev) => ({
 					...prev,
 					activePopoverId: null,
-					activePopoverEditEvent: undefined,
-				}));
+					activePopoverEditEvent: undefined
+                }));
 			}}
 			start={start}
 			end={end}

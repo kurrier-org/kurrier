@@ -18,7 +18,7 @@ const fetchIcsData = async (obj: DavCalendarObjectEntity) => {
 
 export function parseIcsToEvent(
     icsData: string,
-    calendar: CalendarEntity,
+    calendarTz: string,
 ): Partial<CalendarEventEntity> | null {
     const jcal = ICAL.parse(icsData);
     const comp = new ICAL.Component(jcal);
@@ -33,7 +33,7 @@ export function parseIcsToEvent(
     if (!startTime || !endTime) return null;
 
     const eventTzid = (startTime.zone && (startTime.zone as any).tzid) || null;
-    const tzId = calendar.timezone || eventTzid || "UTC";
+    const tzId = calendarTz || eventTzid || "UTC";
     const dayjsTz = getDayjsTz(tzId);
 
     const isAllDay = !!startTime.isDate;
@@ -141,7 +141,7 @@ const createEventFromDav = async (opts: {
 }) => {
     const { obj, calendar } = opts;
     const ics = await fetchIcsData(obj);
-    const parsed = parseIcsToEvent(ics, calendar);
+    const parsed = parseIcsToEvent(ics, calendar.timezone);
     if (!parsed) return null;
 
     const payload = CalendarEventInsertSchema.safeParse({
@@ -184,7 +184,7 @@ const updateEventFromDav = async (opts: {
 }) => {
     const { obj, calendar, localEvent } = opts;
     const ics = await fetchIcsData(obj);
-    const parsed = parseIcsToEvent(ics, calendar);
+    const parsed = parseIcsToEvent(ics, calendar.timezone);
     if (!parsed) return localEvent;
 
     const payload = CalendarEventUpdateSchema.safeParse({

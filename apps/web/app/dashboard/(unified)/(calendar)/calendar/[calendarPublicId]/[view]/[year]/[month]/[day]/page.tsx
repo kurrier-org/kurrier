@@ -1,10 +1,9 @@
 import React from "react";
 import { WeekGrid } from "@/components/dashboard/calendars/week-view";
 import {
-	eventsByDay,
-	eventsBySlot,
-	fetchCalendarEventsForView,
-	fetchDefaultCalendar,
+    eventsByDay,
+    fetchCalendarEventsForView,
+    fetchDefaultCalendar, fetchEventAttendees, getContactsForAttendeeIds,
 } from "@/lib/actions/calendar";
 
 async function Page({
@@ -32,10 +31,12 @@ async function Page({
 			day: resolvedParams.day ? Number(resolvedParams.day) : undefined,
 		},
 	);
-	const slotMap = await eventsBySlot(defaultCalendar.timezone, events);
 	const byDayMap = await eventsByDay(defaultCalendar.timezone, events);
+    const attendees = await fetchEventAttendees(events.map(e => e.id));
+    const attendeeIds = Object.values(attendees).flatMap(list => list.map(a => a.id));
+    const contacts = await getContactsForAttendeeIds(attendeeIds);
 
-	return <WeekGrid events={events} byDayMap={byDayMap} />;
+	return <WeekGrid events={events} byDayMap={byDayMap} attendees={attendees} attendeeContacts={contacts} />;
 }
 
 export default Page;

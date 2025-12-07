@@ -1,10 +1,30 @@
-import { CalendarEventEntity } from "@db";
+import { CalendarEventAttendeeEntity, CalendarEventEntity } from "@db";
 import { getDayjsTz, VCAL_PRODID } from "@common";
 import ICAL from "ical.js";
+
+function mapRoleToIcal(role?: string | null): string {
+    switch (role) {
+        case "chair":
+            return "CHAIR";
+        case "opt_participant":
+            return "OPT-PARTICIPANT";
+        case "non_participant":
+            return "NON-PARTICIPANT";
+        case "req_participant":
+        default:
+            return "REQ-PARTICIPANT";
+    }
+}
+
+function mapPartstatToIcal(partstat?: string | null): string {
+    if (!partstat) return "NEEDS-ACTION";
+    return partstat.replace(/_/g, "-").toUpperCase();
+}
 
 export function buildICalEvent(
     eventRow: CalendarEventEntity,
     dayjsTz: ReturnType<typeof getDayjsTz>,
+    guests?: CalendarEventAttendeeEntity[],
 ): string {
     let vcal: ICAL.Component;
     let vevent: ICAL.Component;
@@ -13,7 +33,9 @@ export function buildICalEvent(
         try {
             const parsed = ICAL.parse(eventRow.rawIcs);
             vcal = new ICAL.Component(parsed);
-            vevent = vcal.getFirstSubcomponent("vevent") ?? new ICAL.Component("vevent");
+            vevent =
+                vcal.getFirstSubcomponent("vevent") ??
+                new ICAL.Component("vevent");
             if (!vcal.getFirstSubcomponent("vevent")) {
                 vcal.addSubcomponent(vevent);
             }
@@ -52,8 +74,12 @@ export function buildICalEvent(
         const startLocal = dayjsTz(eventRow.startsAt);
         const endLocal = dayjsTz(eventRow.endsAt);
 
-        ev.startDate = ICAL.Time.fromDateString(startLocal.format("YYYYMMDD"));
-        ev.endDate = ICAL.Time.fromDateString(endLocal.format("YYYYMMDD"));
+        ev.startDate = ICAL.Time.fromDateString(
+            startLocal.format("YYYYMMDD"),
+        );
+        ev.endDate = ICAL.Time.fromDateString(
+            endLocal.format("YYYYMMDD"),
+        );
     } else {
         const startUtc = dayjsTz(eventRow.startsAt).toDate();
         const endUtc = dayjsTz(eventRow.endsAt).toDate();
@@ -73,6 +99,55 @@ export function buildICalEvent(
     if (eventRow.rawIcs) {
         const currentSeq = typeof ev.sequence === "number" ? ev.sequence : 0;
         ev.sequence = currentSeq + 1;
+    }
+
+    vevent.removeAllProperties("organizer");
+    vevent.removeAllProperties("attendee");
+
+    const attendees = guests ?? [];
+
+    const organizerGuest =
+        attendees.find((g) => g.isOrganizer) ?? null;
+
+    const organizerEmail =
+        (eventRow.organizerEmail ?? organizerGuest?.email ?? "")
+            .trim()
+            .toLowerCase() || null;
+
+    if (organizerEmail) {
+        const organizerName =
+            eventRow.organizerName ?? organizerGuest?.name ?? null;
+
+        const orgProp = new ICAL.Property("organizer");
+        orgProp.setValue(`mailto:${organizerEmail}`);
+        if (organizerName) {
+            orgProp.setParameter("cn", organizerName);
+        }
+        vevent.addProperty(orgProp);
+    }
+
+    const organizerEmailLower = organizerEmail ?? "";
+    for (const g of attendees) {
+        const email = g.email?.trim();
+        if (!email) continue;
+
+        if (email.toLowerCase() === organizerEmailLower) continue;
+
+        const prop = new ICAL.Property("attendee");
+        prop.setValue(`mailto:${email}`);
+
+        if (g.name) {
+            prop.setParameter("cn", g.name);
+        }
+
+        prop.setParameter("role", mapRoleToIcal(g.role));
+        prop.setParameter("partstat", mapPartstatToIcal(g.partstat));
+
+        if (g.rsvp) {
+            prop.setParameter("rsvp", "TRUE");
+        }
+
+        vevent.addProperty(prop);
     }
 
     return vcal.toString();

@@ -8,6 +8,7 @@ import {
 } from "@db";
 import { desc, eq } from "drizzle-orm";
 import DigestFetch from "digest-fetch";
+import { getRedis } from "../../../lib/get-redis";
 
 export async function deleteCalendarObjectViaHttp(opts: {
 	davBaseUrl: string;
@@ -108,7 +109,11 @@ export const deleteCalendarEvent = async (eventId: string) => {
 		etag: event.davEtag,
 	});
 
-	await db.delete(calendarEvents).where(eq(calendarEvents.id, event.id));
+    const { davWorkerQueue } = await getRedis();
+    await davWorkerQueue.add("dav:calendar:itip-notify", {
+        eventId: event.id,
+        action: "cancel",
+    });
 
 	return { success: true };
 };

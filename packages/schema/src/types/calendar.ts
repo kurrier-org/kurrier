@@ -1,13 +1,16 @@
 import { z } from "zod";
-import { CalendarEntity, CalendarEventEntity } from "@db";
+import {CalendarEntity, CalendarEventAttendeeEntity, CalendarEventEntity} from "@db";
 
 export const calendarViewsList = ["day", "week", "month", "year"] as const;
 export type CalendarViewType = z.infer<typeof calendarViewsList>;
+export type CalendarOrganizerType = { value: string; label: string, displayName: string | null };
 export type CalendarState = {
 	userTz?: string;
 	defaultCalendar: CalendarEntity;
 	calendarEvents?: CalendarEventEntity[];
-	organizers: { value: string; label: string }[];
+	calendarEventAttendees?: Record<string, CalendarEventAttendeeEntity[]>;
+    attendeeContacts?: ComposeContact[];
+	organizers: CalendarOrganizerType[];
 	calendarTzAbbr: string;
 	calendarTzName: string;
 	activePopoverId?: string | null;
@@ -50,4 +53,46 @@ export type EventSlotFragment = {
 export type EventSlotRenderFragment = EventSlotFragment & {
 	columnIndex: number;
 	columnCount: number;
+};
+
+export type ItipKind = "REQUEST" | "CANCEL" | "REPLY" | "PUBLISH" | "UNKNOWN";
+
+export const calendarAttendeeRoleList = [
+    "req_participant",
+    "opt_participant",
+    "non_participant",
+    "chair",
+] as const;
+
+export type CalendarAttendeeRole =  z.infer<typeof calendarAttendeeRoleList>;
+
+export const calendarAttendeePartstatList = [
+    "needs_action",
+    "accepted",
+    "declined",
+    "tentative",
+    "delegated",
+    "in_process",
+    "completed",
+] as const;
+
+export type CalendarAttendeePartstat = z.infer<typeof calendarAttendeePartstatList>;
+
+export type ComposeContact = {
+    id: string;
+    name: string;
+    email: string;
+    avatar: string | null;
+};
+
+export type ItipAction = "create" | "update" | "cancel";
+
+export const PARTSTAT_LABEL: Record<string, string> = {
+    accepted: "Accepted",
+    declined: "Declined",
+    tentative: "Tentative",
+    needs_action: "No response",
+    delegated: "Delegated",
+    in_process: "In process",
+    completed: "Completed",
 };
