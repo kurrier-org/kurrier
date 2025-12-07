@@ -1426,6 +1426,7 @@ export const calendarEvents = pgTable(
 		davUri: text("dav_uri"),
 
         rawIcs: text("raw_ics"),
+        icalUid: text("ical_uid"),
 
         isExternal: boolean("is_external").notNull().default(false),
 

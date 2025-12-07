@@ -212,6 +212,15 @@ async function processSingleItem(
         return;
     }
 
+    if (method === "CANCEL") {
+        await handleIncomingCancel({
+            msg,
+            mailboxId,
+            vevent,
+        });
+        return;
+    }
+
     if (method !== "REPLY") {
         return;
     }
@@ -224,30 +233,43 @@ async function processSingleItem(
         return;
     }
 
-    const attendees = vevent.getAllProperties("attendee") || [];
-    if (!attendees.length) {
+
+    const attendeeProps = vevent.getAllProperties("attendee") || [];
+    if (!attendeeProps.length) {
         console.warn("davItipProcessor: REPLY has no ATTENDEE", { uid });
         return;
     }
 
-    const responderProp = attendees[0];
-    const responderRaw = responderProp.getFirstValue();
-    const rawMailto = String(responderRaw ?? "").toLowerCase();
-    const email = rawMailto.startsWith("mailto:")
-        ? rawMailto.slice("mailto:".length)
-        : rawMailto;
+    const attendeeUpdates = attendeeProps
+        .map((p) => {
+            const rawVal = p.getFirstValue();
+            const rawMailto = String(rawVal ?? "").toLowerCase();
+            const email = rawMailto.startsWith("mailto:")
+                ? rawMailto.slice("mailto:".length)
+                : rawMailto;
 
-    const psParam = responderProp.getParameter("partstat");
-    const partstatParam =
-        typeof psParam === "string"
-            ? psParam
-            : Array.isArray(psParam)
-                ? psParam[0]
-                : null;
+            if (!email) return null;
 
-    console.log("partstatParam", partstatParam);
-    const dbPartstat = icsPartstatToDb(partstatParam);
-    console.log("dbPartstat", dbPartstat);
+            const psParam = p.getParameter("partstat");
+            const partstatParam =
+                typeof psParam === "string"
+                    ? psParam
+                    : Array.isArray(psParam)
+                        ? psParam[0]
+                        : null;
+
+            const dbPartstat = icsPartstatToDb(partstatParam);
+
+            return { email, dbPartstat };
+        })
+        .filter((x): x is { email: string; dbPartstat: DbPartstat } => !!x);
+
+    if (!attendeeUpdates.length) {
+        console.warn("davItipProcessor: REPLY ATTENDEE list has no valid emails", {
+            uid,
+        });
+        return;
+    }
 
     const [event] = await db
         .select()
@@ -258,11 +280,10 @@ async function processSingleItem(
                 or(
                     eq(calendarEvents.davUri, uid),
                     eq(calendarEvents.id, uid as any),
+                    eq(calendarEvents.icalUid, uid as any),
                 ),
             ),
         );
-
-    console.log("event", event);
 
     if (!event) {
         console.warn("davItipProcessor: no matching event for UID", {
@@ -272,32 +293,117 @@ async function processSingleItem(
         return;
     }
 
-    const updated = await db
-        .update(calendarEventAttendees)
-        .set({ partstat: dbPartstat })
-        .where(
-            and(
-                eq(calendarEventAttendees.eventId, event.id),
-                eq(calendarEventAttendees.email, email),
-            ),
-        )
-        .returning();
+    for (const { email, dbPartstat } of attendeeUpdates) {
+        const updated = await db
+            .update(calendarEventAttendees)
+            .set({ partstat: dbPartstat })
+            .where(
+                and(
+                    eq(calendarEventAttendees.eventId, event.id),
+                    eq(calendarEventAttendees.email, email),
+                ),
+            )
+            .returning();
 
-    if (!updated.length) {
-        console.warn("davItipProcessor: attendee not found on event", {
+        if (!updated.length) {
+            console.warn("davItipProcessor: attendee not found on event", {
+                eventId: event.id,
+                email,
+                partstat: dbPartstat,
+            });
+            continue;
+        }
+
+        console.info("davItipProcessor: updated attendee partstat", {
             eventId: event.id,
             email,
             partstat: dbPartstat,
         });
+    }
+
+
+}
+
+
+
+
+
+async function handleIncomingCancel({ msg, mailboxId, vevent}: { msg: { id: string; ownerId: string }; mailboxId: string; vevent: ICAL.Component; }) {
+    const [mailbox] = await db
+        .select({
+            id: mailboxes.id,
+            identityId: mailboxes.identityId,
+        })
+        .from(mailboxes)
+        .where(eq(mailboxes.id, mailboxId));
+
+    if (!mailbox?.identityId) {
+        console.warn("handleIncomingCancel: mailbox has no identity", { mailboxId });
         return;
     }
 
-    console.info("davItipProcessor: updated attendee partstat", {
-        eventId: event.id,
-        email,
-        partstat: dbPartstat,
+    const [identity] = await db
+        .select({
+            id: identities.id,
+            value: identities.value,
+            ownerId: identities.ownerId,
+        })
+        .from(identities)
+        .where(eq(identities.id, mailbox.identityId));
+
+    if (!identity) {
+        console.warn("handleIncomingCancel: identity not found", {
+            identityId: mailbox.identityId,
+        });
+        return;
+    }
+
+    const myEmail = identity.value.trim().toLowerCase();
+
+    const attendeesProps = vevent.getAllProperties("attendee") || [];
+    const isForMe = attendeesProps.some((p) => {
+        const rawVal = p.getFirstValue();
+        const raw = String(rawVal ?? "").toLowerCase();
+        const addr = raw.startsWith("mailto:") ? raw.slice("mailto:".length) : raw;
+        return addr === myEmail;
+    });
+
+    if (!isForMe) {
+        return;
+    }
+
+    const ev = new ICAL.Event(vevent);
+    const uid = ev.uid;
+    if (!uid) {
+        console.warn("handleIncomingCancel: CANCEL missing UID");
+        return;
+    }
+
+    const [existing] = await db
+        .select()
+        .from(calendarEvents)
+        .where(eq(calendarEvents.icalUid, uid));
+
+    if (!existing) {
+        console.warn("handleIncomingCancel: no matching event for UID", {
+            uid,
+            ownerId: msg.ownerId,
+        });
+        return;
+    }
+
+    const eventId = existing.id;
+    const { davWorkerQueue } = await getRedis();
+    await davWorkerQueue.add("dav:calendar:delete-event", {
+        eventId,
+        notifyAttendees: false,
+        deleteEvent: true,
     });
 }
+
+
+
+
 
 async function handleIncomingRequest({
                                          msg,
@@ -377,6 +483,9 @@ async function handleIncomingRequest({
         vevent,
     });
 }
+
+
+
 
 async function applyIncomingRequest({
                                         ownerId,
@@ -478,6 +587,7 @@ async function applyIncomingRequest({
                 or(
                     eq(calendarEvents.davUri, `${uid}.ics`),
                     eq(calendarEvents.davUri, uid),
+                    eq(calendarEvents.icalUid, uid),
                 ),
             ),
         );
@@ -498,6 +608,7 @@ async function applyIncomingRequest({
             davUri: `${uid}.ics`,
             rawIcs: normaliseItipRequestToVevent(vcalString),
             isExternal: true,
+            icalUid: uid,
         });
 
         if (insertPayload.error) {
@@ -548,16 +659,16 @@ async function applyIncomingRequest({
         const contactId = emailToContactId[a.email.trim().toLowerCase()];
 
         const insertAttendeePayload = CalendarEventAttendeeInsertSchema.safeParse({
-                ownerId,
-                eventId,
-                email: a.email,
-                name: a.name,
-                contactId,
-                role: a.role,
-                partstat: a.partstat,
-                rsvp: a.rsvp,
-                isOrganizer: a.email === organizerEmail
-            });
+            ownerId,
+            eventId,
+            email: a.email,
+            name: a.name,
+            contactId,
+            role: a.role,
+            partstat: a.partstat,
+            rsvp: a.rsvp,
+            isOrganizer: a.email === organizerEmail
+        });
 
 
         if (insertAttendeePayload.error) {

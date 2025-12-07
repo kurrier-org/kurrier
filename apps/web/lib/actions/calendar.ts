@@ -542,7 +542,7 @@ export const deleteCalendarEvent = async (id: string): Promise<FormState> => {
 	return handleAction(async () => {
 		const { davQueue, davEvents } = await getRedis();
 		const job = await davQueue.add("dav:calendar:delete-event", {
-			eventId: id,
+			eventId: id, notifyAttendees: true
 		});
         await job.waitUntilFinished(davEvents)
 
@@ -689,3 +689,76 @@ export const getContactsForAttendeeIds = async (attendeeIds: string[]) => {
 export type FetchContactsForAttendeesResult = Awaited<
     ReturnType<typeof getContactsForAttendeeIds>
 >;
+
+
+
+export async function yesCalendarInvite(
+    _prev: FormState,
+    formData: FormData,
+): Promise<FormState> {
+    return handleAction(async () => {
+        const decodedForm = decode(formData) as {
+            calendarId: string;
+            eventId: string;
+            attendeeId: string;
+        };
+
+        const { davQueue, davEvents } = await getRedis();
+        const job = await davQueue.add("dav:calendar:itip-reply", {
+            eventId: decodedForm.eventId,
+            attendeeId: decodedForm.attendeeId,
+            partstat: "accepted"
+        });
+        await job.waitUntilFinished(davEvents);
+        revalidatePath("/dashboard/calendar");
+        return { success: true };
+    });
+}
+
+
+export async function noCalendarInvite(
+    _prev: FormState,
+    formData: FormData,
+): Promise<FormState> {
+    return handleAction(async () => {
+        const decodedForm = decode(formData) as {
+            calendarId: string;
+            eventId: string;
+            attendeeId: string;
+        };
+
+        const { davQueue, davEvents } = await getRedis();
+        const job = await davQueue.add("dav:calendar:itip-reply", {
+            eventId: decodedForm.eventId,
+            attendeeId: decodedForm.attendeeId,
+            partstat: "declined"
+        });
+        await job.waitUntilFinished(davEvents);
+        revalidatePath("/dashboard/calendar");
+        return { success: true };
+    });
+}
+
+
+export async function maybeCalendarInvite(
+    _prev: FormState,
+    formData: FormData,
+): Promise<FormState> {
+    return handleAction(async () => {
+        const decodedForm = decode(formData) as {
+            calendarId: string;
+            eventId: string;
+            attendeeId: string;
+        };
+
+        const { davQueue, davEvents } = await getRedis();
+        const job = await davQueue.add("dav:calendar:itip-reply", {
+            eventId: decodedForm.eventId,
+            attendeeId: decodedForm.attendeeId,
+            partstat: "tentative"
+        });
+        await job.waitUntilFinished(davEvents);
+        revalidatePath("/dashboard/calendar");
+        return { success: true };
+    });
+}

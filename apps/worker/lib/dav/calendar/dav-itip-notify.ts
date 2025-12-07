@@ -16,7 +16,7 @@ import { getRedis } from "../../../lib/get-redis";
 import { customAlphabet } from "nanoid";
 const cleanId = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 6);
 
-const roleToIcs = (role: string | null) => {
+export const roleToIcs = (role: string | null) => {
     switch (role) {
         case "opt_participant":
             return "OPT-PARTICIPANT";
@@ -30,7 +30,7 @@ const roleToIcs = (role: string | null) => {
     }
 };
 
-const partstatToIcs = (partstat: string | null) => {
+export const partstatToIcs = (partstat: string | null) => {
     switch (partstat) {
         case "accepted":
             return "ACCEPTED";

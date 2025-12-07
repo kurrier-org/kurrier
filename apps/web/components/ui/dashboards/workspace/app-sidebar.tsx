@@ -107,7 +107,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
 				</div>
 			</SidebarContent>
 			<SidebarFooter>
-				<NavUser user={user} avatar={avatar} />
+				<NavUser user={user} />
 			</SidebarFooter>
 		</Sidebar>
 	);

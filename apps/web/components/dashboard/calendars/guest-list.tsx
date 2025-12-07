@@ -1,6 +1,7 @@
 import React from "react";
-import { X } from "lucide-react";
+import {CheckCircle, CircleDashed, CircleX, X} from "lucide-react";
 import ContactListAvatar from "@/components/dashboard/contacts/contact-list-avatar";
+import {Tooltip} from "@mantine/core";
 
 export type UiGuestStatus =
     | "accepted"
@@ -29,33 +30,23 @@ function GuestList({ guests, onRemoveGuest }: GuestListProps) {
         const partstat = guest.partstat ?? "needs_action";
 
         if (partstat === "accepted") {
-            return (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-          <span className="h-3 w-3 rounded-full bg-emerald-500" />
-          Accepted
-        </span>
-            );
+            return <Tooltip label={"Accepted"}>
+                <CheckCircle size={16} className={"text-brand dark:text-brand-foreground"} />
+            </Tooltip>
         }
 
         if (partstat === "tentative") {
-            return (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-          <span className="h-3 w-3 rounded-full border border-amber-700" />
-          Tentative
-        </span>
-            );
+            return <Tooltip label={"Tentative"}>
+                <CircleDashed size={16} className={"text-brand dark:text-brand-foreground"} />
+            </Tooltip>
         }
 
         if (partstat === "declined") {
-            return (
-                <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700">
-          <span className="h-3 w-3 rounded-full bg-rose-500" />
-          Declined
-        </span>
-            );
+            return <Tooltip label={"Declined"}>
+                <CircleX size={16} className={"text-brand dark:text-brand-foreground"} />
+            </Tooltip>
         }
 
-        // needs_action
         return (
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
         <span className="h-3 w-3 rounded-full border border-amber-700" />
@@ -79,14 +70,18 @@ function GuestList({ guests, onRemoveGuest }: GuestListProps) {
                             alt={guest.name || guest.email}
                             size={24}
                         />
+
                         <div className="flex flex-col">
-              <span className="text-[13px] font-medium leading-snug">
-                {guest.name || guest.email}
-              </span>
-                            {guest.name && (
+                            <span className="text-[13px] font-medium leading-snug">
+                              {guest.name && guest.name.toLowerCase() !== "unknown"
+                                  ? guest.name
+                                  : guest.email}
+                            </span>
+
+                            {guest.name && guest.name.toLowerCase() !== "unknown" && (
                                 <span className="text-[11px] leading-tight text-muted-foreground">
-                  {guest.email}
-                </span>
+                                    {guest.email}
+                                </span>
                             )}
                         </div>
                     </div>

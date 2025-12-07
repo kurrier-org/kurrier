@@ -1,33 +1,25 @@
 "use client";
 
-import React, { useMemo, useState, useTransition } from "react";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
+import React, { useMemo } from "react";
 import { CalendarState } from "@schema";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import GuestList from "@/components/dashboard/calendars/guest-list";
-import {Button} from "@mantine/core";
-import {Check, CheckCircle, CircleDashed, CircleX} from "lucide-react";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
+import {CheckCircle, CircleDashed, CircleX, Trash} from "lucide-react";
+import {ReusableFormButton} from "@/components/common/reusable-form-button";
+import {maybeCalendarInvite, noCalendarInvite, yesCalendarInvite} from "@/lib/actions/calendar";
+import { getDayjsTz } from "@common/day-js-extended";
 
 type UiGuestStatus = "accepted" | "declined" | "tentative" | "needs_action" | null;
 
-type ExternalEventViewProps = {
-    onRespond?: (status: Exclude<UiGuestStatus, null>) => Promise<void> | void;
-};
-
-function ExternalEventView({ onRespond }: ExternalEventViewProps) {
+function ExternalEventView() {
     const { state } = useDynamicContext<CalendarState>();
-    const [isPending, startTransition] = useTransition();
-
     const editEvent = state.activePopoverEditEvent ?? null;
     const editEventId = editEvent?.id ?? null;
 
     const attendeesRaw = (editEventId && state.calendarEventAttendees?.[editEventId]) || [];
     const attendeeContacts = state.attendeeContacts ?? [];
+
+    const dayjsTz = getDayjsTz(state.defaultCalendar.timezone)
 
     const contactsById = useMemo(() => {
         const map = new Map<string, any>();
@@ -65,6 +57,7 @@ function ExternalEventView({ onRespond }: ExternalEventViewProps) {
                     contactId: contact?.id ?? contactId ?? null,
                     isOrganizer: a.isOrganizer ?? false,
                     isPersisted: true,
+                    attendeeId: a.id,
                     partstat: (a.partstat as UiGuestStatus) ?? "needs_action",
                 };
             }),
@@ -104,16 +97,8 @@ function ExternalEventView({ onRespond }: ExternalEventViewProps) {
             [guests, myEmails],
         ) ?? null;
 
-    const selfStatus: UiGuestStatus =
-        (selfAttendee?.partstat as UiGuestStatus) ?? "needs_action";
-
-    const [localStatus, setLocalStatus] = useState<UiGuestStatus>(selfStatus);
-    const effectiveStatus: UiGuestStatus = localStatus ?? selfStatus;
-
-    const userTz = state.userTz || state.calendarTzName || "UTC";
-
-    const start = editEvent ? dayjs(editEvent.startsAt).tz(userTz) : null;
-    const end = editEvent ? dayjs(editEvent.endsAt).tz(userTz) : null;
+    const start = editEvent ? dayjsTz(editEvent.startsAt) : null;
+    const end = editEvent ? dayjsTz(editEvent.endsAt) : null;
 
     const dateLabel =
         start && end
@@ -127,16 +112,6 @@ function ExternalEventView({ onRespond }: ExternalEventViewProps) {
             ? `${editEvent.organizerName} <${editEvent.organizerEmail}>`
             : editEvent?.organizerEmail || "";
 
-    const handleClick = (status: Exclude<UiGuestStatus, null>) => {
-        setLocalStatus(status);
-
-        if (!onRespond) return;
-
-        startTransition(() => {
-            void onRespond(status);
-        });
-    };
-
 
     return (
         <div className="max-w-sm max-h-xl overflow-y-auto rounded-2xl bg-muted/40 px-4 py-3">
@@ -149,15 +124,40 @@ function ExternalEventView({ onRespond }: ExternalEventViewProps) {
                         <div className="text-xs text-muted-foreground">{dateLabel}</div>
                     )}
                 </div>
-                {/*<span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-semibold text-brand-700">*/}
-                {/*    Invitation*/}
-                {/*</span>*/}
+                <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-semibold text-brand-700">
+                    Invitation
+                </span>
             </div>
 
-            <div className={"flex gap-2 my-4 bg-brand/10 p-2 rounded-sm"}>
-                <Button size={"compact-xs"} disabled={isPending} variant={"filled"} leftSection={<CheckCircle size={12} />}>Accept</Button>
-                <Button size={"compact-xs"} disabled={isPending} variant={'subtle'} leftSection={<CircleDashed size={12} />}>Maybe</Button>
-                <Button size={"compact-xs"} disabled={isPending} variant={"subtle"} leftSection={<CircleX size={12} />}>Decline</Button>
+            <div className={"flex gap-2 my-4 bg-brand/10 dark:bg-brand-900 p-2 rounded-sm justify-center"}>
+                <ReusableFormButton action={yesCalendarInvite} label="Accept" buttonProps={{
+                    leftSection: <CheckCircle size={16} />,
+                    size: "compact-xs",
+                    variant: selfAttendee?.partstat === "accepted" ? "filled" : "subtle",
+                }}>
+                    <input type="hidden" name="calendarId" value={state.defaultCalendar.id} />
+                    <input type="hidden" name="eventId" value={editEvent?.id} />
+                    <input type="hidden" name="attendeeId" value={selfAttendee?.attendeeId} />
+                </ReusableFormButton>
+
+                <ReusableFormButton action={maybeCalendarInvite} label="Maybe" buttonProps={{
+                    leftSection: <CircleDashed size={16} />,
+                    size: "compact-xs",
+                    variant: selfAttendee?.partstat === "tentative" ? "filled" : "subtle",
+                }}>
+                    <input type="hidden" name="calendarId" value={state.defaultCalendar.id} />
+                    <input type="hidden" name="eventId" value={editEvent?.id} />
+                    <input type="hidden" name="attendeeId" value={selfAttendee?.attendeeId} />
+                </ReusableFormButton>
+                <ReusableFormButton action={noCalendarInvite} label="Decline" buttonProps={{
+                    leftSection: <CircleX size={16} />,
+                    size: "compact-xs",
+                    variant: selfAttendee?.partstat === "declined" ? "filled" : "subtle",
+                }}>
+                    <input type="hidden" name="calendarId" value={state.defaultCalendar.id} />
+                    <input type="hidden" name="eventId" value={editEvent?.id} />
+                    <input type="hidden" name="attendeeId" value={selfAttendee?.attendeeId} />
+                </ReusableFormButton>
             </div>
 
             {organizerLabel && (

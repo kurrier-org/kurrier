@@ -125,7 +125,7 @@ export function AppSidebar({
 					</div>
 				</SidebarContent>
 				<SidebarFooter>
-					<NavUser user={user} avatar={avatar} />
+					<NavUser user={user} />
 				</SidebarFooter>
 			</Sidebar>
 

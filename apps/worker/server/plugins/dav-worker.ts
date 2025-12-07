@@ -13,6 +13,7 @@ import { updateCalendarEvent } from "../../lib/dav/calendar/dav-update-calendar-
 import { davSyncCalendarsDb } from "../../lib/dav/calendar/dav-sync-calendar-db";
 import { davItipProcessor } from "../../lib/dav/calendar/dav-itip-processor";
 import { davItipNotify } from "../../lib/dav/calendar/dav-itip-notify";
+import { davItipReply } from "../../lib/dav/calendar/dav-itip-reply";
 
 export default defineNitroPlugin(async (nitroApp) => {
 	const { connection } = await getRedis();
@@ -37,9 +38,11 @@ export default defineNitroPlugin(async (nitroApp) => {
 				case "dav:calendar:update-event":
 					return updateCalendarEvent(job.data.eventId, job.data.notifyAttendees);
 				case "dav:calendar:delete-event":
-					return deleteCalendarEvent(job.data.eventId);
+					return deleteCalendarEvent(job.data.eventId, job.data.notifyAttendees, job.data.deleteEvent);
                 case "dav:calendar:itip-notify":
                     return davItipNotify({ eventId: job.data.eventId, action: job.data.action});
+                case "dav:calendar:itip-reply":
+                    return davItipReply({ eventId: job.data.eventId, attendeeId: job.data.attendeeId, partstat: job.data.partstat});
                 case "dav:calendar:itip-ingest-batch":
                     return davItipProcessor(job.data.items);
 				case "dav:create-contact":
@@ -102,7 +105,6 @@ export default defineNitroPlugin(async (nitroApp) => {
 	await scheduler.upsertJobScheduler(
 		"dav-sync-scheduler",
 		{ every: 120000 },
-		// { every: 10000 },
 		"dav:sync",
 		{},
 		{
