@@ -3,7 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
 	devIndicators: false,
 	output: "standalone",
-	reactCompiler: true,
+    serverExternalPackages: ['pino', 'pino-pretty', 'thread-stream'],
+    reactCompiler: true,
 	images: {
 		remotePatterns: [
 			{

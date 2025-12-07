@@ -60,9 +60,10 @@ function FragmentCell({
 				}}
 				onClick={handleEventClick}
 			>
-				{showTitle && (
-					<div className="truncate font-medium">{fragment.event.title}</div>
-				)}
+				{showTitle && <div className={"flex flex-wrap"} title={`${fragment.event.title} - ${start.format("h:mm A")} - ${end.format("h:mm A")}`}>
+					<div className="truncate font-medium text-xs">{fragment.event.title}</div>
+					<div className="truncate font-medium text-xs mx-1">{start.format("h:mm A")} - {end.format("h:mm A")}</div>
+                </div>}
 			</div>
 		</CalendarAddEventPopover>
 	);

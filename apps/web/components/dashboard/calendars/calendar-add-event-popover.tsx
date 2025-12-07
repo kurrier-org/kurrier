@@ -31,7 +31,6 @@ function CalendarAddEventPopover({
 			closeOnClickOutside={false}
 			closeOnEscape={true}
 			arrowOffset={24}
-			trapFocus={true}
 			shadow={"xl"}
 			radius={"md"}
 		>

@@ -44,8 +44,7 @@ function CalendarTopBar() {
 	}
 
 	const switchView = async (value: CalendarViewType) => {
-		// setState((prev: any) => ({ ...prev,  activeView: value }));
-		// router.push("/dashboard/calendar/day/1/2/3")
+        alert("Coming Soon.");
 	};
 
 	const shiftCurrentDay = (direction: 1 | -1) => {
