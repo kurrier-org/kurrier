@@ -104,3 +104,6 @@ ALTER TABLE "calendar_event_attendees" ADD COLUMN "contact_id" uuid DEFAULT null
 ALTER TABLE "calendar_event_attendees" ADD CONSTRAINT "calendar_event_attendees_contact_id_contacts_id_fk" FOREIGN KEY ("contact_id") REFERENCES "public"."contacts"("id") ON DELETE set null ON UPDATE no action;
 
 ALTER TABLE "calendar_events" ADD COLUMN "is_external" boolean DEFAULT false NOT NULL;
+
+
+ALTER TABLE "calendar_events" ADD COLUMN "ical_uid" text;
