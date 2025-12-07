@@ -20,7 +20,7 @@ import { discoverMailboxes } from "../../lib/imap/backfill/discover/discover-mai
 import { startFullBackfill } from "../../lib/imap/backfill/backfill-full";
 
 export default defineNitroPlugin(async (nitroApp) => {
-	console.log("**********************SMTP-WORKER***************************");
+	console.info("**********************SMTP-WORKER***************************");
 
 	const imapInstances = new Map<string, ImapFlow>();
 	const idleImapInstances = new Map<string, ImapFlow>();

@@ -132,13 +132,11 @@ async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 		return;
 	}
 
-	// Mark as BACKFILL while we work on this batch
 	await db
 		.update(mailboxSync)
 		.set({ phase: "BACKFILL", updatedAt: new Date() })
 		.where(eq(mailboxSync.id, sync.id));
 
-	// Single batch for this tick
 	const end = cursor;
 	const start = Math.max(1, end - window + 1);
 	const range = `${start}:${end}`;
@@ -189,8 +187,9 @@ async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 					flags,
 					sizeBytes: m.size ?? null,
 					internalDate: m.internalDate ?? null,
-				},
+				}
 			},
+            mode: "backfill",
 			seen,
 			answered,
 			flagged,
@@ -205,12 +204,10 @@ async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 		remainingQuota: quota.limit,
 	});
 
-	// Apply the bytes for this batch
 	if (batchBytes > 0) {
 		quota.limit = Math.max(0, quota.limit - batchBytes);
 	}
 
-	// Move cursor backwards just once for this batch
 	cursor = start - 1;
 
 	await db

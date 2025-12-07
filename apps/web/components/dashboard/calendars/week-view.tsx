@@ -2,13 +2,13 @@
 import React, { useEffect } from "react";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import {
-	CalendarState,
-	EventSlotFragment,
-	EventSlotRenderFragment,
+    CalendarState, ComposeContact,
+    EventSlotFragment,
+    EventSlotRenderFragment,
 } from "@schema";
 import { useParams } from "next/navigation";
 import CalendarDayHourBox from "@/components/dashboard/calendars/calendar-day-hour-box";
-import { CalendarEventEntity } from "@db";
+import {CalendarEventAttendeeEntity, CalendarEventEntity} from "@db";
 import {
 	layoutDayFragments,
 	splitFragmentIntoHours,
@@ -27,10 +27,14 @@ function formatHourLabel(hour: number) {
 
 export function WeekGrid({
 	events,
+    attendees,
 	byDayMap,
+    attendeeContacts
 }: {
 	events: CalendarEventEntity[];
+    attendees: Record<string, CalendarEventAttendeeEntity[]>;
 	byDayMap: Map<string, EventSlotFragment[]>;
+    attendeeContacts: ComposeContact[];
 }) {
 	const { setState, state } = useDynamicContext<CalendarState>();
 	const params = useParams();
@@ -40,8 +44,10 @@ export function WeekGrid({
 		setState((prev) => ({
 			...prev,
 			calendarEvents: events,
+            calendarEventAttendees: attendees,
+            attendeeContacts
 		}));
-	}, [events, setState]);
+	}, [events, setState, attendees]);
 
 	const baseDay =
 		params.year && params.month && params.day

@@ -11,6 +11,7 @@ import { desc, eq } from "drizzle-orm";
 import { getDayjsTz } from "@common";
 import { normalizeEtag } from "../sync/dav-sync-db";
 import { buildICalEvent } from "./dav-build-cal-event";
+import { getRedis } from "../../../lib/get-redis";
 
 export async function updateCalendarObjectViaHttp(opts: {
 	icalData: string;
@@ -73,7 +74,7 @@ export async function updateCalendarObjectViaHttp(opts: {
 	return { etag: normalizeEtag(newEtag) };
 }
 
-export const updateCalendarEvent = async (eventId: string) => {
+export const updateCalendarEvent = async (eventId: string, notifyAttendees: boolean) => {
 	const [event] = await db
 		.select()
 		.from(calendarEvents)
@@ -132,10 +133,19 @@ export const updateCalendarEvent = async (eventId: string) => {
 		.update(calendarEvents)
 		.set({
 			davUri,
+            rawIcs: icalData,
 			davEtag: newEtag ?? event.davEtag,
 			updatedAt: new Date(),
 		})
 		.where(eq(calendarEvents.id, event.id));
+
+    if (notifyAttendees) {
+        const { davWorkerQueue } = await getRedis();
+        await davWorkerQueue.add("dav:calendar:itip-notify", {
+            eventId: event.id,
+            action: "update",
+        });
+    }
 
 	return { success: true };
 };

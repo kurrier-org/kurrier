@@ -10,6 +10,9 @@ import { davSyncDb } from "../../lib/dav/sync/dav-sync-db";
 import { createCalendarEvent } from "../../lib/dav/calendar/dav-create-calendar-event";
 import { deleteCalendarEvent } from "../../lib/dav/calendar/dav-delete-calendar-event";
 import { updateCalendarEvent } from "../../lib/dav/calendar/dav-update-calendar-event";
+import { davSyncCalendarsDb } from "../../lib/dav/calendar/dav-sync-calendar-db";
+import { davItipProcessor } from "../../lib/dav/calendar/dav-itip-processor";
+import { davItipNotify } from "../../lib/dav/calendar/dav-itip-notify";
 
 export default defineNitroPlugin(async (nitroApp) => {
 	const { connection } = await getRedis();
@@ -30,11 +33,15 @@ export default defineNitroPlugin(async (nitroApp) => {
 				case "dav:update-password":
 					return updatePassword(job.data.userId);
 				case "dav:calendar:create-event":
-					return createCalendarEvent(job.data.eventId);
+					return createCalendarEvent(job.data.eventId, job.data.notifyAttendees);
 				case "dav:calendar:update-event":
-					return updateCalendarEvent(job.data.eventId);
+					return updateCalendarEvent(job.data.eventId, job.data.notifyAttendees);
 				case "dav:calendar:delete-event":
 					return deleteCalendarEvent(job.data.eventId);
+                case "dav:calendar:itip-notify":
+                    return davItipNotify({ eventId: job.data.eventId, action: job.data.action});
+                case "dav:calendar:itip-ingest-batch":
+                    return davItipProcessor(job.data.items);
 				case "dav:create-contact":
 					return createContact(job.data.contactId, job.data.ownerId);
 				case "dav:update-contact":
@@ -72,7 +79,10 @@ export default defineNitroPlugin(async (nitroApp) => {
 					});
 				case "dav:sync":
 					console.log("[DAV WORKER] Starting DAV sync job:", job.id);
-					return davSyncDb();
+                    await davItipProcessor(job.data.items || []);
+                    await davSyncDb();
+                    await davSyncCalendarsDb()
+                    return
 				default:
 					return { success: true, skipped: true };
 			}
@@ -92,6 +102,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 	await scheduler.upsertJobScheduler(
 		"dav-sync-scheduler",
 		{ every: 120000 },
+		// { every: 10000 },
 		"dav:sync",
 		{},
 		{

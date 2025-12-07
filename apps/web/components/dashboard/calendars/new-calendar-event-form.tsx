@@ -1,21 +1,22 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { DateTimePicker } from "@mantine/dates";
 import { ReusableForm } from "@/components/common/reusable-form";
-import type { BaseFormProps, CalendarState } from "@schema";
+import {BaseFormProps, CalendarOrganizerType, CalendarState} from "@schema";
 import {
 	deleteCalendarEvent,
 	upsertCalendarEvent,
 } from "@/lib/actions/calendar";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { Dayjs } from "dayjs";
-import SearchableContacts from "@/components/dashboard/contacts/searchable-contacts";
-import { ActionIcon, Alert, Divider, Select } from "@mantine/core";
+import {ActionIcon, Alert, Checkbox, Divider, Select} from "@mantine/core";
 import { CalendarEventEntity } from "@db";
 import { Trash } from "lucide-react";
 import { getDayjsTz, getWallTimeDate } from "@common/day-js-extended";
 import { IconAlertCircle } from "@tabler/icons-react";
+import {usePathname} from "next/navigation";
+import AddGuests from "@/components/dashboard/calendars/add-guests";
 
 type NewCalendarEventFormProps = {
 	onCompleted: (data: CalendarEventEntity[]) => void;
@@ -31,6 +32,9 @@ function NewCalendarEventForm({
 	const { state } = useDynamicContext<CalendarState>();
 	const dayjsTz = getDayjsTz(state.defaultCalendar.timezone);
 	const editEvent = state.activePopoverEditEvent;
+    const [selectedOrganizer, setSelectedOrganizer] = useState<CalendarOrganizerType | null>(state.organizers[0] ? state.organizers[0] : null);
+    const pathname = usePathname()
+
 	const fields: BaseFormProps["fields"] = [
 		{
 			name: "calendarId",
@@ -46,6 +50,11 @@ function NewCalendarEventForm({
 			wrapperClasses: "hidden",
 			props: { type: "hidden", defaultValue: editEvent?.id, readOnly: true },
 		},
+        {
+            name: "pathname",
+            wrapperClasses: "hidden",
+            props: { type: "hidden", defaultValue: pathname, readOnly: true },
+        },
 		{
 			name: "tz",
 			wrapperClasses: "hidden",
@@ -105,15 +114,10 @@ function NewCalendarEventForm({
 			},
 		},
 		{
-			el: (
-				<>
-					<div className="text-sm my-2">Add guests</div>
-					<SearchableContacts name={"attendees"} />
-				</>
-			),
+			el: <AddGuests name={"attendees"} />,
 		},
 		{
-			name: "organizer",
+			name: "organizerIdentityId",
 			label: "Organizer",
 			kind: "custom",
 			component: Select,
@@ -122,9 +126,28 @@ function NewCalendarEventForm({
 				data: state.organizers,
 				allowDeselect: false,
 				required: true,
-				defaultValue: state.organizers[0]?.value,
+				value: selectedOrganizer?.value,
+                onChange: (val: string | null) => {
+                    const organizer = state.organizers.find((org) => org.value === val);
+                    setSelectedOrganizer(organizer || null);
+                }
 			},
 		},
+        ...(selectedOrganizer && !selectedOrganizer.displayName
+            ? [
+                {
+                    name: "newOrganizerName",
+                    label: "Organizer name",
+                    wrapperClasses: "col-span-12",
+                    bottomStartPrefix: <span className={"text-xxs"}>This name will be shown in calendar invites and saved for this email identity.</span>,
+                    props: {
+                        required: true,
+                        placeholder: "e.g. John Doe",
+                        autoComplete: "off",
+                    },
+                } as const,
+            ]
+            : []),
 		{
 			name: "description",
 			label: "Description",
@@ -135,9 +158,19 @@ function NewCalendarEventForm({
 				defaultValue: editEvent?.description,
 			},
 		},
+        {
+            name: "notifyAttendees",
+            label: "Notify attendees",
+            kind: "custom",
+            component: Checkbox,
+            wrapperClasses: "col-span-12",
+            props: {
+                defaultChecked: false,
+                label: <div className={"text-sm -mt-0.5"}>Send email notifications</div>,
+                size: "xs",
+            }
+        },
 	];
-
-	console.log("state", state);
 
 	return (
 		<>

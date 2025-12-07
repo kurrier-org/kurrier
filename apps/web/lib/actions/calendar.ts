@@ -1,21 +1,22 @@
 "use server";
 import { rlsClient } from "@/lib/actions/clients";
 import {
-	CalendarEventEntity,
-	CalendarEventInsertSchema,
-	calendarEvents,
-	CalendarEventUpdateSchema,
-	calendars,
-	identities,
+    CalendarEventAttendeeEntity,
+    CalendarEventEntity,
+    CalendarEventInsertSchema,
+    calendarEvents,
+    CalendarEventUpdateSchema,
+    calendars, contacts,
+    identities,
 } from "@db";
-import { and, eq, gte, lte } from "drizzle-orm";
+import {and, eq, gte, lte, inArray, or, ilike, sql} from "drizzle-orm";
 import {
-	CalendarViewType,
-	EventSlotFragment,
-	FormState,
-	handleAction,
-	SlotKey,
-	ViewParams,
+    CalendarViewType, ComposeContact,
+    EventSlotFragment,
+    FormState,
+    handleAction,
+    SlotKey,
+    ViewParams,
 } from "@schema";
 import { decode } from "decode-formdata";
 import { revalidatePath } from "next/cache";
@@ -23,6 +24,10 @@ import { Dayjs } from "dayjs";
 import { cache } from "react";
 import { getRedis } from "@/lib/actions/get-redis";
 import { dayjsExtended, getDayjsTz } from "@common/day-js-extended";
+import { calendarEventAttendees } from "@db";
+import { PgTransaction } from "drizzle-orm/pg-core";
+import { createClient } from "@/lib/supabase/server";
+
 
 export const fetchDefaultCalendar = cache(async () => {
 	const rls = await rlsClient();
@@ -65,74 +70,319 @@ export const fetchCalendarEvents = async (
 	return events;
 };
 
+export async function fetchEventAttendees(
+    eventIds: string[]
+): Promise<Record<string, CalendarEventAttendeeEntity[]>> {
+    if (eventIds.length === 0) return {};
+    const rls = await rlsClient();
+    const attendees = await rls((tx) =>
+        tx
+            .select()
+            .from(calendarEventAttendees)
+            .where(inArray(calendarEventAttendees.eventId, eventIds)),
+    );
+    const result: Record<string, CalendarEventAttendeeEntity[]> = {};
+
+    for (const attendee of attendees) {
+        if (!result[attendee.eventId]) {
+            result[attendee.eventId] = [];
+        }
+        result[attendee.eventId].push(attendee);
+    }
+
+    return result;
+}
+
+export type FetchEventAttendeesResult = Awaited<
+    ReturnType<typeof fetchEventAttendees>
+>;
+
+
 export const fetchOrganizers = async () => {
 	const rls = await rlsClient();
 	const allIdentities = await rls((tx) =>
 		tx
-			.select({
-				value: identities.id,
-				label: identities.value,
-			})
+			.select()
 			.from(identities),
 	);
-	return allIdentities;
+
+	return allIdentities.map((identity) => {
+        return {
+            value: identity.id,
+            displayName: identity.displayName,
+            label: identity.displayName
+                ? `${identity.displayName} <${identity.value}>`
+                : identity.value
+        };
+    })
 };
 
-export async function upsertCalendarEvent(
-	_prev: FormState,
-	formData: FormData,
-): Promise<FormState> {
-	return handleAction(async () => {
-		const decodedForm = decode(formData);
-		const { tz, startsAt, endsAt, eventId, ...rest } = decodedForm;
 
-		const startsAtDate = dayjsExtended
-			.tz(String(startsAt), "YYYY-MM-DD HH:mm:ss", String(tz))
-			.toDate();
+type UiGuest = {
+    email: string;
+    name: string | null;
+    avatar: string | null;
+    contactId: string | null;
+    isOrganizer: boolean;
+    isPersisted: boolean;
+};
 
-		const endsAtDate = dayjsExtended
-			.tz(String(endsAt), "YYYY-MM-DD HH:mm:ss", String(tz))
-			.toDate();
+type AttendeePayload = {
+    initialGuests?: UiGuest[];
+    newGuests?: UiGuest[];
+};
 
-		const payload = {
-			...rest,
-			tz,
-			startsAt: startsAtDate,
-			endsAt: endsAtDate,
-		};
+type SyncEventAttendeesArgs = {
+    tx: PgTransaction<any, any, any>;
+    eventId: string;
+    organizerEmail: string | null;
+    organizerName: string | null;
+    attendeePayload: AttendeePayload | null;
+};
 
-		const rls = await rlsClient();
+export async function syncEventAttendees({
+                                             tx,
+                                             eventId,
+                                             organizerEmail,
+                                             organizerName,
+                                             attendeePayload,
+                                         }: SyncEventAttendeesArgs) {
+    if (!attendeePayload) return;
 
-		if (eventId && String(eventId).length > 0) {
-			const parsedPayload = CalendarEventUpdateSchema.parse(payload);
-			await rls((tx) =>
-				tx
-					.update(calendarEvents)
-					.set(parsedPayload)
-					.where(eq(calendarEvents.id, String(eventId))),
-			);
-			const { davQueue } = await getRedis();
-			await davQueue.add("dav:calendar:update-event", {
-				eventId: eventId,
-			});
-		} else {
-			const parsedPayload = CalendarEventInsertSchema.parse(payload);
-			const [calendarEvent] = await rls((tx) =>
-				tx.insert(calendarEvents).values(parsedPayload).returning(),
-			);
-			const { davQueue } = await getRedis();
-			await davQueue.add("dav:calendar:create-event", {
-				eventId: calendarEvent.id,
-			});
-		}
+    const allGuests: UiGuest[] = [
+        ...(attendeePayload.initialGuests ?? []),
+        ...(attendeePayload.newGuests ?? []),
+    ];
 
-		revalidatePath("/dashboard/calendar");
+    const dedupedGuests = Array.from(
+        new Map(allGuests.map((g) => [g.email.toLowerCase(), g])).values(),
+    );
 
-		return {
-			success: true,
-		};
-	});
+    const existing = await tx
+        .select()
+        .from(calendarEventAttendees)
+        .where(eq(calendarEventAttendees.eventId, eventId));
+
+    const existingByEmail = new Map(
+        existing.map((a) => [a.email.toLowerCase(), a]),
+    );
+
+    const existingOrganizer = existing.find((a) => a.isOrganizer) ?? null;
+
+    let normalizedOrganizer = organizerEmail?.toLowerCase() ?? null;
+
+    const organizerGuestFromPayload =
+        dedupedGuests.find((g) => g.isOrganizer) ??
+        (normalizedOrganizer
+            ? dedupedGuests.find(
+                (g) => g.email.toLowerCase() === normalizedOrganizer,
+            )
+            : undefined);
+
+    if (!normalizedOrganizer && organizerGuestFromPayload) {
+        normalizedOrganizer = organizerGuestFromPayload.email.toLowerCase();
+    }
+
+    if (!normalizedOrganizer && existingOrganizer) {
+        normalizedOrganizer = existingOrganizer.email.toLowerCase();
+    }
+
+    if (!normalizedOrganizer) {
+        return;
+    }
+
+    const desiredOrganizerName =
+        organizerName ??
+        organizerGuestFromPayload?.name ??
+        existingOrganizer?.name ??
+        null;
+
+    const desiredOrganizerContactId =
+        organizerGuestFromPayload?.contactId ?? existingOrganizer?.contactId ?? null;
+
+    const organizerMatch = existingByEmail.get(normalizedOrganizer) ?? null;
+
+    const organizersToDemote = existing.filter(
+        (a) => a.isOrganizer && a.email.toLowerCase() !== normalizedOrganizer,
+    );
+
+    if (organizersToDemote.length > 0) {
+        await tx
+            .update(calendarEventAttendees)
+            .set({
+                isOrganizer: false,
+                role: "req_participant",
+            })
+            .where(
+                inArray(
+                    calendarEventAttendees.id,
+                    organizersToDemote.map((o) => o.id),
+                ),
+            );
+    }
+
+    if (!organizerMatch) {
+        await tx.insert(calendarEventAttendees).values({
+            eventId,
+            email: normalizedOrganizer,
+            name: desiredOrganizerName,
+            contactId: desiredOrganizerContactId,
+            isOrganizer: true,
+            role: "chair",
+            partstat: "accepted",
+            rsvp: false,
+        });
+    } else {
+        await tx
+            .update(calendarEventAttendees)
+            .set({
+                isOrganizer: true,
+                name: desiredOrganizerName,
+                contactId: desiredOrganizerContactId,
+                role: "chair",
+            })
+            .where(eq(calendarEventAttendees.id, organizerMatch.id));
+    }
+
+    const nonOrganizerGuests = dedupedGuests.filter(
+        (g) => g.email.toLowerCase() !== normalizedOrganizer,
+    );
+
+    const desiredEmails = new Set(
+        nonOrganizerGuests.map((g) => g.email.toLowerCase()),
+    );
+
+    const emailsToDelete = existing
+        .filter((a) => !a.isOrganizer)
+        .filter((a) => !desiredEmails.has(a.email.toLowerCase()))
+        .map((a) => a.id);
+
+    if (emailsToDelete.length > 0) {
+        await tx
+            .delete(calendarEventAttendees)
+            .where(inArray(calendarEventAttendees.id, emailsToDelete));
+    }
+
+    for (const g of nonOrganizerGuests) {
+        const key = g.email.toLowerCase();
+        if (!existingByEmail.has(key)) {
+            await tx.insert(calendarEventAttendees).values({
+                eventId,
+                email: g.email,
+                name: g.name,
+                contactId: g.contactId,
+                isOrganizer: false,
+                role: "req_participant",
+                partstat: "needs_action",
+                rsvp: false,
+            });
+        }
+    }
 }
+
+export async function upsertCalendarEvent(
+    _prev: FormState,
+    formData: FormData,
+): Promise<FormState> {
+    return handleAction(async () => {
+        const decodedForm = decode(formData);
+
+        const {
+            tz,
+            startsAt,
+            endsAt,
+            eventId,
+            notifyAttendees,
+            attendeePayload,
+            ...rest
+        } = decodedForm;
+
+        const notify = notifyAttendees === "on" || notifyAttendees === true;
+
+        const startsAtDate = dayjsExtended
+            .tz(String(startsAt), "YYYY-MM-DD HH:mm:ss", String(tz))
+            .toDate();
+
+        const endsAtDate = dayjsExtended
+            .tz(String(endsAt), "YYYY-MM-DD HH:mm:ss", String(tz))
+            .toDate();
+
+        const rls = await rlsClient();
+
+        let finalEventId: string | null = null;
+
+        const attendeeData: AttendeePayload | null = attendeePayload
+            ? JSON.parse(String(attendeePayload))
+            : null;
+
+        await rls(async (tx) => {
+            const [identityExists] = await tx
+                .select()
+                .from(identities)
+                .where(eq(identities.id, String(decodedForm.organizerIdentityId)));
+
+            const payload: any = {
+                ...rest,
+                tz: String(tz),
+                startsAt: startsAtDate,
+                endsAt: endsAtDate,
+                organizerEmail: identityExists ? identityExists.value : null,
+                organizerName: identityExists
+                    ? identityExists.displayName
+                    : (decodedForm.newOrganizerName ?? null),
+            };
+
+            if (eventId && String(eventId).length > 0) {
+                const parsedPayload = CalendarEventUpdateSchema.parse(payload);
+
+                await tx
+                    .update(calendarEvents)
+                    .set(parsedPayload)
+                    .where(eq(calendarEvents.id, String(eventId)));
+
+                finalEventId = String(eventId);
+            } else {
+                const parsedPayload = CalendarEventInsertSchema.parse(payload);
+                const [calendarEvent] = await tx
+                    .insert(calendarEvents)
+                    .values(parsedPayload)
+                    .returning();
+
+                finalEventId = calendarEvent.id;
+
+                if (decodedForm.newOrganizerName) {
+                    await tx
+                        .update(identities)
+                        .set({ displayName: String(decodedForm.newOrganizerName) })
+                        .where(eq(identities.id, String(decodedForm.organizerIdentityId)));
+                }
+            }
+
+            await syncEventAttendees({
+                tx,
+                eventId: finalEventId!,
+                organizerEmail: payload.organizerEmail,
+                organizerName: payload.organizerName,
+                attendeePayload: attendeeData,
+            });
+        });
+
+        if (!finalEventId) {
+            throw new Error("Failed to persist calendar event");
+        }
+
+        const { davQueue } = await getRedis();
+        await davQueue.add(
+            eventId ? "dav:calendar:update-event" : "dav:calendar:create-event",
+            { eventId: finalEventId, notifyAttendees: notify },
+        );
+
+        revalidatePath("/dashboard/calendar");
+
+        return { success: true };
+    });
+}
+
 
 export async function getRangeForCalendarView(
 	tz: string,
@@ -290,10 +540,11 @@ export async function eventsByDay(
 
 export const deleteCalendarEvent = async (id: string): Promise<FormState> => {
 	return handleAction(async () => {
-		const { davQueue } = await getRedis();
-		await davQueue.add("dav:calendar:delete-event", {
+		const { davQueue, davEvents } = await getRedis();
+		const job = await davQueue.add("dav:calendar:delete-event", {
 			eventId: id,
 		});
+        await job.waitUntilFinished(davEvents)
 
 		const rls = await rlsClient();
 		await rls((tx) =>
@@ -306,3 +557,135 @@ export const deleteCalendarEvent = async (id: string): Promise<FormState> => {
 		};
 	});
 };
+
+
+
+
+
+export const searchContactsForCompose = async (searchValue: string) => {
+    const q = searchValue.trim();
+    if (!q) return [];
+
+    const prefix = `${q}%`;
+    const emailLike = `%${q}%`;
+
+    const rls = await rlsClient();
+
+    const rows = await rls((tx) =>
+        tx.select({
+            id: contacts.id,
+            firstName: contacts.firstName,
+            lastName: contacts.lastName,
+            emails: contacts.emails,
+            profilePictureXs: contacts.profilePictureXs,
+        })
+            .from(contacts)
+            .where(
+                and(
+                    or(
+                        ilike(contacts.firstName, prefix),
+                        ilike(contacts.lastName, prefix),
+                        sql`${contacts.emails}::text ILIKE ${emailLike}`,
+                    ),
+                ),
+            )
+            .orderBy(contacts.lastName, contacts.firstName)
+            .limit(5)
+    );
+
+    const suggestions: ComposeContact[] = [];
+
+    const supabase = await createClient();
+    for (const row of rows) {
+        const fullName = [row.firstName, row.lastName].filter(Boolean).join(" ");
+        const emails = (row.emails ?? []) as { address: string }[];
+
+        for (const e of emails) {
+            if (!e.address) continue;
+            let avatarUrl: string | null = null;
+            if (row.profilePictureXs) {
+                const { data } = await supabase.storage
+                    .from("attachments")
+                    .createSignedUrl(String(row.profilePictureXs), 60000);
+                avatarUrl = data?.signedUrl || null;
+            }
+
+            suggestions.push({
+                id: row.id,
+                name: fullName || e.address,
+                email: e.address,
+                avatar: avatarUrl,
+            });
+        }
+    }
+
+    return suggestions.slice(0, 20);
+};
+
+
+export const getContactsForAttendeeIds = async (attendeeIds: string[]) => {
+    if (!attendeeIds?.length) return [];
+    const rls = await rlsClient();
+    const attendeesRows = await rls((tx) =>
+        tx
+            .select({
+                attendeeId: calendarEventAttendees.id,
+                contactId: calendarEventAttendees.contactId,
+                email: calendarEventAttendees.email,
+            })
+            .from(calendarEventAttendees)
+            .where(inArray(calendarEventAttendees.id, attendeeIds))
+    );
+
+    if (!attendeesRows.length) return [];
+    const contactIds = attendeesRows.map((a) => a.contactId).filter(Boolean) as string[];
+    let contactsMap = new Map<string, { firstName: string | null; lastName: string | null; emails: any[]; profilePictureXs: string | null }>();
+    if (contactIds.length) {
+        const contactRows = await rls((tx) =>
+            tx
+                .select({
+                    id: contacts.id,
+                    firstName: contacts.firstName,
+                    lastName: contacts.lastName,
+                    emails: contacts.emails,
+                    profilePictureXs: contacts.profilePictureXs,
+                })
+                .from(contacts)
+                .where(inArray(contacts.id, contactIds))
+        );
+
+        for (const c of contactRows) contactsMap.set(c.id, c);
+    }
+
+    const supabase = await createClient();
+    const results: ComposeContact[] = [];
+
+    for (const attendee of attendeesRows) {
+        const email = attendee.email?.trim().toLowerCase();
+        if (!email) continue;
+
+        const relatedContact = attendee.contactId ? contactsMap.get(attendee.contactId) : null;
+        const fullName = relatedContact ? [relatedContact.firstName, relatedContact.lastName].filter(Boolean).join(" ") : null;
+        let avatarUrl: string | null = null;
+        if (relatedContact?.profilePictureXs) {
+            const { data } = await supabase.storage
+                .from("attachments")
+                .createSignedUrl(String(relatedContact.profilePictureXs), 60000);
+            avatarUrl = data?.signedUrl || null;
+        }
+
+        results.push({
+            id: attendee.contactId ?? attendee.attendeeId,
+            name: fullName || email,
+            email,
+            avatar: avatarUrl,
+        });
+    }
+
+    return results;
+};
+
+
+export type FetchContactsForAttendeesResult = Awaited<
+    ReturnType<typeof getContactsForAttendeeIds>
+>;

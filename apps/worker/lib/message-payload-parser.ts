@@ -27,7 +27,8 @@ const supabase = createClient(
 );
 
 const SEARCH_BATCH_SIZE = 100;
-// const WEBHOOK_BATCH_SIZE = 100;
+const WEBHOOK_BATCH_SIZE = 100;
+const CALENDAR_BATCH_SIZE = 100;
 const FLUSH_INTERVAL_MS = 1000;
 
 type SearchJob = {
@@ -36,43 +37,50 @@ type SearchJob = {
 	ownerId?: string;
 };
 type WebhookJob = { message: any; rawEmail: string };
+type ICSJob = {
+    messageId: string;
+    messageAttachmentId: string;
+    mailboxId: string;
+};
 
 let searchBuffer: SearchJob[] = [];
 let webhookBuffer: WebhookJob[] = [];
+let icsBuffer: ICSJob[] = [];
 let flushTimer: any = null;
 
 async function flushBatches() {
-	if (!searchBuffer.length && !webhookBuffer.length) return;
+	if (!searchBuffer.length && !webhookBuffer.length && !icsBuffer.length) return;
 
 	try {
-		const { searchIngestQueue, commonWorkerQueue, davWorkerQueue } =
-			await getRedis();
+		const { searchIngestQueue, commonWorkerQueue, davWorkerQueue } = await getRedis();
 
 		if (searchBuffer.length) {
 			const messageIds = searchBuffer.map((job) => job.messageId);
 			const contactIds = searchBuffer.map((job) => job.contactId);
 			const ownerId = searchBuffer[0].ownerId;
 
-			await searchIngestQueue.add(
-				"addBatch",
-				{ messageIds },
-				{ removeOnComplete: true },
-			);
-
-			await davWorkerQueue.add(
-				"dav:create-contacts-batch",
-				{
-					contactIds: contactIds,
-					ownerId,
-				},
-				{
-					removeOnComplete: true,
-					removeOnFail: true,
-				},
-			);
-
+			await searchIngestQueue.add("addBatch", { messageIds }, { removeOnComplete: true });
+			await davWorkerQueue.add("dav:create-contacts-batch", { contactIds: contactIds, ownerId}, { removeOnComplete: true, removeOnFail: true});
 			searchBuffer = [];
 		}
+
+        if (icsBuffer.length) {
+            await davWorkerQueue.add("dav:calendar:itip-ingest-batch",
+                {
+                    items: icsBuffer.map((job) => ({
+                        messageId: job.messageId,
+                        messageAttachmentId: job.messageAttachmentId,
+                        mailboxId: job.mailboxId,
+                    })),
+                },
+                {
+                    removeOnComplete: true,
+                    removeOnFail: true,
+                },
+            );
+
+            icsBuffer = [];
+        }
 
 		if (webhookBuffer.length) {
 			const jobs = webhookBuffer.map((job) => ({
@@ -87,10 +95,7 @@ async function flushBatches() {
 			webhookBuffer = [];
 		}
 	} catch (err: any) {
-		console.error(
-			"[parseAndStoreEmail] Error flushing batches:",
-			err?.message ?? err,
-		);
+		console.error("[parseAndStoreEmail] Error flushing batches:", err?.message ?? err);
 	}
 }
 
@@ -276,77 +281,16 @@ export async function upsertContactsFromMessage(
 	return contactId;
 }
 
-// export async function upsertContactsFromMessage(
-// 	ownerId: string,
-// 	parsed: ParsedMail,
-// ) {
-// 	const addr = getFromAddress(parsed);
-// 	if (!addr) return;
-//
-// 	let contactId: string | null = null;
-// 	const email = addr.email;
-// 	const displayName = addr.name;
-//
-// 	const existing = await db
-// 		.select()
-// 		.from(contacts)
-// 		.where(
-// 			and(
-// 				eq(contacts.ownerId, ownerId),
-// 				sql`${contacts.emails}::jsonb @> ${JSON.stringify([{ address: email }])}::jsonb`,
-// 			),
-// 		)
-// 		.limit(1);
-//
-// 	if (existing.length === 0) {
-// 		let firstName = "Unknown";
-// 		let lastName: string | null = null;
-//
-// 		if (displayName) {
-// 			const parts = displayName.split(" ").filter(Boolean);
-// 			firstName = parts[0] || "Unknown";
-// 			lastName = parts.length > 1 ? parts.slice(1).join(" ") : null;
-// 		}
-//
-// 		const newContact = {
-// 			ownerId,
-// 			firstName,
-// 			lastName,
-// 			emails: [{ address: email }],
-// 			slug: slugify(displayName || email),
-// 			profilePictureXs: null,
-// 		};
-//
-// 		const [contact] = await db
-// 			.insert(contacts)
-// 			.values(newContact as ContactCreate)
-// 			.returning();
-// 		contactId = contact.id;
-// 		return contactId;
-// 	}
-//
-// 	const contact = existing[0];
-//
-// 	const hasName = contact.firstName || contact.lastName;
-// 	if (hasName || !displayName) {
-// 		return;
-// 	}
-//
-// 	const parts = displayName.split(" ").filter(Boolean);
-// 	const firstName = parts[0] || contact.firstName || "Unknown";
-// 	const lastName = parts.length > 1 ? parts.slice(1).join(" ") : null;
-//
-// 	await db
-// 		.update(contacts)
-// 		.set({
-// 			firstName,
-// 			lastName,
-// 		})
-// 		.where(eq(contacts.id, contact.id));
-// 	contactId = contact.id;
-//
-// 	return contactId;
-// }
+function isIcsAttachment(att: Attachment) {
+    const ct = (att.contentType || "").toLowerCase();
+    const name = (att.filename || "").toLowerCase();
+
+    return (
+        ct.startsWith("text/calendar") ||
+        ct === "application/ics" ||
+        name.endsWith(".ics")
+    );
+}
 
 /**
  * Parse raw email, create thread, insert message + attachments.
@@ -362,9 +306,11 @@ export async function parseAndStoreEmail(
 		seen?: boolean;
 		answered?: boolean;
 		flagged?: boolean;
+        mode?: "live" | "backfill";
 	},
 ) {
 	const { ownerId, mailboxId, rawStorageKey } = opts;
+    const mode = opts.mode ?? "live";
 
 	const parsed = await simpleParser(rawEmail);
 	const headers = parsed.headers as Map<string, any>;
@@ -383,9 +329,7 @@ export async function parseAndStoreEmail(
 		parsed.messageId || String(headers.get("message-id") || "").trim();
 
 	if (!messageId) {
-		console.warn(
-			`[parseAndStoreEmail] Skipping message with no Message-ID (mailboxId=${mailboxId}, storageKey=${rawStorageKey})`,
-		);
+		console.warn(`[parseAndStoreEmail] Skipping message with no Message-ID (mailboxId=${mailboxId}, storageKey=${rawStorageKey})`);
 		return null;
 	}
 
@@ -456,7 +400,9 @@ export async function parseAndStoreEmail(
 			.where(eq(threads.id, thread.id));
 	}
 
-	for (const attachment of parsed.attachments ?? []) {
+    const seenIcsChecksums = new Set<string>();
+
+    for (const attachment of parsed.attachments ?? []) {
 		const bucket = "attachments";
 		const fileName = generateFileName(attachment);
 		const objectPath = `private/${ownerId}/${message.id}/${fileName}`;
@@ -486,7 +432,26 @@ export async function parseAndStoreEmail(
 		} as MessageAttachmentCreate;
 
 		const parsedRow = MessageAttachmentInsertSchema.parse(candidate);
-		await db.insert(messageAttachments).values(parsedRow).returning();
+        const [newAttachment] = await db.insert(messageAttachments).values(parsedRow).returning();
+
+        if (mode === "live" && isIcsAttachment(attachment)) {
+            const key = attachment.checksum || `${attachment.size}:${attachment.contentType}`;
+            if (!seenIcsChecksums.has(key)) {
+                seenIcsChecksums.add(key);
+                icsBuffer.push({
+                    messageId: message.id,
+                    messageAttachmentId: newAttachment.id,
+                    mailboxId,
+                });
+                if (icsBuffer.length >= CALENDAR_BATCH_SIZE) {
+                    await flushBatches();
+                } else {
+                    scheduleFlush();
+                }
+            }
+        }
+
+
 	}
 
 	searchBuffer.push({
@@ -500,14 +465,16 @@ export async function parseAndStoreEmail(
 		scheduleFlush();
 	}
 
-	// Disable webhook batching for now - causes too much delay
 
-	// webhookBuffer.push({ message, rawEmail });
-	// if (webhookBuffer.length >= WEBHOOK_BATCH_SIZE) {
-	// 	await flushBatches();
-	// } else {
-	// 	scheduleFlush();
-	// }
+    if (mode === "live") {
+        webhookBuffer.push({ message, rawEmail });
+        if (webhookBuffer.length >= WEBHOOK_BATCH_SIZE) {
+            await flushBatches();
+        } else {
+            scheduleFlush();
+        }
+    }
+
 
 	return message;
 }

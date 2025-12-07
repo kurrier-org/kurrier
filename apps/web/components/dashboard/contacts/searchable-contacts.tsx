@@ -1,29 +1,34 @@
 "use client";
 import React, { useState } from "react";
-import { ComboboxItem, TagsInput, TagsInputProps } from "@mantine/core";
-import { searchContactsForCompose } from "@/lib/actions/mailbox";
+import {ComboboxItem, TagsInput, TagsInputProps} from "@mantine/core";
 import ContactSuggestionItem from "@/components/mailbox/default/editor/contact-suggestion-item";
+import {searchContactsForCompose} from "@/lib/actions/calendar";
 
-export default function SearchableContacts({
-	name,
-	onChange,
-}: {
-	name: string;
-	onChange?: (value: string[]) => void;
-}) {
+export default function SearchableContacts({ onChange }: { onChange?: (value: string, contact: ComboboxItem | undefined) => void; }) {
 	const [searchValue, setSearchValue] = useState("");
 	const [options, setOptions] = useState<ComboboxItem[]>([]);
+
+    const [searchableContacts, setSearchableContacts] = useState<string[]>([]);
 
 	const searchContacts = async (val: string) => {
 		setSearchValue(val);
 
 		const rows = await searchContactsForCompose(val);
 
-		const mapped: ComboboxItem[] = rows.map((row) => ({
-			value: row.email,
-			label: row.email,
-			avatar: row.avatar,
-		}));
+        const seen = new Set<string>();
+        const mapped: ComboboxItem[] = rows
+            .map(row => ({
+                value: row.id,
+                row: row,
+                label: `${row.email}`,
+                name: row.name,
+                avatar: row.avatar,
+            }))
+            .filter(item => {
+                if (seen.has(item.value)) return false;
+                seen.add(item.value);
+                return true;
+            });
 
 		setOptions(mapped);
 	};
@@ -38,13 +43,17 @@ export default function SearchableContacts({
 				searchValue={searchValue}
 				onSearchChange={searchContacts}
 				data={options}
+                value={searchableContacts}
+                onOptionSubmit={(val) => {
+                    const contact = options.find(o => o.value === val);
+                    onChange && onChange(val, contact)
+                }}
 				onChange={(value) => {
 					if (value.length > 0) {
-						onChange && onChange(value as string[]);
+                        setSearchableContacts([])
 					}
 				}}
 				renderOption={renderOption}
-				name={name}
 				size="sm"
 				className="min-h-[28px] text-sm w-96"
 				comboboxProps={{

@@ -27,7 +27,7 @@ export default function CalendarDayHourBox({
 		setState((prev) => ({
 			...prev,
 			activePopoverId: id,
-			activePopoverEditEvent: undefined,
+			activePopoverEditEvent: undefined
 		}));
 	};
 
@@ -45,7 +45,7 @@ export default function CalendarDayHourBox({
 					setState((prev) => ({
 						...prev,
 						activePopoverId: null,
-						activePopoverEditEvent: undefined,
+						activePopoverEditEvent: undefined
 					}));
 				}}
 				start={start}
