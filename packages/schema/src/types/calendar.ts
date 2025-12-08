@@ -96,3 +96,11 @@ export const PARTSTAT_LABEL: Record<string, string> = {
     in_process: "In process",
     completed: "Completed",
 };
+
+
+export type AllDayFragment = {
+    event: CalendarEventEntity;
+    date: string;
+    isStart: boolean;
+    isEnd: boolean;
+};

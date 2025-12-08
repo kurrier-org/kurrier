@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { DateTimePicker } from "@mantine/dates";
+import {DatePickerInput, DateTimePicker} from "@mantine/dates";
 import { ReusableForm } from "@/components/common/reusable-form";
 import {BaseFormProps, CalendarOrganizerType, CalendarState} from "@schema";
 import {
@@ -34,6 +34,7 @@ function NewCalendarEventForm({
 	const editEvent = state.activePopoverEditEvent;
     const [selectedOrganizer, setSelectedOrganizer] = useState<CalendarOrganizerType | null>(state.organizers[0] ? state.organizers[0] : null);
     const pathname = usePathname()
+    const [allDay, setIsAllDay] = useState<boolean>(!!editEvent?.isAllDay);
 
 	const fields: BaseFormProps["fields"] = [
 		{
@@ -79,14 +80,14 @@ function NewCalendarEventForm({
 			name: "startsAt",
 			label: "Start",
 			kind: "custom",
-			component: DateTimePicker,
+            component: allDay ? DatePickerInput : DateTimePicker,
 			wrapperClasses: "col-span-6",
 			props: {
 				required: true,
 				className: "w-full",
 				format: "12h",
-				valueFormat: "DD MMM hh:mm A",
-				timePickerProps: {
+                valueFormat: allDay ? "DD MMM" : "DD MMM hh:mm A",
+                timePickerProps: allDay ? undefined : {
 					minutesStep: 15,
 				},
 				defaultValue: editEvent?.startsAt
@@ -98,14 +99,14 @@ function NewCalendarEventForm({
 			name: "endsAt",
 			label: "End",
 			kind: "custom",
-			component: DateTimePicker,
+			component: allDay ? DatePickerInput : DateTimePicker,
 			wrapperClasses: "col-span-6",
 			props: {
 				required: true,
 				className: "w-full",
 				format: "12h",
-				valueFormat: "DD MMM hh:mm A",
-				timePickerProps: {
+				valueFormat: allDay ? "DD MMM" : "DD MMM hh:mm A",
+				timePickerProps: allDay ? undefined : {
 					minutesStep: 15,
 				},
 				defaultValue: editEvent?.endsAt
@@ -113,6 +114,20 @@ function NewCalendarEventForm({
 					: getWallTimeDate(end),
 			},
 		},
+        {
+            name: "isAllDay",
+            kind: "custom",
+            component: Checkbox,
+            wrapperClasses: "col-span-12",
+            props: {
+                defaultChecked: !!editEvent?.isAllDay,
+                label: <div className="text-sm -mt-0.5">All day</div>,
+                size: "xs",
+                onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+                    setIsAllDay(event.currentTarget.checked);
+                },
+            },
+        },
 		{
 			el: <AddGuests name={"attendees"} />,
 		},
