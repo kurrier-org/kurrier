@@ -1,1 +1,0 @@
-ALTER TABLE "address_books" ALTER COLUMN "dav_address_book_id" SET DATA TYPE integer;

@@ -52,3 +52,4 @@ db/volumes
 db/dav_config
 db/dav_data
 db/kurrier-logs.txt
+packages/db/src/drizzle/meta

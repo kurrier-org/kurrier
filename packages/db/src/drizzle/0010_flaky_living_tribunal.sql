@@ -1,1 +1,0 @@
-ALTER TABLE "contacts" ADD COLUMN "profile_picture_xs" text;

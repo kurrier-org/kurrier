@@ -1,1 +1,0 @@
-ALTER TABLE "address_books" ADD COLUMN "dav_sync_token" text NOT NULL;
