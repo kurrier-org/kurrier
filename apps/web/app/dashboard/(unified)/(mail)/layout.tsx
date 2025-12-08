@@ -35,7 +35,7 @@ export default async function DashboardLayout({
 				identityMailboxes={identityMailboxes}
 				sidebarTopContent={
 					<div className={"-mt-1"}>
-						<ComposeMail publicConfig={publicConfig} />
+                        {identityMailboxes.length > 0 && <ComposeMail publicConfig={publicConfig} />}
 					</div>
 				}
 				sidebarSectionContent={
@@ -50,7 +50,7 @@ export default async function DashboardLayout({
 								scope: "thread" as LabelScope,
 							}}
 						>
-							<LabelHome />
+                            {identityMailboxes.length > 0 && <LabelHome />}
 						</DynamicContextProvider>
 					</>
 				}

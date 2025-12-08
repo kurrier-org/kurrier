@@ -15,6 +15,7 @@ import {
 import {and, eq, or, sql} from "drizzle-orm";
 import { createSupabaseServiceClient } from "../../../lib/create-client-ssr";
 import { getRedis } from "../../../lib/get-redis";
+import { dayjsExtended } from "@common";
 
 export type DavItipIngestItem = {
     messageId: string;
@@ -512,6 +513,27 @@ async function applyIncomingRequest({
 }) {
     const ev = new ICAL.Event(vevent);
 
+    const isAllDay = ev.startDate.isDate;
+    let startsAtJs: Date;
+    let endsAtJs: Date;
+    if (isAllDay) {
+        const startJs = ev.startDate.toJSDate();
+        const endExclusiveJs = ev.endDate
+            ? ev.endDate.toJSDate()
+            : dayjsExtended(startJs).add(1, "day").toDate();
+        const startDay = dayjsExtended(startJs).startOf("day");
+        const endInclusive = dayjsExtended(endExclusiveJs)
+            .subtract(1, "day")
+            .endOf("day");
+        startsAtJs = startDay.toDate();
+        endsAtJs = endInclusive.toDate();
+    } else {
+        startsAtJs = ev.startDate.toJSDate();
+        endsAtJs = ev.endDate.toJSDate();
+    }
+
+
+
     const uid = ev.uid;
     if (!uid) return;
 
@@ -612,9 +634,11 @@ async function applyIncomingRequest({
             calendarId,
             title: ev.summary || "(no title)",
             description: ev.description || null,
-            startsAt: ev.startDate.toJSDate(),
-            endsAt: ev.endDate.toJSDate(),
-            isAllDay: ev.startDate.isDate,
+
+            startsAt: startsAtJs,
+            endsAt: endsAtJs,
+            isAllDay,
+
             organizerEmail,
             organizerName,
             davUri: `${uid}.ics`,
@@ -642,9 +666,11 @@ async function applyIncomingRequest({
         const updatePayload = CalendarEventUpdateSchema.safeParse({
             title: ev.summary || existing.title,
             description: ev.description ?? existing.description,
-            startsAt: ev.startDate.toJSDate(),
-            endsAt: ev.endDate.toJSDate(),
-            isAllDay: ev.startDate.isDate,
+
+            startsAt: startsAtJs,
+            endsAt: endsAtJs,
+            isAllDay,
+
             organizerEmail,
             organizerName,
             rawIcs: normaliseItipRequestToVevent(vcalString),

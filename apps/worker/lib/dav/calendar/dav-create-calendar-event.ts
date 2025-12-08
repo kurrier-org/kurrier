@@ -67,6 +67,7 @@ export const createCalendarEvent = async (eventId: string, notifyAttendees: bool
 
 	if (!calendar) return;
 
+
 	const parts = calendar.remotePath.split("/");
 	if (parts.length !== 3 || parts[0] !== "calendars") return;
 
@@ -96,6 +97,7 @@ export const createCalendarEvent = async (eventId: string, notifyAttendees: bool
     const guests = await db.select().from(calendarEventAttendees).where(
         eq(calendarEventAttendees.eventId, event.id)
     )
+
 
 	const dayjsTz = getDayjsTz(calendar.timezone || "UTC");
 	const icalData = buildICalEvent(event, dayjsTz, guests);

@@ -30,6 +30,8 @@ export function buildICalEvent(
     let vcal: ICAL.Component;
     let vevent: ICAL.Component;
 
+    console.log("eventRow", eventRow)
+
     if (eventRow.rawIcs) {
         try {
             const parsed = ICAL.parse(eventRow.rawIcs);
@@ -69,25 +71,37 @@ export function buildICalEvent(
         ev.description = eventRow.description;
     }
 
-    const allDay = Boolean(eventRow.isAllDay);
 
+
+
+    const allDay = Boolean(eventRow.isAllDay);
     if (allDay) {
         const startLocal = dayjsTz(eventRow.startsAt);
         const endLocal = dayjsTz(eventRow.endsAt);
-
-        ev.startDate = ICAL.Time.fromDateString(
-            startLocal.format("YYYYMMDD"),
-        );
-        ev.endDate = ICAL.Time.fromDateString(
-            endLocal.format("YYYYMMDD"),
-        );
+        const startDate = ICAL.Time.fromData({
+            year: startLocal.year(),
+            month: startLocal.month() + 1,
+            day: startLocal.date(),
+            isDate: true,
+        });
+        const endExclusive = endLocal.add(1, "day");
+        const endDate = ICAL.Time.fromData({
+            year: endExclusive.year(),
+            month: endExclusive.month() + 1,
+            day: endExclusive.date(),
+            isDate: true,
+        });
+        ev.startDate = startDate;
+        ev.endDate = endDate;
     } else {
         const startUtc = dayjsTz(eventRow.startsAt).toDate();
         const endUtc = dayjsTz(eventRow.endsAt).toDate();
-
-        ev.startDate = ICAL.Time.fromJSDate(startUtc, true); // UTC
+        ev.startDate = ICAL.Time.fromJSDate(startUtc, true);
         ev.endDate = ICAL.Time.fromJSDate(endUtc, true);
     }
+
+
+
 
     const now = ICAL.Time.fromJSDate(new Date(), true);
     const dtstampProp = vevent.getFirstProperty("dtstamp");

@@ -11,6 +11,7 @@ import {
 } from "@db";
 import {and, eq, gte, lte, inArray, or, ilike, sql} from "drizzle-orm";
 import {
+    AllDayFragment,
     CalendarViewType, ComposeContact,
     EventSlotFragment,
     FormState,
@@ -286,6 +287,7 @@ export async function upsertCalendarEvent(
 ): Promise<FormState> {
     return handleAction(async () => {
         const decodedForm = decode(formData);
+        console.log("decodedForm", decodedForm)
 
         const {
             tz,
@@ -294,18 +296,39 @@ export async function upsertCalendarEvent(
             eventId,
             notifyAttendees,
             attendeePayload,
+            isAllDay,
             ...rest
         } = decodedForm;
 
         const notify = notifyAttendees === "on" || notifyAttendees === true;
+        const isAllDayBool = isAllDay === "on" || isAllDay === true || isAllDay === "true";
 
-        const startsAtDate = dayjsExtended
-            .tz(String(startsAt), "YYYY-MM-DD HH:mm:ss", String(tz))
-            .toDate();
+        // const startsAtDate = dayjsExtended
+        //     .tz(String(startsAt), "YYYY-MM-DD HH:mm:ss", String(tz))
+        //     .toDate();
+        //
+        // const endsAtDate = dayjsExtended
+        //     .tz(String(endsAt), "YYYY-MM-DD HH:mm:ss", String(tz))
+        //     .toDate();
 
-        const endsAtDate = dayjsExtended
-            .tz(String(endsAt), "YYYY-MM-DD HH:mm:ss", String(tz))
-            .toDate();
+        let startsAtDate: Date;
+        let endsAtDate: Date;
+
+        if (isAllDayBool) {
+            const startDay = dayjsExtended.tz(String(startsAt), String(tz));
+            const endDay = dayjsExtended.tz(String(endsAt), String(tz));
+
+            startsAtDate = startDay.startOf("day").toDate();
+            endsAtDate = endDay.endOf("day").toDate();
+        } else {
+            startsAtDate = dayjsExtended
+                .tz(String(startsAt), "YYYY-MM-DD HH:mm:ss", String(tz))
+                .toDate();
+
+            endsAtDate = dayjsExtended
+                .tz(String(endsAt), "YYYY-MM-DD HH:mm:ss", String(tz))
+                .toDate();
+        }
 
         const rls = await rlsClient();
 
@@ -326,6 +349,7 @@ export async function upsertCalendarEvent(
                 tz: String(tz),
                 startsAt: startsAtDate,
                 endsAt: endsAtDate,
+                isAllDay: isAllDayBool,
                 organizerEmail: identityExists ? identityExists.value : null,
                 organizerName: identityExists
                     ? identityExists.displayName
@@ -786,4 +810,40 @@ export async function updateCalendarTimezone(_prev: FormState, formData: FormDat
         revalidatePath("/dashboard/calendar");
         return { success: true };
     });
+}
+
+
+
+export async function eventsByDayWithAllDay(
+    tz: string,
+    events: CalendarEventEntity[],
+): Promise<{
+    timedByDay: Map<string, EventSlotFragment[]>;
+    allDayByDay: Map<string, AllDayFragment[]>;
+}> {
+    const base = await eventsByDay(tz, events);
+    const timedByDay = new Map<string, EventSlotFragment[]>();
+    const allDayByDay = new Map<string, AllDayFragment[]>();
+
+    for (const [dayKey, frags] of base.entries()) {
+        for (const frag of frags) {
+            if (frag.event.isAllDay) {
+                const bucket = allDayByDay.get(dayKey);
+                const entry: AllDayFragment = {
+                    event: frag.event,
+                    date: dayKey,
+                    isStart: frag.isStart,
+                    isEnd: frag.isEnd,
+                };
+                if (bucket) bucket.push(entry);
+                else allDayByDay.set(dayKey, [entry]);
+            } else {
+                const bucket = timedByDay.get(dayKey);
+                if (bucket) bucket.push(frag);
+                else timedByDay.set(dayKey, [frag]);
+            }
+        }
+    }
+
+    return { timedByDay, allDayByDay };
 }

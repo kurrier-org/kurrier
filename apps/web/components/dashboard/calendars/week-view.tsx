@@ -2,6 +2,7 @@
 import React, { useEffect } from "react";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import {
+    AllDayFragment,
     CalendarState, ComposeContact,
     EventSlotFragment,
     EventSlotRenderFragment,
@@ -15,6 +16,7 @@ import {
 } from "@/components/dashboard/calendars/client-helpers";
 import CalendarEventsLayer from "@/components/dashboard/calendars/calendar-events-layer";
 import { getDayjsTz } from "@common/day-js-extended";
+import AllDayEventsRow from "@/components/dashboard/calendars/all-day-events-row";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
@@ -29,12 +31,14 @@ export function WeekGrid({
 	events,
     attendees,
 	byDayMap,
-    attendeeContacts
+    attendeeContacts,
+    allDayByDay
 }: {
 	events: CalendarEventEntity[];
     attendees: Record<string, CalendarEventAttendeeEntity[]>;
 	byDayMap: Map<string, EventSlotFragment[]>;
     attendeeContacts: ComposeContact[];
+    allDayByDay: Map<string, AllDayFragment[]>;
 }) {
 	const { setState, state } = useDynamicContext<CalendarState>();
 	const params = useParams();
@@ -128,6 +132,8 @@ export function WeekGrid({
 						</div>
 					))}
 				</div>
+
+                <AllDayEventsRow weekDays={weekDays} allDayByDay={allDayByDay} />
 
 				<div className="flex flex-1 flex-col h-[calc(100vh-8rem)] overflow-y-auto">
 					<div className="grid grid-cols-[64px_repeat(7,1fr)]">
