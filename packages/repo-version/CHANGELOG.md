@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 1.0.0
+
+### Major Changes
+
+- [`282168d`](https://github.com/kurrier-org/kurrier/commit/282168d197a9c8accebd7e906abdca1a6b8e25bb) Thanks [@krokhale](https://github.com/krokhale)! - Calendar v1 (Beta), Support for CalDAV and calendar pane in Kurrier
+
 ## 0.0.101
 
 ### Patch Changes
