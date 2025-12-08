@@ -1,8 +1,3 @@
----
-title: Kurrier — Unified Email, Calendar, and Contacts
-description: A modern, self-hosted communication hub powered by open standards.
----
-
 # Kurrier
 A modern, self-hosted hub for **email, calendars, and contacts** — powered entirely by your existing SMTP/IMAP/CalDAV/CardDAV credentials.
 
