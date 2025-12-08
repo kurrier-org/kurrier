@@ -1,5 +1,11 @@
 # @kurrier/common
 
+## 0.0.12
+
+### Patch Changes
+
+- [`a0593d4`](https://github.com/kurrier-org/kurrier/commit/a0593d43e07f4f9e8e947efe49fe9b528ba27e18) Thanks [@krokhale](https://github.com/krokhale)! - Minor build fix for package imports in the worker
+
 ## 0.0.11
 
 ### Patch Changes
