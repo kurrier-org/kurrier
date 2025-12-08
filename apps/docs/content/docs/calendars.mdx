@@ -5,98 +5,329 @@ description: Sync your calendars across all your devices using CalDAV with Kurri
 
 # Calendars (CalDAV)
 
-Kurrier supports **full CalDAV calendar syncing**, so your events, reminders, invites, and schedules stay updated across all your devices — phones, tablets, and desktop apps.
+Kurrier supports **full CalDAV calendar syncing**, giving you a powerful, private, self-hosted scheduling system that works seamlessly across all your devices — phones, tablets, desktops, and native calendar apps.
 
-Whether you use **Apple Calendar**, **Thunderbird**, **Outlook (with CalDAV plugins)**, or any CalDAV-compatible app, your calendar can stay in sync with your Kurrier instance.
+Whether you're using **Apple Calendar**, **Thunderbird**, **DAVx⁵ on Android**, or **Outlook via CalDAV plugins**, Kurrier keeps everything in perfect sync.
+
+![Docs Contact](/docs-calendar-light.png)
+
+Dark Mode:
+
+![Docs Contact](/docs-calendar-dark.png)
+
+---
+
+## What makes Kurrier Calendars special?
+
+Kurrier isn’t just a standalone calendar server.
+It’s part of a **deeply integrated personal information suite**, alongside:
+
+### ✉️ **Mail**
+Invite guests and receive event invitations **directly inside your Kurrier inbox**.
+Kurrier automatically processes `.ics` attachments, updates your calendar, and tracks attendee responses.
+
+### 👥 **Contacts (CardDAV)**
+Your event attendees automatically link with your Kurrier contacts.
+Names, avatars, and emails are unified across:
+
+- Mail
+- Contacts
+- Calendar
+- Autocomplete fields in the UI
+
+No duplication. No inconsistencies. One shared identity graph.
+
+### 📅 **Calendar**
+Kurrier merges mail + contacts + events into a **single cohesive, self-hosted platform**.
 
 ---
 
 ## What works today
 
-Kurrier’s backend is already fully capable of:
+Kurrier’s CalDAV backend is already fully capable of:
 
 ### ✅ Creating and storing calendars
-You can add calendars (work, personal, shared, etc.) through any CalDAV-supported app.
+Create personal calendars, work calendars, or shared calendar collections from any CalDAV app.
 
-### ✅ Syncing events
-Any event you create or edit on your device syncs through Kurrier to all other connected devices.
+### ✅ Two-way syncing of events
+Create, update, or delete events on any device — the changes sync instantly.
 
-### ✅ Recurring events
-Daily, weekly, monthly events — everything is handled by the CalDAV server.
+### ✅ Accurate timezone handling
+Kurrier stores all events in UTC and converts them to the correct timezone in both your UI and `.ics` files.
 
-### ✅ Reminders, notes & metadata
-Event notes, descriptions, time zones, alarms, and recurrence rules (RRULE) are all preserved.
+### ✅ Event invitations & iTIP support
+Kurrier correctly handles:
+
+- Sending `.ics` invitations
+- Receiving replies (ACCEPTED / DECLINED / TENTATIVE)
+- Updating attendee partstats
+- Cancelation flows
+
+All directly through Kurrier Mail.
 
 ### ✅ Multi-device support
-Use Kurrier calendars on:
+Works flawlessly on:
 
 - iOS & macOS Calendar
-- Thunderbird/Lightning
-- Android (via DAVx⁵)
-- Outlook (via CalDAV plugins)
-- Any other CalDAV-compatible app
+- Android (DAVx⁵)
+- Thunderbird / Lightning
+- Outlook (CalDAV plugin)
+- Any CalDAV-compatible client
+
+### ✅ Integrated attendee management
+Kurrier tracks:
+
+- Organizer identity
+- Guest list
+- RSVP status
+- Roles (chair, required attendee, optional attendee)
+
+All visible inside the Kurrier Calendar UI.
 
 ---
 
-## Kurrier Calendar Web UI — coming soon
+## Kurrier Calendar Web UI
 
-Right now, Kurrier’s calendar system is **fully functional**, but there is **no web management interface yet**.
+The Calendar Web UI is now functional and includes:
 
-You can already:
+- **Popover editing**
+- **Time zone aware event creation**
+- **Guest management**
+- **Email notifications for attendees**
+- **Deep linking from inbox to event**
 
-- Connect calendar apps
-- Create/edit/delete events
-- Sync events across devices
-
-But the **Kurrier Calendar Web UI** (similar to Google Calendar) is under development.
-
-It will let you:
-
-- View your calendars in Day/Week/Month views
-- Create and edit events directly in the browser
-- Manage shared calendars
-- Color-code calendars
-- Search events
-- View reminders & tasks
-- See event details instantly
-- Use drag-and-drop event editing
-
-We are designing the UI with a **modern, clean, Google-Calendar-like layout**, fully integrated with the rest of Kurrier.
+The goal is a clean, modern, Google Calendar–style interface that fits naturally inside the Kurrier dashboard.
 
 ---
 
 ## Why CalDAV?
 
-CalDAV is an **open standard** supported by many devices and apps.
-Using Kurrier with CalDAV means:
+CalDAV is an **open standard**, which means:
 
-- You keep full control of your data
-- Your calendars sync without third-party servers
-- You can migrate easily from other providers
-- Your events stay portable across devices
-- No vendor lock-in — ever
+- No vendor lock-in
+- Works across all platforms
+- Portable, exportable, future-proof
+- Fully under your control when self-hosted
 
-Kurrier simply acts as your **private, self-hosted calendar engine**.
+Kurrier simply acts as your **private calendar engine**, synced across your personal ecosystem.
 
 ---
 
-## Connecting your device
+## Coming soon
 
-Kurrier works with any CalDAV-compatible client. Refer to the contacts section for CardDAV setup, as the process is similar.
+Kurrier’s calendar system is rapidly evolving. Next on the roadmap:
+
+### 🔁 Recurring events
+Support for RRULEs (daily/weekly/monthly/custom repeats).
+
+### 🌕 All-day events
+Native all-day event rendering and syncing.
+
+### 👥 Shared calendars
+Multiple users sharing the same calendar with view/edit permissions.
+
+### 📎 Attachments & event metadata
+Adding notes, files, and extended properties to events.
+
+### 🔔 In-browser reminders
+Desktop notifications, snooze support, and reminder settings.
+
+### 🗂 Multiple calendars per identity
+Color-coded views & per-calendar visibility toggles.
+
+### 📅 Availability and free/busy
+Auto-computed availability windows for scheduling.
 
 ---
 
 ## Summary
 
-Kurrier already provides:
+- ✔ A complete, standards-compliant CalDAV backend
+- ✔ Two-way syncing with all major calendar apps
+- ✔ Event invitations and RSVP processing through Kurrier Mail
+- ✔ Contact-aware attendee management
+- ✔ Modern web UI for creating and editing events
 
-- ✔ A complete CalDAV backend
-- ✔ Fast, reliable syncing
-- ✔ Support for all standard calendar apps
+And coming soon:
 
-What’s coming next:
+- 🔁 Recurring events
+- 🌕 All-day events
+- 👥 Shared calendars
+- 🔔 Web reminders
+- 🗂 Multi-calendar management
 
-- 🎨 A polished Kurrier Calendar Web Interface
-- 📅 Beautiful calendar views (Day/Week/Month)
-- 🔔 In-browser reminders and notifications
-- 👥 Shared calendars & permissions
+
+
+
+
+[//]: # (---)
+
+[//]: # (title: Calendars &#40;CalDAV&#41;)
+
+[//]: # (description: Sync your calendars across all your devices using CalDAV with Kurrier)
+
+[//]: # (---)
+
+[//]: # ()
+[//]: # (# Calendars &#40;CalDAV&#41;)
+
+[//]: # ()
+[//]: # (Kurrier supports **full CalDAV calendar syncing**, so your events, invites, and schedules stay updated across all your devices — phones, tablets, and desktop apps.)
+
+[//]: # ()
+[//]: # (Whether you use **Apple Calendar**, **Thunderbird**, **Outlook &#40;with CalDAV plugins&#41;**, or any CalDAV-compatible app, your calendar can stay in sync with your Kurrier instance.)
+
+[//]: # ()
+[//]: # ()
+[//]: # (![Docs Contact]&#40;/docs-calendar-light.png&#41;)
+
+[//]: # ()
+[//]: # ()
+[//]: # (Dark Mode:)
+
+[//]: # ()
+[//]: # (![Docs Contact]&#40;/docs-calendar-dark.png&#41;)
+
+[//]: # ()
+[//]: # (---)
+
+[//]: # ()
+[//]: # (## What works today)
+
+[//]: # ()
+[//]: # (Kurrier’s backend is already fully capable of:)
+
+[//]: # ()
+[//]: # (### ✅ Creating and storing calendars)
+
+[//]: # (You can add calendars &#40;work, personal, shared, etc.&#41; through any CalDAV-supported app.)
+
+[//]: # ()
+[//]: # (### ✅ Syncing events)
+
+[//]: # (Any event you create or edit on your device syncs through Kurrier to all other connected devices.)
+
+[//]: # ()
+[//]: # ()
+[//]: # (### ✅ Multi-device support)
+
+[//]: # (Use Kurrier calendars on:)
+
+[//]: # ()
+[//]: # (- iOS & macOS Calendar)
+
+[//]: # (- Thunderbird/Lightning)
+
+[//]: # (- Android &#40;via DAVx⁵&#41;)
+
+[//]: # (- Outlook &#40;via CalDAV plugins&#41;)
+
+[//]: # (- Any other CalDAV-compatible app)
+
+[//]: # ()
+[//]: # (---)
+
+[//]: # ()
+[//]: # (## Kurrier Calendar Web UI)
+
+[//]: # ()
+[//]: # ()
+[//]: # (Right now, Kurrier’s calendar system is **fully functional**, but there is **no web management interface yet**.)
+
+[//]: # ()
+[//]: # (You can already:)
+
+[//]: # ()
+[//]: # (- Connect calendar apps)
+
+[//]: # (- Create/edit/delete events)
+
+[//]: # (- Sync events across devices)
+
+[//]: # ()
+[//]: # (But the **Kurrier Calendar Web UI** &#40;similar to Google Calendar&#41; is under development.)
+
+[//]: # ()
+[//]: # (It will let you:)
+
+[//]: # ()
+[//]: # (- View your calendars in Day/Week/Month views)
+
+[//]: # (- Create and edit events directly in the browser)
+
+[//]: # (- Manage shared calendars)
+
+[//]: # (- Color-code calendars)
+
+[//]: # (- Search events)
+
+[//]: # (- View reminders & tasks)
+
+[//]: # (- See event details instantly)
+
+[//]: # (- Use drag-and-drop event editing)
+
+[//]: # ()
+[//]: # (We are designing the UI with a **modern, clean, Google-Calendar-like layout**, fully integrated with the rest of Kurrier.)
+
+[//]: # ()
+[//]: # (---)
+
+[//]: # ()
+[//]: # (## Why CalDAV?)
+
+[//]: # ()
+[//]: # (CalDAV is an **open standard** supported by many devices and apps.)
+
+[//]: # (Using Kurrier with CalDAV means:)
+
+[//]: # ()
+[//]: # (- You keep full control of your data)
+
+[//]: # (- Your calendars sync without third-party servers)
+
+[//]: # (- You can migrate easily from other providers)
+
+[//]: # (- Your events stay portable across devices)
+
+[//]: # (- No vendor lock-in — ever)
+
+[//]: # ()
+[//]: # (Kurrier simply acts as your **private, self-hosted calendar engine**.)
+
+[//]: # ()
+[//]: # (---)
+
+[//]: # ()
+[//]: # (## Connecting your device)
+
+[//]: # ()
+[//]: # (Kurrier works with any CalDAV-compatible client. Refer to the contacts section for CardDAV setup, as the process is similar.)
+
+[//]: # ()
+[//]: # (---)
+
+[//]: # ()
+[//]: # (## Summary)
+
+[//]: # ()
+[//]: # (Kurrier already provides:)
+
+[//]: # ()
+[//]: # (- ✔ A complete CalDAV backend)
+
+[//]: # (- ✔ Fast, reliable syncing)
+
+[//]: # (- ✔ Support for all standard calendar apps)
+
+[//]: # ()
+[//]: # (What’s coming next:)
+
+[//]: # ()
+[//]: # (- 🎨 A polished Kurrier Calendar Web Interface)
+
+[//]: # (- 📅 Beautiful calendar views &#40;Day/Week/Month&#41;)
+
+[//]: # (- 🔔 In-browser reminders and notifications)
+
+[//]: # (- 👥 Shared calendars & permissions)
