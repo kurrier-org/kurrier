@@ -1,1 +1,0 @@
-ALTER TYPE "public"."api_scope" ADD VALUE 'emails:receive' BEFORE 'templates:read';

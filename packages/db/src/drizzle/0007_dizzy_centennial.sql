@@ -1,1 +1,0 @@
-ALTER TABLE "webhooks" ALTER COLUMN "updated_at" SET NOT NULL;

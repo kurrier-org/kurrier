@@ -1,1 +1,0 @@
-ALTER TABLE "calendars" ADD COLUMN "public_id" text NOT NULL;

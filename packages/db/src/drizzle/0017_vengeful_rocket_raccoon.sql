@@ -1,1 +1,0 @@
-ALTER TABLE "address_books" ADD COLUMN "dav_address_book_id" text;
