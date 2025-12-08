@@ -1,5 +1,5 @@
 # Kurrier
-A modern, self-hosted hub for **email, calendars, and contacts** — powered entirely by your existing SMTP/IMAP/CalDAV/CardDAV credentials.
+A modern, self-hosted hub for **email, calendars, and contacts**.
 
 ---
 
