@@ -1,5 +1,6 @@
 import { CalendarEventAttendeeEntity, CalendarEventEntity } from "@db";
-import { getDayjsTz, VCAL_PRODID } from "@common";
+import { VCAL_PRODID } from "@common";
+import { getDayjsTz } from "@common";
 import ICAL from "ical.js";
 
 function mapRoleToIcal(role?: string | null): string {
