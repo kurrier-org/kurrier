@@ -9,7 +9,7 @@ import {Button as MantineButton, ButtonProps} from "@mantine/core";
 type ReusableFormButtonProps = {
     action: (prevState: FormState, formData: FormData) => Promise<FormState>;
     children: React.ReactNode;
-    buttonProps: ButtonProps;
+    buttonProps: ButtonProps & React.ButtonHTMLAttributes<HTMLButtonElement>;
     label?: string;
     formKey?: string;
     onSuccess?: (data: unknown) => void;
@@ -39,6 +39,7 @@ export function ReusableFormButton({
         <Form key={formKey} ref={formRef} action={formAction}>
             {children}
             <MantineButton
+                // tabIndex={-1}
                 type="submit"
                 loading={isPending}
                 disabled={isPending}

@@ -1,100 +1,95 @@
-import { CalendarInsertSchema, calendars, davAccounts, db } from "@db";
-import { and, eq } from "drizzle-orm";
-import slugify from "@sindresorhus/slugify";
-import {
-	davCalendarInstances,
-	davCalendars,
-	davDb,
-} from "../../../lib/dav/dav-schema";
+import { davAccounts, db } from "@db";
+import { eq } from "drizzle-orm";
+import { davDb, davUsers, davPrincipals, md5 } from "../../../lib/dav/dav-schema";
+import { DavUserContext, buildContextFromExistingAccount, ensureDefaultAddressBook, ensureDefaultCalendar } from "../../../lib/dav/dav-create-account";
 
-const DEFAULT_CALENDAR_NAME = "Default Calendar";
-const DEFAULT_CALENDAR_SLUG = slugify(DEFAULT_CALENDAR_NAME);
-const DEFAULT_CALENDAR_COLOR = "#3b82f6";
 
-const seedDefaultCalendar = async (userId: string) => {
-	const [existing] = await db
-		.select()
-		.from(calendars)
-		.where(and(eq(calendars.ownerId, userId), eq(calendars.isDefault, true)))
-		.limit(1);
+export async function migrateLegacyKurrierAccount(
+    baseCtx: DavUserContext,
+): Promise<DavUserContext> {
+    const { userId, davPassword, davAccount } = baseCtx;
 
-	if (existing) {
-		console.log(`User ${userId}: default calendar already exists`);
-		return existing;
-	}
+    if (davAccount.username !== "kurrier") {
+        return baseCtx;
+    }
 
-	const [davAccount] = await db
-		.select()
-		.from(davAccounts)
-		.where(eq(davAccounts.ownerId, userId))
-		.limit(1);
+    const newUsername = `kurrier-${userId}`;
+    const newPrincipalUri = `principals/${newUsername}`;
+    const digest = await md5(`${newUsername}:BaikalDAV:${davPassword}`);
 
-	if (!davAccount) {
-		console.warn(
-			`User ${userId}: cannot create default calendar — no davAccount found`,
-		);
-		return null;
-	}
+    const [existingNewUser] = await davDb
+        .select()
+        .from(davUsers)
+        .where(eq(davUsers.username, newUsername))
+        .limit(1);
 
-	const principalUri = `principals/${davAccount.username}`;
-	const remotePath = `calendars/${davAccount.username}/default`;
+    if (!existingNewUser) {
+        await davDb.insert(davUsers).values({
+            username: newUsername,
+            digesta1: digest,
+        });
+    } else if (existingNewUser.digesta1 !== digest) {
+        await davDb
+            .update(davUsers)
+            .set({ digesta1: digest })
+            .where(eq(davUsers.username, newUsername));
+    }
+    const [existingPrincipal] = await davDb
+        .select()
+        .from(davPrincipals)
+        .where(eq(davPrincipals.uri, newPrincipalUri))
+        .limit(1);
 
-	const [davCalendarInstance] = await davDb
-		.select()
-		.from(davCalendarInstances)
-		.where(
-			and(
-				eq(davCalendarInstances.principaluri, principalUri),
-				eq(davCalendarInstances.uri, "default"),
-			),
-		)
-		.limit(1);
+    if (!existingPrincipal) {
+        await davDb.insert(davPrincipals).values({
+            uri: newPrincipalUri,
+            email: null,
+            displayname: "Kurrier",
+        });
+    }
+    const [updatedAccount] = await db
+        .update(davAccounts)
+        .set({ username: newUsername })
+        .where(eq(davAccounts.id, davAccount.id))
+        .returning();
 
-	if (!davCalendarInstance) {
-		console.warn(
-			`User ${userId}: cannot create default calendar — no CalDAV calendar instance found`,
-		);
-		return null;
-	}
+    console.info(`[dav-migration] user ${userId}: migrated DAV username "kurrier" -> "${newUsername}"`);
 
-	const [davCalendar] = await davDb
-		.select()
-		.from(davCalendars)
-		.where(eq(davCalendars.id, Number(davCalendarInstance.calendarid)));
-
-	if (!davCalendar) {
-		console.error(
-			`User ${userId}: cannot create default calendar — no CalDAV calendar found`,
-		);
-		return null;
-	}
-
-	const syncToken =
-		davCalendar.synctoken != null ? String(davCalendar.synctoken) : "1";
-
-	const payload = CalendarInsertSchema.parse({
-		ownerId: userId,
-		davAccountId: davAccount.id,
-		davCalendarId: davCalendarInstance.calendarid,
-		davSyncToken: syncToken,
-		remotePath,
-		name: DEFAULT_CALENDAR_NAME,
-		slug: DEFAULT_CALENDAR_SLUG,
-		timezone: davCalendarInstance.timezone || "UTC",
-		color: DEFAULT_CALENDAR_COLOR,
-		isDefault: true,
-	});
-
-	const [created] = await db.insert(calendars).values(payload).returning();
-
-	console.log(
-		`User ${userId}: default calendar created (calendar_id=${created.id}, dav_calendar_id=${davCalendarInstance.calendarid})`,
-	);
-
-	return created;
-};
+    return {
+        userId,
+        davUsername: newUsername,
+        davPassword,
+        principalUri: newPrincipalUri,
+        davAccount: updatedAccount,
+    };
+}
 
 export default async function seed({ userId }: { userId: string }) {
-	await seedDefaultCalendar(userId);
+    const [davAccount] = await db
+        .select()
+        .from(davAccounts)
+        .where(eq(davAccounts.ownerId, userId))
+        .limit(1);
+
+    if (!davAccount) {
+        console.info(`[0.0.98] user ${userId}: no davAccount, skipping`);
+        return;
+    }
+
+    const baseCtx = await buildContextFromExistingAccount(userId);
+    if (!baseCtx) {
+        console.warn(`[0.0.98] user ${userId}: could not build DAV context, skipping`);
+        return;
+    }
+
+    let ctx = baseCtx;
+    if (davAccount.username === "kurrier") {
+        ctx = await migrateLegacyKurrierAccount(baseCtx);
+    }
+
+    await ensureDefaultAddressBook(ctx);
+    await ensureDefaultCalendar(ctx);
+
+    console.info(`[0.0.98] user ${userId}: ensured default DAV addressbook + calendar for ${ctx.davUsername}`);
 	console.info("Migration 0.0.98 - seed.ts executed");
 }

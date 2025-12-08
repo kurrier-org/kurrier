@@ -129,11 +129,12 @@ function ExternalEventView() {
                 </span>
             </div>
 
-            <div className={"flex gap-2 my-4 bg-brand/10 dark:bg-brand-900 p-2 rounded-sm justify-center"}>
+            <div className={"flex gap-2 my-4 bg-brand/10 dark:bg-brand-900 p-2 rounded-sm justify-center mantine-focus-never"} tabIndex={-1}>
                 <ReusableFormButton action={yesCalendarInvite} label="Accept" buttonProps={{
                     leftSection: <CheckCircle size={16} />,
                     size: "compact-xs",
                     variant: selfAttendee?.partstat === "accepted" ? "filled" : "subtle",
+                    tabIndex: -1
                 }}>
                     <input type="hidden" name="calendarId" value={state.defaultCalendar.id} />
                     <input type="hidden" name="eventId" value={editEvent?.id} />
@@ -144,6 +145,7 @@ function ExternalEventView() {
                     leftSection: <CircleDashed size={16} />,
                     size: "compact-xs",
                     variant: selfAttendee?.partstat === "tentative" ? "filled" : "subtle",
+                    tabIndex: -1
                 }}>
                     <input type="hidden" name="calendarId" value={state.defaultCalendar.id} />
                     <input type="hidden" name="eventId" value={editEvent?.id} />
@@ -153,6 +155,7 @@ function ExternalEventView() {
                     leftSection: <CircleX size={16} />,
                     size: "compact-xs",
                     variant: selfAttendee?.partstat === "declined" ? "filled" : "subtle",
+                    tabIndex: -1
                 }}>
                     <input type="hidden" name="calendarId" value={state.defaultCalendar.id} />
                     <input type="hidden" name="eventId" value={editEvent?.id} />
