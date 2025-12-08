@@ -1,5 +1,11 @@
 # web
 
+## 0.1.57
+
+### Patch Changes
+
+- [#340](https://github.com/kurrier-org/kurrier/pull/340) [`45f16aa`](https://github.com/kurrier-org/kurrier/commit/45f16aaf0f21ba3be3ffc185af5cb872d7ff7826) Thanks [@krokhale](https://github.com/krokhale)! - Added support for all day events
+
 ## 0.1.56
 
 ### Patch Changes
