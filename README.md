@@ -1,77 +1,157 @@
-### 🎉 Full CardDAV support is now live — sync your contacts across all your devices. Calendar syncing via CalDAV is also supported, with a full web UI coming soon.
+---
+title: Kurrier — Unified Email, Calendar, and Contacts
+description: A modern, self-hosted communication hub powered by open standards.
+---
 
-![Kurrier Webmail View](https://www.kurrier.org/docs-contact.png)
-
-### 🎉 Kurrier now supports Labels - organize your inbox your way
+# Kurrier
+A modern, self-hosted hub for **email, calendars, and contacts** — powered entirely by your existing SMTP/IMAP/CalDAV/CardDAV credentials.
 
 ---
 
-Kurrier is a modern, self-hosted webmail built for people who don't want the hassle to run their own email stack, yet want control over their data and privacy and ability to connect and manage multiple providers and email identities.
-It connects to standard protocols and providers — IMAP, SMTP, SES, SendGrid, Mailgun, and more — giving you a single, fast interface to turn any email service provider into a full-featured webmail.
+## ✨ What's New
+
+### 🎉 Sync your calendars across all your devices
+Kurrier now supports Calendars and syncs your calendars through **CalDAV**, compatible with iOS, macOS, Android (DAVx⁵), Thunderbird, and all CalDAV-supporting apps.
+
+![Kurrier Calendar](https://www.kurrier.org/docs-calendar-light.png)
+
+#### Dark Mode:
+
+![Kurrier Calendar](https://www.kurrier.org/docs-calendar-dark.png)
+
+### 🎉 Full **CardDAV support** — sync your contacts across all your devices
+Kurrier now supports **complete CardDAV sync**, meaning your address book updates instantly across iOS, macOS, Android (DAVx⁵), Thunderbird, and any CardDAV-compatible app.
+
+![Kurrier Contacts](https://www.kurrier.org/docs-contact.png)
 
 
+---
 
-## Why Kurrier?
+### 🎉 Kurrier now supports **Labels**
+Organize your inbox your way with flexible, multi-color labels.
 
-Kurrier is designed as a next-generation alternative to traditional webmail — minimal, extensible, and ready for modern infrastructure:
+---
 
-- **Connect any provider** — IMAP, SMTP, SES, SendGrid, Mailgun, or custom gateways.
-- **Unified web interface** — consistent, responsive, and designed for multiple identities.
-- **Self-hosted first** — privacy by design, no external dependencies or data sharing.
-- **Modern backend** — built with the latest Nextjs/TS/Nitro stack that makes integrations and automation easy.
-- **Developer-friendly** — clean JSON structures, delta sync, and extensible plugin logic.
-- **Docker-ready** — deploy easily on your own server, VPS, or container stack.
+## 🚀 What is Kurrier?
 
-Kurrier aims to give you the simplicity of a webmail with the flexibility of a full-featured mail gateway — all under your control.
+Kurrier is a **self-hosted, unified communication platform** that brings together:
 
+- 📧 Email (IMAP/SMTP/SES/SendGrid/Mailgun/Postmark)
+- 📅 Calendars (CalDAV)
+- 👤 Contacts (CardDAV)
 
-## Next steps
+All wrapped into a clean, fast, modern web UI — entirely powered by **your** providers and hosted on **your** infrastructure.
 
-Ready to try it out? Follow the next sections to get your instance running:
+Kurrier lets you:
 
+- Connect **any email provider**
+- Sync calendars across devices
+- Sync contacts across devices
+- Manage multiple identities and domains
+- Use SES/SendGrid/Mailgun as outbound identities
+- Keep all data private and under your control
 
-### → [Read the docs](https://www.kurrier.org)
+Whether you're running a personal server, a small-business mail setup, or a multi-domain environment, Kurrier gives you a **beautiful unified interface** without losing control of your data.
 
-## Screenshots
+---
 
-Here’s a look at Kurrier in action — a clean, modern webmail built to connect all your email providers in one place.
+## 💡 Why Kurrier?
 
+Kurrier is designed as a next-generation alternative to traditional webmail and PIM suites:
+
+- **Connect any provider**  
+  IMAP, SMTP, SES, SendGrid, Mailgun, Postmark — or your own mail server.
+
+- **Unified web interface**  
+  Email, calendars, and contacts — consistent, fast.
+
+- **Self-hosted first**  
+  Your data stays on *your* server. No third-party analytics. No vendor lock-in.
+
+- **Open standards**  
+  IMAP/SMTP for mail, CalDAV for calendars, CardDAV for contacts.
+
+- **Modern app stack**  
+  Next.js • TypeScript • Nitro • PostgreSQL — fast and extensible.
+
+- **Developer-friendly**  
+  Clean APIs, delta sync model, extensible providers.
+
+- **Docker-ready**  
+  Simple, reliable deployments.
+
+Kurrier aims to combine the simplicity of a webmail client with the flexibility of a complete, modern communication backend — all under your control.
+
+---
+
+## 📘 Next Steps
+
+Ready to try it out?
+
+👉 **[Read the documentation](https://www.kurrier.org)**  
+Guides include installation, provider setup, instructions, and more.
+
+---
+
+## 🖥 Screenshots
 
 ### 📨 Webmail View
-A unified fast, minimal interface for reading and managing your emails across accounts.
+Minimal, fast, keyboard-first email.
 
 ![Kurrier Webmail View](https://www.kurrier.org/light-label-demo.png)
 
 ---
-Dark Mode:
+
+### 🌙 Dark Mode
+A beautiful, fully themed dark interface.
 
 ![Kurrier Webmail View](https://www.kurrier.org/dark-label-demo.png)
 
+---
+
 ### 🔌 Providers View
-Connect and manage IMAP, SMTP, SES, SendGrid, Mailgun, and more — all from one dashboard.
+Connect IMAP/SMTP/SES/SendGrid/Mailgun/Postmark with ease.
 
 ![Kurrier Providers View](https://www.kurrier.org/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdoc-providers.167aad5f.png&w=1920&q=100)
 
+---
 
 ### 👤 Identity View
-Easily switch between multiple sender identities and manage your connected accounts.
+Manage multiple sender identities across providers.
 
 ![Kurrier Identity View](https://www.kurrier.org/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fdoc-identities.ea020d9f.png&w=1920&q=100)
 
+---
 
 ## 💙 Support Kurrier
 
-Kurrier is an independent, open-source project built to make modern email infrastructure private, reliable, and self-hosted.  
-If you find it useful, consider supporting its development — your contributions help cover hosting costs, maintenance, and future improvements.
+Kurrier is an independent, open-source project built to make private, modern email infrastructure accessible and self-hosted.
 
-👉 [**Donate or Support Kurrier**](https://buy.stripe.com/dRmfZje75d4OaGG8ux3Nm00)
+If you find it useful, please consider supporting development:
 
-Every bit of support helps keep Kurrier sustainable and open for everyone.  
-Thank you for helping make privacy-friendly email more accessible.
+👉 **[Donate to Kurrier](https://buy.stripe.com/dRmfZje75d4OaGG8ux3Nm00)**
 
-### Commercial Support
-Need help integrating or customizing Kurrier? I’m available for consulting here: [**Click here**](https://www.krishnarokhale.com)
+Every contribution helps with hosting, maintenance, and new features.
 
-### Contributing
+Thank you for supporting privacy-friendly communication software.
 
-Kurrier is an open-source project and contributions are welcome! If you’re interested in helping out, please check out the [contributing guidelines](https://www.kurrier.org/docs/contributing).
+---
+
+## 🛠 Commercial Support
+
+Need help integrating Kurrier into your business or infrastructure?
+
+👉 **[Request Consulting](https://www.krishnarokhale.com)**
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome.
+
+Please read the guidelines:  
+👉 **[Contributing Guide](https://www.kurrier.org/docs/contributing)**
+
+PRs, issues, ideas, and feedback are all appreciated.
+
+---
