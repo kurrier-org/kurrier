@@ -45,10 +45,15 @@ export default async function DashboardLayout({
     const organizersKey = organizers
         .map((o) => `${o.value}:${o.displayName ?? ""}`)
         .join("|");
+    const calendarContextKey = [
+        defaultCalendar.id,
+        defaultCalendar.timezone,
+        organizersKey,
+    ].join("::");
 
 	return (
 		<>
-            <DynamicContextProvider key={organizersKey} initialState={initialState}>
+            <DynamicContextProvider key={calendarContextKey} initialState={initialState}>
 
                 <AppSidebar
                     publicConfig={publicConfig}

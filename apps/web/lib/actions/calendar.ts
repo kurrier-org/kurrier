@@ -762,3 +762,28 @@ export async function maybeCalendarInvite(
         return { success: true };
     });
 }
+
+
+export async function updateCalendarTimezone(_prev: FormState, formData: FormData): Promise<FormState> {
+    return handleAction(async () => {
+
+        const decodedForm = decode(formData)
+        const calendarId = String(decodedForm.calendarId);
+        const timezone = String(decodedForm.timezone || "UTC");
+
+        if (!calendarId) {
+            return { success: false, error: "Missing calendarId" };
+        }
+
+        const rls = await rlsClient();
+        await rls((tx) =>
+            tx
+                .update(calendars)
+                .set({ timezone })
+                .where(eq(calendars.id, calendarId))
+        );
+
+        revalidatePath("/dashboard/calendar");
+        return { success: true };
+    });
+}

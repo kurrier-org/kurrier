@@ -1,11 +1,11 @@
 import DigestFetch from "digest-fetch";
 import {
-	db,
-	calendarEvents,
-	calendars,
-	davAccounts,
-	secretsMeta,
-	getSecretAdmin,
+    db,
+    calendarEvents,
+    calendars,
+    davAccounts,
+    secretsMeta,
+    getSecretAdmin, calendarEventAttendees,
 } from "@db";
 import { desc, eq } from "drizzle-orm";
 import { getDayjsTz } from "@common";
@@ -116,8 +116,12 @@ export const updateCalendarEvent = async (eventId: string, notifyAttendees: bool
 		return null;
 	}
 
+    const guests = await db.select().from(calendarEventAttendees).where(
+        eq(calendarEventAttendees.eventId, event.id)
+    )
+
 	const dayjsTz = getDayjsTz(calendar.timezone || "UTC");
-	const icalData = buildICalEvent(event, dayjsTz);
+	const icalData = buildICalEvent(event, dayjsTz, guests);
 
 	const { etag: newEtag } = await updateCalendarObjectViaHttp({
 		icalData,
