@@ -55,7 +55,7 @@ export default function SearchableContacts({ onChange }: { onChange?: (value: st
 				}}
 				renderOption={renderOption}
 				size="sm"
-				className="min-h-[28px] text-sm w-96"
+				className="min-h-[28px] text-sm max-w-md"
 				comboboxProps={{
 					dropdownPadding: 0,
 					withinPortal: false,

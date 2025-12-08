@@ -25,6 +25,7 @@ function CalendarAddEventPopover({
 		<Popover
 			opened={opened}
 			onChange={onChange}
+            trapFocus={true}
 			withinPortal
 			position="left"
 			withArrow
@@ -36,7 +37,7 @@ function CalendarAddEventPopover({
 		>
 			<Popover.Target>{children}</Popover.Target>
 
-			<Popover.Dropdown className="min-w-sm bg-popover border border-border rounded-xl p-3 shadow-lg">
+			<Popover.Dropdown className="min-w-md max-w-md bg-popover border border-border rounded-xl p-3 shadow-lg">
                 <CombinedEventView newCalendarEventFormProps={{ start, end, onCompleted: () => {
                         toast.success("Success");
                         onChange(false);
