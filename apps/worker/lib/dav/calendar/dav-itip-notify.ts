@@ -4,14 +4,14 @@ import {
     calendarEventAttendees,
     identities,
     CalendarEventEntity,
-    mailboxes,
+    mailboxes, calendars,
 } from "@db";
 import { and, eq } from "drizzle-orm";
 import ICAL from "ical.js";
 import {EmailSendSchema, ItipAction} from "@schema";
 import { createSupabaseServiceClient } from "../../../lib/create-client-ssr";
 import { extension } from "mime-types";
-import { base64ToBlob } from "@common";
+import {base64ToBlob, getDayjsTz} from "@common";
 import { getRedis } from "../../../lib/get-redis";
 import { customAlphabet } from "nanoid";
 const cleanId = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 6);
@@ -175,6 +175,38 @@ export const davItipNotify = async (opts: {
         organizerProp.setParameter("cn", organizerName);
     }
 
+
+
+    const [calendar] = await db
+        .select()
+        .from(calendars)
+        .where(eq(calendars.id, event.calendarId));
+    const tzid = calendar?.timezone || "UTC";
+    const dayjsTz = getDayjsTz(tzid);
+    const startLocal = dayjsTz(event.startsAt);
+    const endLocal = dayjsTz(event.endsAt);
+    let humanWhen: string;
+    if (event.isAllDay) {
+        if (startLocal.isSame(endLocal, "day")) {
+            humanWhen = `${startLocal.format("D MMM YYYY")} (all day)`;
+        } else {
+            humanWhen = `${startLocal.format("D MMM YYYY")} – ${endLocal.format(
+                "D MMM YYYY",
+            )} (all day)`;
+        }
+    } else if (startLocal.isSame(endLocal, "day")) {
+        humanWhen = `${startLocal.format("D MMM YYYY")} ${startLocal.format(
+            "h:mm A",
+        )} – ${endLocal.format("h:mm A")} (${tzid})`;
+    } else {
+        humanWhen = `${startLocal.format(
+            "D MMM YYYY h:mm A",
+        )} – ${endLocal.format("D MMM YYYY h:mm A")} (${tzid})`;
+    }
+
+
+
+
     for (const attendee of realAttendees) {
         const addr = attendee.email.trim();
         if (!addr) continue;
@@ -196,6 +228,7 @@ export const davItipNotify = async (opts: {
         await enqueEmail({
             event,
             icsText,
+            humanWhen,
             toAddresses: [addr],
             organizerEmail,
             organizerName,
@@ -209,6 +242,7 @@ export const davItipNotify = async (opts: {
 const enqueEmail = async ({
                               event,
                               icsText,
+                              humanWhen,
                               toAddresses,
                               organizerEmail,
                               organizerName,
@@ -216,6 +250,7 @@ const enqueEmail = async ({
                           }: {
     event: CalendarEventEntity;
     icsText: string;
+    humanWhen: string;
     toAddresses: string[];
     organizerEmail: string;
     organizerName: string | null;
@@ -258,7 +293,6 @@ const enqueEmail = async ({
     }
 
     const subjectBase = event.title || "(no title)";
-    const humanWhen = `${event.startsAt.toISOString()} – ${event.endsAt.toISOString()}`;
     const displayName = organizerName || organizerEmail;
 
     const subjectPrefix =
@@ -270,10 +304,10 @@ const enqueEmail = async ({
 
     const introLine =
         action === "cancel"
-            ? `The event "${subjectBase}" has been cancelled by ${displayName}.`
+            ? `The event ${subjectBase} has been cancelled by ${displayName}.`
             : action === "update"
                 ? `The event "${subjectBase}" has been updated by ${displayName}.`
-                : `You have been invited to "${subjectBase}" by ${displayName}.`;
+                : `You have been invited to: ${subjectBase} by ${displayName}.`;
 
     const toLine = toAddresses.join(",");
 

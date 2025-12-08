@@ -114,6 +114,9 @@ export function buildICalEvent(
             .trim()
             .toLowerCase() || null;
 
+    const shouldDefaultRsvp = !eventRow.isExternal;
+    const shouldUseServerScheduleAgent = !eventRow.isExternal;
+
     if (organizerEmail) {
         const organizerName =
             eventRow.organizerName ?? organizerGuest?.name ?? null;
@@ -123,10 +126,15 @@ export function buildICalEvent(
         if (organizerName) {
             orgProp.setParameter("cn", organizerName);
         }
+        if (shouldUseServerScheduleAgent) {
+            orgProp.setParameter("schedule-agent", "SERVER");
+        }
         vevent.addProperty(orgProp);
     }
 
     const organizerEmailLower = organizerEmail ?? "";
+
+
     for (const g of attendees) {
         const email = g.email?.trim();
         if (!email) continue;
@@ -143,8 +151,16 @@ export function buildICalEvent(
         prop.setParameter("role", mapRoleToIcal(g.role));
         prop.setParameter("partstat", mapPartstatToIcal(g.partstat));
 
-        if (g.rsvp) {
+        const wantsRsvp = shouldDefaultRsvp
+            ? g.rsvp !== false
+            : g.rsvp === true;
+
+        if (wantsRsvp) {
             prop.setParameter("rsvp", "TRUE");
+        }
+
+        if (shouldUseServerScheduleAgent) {
+            prop.setParameter("schedule-agent", "SERVER");
         }
 
         vevent.addProperty(prop);

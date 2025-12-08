@@ -293,6 +293,8 @@ async function processSingleItem(
         return;
     }
 
+    let anyUpdated = false;
+
     for (const { email, dbPartstat } of attendeeUpdates) {
         const updated = await db
             .update(calendarEventAttendees)
@@ -314,10 +316,20 @@ async function processSingleItem(
             continue;
         }
 
+        anyUpdated = true;
+
         console.info("davItipProcessor: updated attendee partstat", {
             eventId: event.id,
             email,
             partstat: dbPartstat,
+        });
+    }
+
+    if (anyUpdated) {
+        const { davWorkerQueue } = await getRedis();
+        await davWorkerQueue.add("dav:calendar:update-event", {
+            eventId: event.id,
+            notifyAttendees: false,
         });
     }
 
