@@ -3,12 +3,13 @@ import {CalendarEventEntity} from "@db";
 import {AllDayFragment, CalendarState} from "@schema";
 import {useDynamicContext} from "@/hooks/use-dynamic-context";
 import CalendarAddEventPopover from "@/components/dashboard/calendars/calendar-add-event-popover";
+import {useState} from "react";
 
 type WeekDayMeta = {
     label: string;
     date: number;
     isSameDay: boolean;
-    day: ReturnType<ReturnType<typeof getDayjsTz>>; // your existing type
+    day: ReturnType<ReturnType<typeof getDayjsTz>>;
 };
 
 type AllDayRenderFragment = {
@@ -29,6 +30,8 @@ export default function AllDayEventsRow({
 }) {
     const { state, setState } = useDynamicContext<CalendarState>();
     const dayjsTz = getDayjsTz(state.defaultCalendar.timezone);
+
+    const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
     const dayKeyToIndex = new Map<string, number>();
     weekDays.forEach((d, idx) => {
@@ -125,14 +128,19 @@ export default function AllDayEventsRow({
     const rowCount = occupied.length || 1;
     const rowHeight = 22;
 
-    const handleClick = (ev: React.MouseEvent<HTMLDivElement>, event: CalendarEventEntity) => {
+    const handleClick = (
+        ev: React.MouseEvent<HTMLDivElement>,
+        event: CalendarEventEntity,
+        popoverKey: string,
+    ) => {
         ev.stopPropagation();
         setState((prev) => ({
             ...prev,
             activePopoverEditEvent: event,
-            activePopoverId: event.id,
         }));
+        setOpenPopoverId(popoverKey);
     };
+
 
     return (
         <div className="grid grid-cols-[64px_repeat(7,1fr)] border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 w-full">
@@ -161,19 +169,17 @@ export default function AllDayEventsRow({
                         const left = (frag.startIndex / 7) * 100;
                         const width = ((frag.endIndex - frag.startIndex + 1) / 7) * 100;
 
-                        const opened = state.activePopoverId === frag.event.id;
+                        const popoverKey = (frag.event as any).instanceId ?? frag.event.id;
+                        const opened = openPopoverId === popoverKey;
+
 
                         return (
                             <CalendarAddEventPopover
                                 key={`${frag.event.id}-${frag.startIndex}-${frag.endIndex}`}
                                 opened={opened}
-                                onChange={() =>
-                                    setState((prev) => ({
-                                        ...prev,
-                                        activePopoverId: null,
-                                        activePopoverEditEvent: undefined,
-                                    }))
-                                }
+                                onChange={() => {
+                                    setOpenPopoverId(null);
+                                }}
                                 start={start}
                                 end={end}
                             >
@@ -185,7 +191,7 @@ export default function AllDayEventsRow({
                                         width: `${width}%`,
                                         height: rowHeight - 4,
                                     }}
-                                    onClick={(ev) => handleClick(ev, frag.event)}
+                                    onClick={(ev) => handleClick(ev, frag.event, popoverKey)}
                                     title={frag.event.title}
                                 >
                                     <span className="truncate font-medium">{frag.event.title}</span>

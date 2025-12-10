@@ -90,6 +90,8 @@ CREATE TABLE "calendar_events" (
 	"raw_ics" text,
 	"ical_uid" text,
 	"is_external" boolean DEFAULT false NOT NULL,
+	"recurrence_rule" text,
+	"recurrence_exdates" timestamp with time zone[] DEFAULT '{}'::timestamptz[] NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );

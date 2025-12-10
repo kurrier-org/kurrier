@@ -9,9 +9,9 @@ import {
     calendars, contacts,
     identities,
 } from "@db";
-import {and, eq, gte, lte, inArray, or, ilike, sql} from "drizzle-orm";
+import { and, eq, gte, lte, inArray, or, ilike, sql, isNull, not } from "drizzle-orm";
 import {
-    AllDayFragment,
+    AllDayFragment, CalendarEventInstance,
     CalendarViewType, ComposeContact,
     EventSlotFragment,
     FormState,
@@ -28,6 +28,7 @@ import { dayjsExtended, getDayjsTz } from "@common/day-js-extended";
 import { calendarEventAttendees } from "@db";
 import { PgTransaction } from "drizzle-orm/pg-core";
 import { createClient } from "@/lib/supabase/server";
+import { RRule } from "rrule";
 
 
 export const fetchDefaultCalendar = cache(async () => {
@@ -281,13 +282,13 @@ export async function syncEventAttendees({
     }
 }
 
+
 export async function upsertCalendarEvent(
     _prev: FormState,
     formData: FormData,
 ): Promise<FormState> {
     return handleAction(async () => {
         const decodedForm = decode(formData);
-        console.log("decodedForm", decodedForm)
 
         const {
             tz,
@@ -297,19 +298,16 @@ export async function upsertCalendarEvent(
             notifyAttendees,
             attendeePayload,
             isAllDay,
+            recurrenceRule,
             ...rest
         } = decodedForm;
 
         const notify = notifyAttendees === "on" || notifyAttendees === true;
         const isAllDayBool = isAllDay === "on" || isAllDay === true || isAllDay === "true";
-
-        // const startsAtDate = dayjsExtended
-        //     .tz(String(startsAt), "YYYY-MM-DD HH:mm:ss", String(tz))
-        //     .toDate();
-        //
-        // const endsAtDate = dayjsExtended
-        //     .tz(String(endsAt), "YYYY-MM-DD HH:mm:ss", String(tz))
-        //     .toDate();
+        let rule =
+            typeof recurrenceRule === "string" && recurrenceRule.trim().length > 0
+                ? recurrenceRule.trim()
+                : null;
 
         let startsAtDate: Date;
         let endsAtDate: Date;
@@ -351,6 +349,7 @@ export async function upsertCalendarEvent(
                 endsAt: endsAtDate,
                 isAllDay: isAllDayBool,
                 organizerEmail: identityExists ? identityExists.value : null,
+                recurrenceRule: rule,
                 organizerName: identityExists
                     ? identityExists.displayName
                     : (decodedForm.newOrganizerName ?? null),
@@ -846,4 +845,144 @@ export async function eventsByDayWithAllDay(
     }
 
     return { timedByDay, allDayByDay };
+}
+
+
+function toRRuleLocal(date: Date, tz: string): Date {
+    const d = getDayjsTz(tz)(date);
+    return new Date(
+        Date.UTC(
+            d.year(),
+            d.month(),
+            d.date(),
+            d.hour(),
+            d.minute(),
+            d.second(),
+            d.millisecond(),
+        ),
+    );
+}
+
+function fromRRuleLocal(rruleDate: Date, tz: string): Date {
+    const y = rruleDate.getUTCFullYear();
+    const m = rruleDate.getUTCMonth();
+    const d = rruleDate.getUTCDate();
+    const h = rruleDate.getUTCHours();
+    const mi = rruleDate.getUTCMinutes();
+    const s = rruleDate.getUTCSeconds();
+    const ms = rruleDate.getUTCMilliseconds();
+
+    const zoned = getDayjsTz(tz)()
+        .year(y)
+        .month(m)
+        .date(d)
+        .hour(h)
+        .minute(mi)
+        .second(s)
+        .millisecond(ms);
+
+    return zoned.toDate();
+}
+
+export async function expandEventForRange(
+    event: CalendarEventEntity,
+    rangeStart: Date,
+    rangeEnd: Date,
+    tz: string,
+): Promise<CalendarEventInstance[]> {
+    if (!event.recurrenceRule) {
+        return [
+            {
+                ...event,
+                instanceId: event.id,
+                recurrenceMasterId: null,
+            },
+        ];
+    }
+
+    const opts = RRule.parseString(event.recurrenceRule);
+    const durationMs = event.endsAt.getTime() - event.startsAt.getTime();
+
+    const isExternal = !!(event as any).isExternal;
+
+    let dtstart: Date;
+    let rStart: Date;
+    let rEnd: Date;
+
+    if (isExternal) {
+        dtstart = event.startsAt;
+        rStart = rangeStart;
+        rEnd = rangeEnd;
+    } else {
+        dtstart = toRRuleLocal(event.startsAt, tz);
+        rStart = toRRuleLocal(rangeStart, tz);
+        rEnd = toRRuleLocal(rangeEnd, tz);
+    }
+
+    const rrule = new RRule({
+        ...opts,
+        dtstart,
+    });
+
+    const rawDates = rrule.between(rStart, rEnd, true);
+
+    if (!rawDates.length) {
+        return [];
+    }
+
+    return rawDates.map((d, index) => {
+        const startInstant = isExternal ? d : fromRRuleLocal(d, tz);
+        const endInstant = new Date(startInstant.getTime() + durationMs);
+
+        return {
+            ...event,
+            instanceId: `${event.id}__${startInstant.toISOString()}__${index}`,
+            recurrenceMasterId: event.id,
+            startsAt: startInstant,
+            endsAt: endInstant,
+        };
+    });
+}
+
+export async function expandEventsForRange(
+    events: CalendarEventEntity[],
+    rangeStart: Date,
+    rangeEnd: Date,
+    tz: string,
+): Promise<CalendarEventInstance[]> {
+    const all = await Promise.all(
+        events.map((e) => expandEventForRange(e, rangeStart, rangeEnd, tz)),
+    );
+    return all.flat();
+}
+
+
+export async function fetchCalendarEventsForRange(
+    calendarId: string,
+    from: Date,
+    to: Date,
+): Promise<CalendarEventEntity[]> {
+    const rls = await rlsClient();
+
+    return rls((tx) =>
+        tx
+            .select()
+            .from(calendarEvents)
+            .where(
+                and(
+                    eq(calendarEvents.calendarId, calendarId),
+                    or(
+                        and(
+                            isNull(calendarEvents.recurrenceRule),
+                            lte(calendarEvents.startsAt, to),
+                            gte(calendarEvents.endsAt, from),
+                        ),
+                        and(
+                            not(isNull(calendarEvents.recurrenceRule)),
+                            lte(calendarEvents.startsAt, to),
+                        ),
+                    ),
+                ),
+            ),
+    );
 }

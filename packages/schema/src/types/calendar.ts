@@ -41,7 +41,7 @@ export type ViewParams = {
 export type SlotKey = string;
 
 export type EventSlotFragment = {
-	event: CalendarEventEntity;
+	event: CalendarEventEntity & { instanceId?: string | null, recurrenceMasterId?: string | null };
 	date: string;
 	hour: number;
 	topPercent: number;
@@ -103,4 +103,39 @@ export type AllDayFragment = {
     date: string;
     isStart: boolean;
     isEnd: boolean;
+};
+
+
+
+export type Freq = "none" | "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
+export type UntilMode = "never" | "on" | "after";
+
+export type RecurrenceRulesFormInputProps = {
+    name: string;
+    defaultValue?: string | null;
+};
+
+export type ParsedRRuleState = {
+    freq: Freq;
+    interval: number;
+    untilMode: UntilMode;
+    untilDate: Date | null;
+    count: number | "";
+    byWeekdays: string[];
+};
+
+export const WEEKDAY_OPTIONS = [
+    { label: "Mon", value: "MO" },
+    { label: "Tue", value: "TU" },
+    { label: "Wed", value: "WE" },
+    { label: "Thu", value: "TH" },
+    { label: "Fri", value: "FR" },
+    { label: "Sat", value: "SA" },
+    { label: "Sun", value: "SU" },
+];
+
+
+export type CalendarEventInstance = CalendarEventEntity & {
+    instanceId: string;
+    recurrenceMasterId?: string | null;
 };
