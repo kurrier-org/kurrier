@@ -1,7 +1,7 @@
 name: kurrier
 services:
   web:
-    image: ghcr.io/kurrier-org/kurrier-web:v1.0.2
+    image: ghcr.io/kurrier-org/kurrier-web:v1.0.3
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-3000}:3000"
@@ -33,7 +33,7 @@ services:
       DAV_URL: http://dav:80
 
   worker:
-    image: ghcr.io/kurrier-org/kurrier-worker:v1.0.2
+    image: ghcr.io/kurrier-org/kurrier-worker:v1.0.3
     restart: unless-stopped
     ports:
       - "${NITRO_PORT:-3001}:3001"
