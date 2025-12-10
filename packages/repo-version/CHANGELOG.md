@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 1.0.3
+
+### Patch Changes
+
+- [#345](https://github.com/kurrier-org/kurrier/pull/345) [`d143d75`](https://github.com/kurrier-org/kurrier/commit/d143d7585cb14d5f20635d6771a1238bef258e93) Thanks [@krokhale](https://github.com/krokhale)! - Added support for recurrence rules in the calendar
+
 ## 1.0.2
 
 ### Patch Changes
