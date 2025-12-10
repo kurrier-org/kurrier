@@ -107,9 +107,13 @@ function CalendarSideBar({
 			<div className="flex justify-center w-full">
 				<div className="w-full rounded-xl bg-white dark:bg-neutral-800">
 					<div className="flex items-center justify-between mb-2 px-1">
-						<span className={"text-xs uppercase tracking-wide text-neutral-500 dark:text-brand-foreground font-medium flex items-center gap-0.5"}>
+						<span
+							className={
+								"text-xs uppercase tracking-wide text-neutral-500 dark:text-brand-foreground font-medium flex items-center gap-0.5"
+							}
+						>
 							Calendar
-                            <CalendarSettings />
+							<CalendarSettings />
 						</span>
 						<button
 							type="button"

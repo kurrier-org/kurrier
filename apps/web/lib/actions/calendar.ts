@@ -1,23 +1,37 @@
 "use server";
 import { rlsClient } from "@/lib/actions/clients";
 import {
-    CalendarEventAttendeeEntity,
-    CalendarEventEntity,
-    CalendarEventInsertSchema,
-    calendarEvents,
-    CalendarEventUpdateSchema,
-    calendars, contacts,
-    identities,
+	CalendarEventAttendeeEntity,
+	CalendarEventEntity,
+	CalendarEventInsertSchema,
+	calendarEvents,
+	CalendarEventUpdateSchema,
+	calendars,
+	contacts,
+	identities,
 } from "@db";
-import { and, eq, gte, lte, inArray, or, ilike, sql, isNull, not } from "drizzle-orm";
 import {
-    AllDayFragment, CalendarEventInstance,
-    CalendarViewType, ComposeContact,
-    EventSlotFragment,
-    FormState,
-    handleAction,
-    SlotKey,
-    ViewParams,
+	and,
+	eq,
+	gte,
+	lte,
+	inArray,
+	or,
+	ilike,
+	sql,
+	isNull,
+	not,
+} from "drizzle-orm";
+import {
+	AllDayFragment,
+	CalendarEventInstance,
+	CalendarViewType,
+	ComposeContact,
+	EventSlotFragment,
+	FormState,
+	handleAction,
+	SlotKey,
+	ViewParams,
 } from "@schema";
 import { decode } from "decode-formdata";
 import { revalidatePath } from "next/cache";
@@ -29,7 +43,6 @@ import { calendarEventAttendees } from "@db";
 import { PgTransaction } from "drizzle-orm/pg-core";
 import { createClient } from "@/lib/supabase/server";
 import { RRule } from "rrule";
-
 
 export const fetchDefaultCalendar = cache(async () => {
 	const rls = await rlsClient();
@@ -73,339 +86,332 @@ export const fetchCalendarEvents = async (
 };
 
 export async function fetchEventAttendees(
-    eventIds: string[]
+	eventIds: string[],
 ): Promise<Record<string, CalendarEventAttendeeEntity[]>> {
-    if (eventIds.length === 0) return {};
-    const rls = await rlsClient();
-    const attendees = await rls((tx) =>
-        tx
-            .select()
-            .from(calendarEventAttendees)
-            .where(inArray(calendarEventAttendees.eventId, eventIds)),
-    );
-    const result: Record<string, CalendarEventAttendeeEntity[]> = {};
+	if (eventIds.length === 0) return {};
+	const rls = await rlsClient();
+	const attendees = await rls((tx) =>
+		tx
+			.select()
+			.from(calendarEventAttendees)
+			.where(inArray(calendarEventAttendees.eventId, eventIds)),
+	);
+	const result: Record<string, CalendarEventAttendeeEntity[]> = {};
 
-    for (const attendee of attendees) {
-        if (!result[attendee.eventId]) {
-            result[attendee.eventId] = [];
-        }
-        result[attendee.eventId].push(attendee);
-    }
+	for (const attendee of attendees) {
+		if (!result[attendee.eventId]) {
+			result[attendee.eventId] = [];
+		}
+		result[attendee.eventId].push(attendee);
+	}
 
-    return result;
+	return result;
 }
 
 export type FetchEventAttendeesResult = Awaited<
-    ReturnType<typeof fetchEventAttendees>
+	ReturnType<typeof fetchEventAttendees>
 >;
-
 
 export const fetchOrganizers = async () => {
 	const rls = await rlsClient();
-	const allIdentities = await rls((tx) =>
-		tx
-			.select()
-			.from(identities),
-	);
+	const allIdentities = await rls((tx) => tx.select().from(identities));
 
 	return allIdentities.map((identity) => {
-        return {
-            value: identity.id,
-            displayName: identity.displayName,
-            label: identity.displayName
-                ? `${identity.displayName} <${identity.value}>`
-                : identity.value
-        };
-    })
+		return {
+			value: identity.id,
+			displayName: identity.displayName,
+			label: identity.displayName
+				? `${identity.displayName} <${identity.value}>`
+				: identity.value,
+		};
+	});
 };
 
-
 type UiGuest = {
-    email: string;
-    name: string | null;
-    avatar: string | null;
-    contactId: string | null;
-    isOrganizer: boolean;
-    isPersisted: boolean;
+	email: string;
+	name: string | null;
+	avatar: string | null;
+	contactId: string | null;
+	isOrganizer: boolean;
+	isPersisted: boolean;
 };
 
 type AttendeePayload = {
-    initialGuests?: UiGuest[];
-    newGuests?: UiGuest[];
+	initialGuests?: UiGuest[];
+	newGuests?: UiGuest[];
 };
 
 type SyncEventAttendeesArgs = {
-    tx: PgTransaction<any, any, any>;
-    eventId: string;
-    organizerEmail: string | null;
-    organizerName: string | null;
-    attendeePayload: AttendeePayload | null;
+	tx: PgTransaction<any, any, any>;
+	eventId: string;
+	organizerEmail: string | null;
+	organizerName: string | null;
+	attendeePayload: AttendeePayload | null;
 };
 
 export async function syncEventAttendees({
-                                             tx,
-                                             eventId,
-                                             organizerEmail,
-                                             organizerName,
-                                             attendeePayload,
-                                         }: SyncEventAttendeesArgs) {
-    if (!attendeePayload) return;
+	tx,
+	eventId,
+	organizerEmail,
+	organizerName,
+	attendeePayload,
+}: SyncEventAttendeesArgs) {
+	if (!attendeePayload) return;
 
-    const allGuests: UiGuest[] = [
-        ...(attendeePayload.initialGuests ?? []),
-        ...(attendeePayload.newGuests ?? []),
-    ];
+	const allGuests: UiGuest[] = [
+		...(attendeePayload.initialGuests ?? []),
+		...(attendeePayload.newGuests ?? []),
+	];
 
-    const dedupedGuests = Array.from(
-        new Map(allGuests.map((g) => [g.email.toLowerCase(), g])).values(),
-    );
+	const dedupedGuests = Array.from(
+		new Map(allGuests.map((g) => [g.email.toLowerCase(), g])).values(),
+	);
 
-    const existing = await tx
-        .select()
-        .from(calendarEventAttendees)
-        .where(eq(calendarEventAttendees.eventId, eventId));
+	const existing = await tx
+		.select()
+		.from(calendarEventAttendees)
+		.where(eq(calendarEventAttendees.eventId, eventId));
 
-    const existingByEmail = new Map(
-        existing.map((a) => [a.email.toLowerCase(), a]),
-    );
+	const existingByEmail = new Map(
+		existing.map((a) => [a.email.toLowerCase(), a]),
+	);
 
-    const existingOrganizer = existing.find((a) => a.isOrganizer) ?? null;
+	const existingOrganizer = existing.find((a) => a.isOrganizer) ?? null;
 
-    let normalizedOrganizer = organizerEmail?.toLowerCase() ?? null;
+	let normalizedOrganizer = organizerEmail?.toLowerCase() ?? null;
 
-    const organizerGuestFromPayload =
-        dedupedGuests.find((g) => g.isOrganizer) ??
-        (normalizedOrganizer
-            ? dedupedGuests.find(
-                (g) => g.email.toLowerCase() === normalizedOrganizer,
-            )
-            : undefined);
+	const organizerGuestFromPayload =
+		dedupedGuests.find((g) => g.isOrganizer) ??
+		(normalizedOrganizer
+			? dedupedGuests.find((g) => g.email.toLowerCase() === normalizedOrganizer)
+			: undefined);
 
-    if (!normalizedOrganizer && organizerGuestFromPayload) {
-        normalizedOrganizer = organizerGuestFromPayload.email.toLowerCase();
-    }
+	if (!normalizedOrganizer && organizerGuestFromPayload) {
+		normalizedOrganizer = organizerGuestFromPayload.email.toLowerCase();
+	}
 
-    if (!normalizedOrganizer && existingOrganizer) {
-        normalizedOrganizer = existingOrganizer.email.toLowerCase();
-    }
+	if (!normalizedOrganizer && existingOrganizer) {
+		normalizedOrganizer = existingOrganizer.email.toLowerCase();
+	}
 
-    if (!normalizedOrganizer) {
-        return;
-    }
+	if (!normalizedOrganizer) {
+		return;
+	}
 
-    const desiredOrganizerName =
-        organizerName ??
-        organizerGuestFromPayload?.name ??
-        existingOrganizer?.name ??
-        null;
+	const desiredOrganizerName =
+		organizerName ??
+		organizerGuestFromPayload?.name ??
+		existingOrganizer?.name ??
+		null;
 
-    const desiredOrganizerContactId =
-        organizerGuestFromPayload?.contactId ?? existingOrganizer?.contactId ?? null;
+	const desiredOrganizerContactId =
+		organizerGuestFromPayload?.contactId ??
+		existingOrganizer?.contactId ??
+		null;
 
-    const organizerMatch = existingByEmail.get(normalizedOrganizer) ?? null;
+	const organizerMatch = existingByEmail.get(normalizedOrganizer) ?? null;
 
-    const organizersToDemote = existing.filter(
-        (a) => a.isOrganizer && a.email.toLowerCase() !== normalizedOrganizer,
-    );
+	const organizersToDemote = existing.filter(
+		(a) => a.isOrganizer && a.email.toLowerCase() !== normalizedOrganizer,
+	);
 
-    if (organizersToDemote.length > 0) {
-        await tx
-            .update(calendarEventAttendees)
-            .set({
-                isOrganizer: false,
-                role: "req_participant",
-            })
-            .where(
-                inArray(
-                    calendarEventAttendees.id,
-                    organizersToDemote.map((o) => o.id),
-                ),
-            );
-    }
+	if (organizersToDemote.length > 0) {
+		await tx
+			.update(calendarEventAttendees)
+			.set({
+				isOrganizer: false,
+				role: "req_participant",
+			})
+			.where(
+				inArray(
+					calendarEventAttendees.id,
+					organizersToDemote.map((o) => o.id),
+				),
+			);
+	}
 
-    if (!organizerMatch) {
-        await tx.insert(calendarEventAttendees).values({
-            eventId,
-            email: normalizedOrganizer,
-            name: desiredOrganizerName,
-            contactId: desiredOrganizerContactId,
-            isOrganizer: true,
-            role: "chair",
-            partstat: "accepted",
-            rsvp: false,
-        });
-    } else {
-        await tx
-            .update(calendarEventAttendees)
-            .set({
-                isOrganizer: true,
-                name: desiredOrganizerName,
-                contactId: desiredOrganizerContactId,
-                role: "chair",
-            })
-            .where(eq(calendarEventAttendees.id, organizerMatch.id));
-    }
+	if (!organizerMatch) {
+		await tx.insert(calendarEventAttendees).values({
+			eventId,
+			email: normalizedOrganizer,
+			name: desiredOrganizerName,
+			contactId: desiredOrganizerContactId,
+			isOrganizer: true,
+			role: "chair",
+			partstat: "accepted",
+			rsvp: false,
+		});
+	} else {
+		await tx
+			.update(calendarEventAttendees)
+			.set({
+				isOrganizer: true,
+				name: desiredOrganizerName,
+				contactId: desiredOrganizerContactId,
+				role: "chair",
+			})
+			.where(eq(calendarEventAttendees.id, organizerMatch.id));
+	}
 
-    const nonOrganizerGuests = dedupedGuests.filter(
-        (g) => g.email.toLowerCase() !== normalizedOrganizer,
-    );
+	const nonOrganizerGuests = dedupedGuests.filter(
+		(g) => g.email.toLowerCase() !== normalizedOrganizer,
+	);
 
-    const desiredEmails = new Set(
-        nonOrganizerGuests.map((g) => g.email.toLowerCase()),
-    );
+	const desiredEmails = new Set(
+		nonOrganizerGuests.map((g) => g.email.toLowerCase()),
+	);
 
-    const emailsToDelete = existing
-        .filter((a) => !a.isOrganizer)
-        .filter((a) => !desiredEmails.has(a.email.toLowerCase()))
-        .map((a) => a.id);
+	const emailsToDelete = existing
+		.filter((a) => !a.isOrganizer)
+		.filter((a) => !desiredEmails.has(a.email.toLowerCase()))
+		.map((a) => a.id);
 
-    if (emailsToDelete.length > 0) {
-        await tx
-            .delete(calendarEventAttendees)
-            .where(inArray(calendarEventAttendees.id, emailsToDelete));
-    }
+	if (emailsToDelete.length > 0) {
+		await tx
+			.delete(calendarEventAttendees)
+			.where(inArray(calendarEventAttendees.id, emailsToDelete));
+	}
 
-    for (const g of nonOrganizerGuests) {
-        const key = g.email.toLowerCase();
-        if (!existingByEmail.has(key)) {
-            await tx.insert(calendarEventAttendees).values({
-                eventId,
-                email: g.email,
-                name: g.name,
-                contactId: g.contactId,
-                isOrganizer: false,
-                role: "req_participant",
-                partstat: "needs_action",
-                rsvp: false,
-            });
-        }
-    }
+	for (const g of nonOrganizerGuests) {
+		const key = g.email.toLowerCase();
+		if (!existingByEmail.has(key)) {
+			await tx.insert(calendarEventAttendees).values({
+				eventId,
+				email: g.email,
+				name: g.name,
+				contactId: g.contactId,
+				isOrganizer: false,
+				role: "req_participant",
+				partstat: "needs_action",
+				rsvp: false,
+			});
+		}
+	}
 }
-
 
 export async function upsertCalendarEvent(
-    _prev: FormState,
-    formData: FormData,
+	_prev: FormState,
+	formData: FormData,
 ): Promise<FormState> {
-    return handleAction(async () => {
-        const decodedForm = decode(formData);
+	return handleAction(async () => {
+		const decodedForm = decode(formData);
 
-        const {
-            tz,
-            startsAt,
-            endsAt,
-            eventId,
-            notifyAttendees,
-            attendeePayload,
-            isAllDay,
-            recurrenceRule,
-            ...rest
-        } = decodedForm;
+		const {
+			tz,
+			startsAt,
+			endsAt,
+			eventId,
+			notifyAttendees,
+			attendeePayload,
+			isAllDay,
+			recurrenceRule,
+			...rest
+		} = decodedForm;
 
-        const notify = notifyAttendees === "on" || notifyAttendees === true;
-        const isAllDayBool = isAllDay === "on" || isAllDay === true || isAllDay === "true";
-        let rule =
-            typeof recurrenceRule === "string" && recurrenceRule.trim().length > 0
-                ? recurrenceRule.trim()
-                : null;
+		const notify = notifyAttendees === "on" || notifyAttendees === true;
+		const isAllDayBool =
+			isAllDay === "on" || isAllDay === true || isAllDay === "true";
+		let rule =
+			typeof recurrenceRule === "string" && recurrenceRule.trim().length > 0
+				? recurrenceRule.trim()
+				: null;
 
-        let startsAtDate: Date;
-        let endsAtDate: Date;
+		let startsAtDate: Date;
+		let endsAtDate: Date;
 
-        if (isAllDayBool) {
-            const startDay = dayjsExtended.tz(String(startsAt), String(tz));
-            const endDay = dayjsExtended.tz(String(endsAt), String(tz));
+		if (isAllDayBool) {
+			const startDay = dayjsExtended.tz(String(startsAt), String(tz));
+			const endDay = dayjsExtended.tz(String(endsAt), String(tz));
 
-            startsAtDate = startDay.startOf("day").toDate();
-            endsAtDate = endDay.endOf("day").toDate();
-        } else {
-            startsAtDate = dayjsExtended
-                .tz(String(startsAt), "YYYY-MM-DD HH:mm:ss", String(tz))
-                .toDate();
+			startsAtDate = startDay.startOf("day").toDate();
+			endsAtDate = endDay.endOf("day").toDate();
+		} else {
+			startsAtDate = dayjsExtended
+				.tz(String(startsAt), "YYYY-MM-DD HH:mm:ss", String(tz))
+				.toDate();
 
-            endsAtDate = dayjsExtended
-                .tz(String(endsAt), "YYYY-MM-DD HH:mm:ss", String(tz))
-                .toDate();
-        }
+			endsAtDate = dayjsExtended
+				.tz(String(endsAt), "YYYY-MM-DD HH:mm:ss", String(tz))
+				.toDate();
+		}
 
-        const rls = await rlsClient();
+		const rls = await rlsClient();
 
-        let finalEventId: string | null = null;
+		let finalEventId: string | null = null;
 
-        const attendeeData: AttendeePayload | null = attendeePayload
-            ? JSON.parse(String(attendeePayload))
-            : null;
+		const attendeeData: AttendeePayload | null = attendeePayload
+			? JSON.parse(String(attendeePayload))
+			: null;
 
-        await rls(async (tx) => {
-            const [identityExists] = await tx
-                .select()
-                .from(identities)
-                .where(eq(identities.id, String(decodedForm.organizerIdentityId)));
+		await rls(async (tx) => {
+			const [identityExists] = await tx
+				.select()
+				.from(identities)
+				.where(eq(identities.id, String(decodedForm.organizerIdentityId)));
 
-            const payload: any = {
-                ...rest,
-                tz: String(tz),
-                startsAt: startsAtDate,
-                endsAt: endsAtDate,
-                isAllDay: isAllDayBool,
-                organizerEmail: identityExists ? identityExists.value : null,
-                recurrenceRule: rule,
-                organizerName: identityExists
-                    ? identityExists.displayName
-                    : (decodedForm.newOrganizerName ?? null),
-            };
+			const payload: any = {
+				...rest,
+				tz: String(tz),
+				startsAt: startsAtDate,
+				endsAt: endsAtDate,
+				isAllDay: isAllDayBool,
+				organizerEmail: identityExists ? identityExists.value : null,
+				recurrenceRule: rule,
+				organizerName: identityExists
+					? identityExists.displayName
+					: (decodedForm.newOrganizerName ?? null),
+			};
 
-            if (eventId && String(eventId).length > 0) {
-                const parsedPayload = CalendarEventUpdateSchema.parse(payload);
+			if (eventId && String(eventId).length > 0) {
+				const parsedPayload = CalendarEventUpdateSchema.parse(payload);
 
-                await tx
-                    .update(calendarEvents)
-                    .set(parsedPayload)
-                    .where(eq(calendarEvents.id, String(eventId)));
+				await tx
+					.update(calendarEvents)
+					.set(parsedPayload)
+					.where(eq(calendarEvents.id, String(eventId)));
 
-                finalEventId = String(eventId);
-            } else {
-                const parsedPayload = CalendarEventInsertSchema.parse(payload);
-                const [calendarEvent] = await tx
-                    .insert(calendarEvents)
-                    .values(parsedPayload)
-                    .returning();
+				finalEventId = String(eventId);
+			} else {
+				const parsedPayload = CalendarEventInsertSchema.parse(payload);
+				const [calendarEvent] = await tx
+					.insert(calendarEvents)
+					.values(parsedPayload)
+					.returning();
 
-                finalEventId = calendarEvent.id;
+				finalEventId = calendarEvent.id;
 
-                if (decodedForm.newOrganizerName) {
-                    await tx
-                        .update(identities)
-                        .set({ displayName: String(decodedForm.newOrganizerName) })
-                        .where(eq(identities.id, String(decodedForm.organizerIdentityId)));
-                }
-            }
+				if (decodedForm.newOrganizerName) {
+					await tx
+						.update(identities)
+						.set({ displayName: String(decodedForm.newOrganizerName) })
+						.where(eq(identities.id, String(decodedForm.organizerIdentityId)));
+				}
+			}
 
-            await syncEventAttendees({
-                tx,
-                eventId: finalEventId!,
-                organizerEmail: payload.organizerEmail,
-                organizerName: payload.organizerName,
-                attendeePayload: attendeeData,
-            });
-        });
+			await syncEventAttendees({
+				tx,
+				eventId: finalEventId!,
+				organizerEmail: payload.organizerEmail,
+				organizerName: payload.organizerName,
+				attendeePayload: attendeeData,
+			});
+		});
 
-        if (!finalEventId) {
-            throw new Error("Failed to persist calendar event");
-        }
+		if (!finalEventId) {
+			throw new Error("Failed to persist calendar event");
+		}
 
-        const { davQueue } = await getRedis();
-        await davQueue.add(
-            eventId ? "dav:calendar:update-event" : "dav:calendar:create-event",
-            { eventId: finalEventId, notifyAttendees: notify },
-        );
+		const { davQueue } = await getRedis();
+		await davQueue.add(
+			eventId ? "dav:calendar:update-event" : "dav:calendar:create-event",
+			{ eventId: finalEventId, notifyAttendees: notify },
+		);
 
-        revalidatePath("/dashboard/calendar");
+		revalidatePath("/dashboard/calendar");
 
-        return { success: true };
-    });
+		return { success: true };
+	});
 }
-
 
 export async function getRangeForCalendarView(
 	tz: string,
@@ -565,9 +571,10 @@ export const deleteCalendarEvent = async (id: string): Promise<FormState> => {
 	return handleAction(async () => {
 		const { davQueue, davEvents } = await getRedis();
 		const job = await davQueue.add("dav:calendar:delete-event", {
-			eventId: id, notifyAttendees: true
+			eventId: id,
+			notifyAttendees: true,
 		});
-        await job.waitUntilFinished(davEvents)
+		await job.waitUntilFinished(davEvents);
 
 		const rls = await rlsClient();
 		await rls((tx) =>
@@ -581,408 +588,412 @@ export const deleteCalendarEvent = async (id: string): Promise<FormState> => {
 	});
 };
 
-
-
-
-
 export const searchContactsForCompose = async (searchValue: string) => {
-    const q = searchValue.trim();
-    if (!q) return [];
+	const q = searchValue.trim();
+	if (!q) return [];
 
-    const prefix = `${q}%`;
-    const emailLike = `%${q}%`;
+	const prefix = `${q}%`;
+	const emailLike = `%${q}%`;
 
-    const rls = await rlsClient();
+	const rls = await rlsClient();
 
-    const rows = await rls((tx) =>
-        tx.select({
-            id: contacts.id,
-            firstName: contacts.firstName,
-            lastName: contacts.lastName,
-            emails: contacts.emails,
-            profilePictureXs: contacts.profilePictureXs,
-        })
-            .from(contacts)
-            .where(
-                and(
-                    or(
-                        ilike(contacts.firstName, prefix),
-                        ilike(contacts.lastName, prefix),
-                        sql`${contacts.emails}::text ILIKE ${emailLike}`,
-                    ),
-                ),
-            )
-            .orderBy(contacts.lastName, contacts.firstName)
-            .limit(5)
-    );
+	const rows = await rls((tx) =>
+		tx
+			.select({
+				id: contacts.id,
+				firstName: contacts.firstName,
+				lastName: contacts.lastName,
+				emails: contacts.emails,
+				profilePictureXs: contacts.profilePictureXs,
+			})
+			.from(contacts)
+			.where(
+				and(
+					or(
+						ilike(contacts.firstName, prefix),
+						ilike(contacts.lastName, prefix),
+						sql`${contacts.emails}::text ILIKE ${emailLike}`,
+					),
+				),
+			)
+			.orderBy(contacts.lastName, contacts.firstName)
+			.limit(5),
+	);
 
-    const suggestions: ComposeContact[] = [];
+	const suggestions: ComposeContact[] = [];
 
-    const supabase = await createClient();
-    for (const row of rows) {
-        const fullName = [row.firstName, row.lastName].filter(Boolean).join(" ");
-        const emails = (row.emails ?? []) as { address: string }[];
+	const supabase = await createClient();
+	for (const row of rows) {
+		const fullName = [row.firstName, row.lastName].filter(Boolean).join(" ");
+		const emails = (row.emails ?? []) as { address: string }[];
 
-        for (const e of emails) {
-            if (!e.address) continue;
-            let avatarUrl: string | null = null;
-            if (row.profilePictureXs) {
-                const { data } = await supabase.storage
-                    .from("attachments")
-                    .createSignedUrl(String(row.profilePictureXs), 60000);
-                avatarUrl = data?.signedUrl || null;
-            }
+		for (const e of emails) {
+			if (!e.address) continue;
+			let avatarUrl: string | null = null;
+			if (row.profilePictureXs) {
+				const { data } = await supabase.storage
+					.from("attachments")
+					.createSignedUrl(String(row.profilePictureXs), 60000);
+				avatarUrl = data?.signedUrl || null;
+			}
 
-            suggestions.push({
-                id: row.id,
-                name: fullName || e.address,
-                email: e.address,
-                avatar: avatarUrl,
-            });
-        }
-    }
+			suggestions.push({
+				id: row.id,
+				name: fullName || e.address,
+				email: e.address,
+				avatar: avatarUrl,
+			});
+		}
+	}
 
-    return suggestions.slice(0, 20);
+	return suggestions.slice(0, 20);
 };
-
 
 export const getContactsForAttendeeIds = async (attendeeIds: string[]) => {
-    if (!attendeeIds?.length) return [];
-    const rls = await rlsClient();
-    const attendeesRows = await rls((tx) =>
-        tx
-            .select({
-                attendeeId: calendarEventAttendees.id,
-                contactId: calendarEventAttendees.contactId,
-                email: calendarEventAttendees.email,
-            })
-            .from(calendarEventAttendees)
-            .where(inArray(calendarEventAttendees.id, attendeeIds))
-    );
+	if (!attendeeIds?.length) return [];
+	const rls = await rlsClient();
+	const attendeesRows = await rls((tx) =>
+		tx
+			.select({
+				attendeeId: calendarEventAttendees.id,
+				contactId: calendarEventAttendees.contactId,
+				email: calendarEventAttendees.email,
+			})
+			.from(calendarEventAttendees)
+			.where(inArray(calendarEventAttendees.id, attendeeIds)),
+	);
 
-    if (!attendeesRows.length) return [];
-    const contactIds = attendeesRows.map((a) => a.contactId).filter(Boolean) as string[];
-    let contactsMap = new Map<string, { firstName: string | null; lastName: string | null; emails: any[]; profilePictureXs: string | null }>();
-    if (contactIds.length) {
-        const contactRows = await rls((tx) =>
-            tx
-                .select({
-                    id: contacts.id,
-                    firstName: contacts.firstName,
-                    lastName: contacts.lastName,
-                    emails: contacts.emails,
-                    profilePictureXs: contacts.profilePictureXs,
-                })
-                .from(contacts)
-                .where(inArray(contacts.id, contactIds))
-        );
+	if (!attendeesRows.length) return [];
+	const contactIds = attendeesRows
+		.map((a) => a.contactId)
+		.filter(Boolean) as string[];
+	let contactsMap = new Map<
+		string,
+		{
+			firstName: string | null;
+			lastName: string | null;
+			emails: any[];
+			profilePictureXs: string | null;
+		}
+	>();
+	if (contactIds.length) {
+		const contactRows = await rls((tx) =>
+			tx
+				.select({
+					id: contacts.id,
+					firstName: contacts.firstName,
+					lastName: contacts.lastName,
+					emails: contacts.emails,
+					profilePictureXs: contacts.profilePictureXs,
+				})
+				.from(contacts)
+				.where(inArray(contacts.id, contactIds)),
+		);
 
-        for (const c of contactRows) contactsMap.set(c.id, c);
-    }
+		for (const c of contactRows) contactsMap.set(c.id, c);
+	}
 
-    const supabase = await createClient();
-    const results: ComposeContact[] = [];
+	const supabase = await createClient();
+	const results: ComposeContact[] = [];
 
-    for (const attendee of attendeesRows) {
-        const email = attendee.email?.trim().toLowerCase();
-        if (!email) continue;
+	for (const attendee of attendeesRows) {
+		const email = attendee.email?.trim().toLowerCase();
+		if (!email) continue;
 
-        const relatedContact = attendee.contactId ? contactsMap.get(attendee.contactId) : null;
-        const fullName = relatedContact ? [relatedContact.firstName, relatedContact.lastName].filter(Boolean).join(" ") : null;
-        let avatarUrl: string | null = null;
-        if (relatedContact?.profilePictureXs) {
-            const { data } = await supabase.storage
-                .from("attachments")
-                .createSignedUrl(String(relatedContact.profilePictureXs), 60000);
-            avatarUrl = data?.signedUrl || null;
-        }
+		const relatedContact = attendee.contactId
+			? contactsMap.get(attendee.contactId)
+			: null;
+		const fullName = relatedContact
+			? [relatedContact.firstName, relatedContact.lastName]
+					.filter(Boolean)
+					.join(" ")
+			: null;
+		let avatarUrl: string | null = null;
+		if (relatedContact?.profilePictureXs) {
+			const { data } = await supabase.storage
+				.from("attachments")
+				.createSignedUrl(String(relatedContact.profilePictureXs), 60000);
+			avatarUrl = data?.signedUrl || null;
+		}
 
-        results.push({
-            id: attendee.contactId ?? attendee.attendeeId,
-            name: fullName || email,
-            email,
-            avatar: avatarUrl,
-        });
-    }
+		results.push({
+			id: attendee.contactId ?? attendee.attendeeId,
+			name: fullName || email,
+			email,
+			avatar: avatarUrl,
+		});
+	}
 
-    return results;
+	return results;
 };
 
-
 export type FetchContactsForAttendeesResult = Awaited<
-    ReturnType<typeof getContactsForAttendeeIds>
+	ReturnType<typeof getContactsForAttendeeIds>
 >;
 
-
-
 export async function yesCalendarInvite(
-    _prev: FormState,
-    formData: FormData,
+	_prev: FormState,
+	formData: FormData,
 ): Promise<FormState> {
-    return handleAction(async () => {
-        const decodedForm = decode(formData) as {
-            calendarId: string;
-            eventId: string;
-            attendeeId: string;
-        };
+	return handleAction(async () => {
+		const decodedForm = decode(formData) as {
+			calendarId: string;
+			eventId: string;
+			attendeeId: string;
+		};
 
-        const { davQueue, davEvents } = await getRedis();
-        const job = await davQueue.add("dav:calendar:itip-reply", {
-            eventId: decodedForm.eventId,
-            attendeeId: decodedForm.attendeeId,
-            partstat: "accepted"
-        });
-        await job.waitUntilFinished(davEvents);
-        revalidatePath("/dashboard/calendar");
-        return { success: true };
-    });
+		const { davQueue, davEvents } = await getRedis();
+		const job = await davQueue.add("dav:calendar:itip-reply", {
+			eventId: decodedForm.eventId,
+			attendeeId: decodedForm.attendeeId,
+			partstat: "accepted",
+		});
+		await job.waitUntilFinished(davEvents);
+		revalidatePath("/dashboard/calendar");
+		return { success: true };
+	});
 }
-
 
 export async function noCalendarInvite(
-    _prev: FormState,
-    formData: FormData,
+	_prev: FormState,
+	formData: FormData,
 ): Promise<FormState> {
-    return handleAction(async () => {
-        const decodedForm = decode(formData) as {
-            calendarId: string;
-            eventId: string;
-            attendeeId: string;
-        };
+	return handleAction(async () => {
+		const decodedForm = decode(formData) as {
+			calendarId: string;
+			eventId: string;
+			attendeeId: string;
+		};
 
-        const { davQueue, davEvents } = await getRedis();
-        const job = await davQueue.add("dav:calendar:itip-reply", {
-            eventId: decodedForm.eventId,
-            attendeeId: decodedForm.attendeeId,
-            partstat: "declined"
-        });
-        await job.waitUntilFinished(davEvents);
-        revalidatePath("/dashboard/calendar");
-        return { success: true };
-    });
+		const { davQueue, davEvents } = await getRedis();
+		const job = await davQueue.add("dav:calendar:itip-reply", {
+			eventId: decodedForm.eventId,
+			attendeeId: decodedForm.attendeeId,
+			partstat: "declined",
+		});
+		await job.waitUntilFinished(davEvents);
+		revalidatePath("/dashboard/calendar");
+		return { success: true };
+	});
 }
-
 
 export async function maybeCalendarInvite(
-    _prev: FormState,
-    formData: FormData,
+	_prev: FormState,
+	formData: FormData,
 ): Promise<FormState> {
-    return handleAction(async () => {
-        const decodedForm = decode(formData) as {
-            calendarId: string;
-            eventId: string;
-            attendeeId: string;
-        };
+	return handleAction(async () => {
+		const decodedForm = decode(formData) as {
+			calendarId: string;
+			eventId: string;
+			attendeeId: string;
+		};
 
-        const { davQueue, davEvents } = await getRedis();
-        const job = await davQueue.add("dav:calendar:itip-reply", {
-            eventId: decodedForm.eventId,
-            attendeeId: decodedForm.attendeeId,
-            partstat: "tentative"
-        });
-        await job.waitUntilFinished(davEvents);
-        revalidatePath("/dashboard/calendar");
-        return { success: true };
-    });
+		const { davQueue, davEvents } = await getRedis();
+		const job = await davQueue.add("dav:calendar:itip-reply", {
+			eventId: decodedForm.eventId,
+			attendeeId: decodedForm.attendeeId,
+			partstat: "tentative",
+		});
+		await job.waitUntilFinished(davEvents);
+		revalidatePath("/dashboard/calendar");
+		return { success: true };
+	});
 }
 
+export async function updateCalendarTimezone(
+	_prev: FormState,
+	formData: FormData,
+): Promise<FormState> {
+	return handleAction(async () => {
+		const decodedForm = decode(formData);
+		const calendarId = String(decodedForm.calendarId);
+		const timezone = String(decodedForm.timezone || "UTC");
 
-export async function updateCalendarTimezone(_prev: FormState, formData: FormData): Promise<FormState> {
-    return handleAction(async () => {
+		if (!calendarId) {
+			return { success: false, error: "Missing calendarId" };
+		}
 
-        const decodedForm = decode(formData)
-        const calendarId = String(decodedForm.calendarId);
-        const timezone = String(decodedForm.timezone || "UTC");
+		const rls = await rlsClient();
+		await rls((tx) =>
+			tx
+				.update(calendars)
+				.set({ timezone })
+				.where(eq(calendars.id, calendarId)),
+		);
 
-        if (!calendarId) {
-            return { success: false, error: "Missing calendarId" };
-        }
-
-        const rls = await rlsClient();
-        await rls((tx) =>
-            tx
-                .update(calendars)
-                .set({ timezone })
-                .where(eq(calendars.id, calendarId))
-        );
-
-        revalidatePath("/dashboard/calendar");
-        return { success: true };
-    });
+		revalidatePath("/dashboard/calendar");
+		return { success: true };
+	});
 }
-
-
 
 export async function eventsByDayWithAllDay(
-    tz: string,
-    events: CalendarEventEntity[],
+	tz: string,
+	events: CalendarEventEntity[],
 ): Promise<{
-    timedByDay: Map<string, EventSlotFragment[]>;
-    allDayByDay: Map<string, AllDayFragment[]>;
+	timedByDay: Map<string, EventSlotFragment[]>;
+	allDayByDay: Map<string, AllDayFragment[]>;
 }> {
-    const base = await eventsByDay(tz, events);
-    const timedByDay = new Map<string, EventSlotFragment[]>();
-    const allDayByDay = new Map<string, AllDayFragment[]>();
+	const base = await eventsByDay(tz, events);
+	const timedByDay = new Map<string, EventSlotFragment[]>();
+	const allDayByDay = new Map<string, AllDayFragment[]>();
 
-    for (const [dayKey, frags] of base.entries()) {
-        for (const frag of frags) {
-            if (frag.event.isAllDay) {
-                const bucket = allDayByDay.get(dayKey);
-                const entry: AllDayFragment = {
-                    event: frag.event,
-                    date: dayKey,
-                    isStart: frag.isStart,
-                    isEnd: frag.isEnd,
-                };
-                if (bucket) bucket.push(entry);
-                else allDayByDay.set(dayKey, [entry]);
-            } else {
-                const bucket = timedByDay.get(dayKey);
-                if (bucket) bucket.push(frag);
-                else timedByDay.set(dayKey, [frag]);
-            }
-        }
-    }
+	for (const [dayKey, frags] of base.entries()) {
+		for (const frag of frags) {
+			if (frag.event.isAllDay) {
+				const bucket = allDayByDay.get(dayKey);
+				const entry: AllDayFragment = {
+					event: frag.event,
+					date: dayKey,
+					isStart: frag.isStart,
+					isEnd: frag.isEnd,
+				};
+				if (bucket) bucket.push(entry);
+				else allDayByDay.set(dayKey, [entry]);
+			} else {
+				const bucket = timedByDay.get(dayKey);
+				if (bucket) bucket.push(frag);
+				else timedByDay.set(dayKey, [frag]);
+			}
+		}
+	}
 
-    return { timedByDay, allDayByDay };
+	return { timedByDay, allDayByDay };
 }
 
-
 function toRRuleLocal(date: Date, tz: string): Date {
-    const d = getDayjsTz(tz)(date);
-    return new Date(
-        Date.UTC(
-            d.year(),
-            d.month(),
-            d.date(),
-            d.hour(),
-            d.minute(),
-            d.second(),
-            d.millisecond(),
-        ),
-    );
+	const d = getDayjsTz(tz)(date);
+	return new Date(
+		Date.UTC(
+			d.year(),
+			d.month(),
+			d.date(),
+			d.hour(),
+			d.minute(),
+			d.second(),
+			d.millisecond(),
+		),
+	);
 }
 
 function fromRRuleLocal(rruleDate: Date, tz: string): Date {
-    const y = rruleDate.getUTCFullYear();
-    const m = rruleDate.getUTCMonth();
-    const d = rruleDate.getUTCDate();
-    const h = rruleDate.getUTCHours();
-    const mi = rruleDate.getUTCMinutes();
-    const s = rruleDate.getUTCSeconds();
-    const ms = rruleDate.getUTCMilliseconds();
+	const y = rruleDate.getUTCFullYear();
+	const m = rruleDate.getUTCMonth();
+	const d = rruleDate.getUTCDate();
+	const h = rruleDate.getUTCHours();
+	const mi = rruleDate.getUTCMinutes();
+	const s = rruleDate.getUTCSeconds();
+	const ms = rruleDate.getUTCMilliseconds();
 
-    const zoned = getDayjsTz(tz)()
-        .year(y)
-        .month(m)
-        .date(d)
-        .hour(h)
-        .minute(mi)
-        .second(s)
-        .millisecond(ms);
+	const zoned = getDayjsTz(tz)()
+		.year(y)
+		.month(m)
+		.date(d)
+		.hour(h)
+		.minute(mi)
+		.second(s)
+		.millisecond(ms);
 
-    return zoned.toDate();
+	return zoned.toDate();
 }
 
 export async function expandEventForRange(
-    event: CalendarEventEntity,
-    rangeStart: Date,
-    rangeEnd: Date,
-    tz: string,
+	event: CalendarEventEntity,
+	rangeStart: Date,
+	rangeEnd: Date,
+	tz: string,
 ): Promise<CalendarEventInstance[]> {
-    if (!event.recurrenceRule) {
-        return [
-            {
-                ...event,
-                instanceId: event.id,
-                recurrenceMasterId: null,
-            },
-        ];
-    }
+	if (!event.recurrenceRule) {
+		return [
+			{
+				...event,
+				instanceId: event.id,
+				recurrenceMasterId: null,
+			},
+		];
+	}
 
-    const opts = RRule.parseString(event.recurrenceRule);
-    const durationMs = event.endsAt.getTime() - event.startsAt.getTime();
+	const opts = RRule.parseString(event.recurrenceRule);
+	const durationMs = event.endsAt.getTime() - event.startsAt.getTime();
 
-    const isExternal = !!(event as any).isExternal;
+	const isExternal = !!(event as any).isExternal;
 
-    let dtstart: Date;
-    let rStart: Date;
-    let rEnd: Date;
+	let dtstart: Date;
+	let rStart: Date;
+	let rEnd: Date;
 
-    if (isExternal) {
-        dtstart = event.startsAt;
-        rStart = rangeStart;
-        rEnd = rangeEnd;
-    } else {
-        dtstart = toRRuleLocal(event.startsAt, tz);
-        rStart = toRRuleLocal(rangeStart, tz);
-        rEnd = toRRuleLocal(rangeEnd, tz);
-    }
+	if (isExternal) {
+		dtstart = event.startsAt;
+		rStart = rangeStart;
+		rEnd = rangeEnd;
+	} else {
+		dtstart = toRRuleLocal(event.startsAt, tz);
+		rStart = toRRuleLocal(rangeStart, tz);
+		rEnd = toRRuleLocal(rangeEnd, tz);
+	}
 
-    const rrule = new RRule({
-        ...opts,
-        dtstart,
-    });
+	const rrule = new RRule({
+		...opts,
+		dtstart,
+	});
 
-    const rawDates = rrule.between(rStart, rEnd, true);
+	const rawDates = rrule.between(rStart, rEnd, true);
 
-    if (!rawDates.length) {
-        return [];
-    }
+	if (!rawDates.length) {
+		return [];
+	}
 
-    return rawDates.map((d, index) => {
-        const startInstant = isExternal ? d : fromRRuleLocal(d, tz);
-        const endInstant = new Date(startInstant.getTime() + durationMs);
+	return rawDates.map((d, index) => {
+		const startInstant = isExternal ? d : fromRRuleLocal(d, tz);
+		const endInstant = new Date(startInstant.getTime() + durationMs);
 
-        return {
-            ...event,
-            instanceId: `${event.id}__${startInstant.toISOString()}__${index}`,
-            recurrenceMasterId: event.id,
-            startsAt: startInstant,
-            endsAt: endInstant,
-        };
-    });
+		return {
+			...event,
+			instanceId: `${event.id}__${startInstant.toISOString()}__${index}`,
+			recurrenceMasterId: event.id,
+			startsAt: startInstant,
+			endsAt: endInstant,
+		};
+	});
 }
 
 export async function expandEventsForRange(
-    events: CalendarEventEntity[],
-    rangeStart: Date,
-    rangeEnd: Date,
-    tz: string,
+	events: CalendarEventEntity[],
+	rangeStart: Date,
+	rangeEnd: Date,
+	tz: string,
 ): Promise<CalendarEventInstance[]> {
-    const all = await Promise.all(
-        events.map((e) => expandEventForRange(e, rangeStart, rangeEnd, tz)),
-    );
-    return all.flat();
+	const all = await Promise.all(
+		events.map((e) => expandEventForRange(e, rangeStart, rangeEnd, tz)),
+	);
+	return all.flat();
 }
 
-
 export async function fetchCalendarEventsForRange(
-    calendarId: string,
-    from: Date,
-    to: Date,
+	calendarId: string,
+	from: Date,
+	to: Date,
 ): Promise<CalendarEventEntity[]> {
-    const rls = await rlsClient();
+	const rls = await rlsClient();
 
-    return rls((tx) =>
-        tx
-            .select()
-            .from(calendarEvents)
-            .where(
-                and(
-                    eq(calendarEvents.calendarId, calendarId),
-                    or(
-                        and(
-                            isNull(calendarEvents.recurrenceRule),
-                            lte(calendarEvents.startsAt, to),
-                            gte(calendarEvents.endsAt, from),
-                        ),
-                        and(
-                            not(isNull(calendarEvents.recurrenceRule)),
-                            lte(calendarEvents.startsAt, to),
-                        ),
-                    ),
-                ),
-            ),
-    );
+	return rls((tx) =>
+		tx
+			.select()
+			.from(calendarEvents)
+			.where(
+				and(
+					eq(calendarEvents.calendarId, calendarId),
+					or(
+						and(
+							isNull(calendarEvents.recurrenceRule),
+							lte(calendarEvents.startsAt, to),
+							gte(calendarEvents.endsAt, from),
+						),
+						and(
+							not(isNull(calendarEvents.recurrenceRule)),
+							lte(calendarEvents.startsAt, to),
+						),
+					),
+				),
+			),
+	);
 }

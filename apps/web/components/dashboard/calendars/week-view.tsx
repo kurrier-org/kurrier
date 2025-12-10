@@ -2,14 +2,15 @@
 import React, { useEffect } from "react";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import {
-    AllDayFragment,
-    CalendarState, ComposeContact,
-    EventSlotFragment,
-    EventSlotRenderFragment,
+	AllDayFragment,
+	CalendarState,
+	ComposeContact,
+	EventSlotFragment,
+	EventSlotRenderFragment,
 } from "@schema";
 import { useParams } from "next/navigation";
 import CalendarDayHourBox from "@/components/dashboard/calendars/calendar-day-hour-box";
-import {CalendarEventAttendeeEntity, CalendarEventEntity} from "@db";
+import { CalendarEventAttendeeEntity, CalendarEventEntity } from "@db";
 import {
 	layoutDayFragments,
 	splitFragmentIntoHours,
@@ -29,16 +30,16 @@ function formatHourLabel(hour: number) {
 
 export function WeekGrid({
 	events,
-    attendees,
+	attendees,
 	byDayMap,
-    attendeeContacts,
-    allDayByDay
+	attendeeContacts,
+	allDayByDay,
 }: {
 	events: CalendarEventEntity[];
-    attendees: Record<string, CalendarEventAttendeeEntity[]>;
+	attendees: Record<string, CalendarEventAttendeeEntity[]>;
 	byDayMap: Map<string, EventSlotFragment[]>;
-    attendeeContacts: ComposeContact[];
-    allDayByDay: Map<string, AllDayFragment[]>;
+	attendeeContacts: ComposeContact[];
+	allDayByDay: Map<string, AllDayFragment[]>;
 }) {
 	const { setState, state } = useDynamicContext<CalendarState>();
 	const params = useParams();
@@ -48,8 +49,8 @@ export function WeekGrid({
 		setState((prev) => ({
 			...prev,
 			calendarEvents: events,
-            calendarEventAttendees: attendees,
-            attendeeContacts
+			calendarEventAttendees: attendees,
+			attendeeContacts,
 		}));
 	}, [events, setState, attendees]);
 
@@ -133,7 +134,7 @@ export function WeekGrid({
 					))}
 				</div>
 
-                <AllDayEventsRow weekDays={weekDays} allDayByDay={allDayByDay} />
+				<AllDayEventsRow weekDays={weekDays} allDayByDay={allDayByDay} />
 
 				<div className="flex flex-1 flex-col h-[calc(100vh-8rem)] overflow-y-auto">
 					<div className="grid grid-cols-[64px_repeat(7,1fr)]">

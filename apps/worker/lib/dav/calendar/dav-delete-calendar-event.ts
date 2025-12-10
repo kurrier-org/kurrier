@@ -60,7 +60,11 @@ export async function deleteCalendarObjectViaHttp(opts: {
 	return { success: true };
 }
 
-export const deleteCalendarEvent = async (eventId: string, notifyAttendees: boolean, deleteEvent: boolean) => {
+export const deleteCalendarEvent = async (
+	eventId: string,
+	notifyAttendees: boolean,
+	deleteEvent: boolean,
+) => {
 	const [event] = await db
 		.select()
 		.from(calendarEvents)
@@ -109,17 +113,17 @@ export const deleteCalendarEvent = async (eventId: string, notifyAttendees: bool
 		etag: event.davEtag,
 	});
 
-    if (notifyAttendees){
-        const { davWorkerQueue } = await getRedis();
-        await davWorkerQueue.add("dav:calendar:itip-notify", {
-            eventId: event.id,
-            action: "cancel",
-        });
-    }
+	if (notifyAttendees) {
+		const { davWorkerQueue } = await getRedis();
+		await davWorkerQueue.add("dav:calendar:itip-notify", {
+			eventId: event.id,
+			action: "cancel",
+		});
+	}
 
-    if (deleteEvent){
-        await db.delete(calendarEvents).where(eq(calendarEvents.id, event.id));
-    }
+	if (deleteEvent) {
+		await db.delete(calendarEvents).where(eq(calendarEvents.id, event.id));
+	}
 
 	return { success: true };
 };

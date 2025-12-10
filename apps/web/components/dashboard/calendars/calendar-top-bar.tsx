@@ -44,7 +44,7 @@ function CalendarTopBar() {
 	}
 
 	const switchView = async (value: CalendarViewType) => {
-        alert("Coming Soon.");
+		alert("Coming Soon.");
 	};
 
 	const shiftCurrentDay = (direction: 1 | -1) => {

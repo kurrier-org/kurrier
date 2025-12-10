@@ -1,34 +1,38 @@
 "use client";
 import React, { useState } from "react";
-import {ComboboxItem, TagsInput, TagsInputProps} from "@mantine/core";
+import { ComboboxItem, TagsInput, TagsInputProps } from "@mantine/core";
 import ContactSuggestionItem from "@/components/mailbox/default/editor/contact-suggestion-item";
-import {searchContactsForCompose} from "@/lib/actions/calendar";
+import { searchContactsForCompose } from "@/lib/actions/calendar";
 
-export default function SearchableContacts({ onChange }: { onChange?: (value: string, contact: ComboboxItem | undefined) => void; }) {
+export default function SearchableContacts({
+	onChange,
+}: {
+	onChange?: (value: string, contact: ComboboxItem | undefined) => void;
+}) {
 	const [searchValue, setSearchValue] = useState("");
 	const [options, setOptions] = useState<ComboboxItem[]>([]);
 
-    const [searchableContacts, setSearchableContacts] = useState<string[]>([]);
+	const [searchableContacts, setSearchableContacts] = useState<string[]>([]);
 
 	const searchContacts = async (val: string) => {
 		setSearchValue(val);
 
 		const rows = await searchContactsForCompose(val);
 
-        const seen = new Set<string>();
-        const mapped: ComboboxItem[] = rows
-            .map(row => ({
-                value: row.id,
-                row: row,
-                label: `${row.email}`,
-                name: row.name,
-                avatar: row.avatar,
-            }))
-            .filter(item => {
-                if (seen.has(item.value)) return false;
-                seen.add(item.value);
-                return true;
-            });
+		const seen = new Set<string>();
+		const mapped: ComboboxItem[] = rows
+			.map((row) => ({
+				value: row.id,
+				row: row,
+				label: `${row.email}`,
+				name: row.name,
+				avatar: row.avatar,
+			}))
+			.filter((item) => {
+				if (seen.has(item.value)) return false;
+				seen.add(item.value);
+				return true;
+			});
 
 		setOptions(mapped);
 	};
@@ -43,14 +47,14 @@ export default function SearchableContacts({ onChange }: { onChange?: (value: st
 				searchValue={searchValue}
 				onSearchChange={searchContacts}
 				data={options}
-                value={searchableContacts}
-                onOptionSubmit={(val) => {
-                    const contact = options.find(o => o.value === val);
-                    onChange && onChange(val, contact)
-                }}
+				value={searchableContacts}
+				onOptionSubmit={(val) => {
+					const contact = options.find((o) => o.value === val);
+					onChange && onChange(val, contact);
+				}}
 				onChange={(value) => {
 					if (value.length > 0) {
-                        setSearchableContacts([])
+						setSearchableContacts([]);
 					}
 				}}
 				renderOption={renderOption}

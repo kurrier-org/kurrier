@@ -12,15 +12,7 @@ import {
 	messages,
 	threads,
 } from "@db";
-import {
-	and,
-	asc,
-	count,
-	desc,
-	eq,
-	inArray,
-	sql,
-} from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { FormState, getServerEnv, SearchThreadsResponse } from "@schema";
 import { decode } from "decode-formdata";

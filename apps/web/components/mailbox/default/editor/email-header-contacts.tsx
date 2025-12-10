@@ -8,7 +8,7 @@ import {
 	FocusTrap,
 } from "@mantine/core";
 import ContactSuggestionItem from "@/components/mailbox/default/editor/contact-suggestion-item";
-import {searchContactsForCompose} from "@/lib/actions/calendar";
+import { searchContactsForCompose } from "@/lib/actions/calendar";
 
 export default function EmailHeaderContacts({
 	name,

@@ -34,17 +34,34 @@ export default defineNitroPlugin(async (nitroApp) => {
 				case "dav:update-password":
 					return updatePassword(job.data.userId);
 				case "dav:calendar:create-event":
-					return createCalendarEvent(job.data.eventId, job.data.notifyAttendees);
+					return createCalendarEvent(
+						job.data.eventId,
+						job.data.notifyAttendees,
+					);
 				case "dav:calendar:update-event":
-					return updateCalendarEvent(job.data.eventId, job.data.notifyAttendees);
+					return updateCalendarEvent(
+						job.data.eventId,
+						job.data.notifyAttendees,
+					);
 				case "dav:calendar:delete-event":
-					return deleteCalendarEvent(job.data.eventId, job.data.notifyAttendees, job.data.deleteEvent);
-                case "dav:calendar:itip-notify":
-                    return davItipNotify({ eventId: job.data.eventId, action: job.data.action});
-                case "dav:calendar:itip-reply":
-                    return davItipReply({ eventId: job.data.eventId, attendeeId: job.data.attendeeId, partstat: job.data.partstat});
-                case "dav:calendar:itip-ingest-batch":
-                    return davItipProcessor(job.data.items);
+					return deleteCalendarEvent(
+						job.data.eventId,
+						job.data.notifyAttendees,
+						job.data.deleteEvent,
+					);
+				case "dav:calendar:itip-notify":
+					return davItipNotify({
+						eventId: job.data.eventId,
+						action: job.data.action,
+					});
+				case "dav:calendar:itip-reply":
+					return davItipReply({
+						eventId: job.data.eventId,
+						attendeeId: job.data.attendeeId,
+						partstat: job.data.partstat,
+					});
+				case "dav:calendar:itip-ingest-batch":
+					return davItipProcessor(job.data.items);
 				case "dav:create-contact":
 					return createContact(job.data.contactId, job.data.ownerId);
 				case "dav:update-contact":
@@ -82,10 +99,10 @@ export default defineNitroPlugin(async (nitroApp) => {
 					});
 				case "dav:sync":
 					console.log("[DAV WORKER] Starting DAV sync job:", job.id);
-                    await davItipProcessor(job.data.items || []);
-                    await davSyncDb();
-                    await davSyncCalendarsDb()
-                    return
+					await davItipProcessor(job.data.items || []);
+					await davSyncDb();
+					await davSyncCalendarsDb();
+					return;
 				default:
 					return { success: true, skipped: true };
 			}

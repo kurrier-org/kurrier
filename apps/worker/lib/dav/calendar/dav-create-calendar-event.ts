@@ -1,11 +1,12 @@
 import DigestFetch from "digest-fetch";
 import {
-    db,
-    davAccounts,
-    secretsMeta,
-    getSecretAdmin,
-    calendarEvents,
-    calendars, calendarEventAttendees,
+	db,
+	davAccounts,
+	secretsMeta,
+	getSecretAdmin,
+	calendarEvents,
+	calendars,
+	calendarEventAttendees,
 } from "@db";
 import { and, desc, eq } from "drizzle-orm";
 import { getDayjsTz } from "@common";
@@ -21,7 +22,8 @@ async function createCalendarObjectViaHttp(opts: {
 	collectionPath: string;
 	davUri: string;
 }) {
-	const { icalData, davBaseUrl, username, password, collectionPath, davUri } = opts;
+	const { icalData, davBaseUrl, username, password, collectionPath, davUri } =
+		opts;
 
 	const client = new DigestFetch(username, password);
 	const digestFetch = client.fetch.bind(client);
@@ -50,7 +52,10 @@ async function createCalendarObjectViaHttp(opts: {
 	return { etag };
 }
 
-export const createCalendarEvent = async (eventId: string, notifyAttendees: boolean) => {
+export const createCalendarEvent = async (
+	eventId: string,
+	notifyAttendees: boolean,
+) => {
 	const [event] = await db
 		.select()
 		.from(calendarEvents)
@@ -66,7 +71,6 @@ export const createCalendarEvent = async (eventId: string, notifyAttendees: bool
 		);
 
 	if (!calendar) return;
-
 
 	const parts = calendar.remotePath.split("/");
 	if (parts.length !== 3 || parts[0] !== "calendars") return;
@@ -94,10 +98,10 @@ export const createCalendarEvent = async (eventId: string, notifyAttendees: bool
 		return;
 	}
 
-    const guests = await db.select().from(calendarEventAttendees).where(
-        eq(calendarEventAttendees.eventId, event.id)
-    )
-
+	const guests = await db
+		.select()
+		.from(calendarEventAttendees)
+		.where(eq(calendarEventAttendees.eventId, event.id));
 
 	const dayjsTz = getDayjsTz(calendar.timezone || "UTC");
 	const icalData = buildICalEvent(event, dayjsTz, guests);
@@ -116,18 +120,18 @@ export const createCalendarEvent = async (eventId: string, notifyAttendees: bool
 		.set({
 			davUri,
 			davEtag: normalizeEtag(etag),
-            rawIcs: icalData,
+			rawIcs: icalData,
 			updatedAt: new Date(),
 		})
 		.where(eq(calendarEvents.id, event.id));
 
-    if (notifyAttendees) {
-        const { davWorkerQueue } = await getRedis();
-        await davWorkerQueue.add("dav:calendar:itip-notify", {
-            eventId: event.id,
-            action: "create",
-        });
-    }
+	if (notifyAttendees) {
+		const { davWorkerQueue } = await getRedis();
+		await davWorkerQueue.add("dav:calendar:itip-notify", {
+			eventId: event.id,
+			action: "create",
+		});
+	}
 
 	return { success: true };
 };

@@ -1,28 +1,31 @@
 "use client";
 
 import React, { useState } from "react";
-import {DatePickerInput, DateTimePicker} from "@mantine/dates";
+import { DatePickerInput, DateTimePicker } from "@mantine/dates";
 import { ReusableForm } from "@/components/common/reusable-form";
-import {BaseFormProps, CalendarOrganizerType, CalendarState} from "@schema";
+import { BaseFormProps, CalendarOrganizerType, CalendarState } from "@schema";
 import {
 	deleteCalendarEvent,
 	upsertCalendarEvent,
 } from "@/lib/actions/calendar";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { Dayjs } from "dayjs";
-import {ActionIcon, Alert, Checkbox, Divider, Select} from "@mantine/core";
+import { ActionIcon, Alert, Checkbox, Divider, Select } from "@mantine/core";
 import { CalendarEventEntity } from "@db";
 import { Trash } from "lucide-react";
 import { getDayjsTz, getWallTimeDate } from "@common/day-js-extended";
-import {IconAlertCircle, IconX} from "@tabler/icons-react";
-import {usePathname} from "next/navigation";
+import { IconAlertCircle, IconX } from "@tabler/icons-react";
+import { usePathname } from "next/navigation";
 import AddGuests from "@/components/dashboard/calendars/add-guests";
 import RecurrenceRulesFormInput from "@/components/dashboard/calendars/recurrence-rules-form-input";
-import {OnCompletedOptions} from "@/components/dashboard/calendars/calendar-add-event-popover";
+import { OnCompletedOptions } from "@/components/dashboard/calendars/calendar-add-event-popover";
 
 type NewCalendarEventFormProps = {
-    onCompleted: (data: CalendarEventEntity[], options?: OnCompletedOptions) => void;
-    start: Dayjs;
+	onCompleted: (
+		data: CalendarEventEntity[],
+		options?: OnCompletedOptions,
+	) => void;
+	start: Dayjs;
 	end: Dayjs;
 };
 
@@ -34,9 +37,12 @@ function NewCalendarEventForm({
 	const { state } = useDynamicContext<CalendarState>();
 	const dayjsTz = getDayjsTz(state.defaultCalendar.timezone);
 	const editEvent = state.activePopoverEditEvent;
-    const [selectedOrganizer, setSelectedOrganizer] = useState<CalendarOrganizerType | null>(state.organizers[0] ? state.organizers[0] : null);
-    const pathname = usePathname()
-    const [allDay, setIsAllDay] = useState<boolean>(!!editEvent?.isAllDay);
+	const [selectedOrganizer, setSelectedOrganizer] =
+		useState<CalendarOrganizerType | null>(
+			state.organizers[0] ? state.organizers[0] : null,
+		);
+	const pathname = usePathname();
+	const [allDay, setIsAllDay] = useState<boolean>(!!editEvent?.isAllDay);
 
 	const fields: BaseFormProps["fields"] = [
 		{
@@ -53,11 +59,11 @@ function NewCalendarEventForm({
 			wrapperClasses: "hidden",
 			props: { type: "hidden", defaultValue: editEvent?.id, readOnly: true },
 		},
-        {
-            name: "pathname",
-            wrapperClasses: "hidden",
-            props: { type: "hidden", defaultValue: pathname, readOnly: true },
-        },
+		{
+			name: "pathname",
+			wrapperClasses: "hidden",
+			props: { type: "hidden", defaultValue: pathname, readOnly: true },
+		},
 		{
 			name: "tz",
 			wrapperClasses: "hidden",
@@ -82,16 +88,18 @@ function NewCalendarEventForm({
 			name: "startsAt",
 			label: "Start",
 			kind: "custom",
-            component: allDay ? DatePickerInput : DateTimePicker,
+			component: allDay ? DatePickerInput : DateTimePicker,
 			wrapperClasses: "col-span-6",
 			props: {
 				required: true,
 				className: "w-full",
 				format: "12h",
-                valueFormat: allDay ? "DD MMM" : "DD MMM hh:mm A",
-                timePickerProps: allDay ? undefined : {
-					minutesStep: 15,
-				},
+				valueFormat: allDay ? "DD MMM" : "DD MMM hh:mm A",
+				timePickerProps: allDay
+					? undefined
+					: {
+							minutesStep: 15,
+						},
 				defaultValue: editEvent?.startsAt
 					? getWallTimeDate(dayjsTz(editEvent?.startsAt))
 					: getWallTimeDate(start),
@@ -108,36 +116,38 @@ function NewCalendarEventForm({
 				className: "w-full",
 				format: "12h",
 				valueFormat: allDay ? "DD MMM" : "DD MMM hh:mm A",
-				timePickerProps: allDay ? undefined : {
-					minutesStep: 15,
-				},
+				timePickerProps: allDay
+					? undefined
+					: {
+							minutesStep: 15,
+						},
 				defaultValue: editEvent?.endsAt
 					? getWallTimeDate(dayjsTz(editEvent?.endsAt))
 					: getWallTimeDate(end),
 			},
 		},
-        {
-            name: "isAllDay",
-            kind: "custom",
-            component: Checkbox,
-            wrapperClasses: "col-span-12",
-            props: {
-                defaultChecked: !!editEvent?.isAllDay,
-                label: <div className="text-sm -mt-0.5">All day</div>,
-                size: "xs",
-                onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
-                    setIsAllDay(event.currentTarget.checked);
-                },
-            },
-        },
-        {
-            el: (
-                <RecurrenceRulesFormInput
-                    name="recurrenceRule"
-                    defaultValue={editEvent?.recurrenceRule}
-                />
-            ),
-        },
+		{
+			name: "isAllDay",
+			kind: "custom",
+			component: Checkbox,
+			wrapperClasses: "col-span-12",
+			props: {
+				defaultChecked: !!editEvent?.isAllDay,
+				label: <div className="text-sm -mt-0.5">All day</div>,
+				size: "xs",
+				onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+					setIsAllDay(event.currentTarget.checked);
+				},
+			},
+		},
+		{
+			el: (
+				<RecurrenceRulesFormInput
+					name="recurrenceRule"
+					defaultValue={editEvent?.recurrenceRule}
+				/>
+			),
+		},
 		{
 			el: <AddGuests name={"attendees"} />,
 		},
@@ -152,27 +162,32 @@ function NewCalendarEventForm({
 				allowDeselect: false,
 				required: true,
 				value: selectedOrganizer?.value,
-                onChange: (val: string | null) => {
-                    const organizer = state.organizers.find((org) => org.value === val);
-                    setSelectedOrganizer(organizer || null);
-                }
+				onChange: (val: string | null) => {
+					const organizer = state.organizers.find((org) => org.value === val);
+					setSelectedOrganizer(organizer || null);
+				},
 			},
 		},
-        ...(selectedOrganizer && !selectedOrganizer.displayName
-            ? [
-                {
-                    name: "newOrganizerName",
-                    label: "Organizer name",
-                    wrapperClasses: "col-span-12",
-                    bottomStartPrefix: <span className={"text-xxs"}>This name will be shown in calendar invites and saved for this email identity.</span>,
-                    props: {
-                        required: true,
-                        placeholder: "e.g. John Doe",
-                        autoComplete: "off",
-                    },
-                } as const,
-            ]
-            : []),
+		...(selectedOrganizer && !selectedOrganizer.displayName
+			? [
+					{
+						name: "newOrganizerName",
+						label: "Organizer name",
+						wrapperClasses: "col-span-12",
+						bottomStartPrefix: (
+							<span className={"text-xxs"}>
+								This name will be shown in calendar invites and saved for this
+								email identity.
+							</span>
+						),
+						props: {
+							required: true,
+							placeholder: "e.g. John Doe",
+							autoComplete: "off",
+						},
+					} as const,
+				]
+			: []),
 		{
 			name: "description",
 			label: "Description",
@@ -183,81 +198,81 @@ function NewCalendarEventForm({
 				defaultValue: editEvent?.description,
 			},
 		},
-        {
-            name: "notifyAttendees",
-            label: "Notify attendees",
-            kind: "custom",
-            component: Checkbox,
-            wrapperClasses: "col-span-12",
-            props: {
-                defaultChecked: false,
-                label: <div className={"text-sm -mt-0.5"}>Send email notifications</div>,
-                size: "xs",
-            }
-        },
+		{
+			name: "notifyAttendees",
+			label: "Notify attendees",
+			kind: "custom",
+			component: Checkbox,
+			wrapperClasses: "col-span-12",
+			props: {
+				defaultChecked: false,
+				label: (
+					<div className={"text-sm -mt-0.5"}>Send email notifications</div>
+				),
+				size: "xs",
+			},
+		},
 	];
 
 	return (
 		<>
+			{editEvent && (
+				<>
+					<div className={`flex justify-between items-center capitalize`}>
+						<h1 className={"text-lg font-semibold"}>{editEvent?.title}</h1>
 
-            {editEvent && (
-                <>
-                    <div className={`flex justify-between items-center capitalize`}>
-                        <h1 className={"text-lg font-semibold"}>{editEvent?.title}</h1>
+						<div className={"flex gap-1"}>
+							<ActionIcon
+								type={"button"}
+								size={"md"}
+								tabIndex={-1}
+								variant={"light"}
+								color={"red"}
+								onClick={() =>
+									deleteCalendarEvent(editEvent.id).then(() => {
+										onCompleted([]);
+									})
+								}
+							>
+								<Trash size={12} />
+							</ActionIcon>
 
-                        <div className={"flex gap-1"}>
-                            <ActionIcon
-                                type={"button"}
-                                size={"md"}
-                                tabIndex={-1}
-                                variant={"light"}
-                                color={"red"}
-                                onClick={() =>
-                                    deleteCalendarEvent(editEvent.id).then(() => {
-                                        onCompleted([]);
-                                    })
-                                }
-                            >
-                                <Trash size={12} />
-                            </ActionIcon>
+							<ActionIcon
+								type={"button"}
+								size={"md"}
+								tabIndex={-1}
+								variant={"light"}
+								color={"red"}
+								onClick={() => onCompleted([], { showToast: false })}
+							>
+								<IconX size={12} />
+							</ActionIcon>
+						</div>
+					</div>
 
-                            <ActionIcon
-                                type={"button"}
-                                size={"md"}
-                                tabIndex={-1}
-                                variant={"light"}
-                                color={"red"}
-                                onClick={() => onCompleted([], { showToast: false })}
-                            >
-                                <IconX size={12} />
-                            </ActionIcon>
-                        </div>
-                    </div>
+					<Divider my={"sm"} variant={"dashed"} />
+				</>
+			)}
 
-                    <Divider my={"sm"} variant={"dashed"} />
-                </>
-            )}
-
-            {state.organizers.length === 0 ? (
-                <>
-                    <Alert icon={<IconAlertCircle />} variant={"filled"}>
-                        No organizers(Email Identities) found. <br /> Please add atleast one
-                        email identity to create calendar events.
-                    </Alert>
-                </>
-            ) : (
-                <ReusableForm
-                    action={upsertCalendarEvent}
-                    fields={fields}
-                    onSuccess={onCompleted}
-                    submitButtonProps={{
-                        submitLabel: editEvent ? "Update event" : "Create event",
-                        wrapperClasses: "mt-4",
-                        fullWidth: true,
-                    }}
-                />
-            )}
-
+			{state.organizers.length === 0 ? (
+				<>
+					<Alert icon={<IconAlertCircle />} variant={"filled"}>
+						No organizers(Email Identities) found. <br /> Please add atleast one
+						email identity to create calendar events.
+					</Alert>
+				</>
+			) : (
+				<ReusableForm
+					action={upsertCalendarEvent}
+					fields={fields}
+					onSuccess={onCompleted}
+					submitButtonProps={{
+						submitLabel: editEvent ? "Update event" : "Create event",
+						wrapperClasses: "mt-4",
+						fullWidth: true,
+					}}
+				/>
+			)}
 		</>
 	);
 }

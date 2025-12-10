@@ -60,17 +60,22 @@ function AddEmailIdentityForm({
 					defaultValue: parsedVaultValues.SMTP_USERNAME || "",
 				},
 			},
-            {
-                name: "displayName",
-                label: "Display Name",
-                required: true,
-                wrapperClasses: "col-span-12",
-                bottomStartPrefix: <span className={"text-xs"}>This name will appear as the organizer when you create calendar events or send invitations.</span>,
-                props: {
-                    autoComplete: "off",
-                    required: true
-                },
-            },
+			{
+				name: "displayName",
+				label: "Display Name",
+				required: true,
+				wrapperClasses: "col-span-12",
+				bottomStartPrefix: (
+					<span className={"text-xs"}>
+						This name will appear as the organizer when you create calendar
+						events or send invitations.
+					</span>
+				),
+				props: {
+					autoComplete: "off",
+					required: true,
+				},
+			},
 			{
 				name: "dailyQuota",
 				label: "Daily IMAP quota (Used for backfilling older mails)",
@@ -130,17 +135,22 @@ function AddEmailIdentityForm({
 					},
 				},
 			},
-            {
-                name: "displayName",
-                label: "Display Name",
-                required: true,
-                wrapperClasses: "col-span-12",
-                bottomStartPrefix: <span className={"text-xs"}>This name will appear as the organizer when you create calendar events or send invitations.</span>,
-                props: {
-                    autoComplete: "off",
-                    required: true
-                },
-            },
+			{
+				name: "displayName",
+				label: "Display Name",
+				required: true,
+				wrapperClasses: "col-span-12",
+				bottomStartPrefix: (
+					<span className={"text-xs"}>
+						This name will appear as the organizer when you create calendar
+						events or send invitations.
+					</span>
+				),
+				props: {
+					autoComplete: "off",
+					required: true,
+				},
+			},
 			{
 				name: "local",
 				label: "Local part",

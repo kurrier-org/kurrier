@@ -187,9 +187,9 @@ async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 					flags,
 					sizeBytes: m.size ?? null,
 					internalDate: m.internalDate ?? null,
-				}
+				},
 			},
-            mode: "backfill",
+			mode: "backfill",
 			seen,
 			answered,
 			flagged,

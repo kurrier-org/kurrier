@@ -14,26 +14,27 @@ export default function HomePage() {
 					"flex flex-col items-center justify-center text-bl px-4 sm:px-8 lg:px-16 -mt-12 z-30"
 				}
 			>
+				<h1 className={"text-5xl"}>
+					<Highlighter action="underline" color="#FF9800">
+						<span className={"font-bold"}>
+							Unified email, calendar, and contacts
+						</span>
+					</Highlighter>{" "}
+					for{" "}
+					<Highlighter action="highlight" color="#51A2FF">
+						any
+					</Highlighter>{" "}
+					provider.
+				</h1>
 
-                <h1 className={"text-5xl"}>
-                    <Highlighter action="underline" color="#FF9800">
-                        <span className={"font-bold"}>Unified email, calendar, and contacts</span>
-                    </Highlighter>{" "}
-                    for{" "}
-                    <Highlighter action="highlight" color="#51A2FF">
-                        any
-                    </Highlighter>{" "}
-                    provider.
-                </h1>
-
-                <p className="mt-4 text-xl text-neutral-400 max-w-3xl">
-                    All your communication, perfectly synced and beautifully integrated.
-                </p>
+				<p className="mt-4 text-xl text-neutral-400 max-w-3xl">
+					All your communication, perfectly synced and beautifully integrated.
+				</p>
 
 				<div className="text-xl max-w-5xl py-8 mx-auto text-center leading-relaxed flex gap-2">
-                    Fast, private, and fully searchable - powered by your existing SMTP/IMAP/CalDAV/CardDAV credentials.
-
-                </div>
+					Fast, private, and fully searchable - powered by your existing
+					SMTP/IMAP/CalDAV/CardDAV credentials.
+				</div>
 			</div>
 
 			<div className={"flex justify-center my-12"}>

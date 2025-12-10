@@ -8,21 +8,20 @@ export default async function CalendarLayout({
 }: {
 	children: React.ReactNode;
 }) {
-
 	return (
 		<>
-            <header className="flex items-center gap-2 border-b  bg-background/60 backdrop-blur py-3 px-4">
-                <SidebarTrigger className="-ml-1" />
-                <Separator
-                    orientation="vertical"
-                    className="data-[orientation=vertical]:h-4"
-                />
-                <CalendarTopBar />
-            </header>
+			<header className="flex items-center gap-2 border-b  bg-background/60 backdrop-blur py-3 px-4">
+				<SidebarTrigger className="-ml-1" />
+				<Separator
+					orientation="vertical"
+					className="data-[orientation=vertical]:h-4"
+				/>
+				<CalendarTopBar />
+			</header>
 
-            <main>
-                <section className="">{children}</section>
-            </main>
+			<main>
+				<section className="">{children}</section>
+			</main>
 		</>
 	);
 }

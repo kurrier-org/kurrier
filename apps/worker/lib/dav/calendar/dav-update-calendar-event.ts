@@ -1,11 +1,12 @@
 import DigestFetch from "digest-fetch";
 import {
-    db,
-    calendarEvents,
-    calendars,
-    davAccounts,
-    secretsMeta,
-    getSecretAdmin, calendarEventAttendees,
+	db,
+	calendarEvents,
+	calendars,
+	davAccounts,
+	secretsMeta,
+	getSecretAdmin,
+	calendarEventAttendees,
 } from "@db";
 import { desc, eq } from "drizzle-orm";
 import { getDayjsTz } from "@common";
@@ -74,7 +75,10 @@ export async function updateCalendarObjectViaHttp(opts: {
 	return { etag: normalizeEtag(newEtag) };
 }
 
-export const updateCalendarEvent = async (eventId: string, notifyAttendees: boolean) => {
+export const updateCalendarEvent = async (
+	eventId: string,
+	notifyAttendees: boolean,
+) => {
 	const [event] = await db
 		.select()
 		.from(calendarEvents)
@@ -116,9 +120,10 @@ export const updateCalendarEvent = async (eventId: string, notifyAttendees: bool
 		return null;
 	}
 
-    const guests = await db.select().from(calendarEventAttendees).where(
-        eq(calendarEventAttendees.eventId, event.id)
-    )
+	const guests = await db
+		.select()
+		.from(calendarEventAttendees)
+		.where(eq(calendarEventAttendees.eventId, event.id));
 
 	const dayjsTz = getDayjsTz(calendar.timezone || "UTC");
 	const icalData = buildICalEvent(event, dayjsTz, guests);
@@ -137,19 +142,19 @@ export const updateCalendarEvent = async (eventId: string, notifyAttendees: bool
 		.update(calendarEvents)
 		.set({
 			davUri,
-            rawIcs: icalData,
+			rawIcs: icalData,
 			davEtag: newEtag ?? event.davEtag,
 			updatedAt: new Date(),
 		})
 		.where(eq(calendarEvents.id, event.id));
 
-    if (notifyAttendees) {
-        const { davWorkerQueue } = await getRedis();
-        await davWorkerQueue.add("dav:calendar:itip-notify", {
-            eventId: event.id,
-            action: "update",
-        });
-    }
+	if (notifyAttendees) {
+		const { davWorkerQueue } = await getRedis();
+		await davWorkerQueue.add("dav:calendar:itip-notify", {
+			eventId: event.id,
+			action: "update",
+		});
+	}
 
 	return { success: true };
 };

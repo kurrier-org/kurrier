@@ -27,7 +27,7 @@ function FragmentCell({
 	const dayjsTz = getDayjsTz(state.defaultCalendar.timezone);
 	const start = dayjsTz(fragment.event.startsAt);
 	const end = dayjsTz(fragment.event.endsAt);
-    const popoverKey = fragment.event?.instanceId ?? fragment.event.id;
+	const popoverKey = fragment.event?.instanceId ?? fragment.event.id;
 
 	const handleEventClick: React.MouseEventHandler<HTMLDivElement> = (ev) => {
 		ev.stopPropagation();
@@ -40,13 +40,13 @@ function FragmentCell({
 
 	return (
 		<CalendarAddEventPopover
-            opened={state.activePopoverId === popoverKey}
-            onChange={() => {
+			opened={state.activePopoverId === popoverKey}
+			onChange={() => {
 				setState((prev) => ({
 					...prev,
 					activePopoverId: null,
-					activePopoverEditEvent: undefined
-                }));
+					activePopoverEditEvent: undefined,
+				}));
 			}}
 			start={start}
 			end={end}
@@ -61,10 +61,19 @@ function FragmentCell({
 				}}
 				onClick={handleEventClick}
 			>
-				{showTitle && <div className={"flex flex-wrap"} title={`${fragment.event.title} - ${start.format("h:mm A")} - ${end.format("h:mm A")}`}>
-					<div className="truncate font-medium text-xs">{fragment.event.title}</div>
-					<div className="truncate font-medium text-xs mx-1">{start.format("h:mm A")} - {end.format("h:mm A")}</div>
-                </div>}
+				{showTitle && (
+					<div
+						className={"flex flex-wrap"}
+						title={`${fragment.event.title} - ${start.format("h:mm A")} - ${end.format("h:mm A")}`}
+					>
+						<div className="truncate font-medium text-xs">
+							{fragment.event.title}
+						</div>
+						<div className="truncate font-medium text-xs mx-1">
+							{start.format("h:mm A")} - {end.format("h:mm A")}
+						</div>
+					</div>
+				)}
 			</div>
 		</CalendarAddEventPopover>
 	);
@@ -98,16 +107,18 @@ function CalendarEventsLayer({
 	return (
 		<div className="absolute inset-0 z-50 pointer-events-none">
 			{fragments.map((fragment, index) => {
-                const popoverKey = fragment.event?.instanceId ?? fragment.event.id;
-                return <FragmentCell
-                    key={`${popoverKey}-${fragment.date}-${
-                        fragment.topPercent
-                    }-${fragment.columnIndex ?? 0}-${index}`}
-                    fragment={fragment}
-                    fallbackCount={fallbackCount}
-                    showTitle={titleOwners.has(fragment)}
-                />
-            })}
+				const popoverKey = fragment.event?.instanceId ?? fragment.event.id;
+				return (
+					<FragmentCell
+						key={`${popoverKey}-${fragment.date}-${
+							fragment.topPercent
+						}-${fragment.columnIndex ?? 0}-${index}`}
+						fragment={fragment}
+						fallbackCount={fallbackCount}
+						showTitle={titleOwners.has(fragment)}
+					/>
+				);
+			})}
 		</div>
 	);
 }
