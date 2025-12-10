@@ -1430,6 +1430,9 @@ export const calendarEvents = pgTable(
 
         isExternal: boolean("is_external").notNull().default(false),
 
+        recurrenceRule: text("recurrence_rule"),
+        recurrenceExdates: timestamp("recurrence_exdates", { withTimezone: true }).array().notNull().default(sql`'{}'::timestamptz[]`),
+
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),

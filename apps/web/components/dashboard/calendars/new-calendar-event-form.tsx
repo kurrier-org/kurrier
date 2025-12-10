@@ -14,13 +14,15 @@ import {ActionIcon, Alert, Checkbox, Divider, Select} from "@mantine/core";
 import { CalendarEventEntity } from "@db";
 import { Trash } from "lucide-react";
 import { getDayjsTz, getWallTimeDate } from "@common/day-js-extended";
-import { IconAlertCircle } from "@tabler/icons-react";
+import {IconAlertCircle, IconX} from "@tabler/icons-react";
 import {usePathname} from "next/navigation";
 import AddGuests from "@/components/dashboard/calendars/add-guests";
+import RecurrenceRulesFormInput from "@/components/dashboard/calendars/recurrence-rules-form-input";
+import {OnCompletedOptions} from "@/components/dashboard/calendars/calendar-add-event-popover";
 
 type NewCalendarEventFormProps = {
-	onCompleted: (data: CalendarEventEntity[]) => void;
-	start: Dayjs;
+    onCompleted: (data: CalendarEventEntity[], options?: OnCompletedOptions) => void;
+    start: Dayjs;
 	end: Dayjs;
 };
 
@@ -128,6 +130,14 @@ function NewCalendarEventForm({
                 },
             },
         },
+        {
+            el: (
+                <RecurrenceRulesFormInput
+                    name="recurrenceRule"
+                    defaultValue={editEvent?.recurrenceRule}
+                />
+            ),
+        },
 		{
 			el: <AddGuests name={"attendees"} />,
 		},
@@ -194,20 +204,34 @@ function NewCalendarEventForm({
                 <>
                     <div className={`flex justify-between items-center capitalize`}>
                         <h1 className={"text-lg font-semibold"}>{editEvent?.title}</h1>
-                        <ActionIcon
-                            type={"button"}
-                            size={"md"}
-                            tabIndex={-1}
-                            variant={"light"}
-                            color={"red"}
-                            onClick={() =>
-                                deleteCalendarEvent(editEvent.id).then(() => {
-                                    onCompleted([]);
-                                })
-                            }
-                        >
-                            <Trash size={12} />
-                        </ActionIcon>
+
+                        <div className={"flex gap-1"}>
+                            <ActionIcon
+                                type={"button"}
+                                size={"md"}
+                                tabIndex={-1}
+                                variant={"light"}
+                                color={"red"}
+                                onClick={() =>
+                                    deleteCalendarEvent(editEvent.id).then(() => {
+                                        onCompleted([]);
+                                    })
+                                }
+                            >
+                                <Trash size={12} />
+                            </ActionIcon>
+
+                            <ActionIcon
+                                type={"button"}
+                                size={"md"}
+                                tabIndex={-1}
+                                variant={"light"}
+                                color={"red"}
+                                onClick={() => onCompleted([], { showToast: false })}
+                            >
+                                <IconX size={12} />
+                            </ActionIcon>
+                        </div>
                     </div>
 
                     <Divider my={"sm"} variant={"dashed"} />

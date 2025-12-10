@@ -27,20 +27,21 @@ function FragmentCell({
 	const dayjsTz = getDayjsTz(state.defaultCalendar.timezone);
 	const start = dayjsTz(fragment.event.startsAt);
 	const end = dayjsTz(fragment.event.endsAt);
+    const popoverKey = fragment.event?.instanceId ?? fragment.event.id;
 
 	const handleEventClick: React.MouseEventHandler<HTMLDivElement> = (ev) => {
 		ev.stopPropagation();
 		setState((prev) => ({
 			...prev,
 			activePopoverEditEvent: fragment.event,
-			activePopoverId: fragment.event.id,
+			activePopoverId: popoverKey,
 		}));
 	};
 
 	return (
 		<CalendarAddEventPopover
-			opened={state.activePopoverId === fragment.event.id}
-			onChange={() => {
+            opened={state.activePopoverId === popoverKey}
+            onChange={() => {
 				setState((prev) => ({
 					...prev,
 					activePopoverId: null,
@@ -96,14 +97,17 @@ function CalendarEventsLayer({
 
 	return (
 		<div className="absolute inset-0 z-50 pointer-events-none">
-			{fragments.map((fragment, index) => (
-				<FragmentCell
-					key={`${fragment.event.id}-${fragment.date}-${fragment.topPercent}-${fragment.columnIndex ?? 0}-${index}`}
-					fragment={fragment}
-					fallbackCount={fallbackCount}
-					showTitle={titleOwners.has(fragment)}
-				/>
-			))}
+			{fragments.map((fragment, index) => {
+                const popoverKey = fragment.event?.instanceId ?? fragment.event.id;
+                return <FragmentCell
+                    key={`${popoverKey}-${fragment.date}-${
+                        fragment.topPercent
+                    }-${fragment.columnIndex ?? 0}-${index}`}
+                    fragment={fragment}
+                    fallbackCount={fallbackCount}
+                    showTitle={titleOwners.has(fragment)}
+                />
+            })}
 		</div>
 	);
 }

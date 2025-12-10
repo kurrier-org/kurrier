@@ -30,8 +30,6 @@ export function buildICalEvent(
     let vcal: ICAL.Component;
     let vevent: ICAL.Component;
 
-    console.log("eventRow", eventRow)
-
     if (eventRow.rawIcs) {
         try {
             const parsed = ICAL.parse(eventRow.rawIcs);
@@ -98,6 +96,14 @@ export function buildICalEvent(
         const endUtc = dayjsTz(eventRow.endsAt).toDate();
         ev.startDate = ICAL.Time.fromJSDate(startUtc, true);
         ev.endDate = ICAL.Time.fromJSDate(endUtc, true);
+    }
+
+
+
+    vevent.removeAllProperties("rrule");
+    if (eventRow.recurrenceRule && eventRow.recurrenceRule.trim().length > 0) {
+        const recur = ICAL.Recur.fromString(eventRow.recurrenceRule.trim());
+        vevent.addPropertyWithValue("rrule", recur);
     }
 
 

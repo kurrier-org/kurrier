@@ -533,6 +533,17 @@ async function applyIncomingRequest({
     }
 
 
+    let recurrenceRule: string | null = null;
+    const rruleProp = vevent.getFirstProperty("rrule");
+    if (rruleProp) {
+        const recur = rruleProp.getFirstValue() as any;
+        if (recur && typeof recur.toString === "function") {
+            recurrenceRule = recur.toString();
+        } else if (recur) {
+            recurrenceRule = String(recur);
+        }
+    }
+
 
     const uid = ev.uid;
     if (!uid) return;
@@ -638,6 +649,7 @@ async function applyIncomingRequest({
             startsAt: startsAtJs,
             endsAt: endsAtJs,
             isAllDay,
+            recurrenceRule,
 
             organizerEmail,
             organizerName,
@@ -670,6 +682,7 @@ async function applyIncomingRequest({
             startsAt: startsAtJs,
             endsAt: endsAtJs,
             isAllDay,
+            recurrenceRule,
 
             organizerEmail,
             organizerName,

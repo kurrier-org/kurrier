@@ -6,11 +6,11 @@ import {useDynamicContext} from "@/hooks/use-dynamic-context";
 import {CalendarState} from "@schema";
 import ExternalEventView from "@/components/dashboard/calendars/external-event-view";
 
-function CombinedEventView({
-                               newCalendarEventFormProps,
-                           }: {
-    newCalendarEventFormProps: {
-        onCompleted: (data: CalendarEventEntity[]) => void;
+function CombinedEventView({ newCalendarEventFormProps }: { newCalendarEventFormProps: {
+        onCompleted: (
+            data: CalendarEventEntity[],
+            options?: { showToast?: boolean }
+        ) => void;
         start: Dayjs;
         end: Dayjs;
     };
