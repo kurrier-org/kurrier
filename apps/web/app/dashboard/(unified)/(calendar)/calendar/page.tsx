@@ -49,7 +49,7 @@ async function Page() {
 	const attendeeIds = Object.values(attendees).flatMap((list) =>
 		list.map((a) => a.id),
 	);
-	const contacts = await getContactsForAttendeeIds(attendeeIds);
+	const contacts = getContactsForAttendeeIds(attendeeIds);
 
 	return (
 		<WeekGrid

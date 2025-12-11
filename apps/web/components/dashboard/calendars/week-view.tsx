@@ -38,19 +38,20 @@ export function WeekGrid({
 	events: CalendarEventEntity[];
 	attendees: Record<string, CalendarEventAttendeeEntity[]>;
 	byDayMap: Map<string, EventSlotFragment[]>;
-	attendeeContacts: ComposeContact[];
+	attendeeContacts: Promise<ComposeContact[]>;
 	allDayByDay: Map<string, AllDayFragment[]>;
 }) {
 	const { setState, state } = useDynamicContext<CalendarState>();
 	const params = useParams();
 	const dayjsTz = getDayjsTz(state.defaultCalendar.timezone);
+    const contacts = React.use(attendeeContacts);
 
 	useEffect(() => {
 		setState((prev) => ({
 			...prev,
 			calendarEvents: events,
 			calendarEventAttendees: attendees,
-			attendeeContacts,
+			attendeeContacts: contacts,
 		}));
 	}, [events, setState, attendees]);
 
