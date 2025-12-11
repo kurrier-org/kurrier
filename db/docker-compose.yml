@@ -122,6 +122,17 @@ services:
       - ./dav_config:/var/www/baikal/config
       - ./dav_data:/var/www/baikal/Specific
 
+  webdav:
+    image: ghcr.io/hacdias/webdav:v5.10.1
+    command: [ "-c", "/config.yml" ]
+    ports:
+      - "6065:6065"
+    volumes:
+      - ./webdav/config.yml:/config.yml:ro
+      - ./webdav/data:/data
+    restart: unless-stopped
+    # no ports: line ⇒ internal only
+
   studio:
     container_name: supabase-studio
     image: supabase/studio:2025.12.09-sha-434634f
