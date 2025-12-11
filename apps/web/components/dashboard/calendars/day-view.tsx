@@ -120,7 +120,6 @@ export function DayGrid({
                                 </div>
                             ))}
                         </div>
-
                         <div className="relative border-r last:border-r-0 border-neutral-200 dark:border-neutral-700">
                             {HOURS.map((hour) => (
                                 <CalendarDayHourBox
