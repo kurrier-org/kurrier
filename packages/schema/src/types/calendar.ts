@@ -5,7 +5,7 @@ import {
 	CalendarEventEntity,
 } from "@db";
 
-export const calendarViewsList = ["day", "week", "month", "year"] as const;
+export const calendarViewsList = ["day", "week", "month"] as const;
 export type CalendarViewType = z.infer<typeof calendarViewsList>;
 export type CalendarOrganizerType = {
 	value: string;

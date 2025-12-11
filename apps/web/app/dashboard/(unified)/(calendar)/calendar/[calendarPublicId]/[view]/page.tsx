@@ -1,5 +1,4 @@
 import React from "react";
-import { WeekGrid } from "@/components/dashboard/calendars/week-view";
 import {
 	eventsByDayWithAllDay,
 	fetchDefaultCalendar,
@@ -11,7 +10,6 @@ import {
 } from "@/lib/actions/calendar";
 import type { CalendarViewType } from "@schema";
 import DayGrid from "@/components/dashboard/calendars/day-view";
-import MonthGrid from "@/components/dashboard/calendars/month-view";
 
 async function Page({
 	params,
@@ -70,27 +68,15 @@ async function Page({
 	);
 	const contacts = getContactsForAttendeeIds(attendeeIds);
 
-	return view === "week" ? (
-		<WeekGrid
+	return (
+		<DayGrid
 			events={expandedEvents}
 			byDayMap={timedByDay}
 			attendees={attendees}
 			attendeeContacts={contacts}
 			allDayByDay={allDayByDay}
 		/>
-	) : (view === "month" ? <MonthGrid
-        events={expandedEvents}
-        byDayMap={timedByDay}
-        attendees={attendees}
-        attendeeContacts={contacts}
-        allDayByDay={allDayByDay}
-    /> : <DayGrid
-        events={expandedEvents}
-        byDayMap={timedByDay}
-        attendees={attendees}
-        attendeeContacts={contacts}
-        allDayByDay={allDayByDay}
-    />);
+	);
 }
 
 export default Page;
