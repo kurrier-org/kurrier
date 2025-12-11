@@ -1,5 +1,11 @@
 # web
 
+## 0.1.59
+
+### Patch Changes
+
+- [#351](https://github.com/kurrier-org/kurrier/pull/351) [`8e48f7f`](https://github.com/kurrier-org/kurrier/commit/8e48f7fd7722250d8de562d638dc1f54294ff66e) Thanks [@krokhale](https://github.com/krokhale)! - Day and month view for the calendar
+
 ## 0.1.58
 
 ### Patch Changes
