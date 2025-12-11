@@ -110,7 +110,6 @@ export function DayGrid({
                 <AllDayEventsRow weekDays={[dayMeta]} allDayByDay={allDayByDay} />
                 <div className="flex flex-1 flex-col h-[calc(100vh-8rem)] overflow-y-auto">
                     <div className="grid grid-cols-[64px_1fr]">
-                        {/* Hour labels */}
                         <div className="border-r border-neutral-200 bg-neutral-100 dark:bg-neutral-900 dark:border-neutral-700">
                             {HOURS.map((hour) => (
                                 <div
@@ -122,7 +121,6 @@ export function DayGrid({
                             ))}
                         </div>
 
-                        {/* Day column */}
                         <div className="relative border-r last:border-r-0 border-neutral-200 dark:border-neutral-700">
                             {HOURS.map((hour) => (
                                 <CalendarDayHourBox
