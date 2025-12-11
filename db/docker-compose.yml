@@ -1,7 +1,7 @@
 name: kurrier
 services:
   web:
-    image: ghcr.io/kurrier-org/kurrier-web:v1.0.3
+    image: ghcr.io/kurrier-org/kurrier-web:v1.0.4
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-3000}:3000"
@@ -33,7 +33,7 @@ services:
       DAV_URL: http://dav:80
 
   worker:
-    image: ghcr.io/kurrier-org/kurrier-worker:v1.0.3
+    image: ghcr.io/kurrier-org/kurrier-worker:v1.0.4
     restart: unless-stopped
     ports:
       - "${NITRO_PORT:-3001}:3001"
@@ -124,7 +124,7 @@ services:
 
   studio:
     container_name: supabase-studio
-    image: supabase/studio:2025.11.26-sha-8f096b5
+    image: supabase/studio:2025.12.09-sha-434634f
     restart: unless-stopped
     healthcheck:
       test:
@@ -218,7 +218,7 @@ services:
 
   rest:
     container_name: supabase-rest
-    image: postgrest/postgrest:v13.0.7
+    image: postgrest/postgrest:v14.1
     restart: unless-stopped
     depends_on:
       db:
@@ -238,7 +238,7 @@ services:
 
   storage:
     container_name: supabase-storage
-    image: supabase/storage-api:v1.32.0
+    image: supabase/storage-api:v1.33.0
     restart: unless-stopped
     volumes:
       - ./volumes/storage:/var/lib/storage:z
