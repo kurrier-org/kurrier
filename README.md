@@ -2,6 +2,7 @@
 A modern, self-hosted hub for **email, calendars, and contacts**.
 
 ---
+> !! Coming Soon: Kurrier Drive — file storage and sharing (Local & Cloud drives) !!
 
 ## ✨ What's New
 
