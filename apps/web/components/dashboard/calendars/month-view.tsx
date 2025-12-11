@@ -98,8 +98,6 @@ export default function MonthGrid({
                     </div>
                 ))}
             </div>
-
-            {/*<div className="flex-1 grid grid-cols-7 grid-rows-6 border-b border-neutral-200 dark:border-neutral-700">*/}
             <div className="grid grid-cols-7 grid-rows-6 h-[calc(100vh-8rem)]">
                 {days.map((dayMeta) => {
                     const daySlots = byDayMap.get(dayMeta.key) ?? [];
@@ -108,12 +106,9 @@ export default function MonthGrid({
 
                     const baseCellClasses =
                         "relative border-r border-neutral-200 dark:border-neutral-700 overflow-hidden px-2 py-1 cursor-pointer";
-                    // const monthTint = dayMeta.isCurrentMonth
-                    //     ? "bg-neutral-50 dark:bg-neutral-900"
-                    //     : "bg-neutral-50/40 dark:bg-neutral-900/40 opacity-60";
                     const monthTint = dayMeta.isCurrentMonth
                         ? "bg-neutral-50 dark:bg-neutral-900"
-                        : "bg-neutral-50 dark:bg-neutral-900"; // same background
+                        : "bg-neutral-50 dark:bg-neutral-900";
 
                     return (
                         <div
