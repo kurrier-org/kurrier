@@ -1,0 +1,1 @@
+ALTER TABLE "drive_volumes" ADD COLUMN "is_available" boolean DEFAULT false NOT NULL;

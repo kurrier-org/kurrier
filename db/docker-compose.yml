@@ -63,6 +63,7 @@ services:
       SEARCH_REBUILD_ON_BOOT: ${SEARCH_REBUILD_ON_BOOT}
       LOCAL_TUNNEL_URL: ${LOCAL_TUNNEL_URL}
       DAV_URL: http://dav:80
+      WEB_DAV_URL: http://webdav:6065
     volumes:
       - ./dav_config:/dav-config
       - ./dav_data:/dav-data
@@ -130,8 +131,8 @@ services:
     volumes:
       - ./webdav/config.yml:/config.yml:ro
       - ./webdav/data:/data
+      - /Volumes/flux/test-dav:/data/disks/flux
     restart: unless-stopped
-    # no ports: line ⇒ internal only
 
   studio:
     container_name: supabase-studio
