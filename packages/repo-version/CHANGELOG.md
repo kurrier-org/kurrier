@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 1.0.5
+
+### Patch Changes
+
+- [`11fc98a`](https://github.com/kurrier-org/kurrier/commit/11fc98a39990f2b48ce2f1bbd518fd63113142b2) Thanks [@krokhale](https://github.com/krokhale)! - security patch for CVE-2025-55183 & CVE-2025-55184
+
 ## 1.0.4
 
 ### Patch Changes
