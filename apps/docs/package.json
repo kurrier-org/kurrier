@@ -20,7 +20,7 @@
 		"jsrsasign": "^11.1.0",
 		"lucide-react": "^0.544.0",
 		"motion": "^12.23.24",
-		"next": "15.5.7",
+		"next": "15.5.9",
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0",
 		"rough-notation": "^0.5.1",
