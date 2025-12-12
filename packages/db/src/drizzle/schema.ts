@@ -19,21 +19,21 @@ import { users } from "./supabase-schema";
 import { authenticatedRole, authUid } from "drizzle-orm/supabase";
 import { sql } from "drizzle-orm";
 import {
-	AddressObjectJSON,
-	apiScopeList,
-	calendarAttendeePartstatList,
-	calendarAttendeeRoleList,
-	calendarBusyStatusList,
-	calendarEventStatusList,
-	identityStatusList,
-	identityTypesList,
-	labelScopesList,
-	mailboxKindsList,
-	mailboxSyncPhase,
-	messagePriorityList,
-	messageStatesList,
-	providersList,
-	webHookList,
+    AddressObjectJSON,
+    apiScopeList,
+    calendarAttendeePartstatList,
+    calendarAttendeeRoleList,
+    calendarBusyStatusList,
+    calendarEventStatusList, driveEntryTypes, driveVolumesList,
+    identityStatusList,
+    identityTypesList,
+    labelScopesList,
+    mailboxKindsList,
+    mailboxSyncPhase,
+    messagePriorityList,
+    messageStatesList,
+    providersList,
+    webHookList,
 } from "@schema";
 import { DnsRecord } from "@providers";
 import { nanoid } from "nanoid";
@@ -73,6 +73,9 @@ export const CalendarAttendeePartstatEnum = pgEnum(
 	"calendar_attendee_partstat",
 	calendarAttendeePartstatList,
 );
+
+export const DriveVolumeKindEnum = pgEnum("drive_volume_kind", driveVolumesList);
+export const DriveEntryTypeEnum = pgEnum("drive_entry_type", driveEntryTypes);
 
 export const secretsMeta = pgTable(
 	"secrets_meta",
@@ -1557,4 +1560,155 @@ export const calendarEventAttendees = pgTable(
 			using: sql`${t.ownerId} = ${authUid}`,
 		}),
 	],
+).enableRLS();
+
+
+export const driveVolumes = pgTable(
+    "drive_volumes",
+    {
+        id: uuid("id").defaultRandom().primaryKey(),
+        ownerId: uuid("owner_id")
+            .references(() => users.id)
+            .notNull()
+            .default(sql`auth.uid()`),
+
+        publicId: text("public_id")
+            .notNull()
+            .$defaultFn(() => nanoid(10)),
+
+        kind: DriveVolumeKindEnum("kind").notNull().default("local"),
+
+        code: text("code").notNull(),
+        label: text("label").notNull(),
+
+        basePath: text("base_path").notNull(),
+
+        isDefault: boolean("is_default").notNull().default(false),
+        isAvailable: boolean("is_available").notNull().default(false),
+
+        cloudConfig: jsonb("cloud_config")
+            .$type<
+                | null
+                | {
+                provider: "s3" | "minio";
+                bucket: string;
+                region?: string | null;
+                prefix?: string | null;
+            }
+            >()
+            .default(null),
+
+        metaData: jsonb("meta")
+            .$type<Record<string, any> | null>()
+            .default(null),
+
+        createdAt: timestamp("created_at", { withTimezone: true })
+            .defaultNow()
+            .notNull(),
+        updatedAt: timestamp("updated_at", { withTimezone: true })
+            .defaultNow()
+            .notNull(),
+    },
+    (t) => [
+        uniqueIndex("ux_drive_volumes_owner_code").on(t.ownerId, t.code),
+        index("ix_drive_volumes_owner").on(t.ownerId),
+        index("ix_drive_volumes_default").on(t.ownerId, t.isDefault),
+
+        pgPolicy("drive_volumes_select_own", {
+            for: "select",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("drive_volumes_insert_own", {
+            for: "insert",
+            to: authenticatedRole,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("drive_volumes_update_own", {
+            for: "update",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("drive_volumes_delete_own", {
+            for: "delete",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+    ],
+).enableRLS();
+
+export const driveEntries = pgTable(
+    "drive_entries",
+    {
+        id: uuid("id").defaultRandom().primaryKey(),
+
+        ownerId: uuid("owner_id")
+            .references(() => users.id)
+            .notNull()
+            .default(sql`auth.uid()`),
+
+        volumeId: uuid("volume_id")
+            .references(() => driveVolumes.id, { onDelete: "cascade" })
+            .notNull(),
+
+        type: DriveEntryTypeEnum("type").notNull().default("file"),
+
+        path: text("path").notNull(),
+        name: text("name").notNull(),
+
+        sizeBytes: bigint("size_bytes", { mode: "number" }).default(0),
+        mimeType: text("mime_type"),
+
+        isTrashed: boolean("is_trashed").notNull().default(false),
+
+        etag: text("etag"),
+        checksum: text("checksum"),
+
+        lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+
+        metaData: jsonb("meta")
+            .$type<Record<string, any> | null>()
+            .default(null),
+
+        createdAt: timestamp("created_at", { withTimezone: true })
+            .defaultNow()
+            .notNull(),
+        updatedAt: timestamp("updated_at", { withTimezone: true })
+            .defaultNow()
+            .notNull(),
+    },
+    (t) => [
+        uniqueIndex("ux_drive_entries_owner_volume_path").on(
+            t.ownerId,
+            t.volumeId,
+            t.path,
+        ),
+
+        index("ix_drive_entries_owner").on(t.ownerId),
+        index("ix_drive_entries_volume").on(t.volumeId),
+        index("ix_drive_entries_trashed").on(t.ownerId, t.isTrashed),
+
+        pgPolicy("drive_entries_select_own", {
+            for: "select",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("drive_entries_insert_own", {
+            for: "insert",
+            to: authenticatedRole,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("drive_entries_update_own", {
+            for: "update",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("drive_entries_delete_own", {
+            for: "delete",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+    ],
 ).enableRLS();

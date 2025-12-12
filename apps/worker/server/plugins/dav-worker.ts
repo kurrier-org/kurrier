@@ -14,6 +14,9 @@ import { davSyncCalendarsDb } from "../../lib/dav/calendar/dav-sync-calendar-db"
 import { davItipProcessor } from "../../lib/dav/calendar/dav-itip-processor";
 import { davItipNotify } from "../../lib/dav/calendar/dav-itip-notify";
 import { davItipReply } from "../../lib/dav/calendar/dav-itip-reply";
+import { listVolumes } from "../../lib/dav/drive/webdav-list";
+import { discoverVolumesForOwner } from "../../lib/dav/drive/webdav-discover";
+import { webdavListPath } from "../../lib/dav/drive/webdav-list-path";
 
 export default defineNitroPlugin(async (nitroApp) => {
 	const { connection } = await getRedis();
@@ -29,6 +32,17 @@ export default defineNitroPlugin(async (nitroApp) => {
 				job.id,
 			);
 			switch (job.name) {
+                case "dav:drive:list-volumes":
+                    return listVolumes();
+                case "dav:drive:discover-user-volumes":
+                    return discoverVolumesForOwner(job.data.userId);
+                case "dav:drive:list-path":
+                    return webdavListPath({
+                        ownerId: job.data.ownerId,
+                        mode: job.data.mode,
+                        publicId: job.data.publicId,
+                        segments: job.data.segments
+                    });
 				case "dav:create-account":
 					return createAccount(job.data.userId);
 				case "dav:update-password":
