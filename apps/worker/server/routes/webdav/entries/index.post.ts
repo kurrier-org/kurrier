@@ -6,11 +6,10 @@ import { pipeline } from "node:stream/promises";
 import { db, driveUploadIntents, driveVolumes } from "@db";
 import { and, eq, isNull } from "drizzle-orm";
 
-const isProd = process.env.NODE_ENV === "production";
-
-const LOCAL_ROOT = isProd
-    ? "/webdav-data"
-    : path.join(process.cwd(), "../../db/webdav/data");
+const LOCAL_ROOT =
+    (process.env.NODE_ENV === "production"
+        ? "/data"
+        : path.join(process.cwd(), "../../db/webdav/data"));
 
 const trimSlashes = (s: string) => s.replace(/^\/+|\/+$/g, "");
 
