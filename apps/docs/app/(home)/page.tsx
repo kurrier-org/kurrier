@@ -17,23 +17,26 @@ export default function HomePage() {
 				<h1 className={"text-5xl"}>
 					<Highlighter action="underline" color="#FF9800">
 						<span className={"font-bold"}>
-							Unified email, calendar, and contacts
+							{/*Unified email, calendar, and contacts*/}
+                            Email, calendar, contacts, and storage
 						</span>
 					</Highlighter>{" "}
-					for{" "}
-					<Highlighter action="highlight" color="#51A2FF">
-						any
-					</Highlighter>{" "}
-					provider.
+					{/*for{" "}*/}
+					{/*<Highlighter action="highlight" color="#51A2FF">*/}
+					{/*	any*/}
+					{/*</Highlighter>{" "}*/}
+					{/*provider.*/}
 				</h1>
 
-				<p className="mt-4 text-xl text-neutral-400 max-w-3xl">
-					All your communication, perfectly synced and beautifully integrated.
-				</p>
+				<p className="mt-4 text-xl text-neutral-600 max-w-3xl">
+					Your <Highlighter action="highlight" color="#FF9800">
+                    open-source workspace
+                </Highlighter>{" "} , perfectly synced and beautifully integrated.
+                </p>
 
 				<div className="text-xl max-w-5xl py-8 mx-auto text-center leading-relaxed flex gap-2">
-					Fast, private, and fully searchable - powered by your existing
-					SMTP/IMAP/CalDAV/CardDAV credentials.
+                    Fast, private, and fully searchable - powered by your existing
+                    SMTP, IMAP, CalDAV, CardDAV, and WebDAV services.
 				</div>
 			</div>
 

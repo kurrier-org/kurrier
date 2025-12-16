@@ -25,6 +25,14 @@ To ensure a smooth transition, please follow these additional steps:
 1. Backup your database before proceeding with the upgrade. (Basically the db folder)
 2. Run this command to apply necessary changes:
 
+### Upgrading from version v1.0.5 and earlier
+```bash
+cd kurrier/db
+cp -r ./init/caddy/ caddy
+cp -r ./init/webdav/ webdav
+```
+
+
 ---
 ### Upgrading from version v0.0.91 and earlier
 ```bash
@@ -32,6 +40,8 @@ cd kurrier/db
 cp -r ./init/dav_config/ dav_config
 cp -r ./init/dav_data/ dav_data
 ```
+
+
 
 
 

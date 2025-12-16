@@ -1,10 +1,17 @@
 # Kurrier
-A modern, self-hosted hub for **email, calendars, and contacts**.
+The self-hosted open-source workspace for **email, calendars, contacts and storage**.
 
 ---
-> !! Coming Soon: Kurrier Drive — file storage and sharing (Local & Cloud drives) !!
 
 ## ✨ What's New
+
+### 🎉 Kurrier Drive — integrated **WebDAV/S3 storage**
+Store and manage files directly within Kurrier using **WebDAV** locally or S3-compatible storage
+Support for providers like AWS S3, Backblaze B2, MinIO, and DigitalOcean Spaces is coming soon.
+Have a provider you want first? Open an issue and let us know.
+
+![Kurrier Drive](https://www.kurrier.org/docs-drive-light.png)
+
 
 ### 🎉 Sync your calendars across all your devices
 Kurrier now supports Calendars and syncs your calendars through **CalDAV**, compatible with iOS, macOS, Android (DAVx⁵), Thunderbird, and all CalDAV-supporting apps.
