@@ -1,0 +1,10 @@
+:80 {
+    encode zstd gzip
+
+    @worker {
+                path /webdav/*
+            }
+
+    reverse_proxy @worker worker:3001
+    reverse_proxy web:3000
+}
