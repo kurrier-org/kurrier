@@ -1,6 +1,6 @@
 {
 	"name": "@kurrier/worker",
-	"version": "0.1.33",
+	"version": "0.2.0",
 	"private": true,
 	"scripts": {
 		"dev": "dotenvx run -f ../../db/.env.develop -- nitro dev --port 3001",
@@ -31,6 +31,7 @@
 		"imapflow": "^1.0.198",
 		"mailparser": "^3.7.4",
 		"mime-types": "^3.0.1",
+		"ofetch": "^1.5.1",
 		"semver": "^7.7.3",
 		"vcf": "^2.1.2"
 	},

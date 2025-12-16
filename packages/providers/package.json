@@ -1,7 +1,7 @@
 {
 	"name": "@kurrier/providers",
 	"private": true,
-	"version": "1.0.7",
+	"version": "1.1.0",
 	"description": "",
 	"types": "src/index.ts",
 	"main": "src/index.ts",
@@ -13,6 +13,9 @@
 	"author": "Krishna Rokhale",
 	"license": "ISC",
 	"dependencies": {
+		"@aws-sdk/client-s3": "3.910.0",
+		"@aws-sdk/client-sts": "3.910.0",
+		"@aws-sdk/s3-request-presigner": "^3.910.0",
 		"@sendgrid/client": "^8.1.6",
 		"@sendgrid/eventwebhook": "^8.0.0",
 		"@sendgrid/helpers": "^8.0.0",

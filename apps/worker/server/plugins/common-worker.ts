@@ -2,7 +2,7 @@ import { defineNitroPlugin } from "nitropack/runtime";
 import { Worker } from "bullmq";
 import { getRedis } from "../../lib/get-redis";
 import { db, MessageEntity, providers } from "@db";
-import { PROVIDERS } from "@schema";
+import {PROVIDERS, STORAGE_PROVIDERS} from "@schema";
 import { kvDel, kvGet, kvSet } from "@common";
 import { processWebhook } from "../../lib/webhooks/message.received";
 
@@ -17,7 +17,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 					const { userId } = job.data as { userId: string };
 					await db
 						.insert(providers)
-						.values(PROVIDERS.map((k) => ({ type: k.key, ownerId: userId })))
+						.values([...PROVIDERS, ...STORAGE_PROVIDERS].map((k) => ({ type: k.key, ownerId: userId })))
 						.onConflictDoNothing({
 							target: [providers.ownerId, providers.type],
 						})

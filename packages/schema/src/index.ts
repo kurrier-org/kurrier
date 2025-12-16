@@ -9,3 +9,4 @@ export * from "./types/search";
 export * from "./types/common";
 export * from "./types/api";
 export * from "./types/calendar";
+export * from "./types/drive";

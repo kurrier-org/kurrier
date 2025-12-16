@@ -1,6 +1,6 @@
 {
 	"name": "@kurrier/web",
-	"version": "0.1.59",
+	"version": "0.2.0",
 	"private": true,
 	"scripts": {
 		"dev": "next dev --turbopack -p \"$WEB_PORT\"",
@@ -56,7 +56,8 @@
 		"rrule": "^2.8.1",
 		"sonner": "^2.0.7",
 		"tailwind-merge": "^3.3.1",
-		"thread-stream": "3.1.0"
+		"thread-stream": "3.1.0",
+		"undici": "^7.16.0"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.2.6",
