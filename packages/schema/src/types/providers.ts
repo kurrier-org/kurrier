@@ -6,6 +6,7 @@ export const providersList = [
 	"mailgun",
 	"postmark",
 	"sendgrid",
+    "s3"
 ] as const;
 export const ProvidersEnum = z.enum(providersList);
 export type Providers = z.infer<typeof ProvidersEnum>;
@@ -17,6 +18,7 @@ export const ProviderLabels: Record<Providers, string> = {
 	mailgun: "Mailgun",
 	postmark: "Postmark",
 	sendgrid: "SendGrid",
+    s3: "AWS S3",
 };
 
 /** Minimal spec used by the Providers page */
@@ -37,7 +39,6 @@ export const PROVIDERS: ProviderSpec[] = [
 			"SES_ACCESS_KEY_ID",
 			"SES_SECRET_ACCESS_KEY",
 			"SES_REGION",
-			// "SES_FROM_EMAIL",
 		],
 	},
 	{
@@ -70,12 +71,10 @@ export const SMTP_SPEC = {
 		"SMTP_PORT",
 		"SMTP_USERNAME",
 		"SMTP_PASSWORD",
-		"SMTP_SECURE", // true => implicit TLS(465); false/empty => STARTTLS (587)
-		// "SMTP_FROM_EMAIL",
+		"SMTP_SECURE",
 		"SMTP_POOL",
 	] as const,
 	optionalEnv: [
-		// "SMTP_FROM_NAME",
 		"IMAP_HOST",
 		"IMAP_PORT",
 		"IMAP_USERNAME",
@@ -87,3 +86,17 @@ export const SMTP_SPEC = {
 		"Use SMTP_SECURE=true for implicit TLS (port 465); leave empty/false for STARTTLS (587). " +
 		"IMAP vars are optional and only needed if you plan to receive/sync messages.",
 };
+
+
+export const STORAGE_PROVIDERS: ProviderSpec[] = [
+    {
+        key: "s3",
+        name: ProviderLabels.s3,
+        docsUrl: "https://docs.aws.amazon.com/s3",
+        requiredEnv: [
+            "S3_ACCESS_KEY_ID",
+            "S3_SECRET_ACCESS_KEY",
+            "S3_REGION"
+        ],
+    },
+];

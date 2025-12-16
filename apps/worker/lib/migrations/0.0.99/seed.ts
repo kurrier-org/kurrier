@@ -1,5 +1,5 @@
 import { $fetch } from "ofetch";
-import { listVolumes } from "../../dav/drive/webdav-list";
+import { getRedis } from "../../../lib/get-redis";
 
 async function ensureCollection(path: string) {
     const url = process.env.WEB_DAV_URL + path;
@@ -27,31 +27,18 @@ async function ensureCollection(path: string) {
 }
 
 
-export const ensureUserFoldersInDisks = async (userId: string) => {
-    let volumes = [];
-    try {
-        volumes = await listVolumes();
-    } catch (err: any) {
-        const status = err?.response?.status ?? err?.statusCode ?? err?.status ?? null;
-        if (status === 404) return;
-        throw err;
-    }
-
-    for (const v of volumes) {
-        await ensureCollection(`/disks/${v.code}/users/`);
-        await ensureCollection(`/disks/${v.code}/users/${userId}/`);
-    }
-};
-
 
 const seedDefaultUserDavFolder = async (userId: string) => {
     await ensureCollection("/users/");
     const userFolderPath = `/users/${userId}/`;
     await ensureCollection(userFolderPath);
-    await ensureUserFoldersInDisks(userId);
 };
 
 export default async function seed({ userId }: { userId: string }) {
     await seedDefaultUserDavFolder(userId);
+    const { commonWorkerQueue, commonWorkerEvents } = await getRedis();
+    const job = await commonWorkerQueue.add("sync-providers", { userId });
+    await job.waitUntilFinished(commonWorkerEvents);
+
     console.info("Migration 0.0.99 - seed.ts executed");
 }

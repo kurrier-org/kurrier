@@ -9,7 +9,7 @@ import { fetchVolumes } from "@/lib/actions/drive";
 import DriveSideBar from "@/components/dashboard/drive/drive-side-bar";
 import NewUploadButton from "@/components/dashboard/drive/new-upload-button";
 
-export default async function DashboardLayout({
+export default async function DriveLayout({
 	children,
 }: {
 	children: React.ReactNode;
@@ -20,9 +20,12 @@ export default async function DashboardLayout({
 		isSignedIn()
 	]);
 
-    const volumes = await fetchVolumes()
+    const {localVolumes, cloudVolumes} = await fetchVolumes()
+    const userId = await isSignedIn()
     const initialState: DriveState = {
-        volumes
+        localVolumes, cloudVolumes,
+        driveRouteContext: null,
+        userId: String(userId?.id),
     };
 
 	return (

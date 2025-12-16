@@ -15,8 +15,11 @@ import {
     IconFileTypeDoc,
     IconFileTypePpt,
     IconCode,
-    IconDotsVertical,
 } from "@tabler/icons-react";
+import dayjs from "dayjs";
+import DriveEntryOptions from "@/components/dashboard/drive/drive-entry-options";
+import Link from "next/link";
+import {usePathname} from "next/navigation";
 
 export default function DriveEntry({ entry }: { entry: DriveEntryEntity }) {
     return <DriveTile entry={entry} />;
@@ -27,6 +30,11 @@ function DriveTile({ entry }: { entry: DriveEntryEntity }) {
     const lastModified = meta?.lastModified ?? null;
     const ext = guessExt(entry);
     const { Icon, badge } = pickIconAndBadge(entry, ext);
+    const pathname = usePathname();
+    const base = pathname.replace(/\/$/, "");
+    const prettyName = formatEntryName(entry.name);
+    const folderHref = entry.type === "folder" ? `${base}/${encodeURIComponent(entry.name)}` : "#";
+
 
     return (
         <div className="group w-[260px]">
@@ -38,13 +46,7 @@ function DriveTile({ entry }: { entry: DriveEntryEntity }) {
                         </div>
                     </div>
 
-                    <button
-                        type="button"
-                        className="absolute right-2 top-2 rounded-xl p-2 text-neutral-600 opacity-0 transition hover:bg-white/70 group-hover:opacity-100 dark:text-neutral-300 dark:hover:bg-neutral-950/60"
-                        aria-label="More actions"
-                    >
-                        <IconDotsVertical className="h-5 w-5" />
-                    </button>
+                    <DriveEntryOptions entry={entry} />
 
                     <div className="absolute inset-0 flex items-center justify-center">
                         <div className="flex h-[72px] w-[72px] items-center justify-center rounded-2xl bg-white border border-neutral-200 text-neutral-700 dark:bg-neutral-950 dark:border-neutral-800 dark:text-neutral-200">
@@ -63,17 +65,33 @@ function DriveTile({ entry }: { entry: DriveEntryEntity }) {
 
                 <div className="flex items-start gap-3 px-4 py-3">
                     <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                            {entry.name}
+
+                        <div className="min-w-0">
+                            {entry.type === "folder" ? (
+                                <Link
+                                    href={folderHref}
+                                    title={entry.name}
+                                    className="block truncate text-sm font-medium text-neutral-900 dark:text-neutral-100"
+                                >
+                                    {prettyName}
+                                </Link>
+                            ) : (
+                                <div
+                                    title={entry.name}
+                                    className="block truncate text-sm font-medium text-neutral-900 dark:text-neutral-100"
+                                >
+                                    {prettyName}
+                                </div>
+                            )}
                         </div>
 
+
                         <div className="mt-1 flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
-                            <span className="truncate">{secondaryLabel(entry, ext)}</span>
-                            <Dot />
-                            <span className="tabular-nums">{formatBytes(entry.sizeBytes ?? 0)}</span>
+                            {entry.type !== "folder" && <>
+                                <span className="tabular-nums">{formatBytes(entry.sizeBytes ?? 0)}</span> <Dot />
+                            </>}
                             {lastModified ? (
                                 <>
-                                    <Dot />
                                     <span className="truncate">{formatLastModified(lastModified)}</span>
                                 </>
                             ) : null}
@@ -101,13 +119,6 @@ function guessExt(entry: DriveEntryEntity) {
 function cleanMime(mime: string) {
     const main = mime.split(";")[0]?.trim() ?? "";
     return main || mime;
-}
-
-function secondaryLabel(entry: DriveEntryEntity, ext: string | null) {
-    if (entry.type === "folder") return "Folder";
-    if (entry.mimeType) return cleanMime(entry.mimeType);
-    if (ext) return `${ext.toUpperCase()} file`;
-    return "File";
 }
 
 function pickIconAndBadge(entry: DriveEntryEntity, ext: string | null) {
@@ -165,6 +176,16 @@ function formatLastModified(v: any) {
     const s = typeof v === "string" ? v : "";
     if (!s) return "";
     const d = new Date(s);
-    if (Number.isNaN(d.getTime())) return s;
-    return d.toLocaleDateString();
+    return dayjs(d).format("hh:mm A MMM D, YYYY");
+}
+
+function formatEntryName(name: string) {
+    const s = (name ?? "").trim();
+    if (!s) return "";
+    try {
+        const decoded = decodeURIComponent(s);
+        return decoded.replace(/\+/g, " ");
+    } catch {
+        return s.replace(/%20/g, " ").replace(/\+/g, " ");
+    }
 }

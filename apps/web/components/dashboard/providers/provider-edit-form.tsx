@@ -43,7 +43,6 @@ function ProviderEditForm({
 			props: {
 				autoComplete: "off",
 				required: true,
-				// type: /PASSWORD/.test(row) ? "password" : "text",
 				defaultValue: decryptedValues ? (decryptedValues[row] ?? "") : "",
 			},
 		})),

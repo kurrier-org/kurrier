@@ -7,5 +7,15 @@ export const driveVolumesList = [
 export const driveEntryTypes = ["file", "folder"] as const;
 
 export type DriveState = {
-    volumes: DriveVolumeEntity[]
+    localVolumes: DriveVolumeEntity[]
+    cloudVolumes: DriveVolumeEntity[]
+    driveRouteContext: DriveRouteContext | null;
+    userId: string;
+};
+
+export type DriveRouteContext = {
+    scope: "home" | "cloud";
+    within: string[];
+    withinPath: string;
+    driveVolume: DriveVolumeEntity | null;
 };

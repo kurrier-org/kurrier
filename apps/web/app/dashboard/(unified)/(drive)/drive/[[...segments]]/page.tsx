@@ -1,16 +1,15 @@
-import {fetchListPath} from "@/lib/actions/drive";
+import { fetchCloudListPath, fetchListPath, normalizeWithinPath } from "@/lib/actions/drive";
 import DriveEntry from "@/components/dashboard/drive/drive-entry";
 
-
-export default async function Page({ params }: { params: Promise<{ segments: string[] }> }) {
+export default async function Page({ params }: {
+    params: Promise<{ segments?: string[] }>;
+}) {
     const { segments } = await params;
+    const ctx = await normalizeWithinPath(segments ?? []);
 
-    const segs = segments ?? [];
-    const isVolume = segs[0] === "volumes" && !!segs[1];
-    const publicId = isVolume ? segs[1] : undefined;
-    const path = isVolume ? segs.slice(2) : segs;
-
-    const entries = await fetchListPath(path, isVolume, publicId);
+    const entries = ctx.scope === "cloud"
+        ? await fetchCloudListPath(ctx)
+        : await fetchListPath(ctx.within);
 
     return (
         <div className="p-8">

@@ -1581,22 +1581,11 @@ export const driveVolumes = pgTable(
         code: text("code").notNull(),
         label: text("label").notNull(),
 
-        basePath: text("base_path").notNull(),
+        basePath: text("base_path"),
 
-        isDefault: boolean("is_default").notNull().default(false),
-        isAvailable: boolean("is_available").notNull().default(false),
-
-        cloudConfig: jsonb("cloud_config")
-            .$type<
-                | null
-                | {
-                provider: "s3" | "minio";
-                bucket: string;
-                region?: string | null;
-                prefix?: string | null;
-            }
-            >()
-            .default(null),
+        providerId: uuid("provider_id").references(() => providers.id, {
+            onDelete: "set null",
+        }),
 
         metaData: jsonb("meta")
             .$type<Record<string, any> | null>()
@@ -1611,8 +1600,10 @@ export const driveVolumes = pgTable(
     },
     (t) => [
         uniqueIndex("ux_drive_volumes_owner_code").on(t.ownerId, t.code),
+        uniqueIndex("ux_drive_volumes_public_id").on(t.publicId),
+
         index("ix_drive_volumes_owner").on(t.ownerId),
-        index("ix_drive_volumes_default").on(t.ownerId, t.isDefault),
+        index("ix_drive_volumes_provider").on(t.providerId),
 
         pgPolicy("drive_volumes_select_own", {
             for: "select",
@@ -1660,11 +1651,6 @@ export const driveEntries = pgTable(
         sizeBytes: bigint("size_bytes", { mode: "number" }).default(0),
         mimeType: text("mime_type"),
 
-        isTrashed: boolean("is_trashed").notNull().default(false),
-
-        etag: text("etag"),
-        checksum: text("checksum"),
-
         lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
 
         metaData: jsonb("meta")
@@ -1687,7 +1673,6 @@ export const driveEntries = pgTable(
 
         index("ix_drive_entries_owner").on(t.ownerId),
         index("ix_drive_entries_volume").on(t.volumeId),
-        index("ix_drive_entries_trashed").on(t.ownerId, t.isTrashed),
 
         pgPolicy("drive_entries_select_own", {
             for: "select",
