@@ -394,62 +394,154 @@ function toDriveEntryRow(args: {
 }
 
 
+
+
+
 export async function fetchDownloadLink(
     _prev: FormState,
     formData: FormData,
 ): Promise<FormState> {
     return handleAction(async () => {
         const decodedForm = decode(formData) as Record<string, unknown>;
+        const entryId = String(decodedForm.entryId || "");
+
+        if (!entryId) return { success: false, error: "Missing entryId" };
+
         const rls = await rlsClient();
+
         const entry = await rls(async (tx) => {
             const [e] = await tx
                 .select()
                 .from(driveEntries)
-                .where(and(
-                    eq(driveEntries.id, decodedForm.entryId as string)
-                ))
-            return e
-        })
+                .where(eq(driveEntries.id, entryId))
+                .limit(1);
+            return e ?? null;
+        });
+
+        if (!entry) return { success: false, error: "Entry not found" };
 
         const volume = await rls(async (tx) => {
             const [vol] = await tx
                 .select()
                 .from(driveVolumes)
-                .where(and(
-                    eq(driveVolumes.id, entry.volumeId)
-                ))
-            return vol
-        })
+                .where(eq(driveVolumes.id, entry.volumeId))
+                .limit(1);
+            return vol ?? null;
+        });
+
+        if (!volume) return { success: false, error: "Volume not found" };
 
         if (volume.kind !== "cloud") {
-            const downloadUrl = `/webdav/entries/${entry.id}`;
-            return { success: true, data: {
-                    downloadUrl
-                } };
-        } else if (volume.kind === "cloud") {
-            const [secret] = await fetchDecryptedSecrets({
-                linkTable: providerSecrets,
-                foreignCol: providerSecrets.providerId,
-                secretIdCol: providerSecrets.secretId,
-                parentId: String(volume.providerId),
-            });
-            const providerType = "s3" as Providers;
-            const store = createStore(providerType, secret.parsedSecret);
-            const res = await store.downloadUrl(String(volume.providerId), {
-                bucket: String(volume?.metaData?.bucket),
-                path: String(entry.path)
-            });
-            if (res.ok) {
-                return { success: true, data: { downloadUrl: res.data?.url } };
-            }
+            const now = new Date();
+            const expiresAt = new Date(now.getTime() + 10 * 60 * 1000);
 
+            const normalizedTargetPath = normalizeTargetPath(String(entry.path));
 
+            const intent = await rls(async (tx) => {
+                const [row] = await tx
+                    .insert(driveUploadIntents)
+                    .values({
+                        volumeId: volume.id,
+                        token: nanoid(48),
+                        targetPath: normalizedTargetPath,
+                        singleUse: false,
+                        usedAt: null,
+                        expiresAt,
+                        createdAt: now,
+                        updatedAt: now,
+                    })
+                    .returning({ id: driveUploadIntents.id });
+
+                return row ?? null;
+            });
+
+            if (!intent?.id) return { success: false, error: "Failed to create download token" };
+
+            return {
+                success: true,
+                data: { downloadUrl: `/webdav/tokens/${intent.id}` },
+            };
         }
 
-        return { success: true };
+        const [secret] = await fetchDecryptedSecrets({
+            linkTable: providerSecrets,
+            foreignCol: providerSecrets.providerId,
+            secretIdCol: providerSecrets.secretId,
+            parentId: String(volume.providerId),
+        });
 
+        const providerType = "s3" as Providers;
+        const store = createStore(providerType, secret.parsedSecret);
+
+        const res = await store.downloadUrl(String(volume.providerId), {
+            bucket: String(volume?.metaData?.bucket),
+            path: String(entry.path),
+        });
+
+        if (!res.ok) return { success: false, error: "Failed to create cloud download URL" };
+
+        return { success: true, data: { downloadUrl: res.data?.url } };
     });
 }
+
+
+
+// export async function fetchDownloadLink(
+//     _prev: FormState,
+//     formData: FormData,
+// ): Promise<FormState> {
+//     return handleAction(async () => {
+//         const decodedForm = decode(formData) as Record<string, unknown>;
+//         const rls = await rlsClient();
+//         const entry = await rls(async (tx) => {
+//             const [e] = await tx
+//                 .select()
+//                 .from(driveEntries)
+//                 .where(and(
+//                     eq(driveEntries.id, decodedForm.entryId as string)
+//                 ))
+//             return e
+//         })
+//
+//         const volume = await rls(async (tx) => {
+//             const [vol] = await tx
+//                 .select()
+//                 .from(driveVolumes)
+//                 .where(and(
+//                     eq(driveVolumes.id, entry.volumeId)
+//                 ))
+//             return vol
+//         })
+//
+//         if (volume.kind !== "cloud") {
+//             const downloadUrl = `/webdav/entries/${entry.id}`;
+//             return { success: true, data: {
+//                     downloadUrl
+//                 } };
+//         } else if (volume.kind === "cloud") {
+//             const [secret] = await fetchDecryptedSecrets({
+//                 linkTable: providerSecrets,
+//                 foreignCol: providerSecrets.providerId,
+//                 secretIdCol: providerSecrets.secretId,
+//                 parentId: String(volume.providerId),
+//             });
+//             const providerType = "s3" as Providers;
+//             const store = createStore(providerType, secret.parsedSecret);
+//             const res = await store.downloadUrl(String(volume.providerId), {
+//                 bucket: String(volume?.metaData?.bucket),
+//                 path: String(entry.path)
+//             });
+//             if (res.ok) {
+//                 return { success: true, data: { downloadUrl: res.data?.url } };
+//             }
+//
+//
+//         }
+//
+//         return { success: true };
+//
+//     });
+// }
 
 
 
