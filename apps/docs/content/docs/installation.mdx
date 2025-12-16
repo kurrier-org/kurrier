@@ -34,6 +34,8 @@ cp example.env .env
 cp -r ./init/volumes/ volumes
 cp -r ./init/dav_config/ dav_config
 cp -r ./init/dav_data/ dav_data
+cp -r ./init/caddy caddy
+cp -r ./init/webdav webdav
 ```
 
 Open the .env file and update your secrets and passwords. You can also use the built-in secrets generator below to create a secure, production-ready passwords and secrets.
@@ -78,7 +80,7 @@ To solve this, Kurrier allows you to define your own public tunnel URL via any t
 Example using ngrok:
 
 ```bash
-  ngrok http 3001
+  ngrok http <port>
 ```
 
 You can also use any other tunneling service of your choice.
@@ -101,7 +103,7 @@ When hosting Kurrier on a server or cloud instance (e.g. DigitalOcean, AWS, Hetz
 you should use your own domain and disable tunneling by removing or commenting out the `LOCAL_TUNNEL_URL` variable in your `.env` file.
 
 ```bash
-WEB_URL=https://www.yourdomain.com // just an example
+WEB_URL=https://www.yourdomain.com
 ```
 
 ---
@@ -129,18 +131,22 @@ Once Docker finishes starting up, open the following URLs in your browser:
 
 | Service | URL | Description |
 |----------|-----|-------------|
-| **Kurrier Web Dashboard** | [http://localhost:3000](http://localhost:3000) | Manage your mailboxes, messages, and settings |
-| **Studio** | [http://localhost:8000](http://localhost:8000) | View and manage the Postgres database |
-| **Nitro Worker (API)** | [http://localhost:3001](http://localhost:3001) | API background service and job runner |
+| **Kurrier Web Dashboard** | [http://localhost](http://localhost:3000) | Manage your mailboxes, messages, and settings |
+
+[//]: # (| **Studio** | [http://localhost:8000]&#40;http://localhost:8000&#41; | View and manage the Postgres database |)
+[//]: # (| **Nitro Worker &#40;API&#41;** | [http://localhost:3001]&#40;http://localhost:3001&#41; | API background service and job runner |)
 
 
 <Callout type="info">
-    To access Kurrier dashboard, signup and create your user account on http://localhost:3000
+    To access Kurrier dashboard, signup and create your user account on http://localhost
 </Callout>
 
-<Callout type="info">
-    To access Studio, log in with the credentials you defined in your `.env` file DASHBOARD_USERNAME
-    and DASHBOARD_PASSWORD
-</Callout>
+[//]: # (<Callout type="info">)
+
+[//]: # (    To access Studio, log in with the credentials you defined in your `.env` file DASHBOARD_USERNAME)
+
+[//]: # (    and DASHBOARD_PASSWORD)
+
+[//]: # (</Callout>)
 
 
