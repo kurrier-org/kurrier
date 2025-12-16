@@ -1,7 +1,7 @@
 {
 	"name": "@kurrier/providers",
 	"private": true,
-	"version": "1.0.7",
+	"version": "1.1.0",
 	"description": "",
 	"types": "src/index.ts",
 	"main": "src/index.ts",
