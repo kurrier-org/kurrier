@@ -2,7 +2,7 @@
 
 import { getRedis } from "@/lib/actions/get-redis";
 import { isSignedIn } from "@/lib/actions/auth";
-import { driveEntries, DriveVolumeEntity, driveVolumes, providers, providerSecrets } from "@db";
+import {driveEntries, driveUploadIntents, DriveVolumeEntity, driveVolumes, providers, providerSecrets} from "@db";
 import { rlsClient } from "@/lib/actions/clients";
 import { DriveRouteContext, FormState, handleAction, Providers } from "@schema";
 import { decode } from "decode-formdata";
@@ -11,6 +11,7 @@ import { and, eq } from "drizzle-orm";
 import { fetchDecryptedSecrets } from "@/lib/actions/dashboard";
 import { createStore, ListPathEntry, ListPathResult } from "@providers";
 import mime from "mime-types"
+import {nanoid} from "nanoid";
 
 const onRemove = {
     // removeOnComplete: { age: 60 * 5, count: 1000 },
@@ -520,3 +521,91 @@ export async function getCloudUploadUrl(
         ...res.data,
     };
 }
+
+
+function normalizeTargetPath(p: string) {
+    const raw = String(p || "").trim();
+    const parts = raw.split("/").filter(Boolean).map((seg) => decodeURIComponent(seg));
+
+    for (const seg of parts) {
+        if (seg === "." || seg === ".." || seg.includes("\0")) {
+            throw new Error("Invalid path");
+        }
+    }
+
+    return "/" + parts.join("/");
+}
+
+export const generateUploadToken = async ({
+                                              targetPath,
+                                              volumeId,
+                                              scope = "home",
+                                          }: {
+    targetPath: string;
+    volumeId?: string;
+    scope?: "home" | "cloud";
+}) => {
+    const rls = await rlsClient();
+
+    const volume = await rls(async (tx) => {
+        if (volumeId) {
+            const [v] = await tx
+                .select({
+                    id: driveVolumes.id,
+                    code: driveVolumes.code,
+                })
+                .from(driveVolumes)
+                .where(eq(driveVolumes.id, volumeId))
+                .limit(1);
+
+            return v ?? null;
+        }
+
+        if (scope === "home") {
+            const [v] = await tx
+                .select({
+                    id: driveVolumes.id,
+                    code: driveVolumes.code,
+                })
+                .from(driveVolumes)
+                .where(eq(driveVolumes.code, "home"))
+                .limit(1);
+
+            return v ?? null;
+        }
+
+        return null;
+    });
+
+    if (!volume) {
+        throw new Error("Volume not found");
+    }
+
+    const normalizedTargetPath = normalizeTargetPath(targetPath);
+    const token = nanoid(48);
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 10 * 60 * 1000);
+
+    const row = await rls(async (tx) => {
+        const [tok] = await tx
+            .insert(driveUploadIntents)
+            .values({
+                volumeId: volume.id,
+                token,
+                targetPath: normalizedTargetPath,
+                singleUse: true,
+                usedAt: null,
+                expiresAt,
+                createdAt: now,
+                updatedAt: now,
+            })
+            .returning();
+
+        return tok;
+    });
+
+    return {
+        token,
+        intent: row ?? null,
+    };
+};

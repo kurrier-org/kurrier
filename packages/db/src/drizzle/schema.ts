@@ -24,7 +24,7 @@ import {
     calendarAttendeePartstatList,
     calendarAttendeeRoleList,
     calendarBusyStatusList,
-    calendarEventStatusList, driveEntryTypes, driveVolumesList,
+    calendarEventStatusList, driveEntryTypes, driveUploadIntentTypes, driveVolumesList,
     identityStatusList,
     identityTypesList,
     labelScopesList,
@@ -76,6 +76,7 @@ export const CalendarAttendeePartstatEnum = pgEnum(
 
 export const DriveVolumeKindEnum = pgEnum("drive_volume_kind", driveVolumesList);
 export const DriveEntryTypeEnum = pgEnum("drive_entry_type", driveEntryTypes);
+export const DriveUploadIntentScopeEnum = pgEnum("drive_upload_intent_scope", driveUploadIntentTypes);
 
 export const secretsMeta = pgTable(
 	"secrets_meta",
@@ -1691,6 +1692,66 @@ export const driveEntries = pgTable(
             withCheck: sql`${t.ownerId} = ${authUid}`,
         }),
         pgPolicy("drive_entries_delete_own", {
+            for: "delete",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+    ],
+).enableRLS();
+
+
+
+export const driveUploadIntents = pgTable(
+    "drive_upload_intents",
+    {
+        id: uuid("id").defaultRandom().primaryKey(),
+
+        ownerId: uuid("owner_id")
+            .references(() => users.id)
+            .notNull()
+            .default(sql`auth.uid()`),
+
+        volumeId: uuid("volume_id")
+            .references(() => driveVolumes.id, { onDelete: "cascade" })
+            .notNull(),
+        scope: DriveUploadIntentScopeEnum("scope").notNull().default("home"),
+        token: text("token").notNull(),
+        targetPath: text("target_path").notNull(),
+        singleUse: boolean("single_use").notNull().default(true),
+        usedAt: timestamp("used_at", { withTimezone: true }),
+        expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+        createdAt: timestamp("created_at", { withTimezone: true })
+            .defaultNow()
+            .notNull(),
+
+        updatedAt: timestamp("updated_at", { withTimezone: true })
+            .defaultNow()
+            .notNull(),
+    },
+    (t) => [
+        uniqueIndex("ux_drive_upload_intents_token").on(t.token),
+
+        index("ix_drive_upload_intents_owner").on(t.ownerId),
+        index("ix_drive_upload_intents_volume").on(t.volumeId),
+        index("ix_drive_upload_intents_expires").on(t.expiresAt),
+
+        pgPolicy("drive_upload_intents_select_own", {
+            for: "select",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("drive_upload_intents_insert_own", {
+            for: "insert",
+            to: authenticatedRole,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("drive_upload_intents_update_own", {
+            for: "update",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("drive_upload_intents_delete_own", {
             for: "delete",
             to: authenticatedRole,
             using: sql`${t.ownerId} = ${authUid}`,
