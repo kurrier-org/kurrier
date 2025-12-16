@@ -63,9 +63,11 @@ services:
       SEARCH_REBUILD_ON_BOOT: ${SEARCH_REBUILD_ON_BOOT}
       LOCAL_TUNNEL_URL: ${LOCAL_TUNNEL_URL}
       DAV_URL: http://dav:80
+      WEB_DAV_URL: http://webdav:6065
     volumes:
       - ./dav_config:/dav-config
       - ./dav_data:/dav-data
+      - ./webdav/data:/data
 
   redis:
     image: redis:8.2.2
@@ -121,6 +123,26 @@ services:
     volumes:
       - ./dav_config:/var/www/baikal/config
       - ./dav_data:/var/www/baikal/Specific
+
+  webdav:
+    image: ghcr.io/hacdias/webdav:v5.10.1
+    command: [ "-c", "/config.yml" ]
+    ports:
+      - "6065:6065"
+    volumes:
+      - ./webdav/config.yml:/config.yml
+      - ./webdav/data:/data
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./caddy/conf/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy/caddy_data:/data
+      - ./caddy/caddy_config:/config
 
   studio:
     container_name: supabase-studio
