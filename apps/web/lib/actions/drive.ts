@@ -486,65 +486,6 @@ export async function fetchDownloadLink(
 
 
 
-// export async function fetchDownloadLink(
-//     _prev: FormState,
-//     formData: FormData,
-// ): Promise<FormState> {
-//     return handleAction(async () => {
-//         const decodedForm = decode(formData) as Record<string, unknown>;
-//         const rls = await rlsClient();
-//         const entry = await rls(async (tx) => {
-//             const [e] = await tx
-//                 .select()
-//                 .from(driveEntries)
-//                 .where(and(
-//                     eq(driveEntries.id, decodedForm.entryId as string)
-//                 ))
-//             return e
-//         })
-//
-//         const volume = await rls(async (tx) => {
-//             const [vol] = await tx
-//                 .select()
-//                 .from(driveVolumes)
-//                 .where(and(
-//                     eq(driveVolumes.id, entry.volumeId)
-//                 ))
-//             return vol
-//         })
-//
-//         if (volume.kind !== "cloud") {
-//             const downloadUrl = `/webdav/entries/${entry.id}`;
-//             return { success: true, data: {
-//                     downloadUrl
-//                 } };
-//         } else if (volume.kind === "cloud") {
-//             const [secret] = await fetchDecryptedSecrets({
-//                 linkTable: providerSecrets,
-//                 foreignCol: providerSecrets.providerId,
-//                 secretIdCol: providerSecrets.secretId,
-//                 parentId: String(volume.providerId),
-//             });
-//             const providerType = "s3" as Providers;
-//             const store = createStore(providerType, secret.parsedSecret);
-//             const res = await store.downloadUrl(String(volume.providerId), {
-//                 bucket: String(volume?.metaData?.bucket),
-//                 path: String(entry.path)
-//             });
-//             if (res.ok) {
-//                 return { success: true, data: { downloadUrl: res.data?.url } };
-//             }
-//
-//
-//         }
-//
-//         return { success: true };
-//
-//     });
-// }
-
-
-
 
 function joinPaths(base: string, leaf: string) {
     const b = (base || "/").replace(/\/+$/g, "");
