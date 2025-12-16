@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 1.1.3
+
+### Patch Changes
+
+- [`5fa0545`](https://github.com/kurrier-org/kurrier/commit/5fa05452d597cff5fde7a37d33cff70407a1ce8d) Thanks [@krokhale](https://github.com/krokhale)! - support for download tokens
+
 ## 1.1.2
 
 ### Patch Changes
