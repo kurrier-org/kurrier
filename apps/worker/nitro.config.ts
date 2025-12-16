@@ -20,4 +20,10 @@ export default defineNitroConfig({
 	externals: {
 		inline: ["@db", "@schema", "@providers", "@common", "@common/mail-client"],
 	},
+    routeRules: {
+        "/**": {
+            cors: true,
+        },
+    }
+
 });

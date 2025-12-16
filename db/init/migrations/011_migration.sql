@@ -55,3 +55,24 @@ CREATE POLICY "drive_volumes_update_own" ON "drive_volumes" AS PERMISSIVE FOR UP
 CREATE POLICY "drive_volumes_delete_own" ON "drive_volumes" AS PERMISSIVE FOR DELETE TO "authenticated" USING ("drive_volumes"."owner_id" = (select auth.uid()));
 
 ALTER TABLE "drive_volumes" ADD COLUMN "is_available" boolean DEFAULT false NOT NULL;
+
+ALTER TYPE "public"."provider_kind" ADD VALUE 's3';
+
+
+DROP INDEX "ix_drive_volumes_default";--> statement-breakpoint
+ALTER TABLE "drive_volumes" ALTER COLUMN "base_path" DROP NOT NULL;--> statement-breakpoint
+ALTER TABLE "drive_entries" ADD COLUMN "trashed_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "drive_volumes" ADD COLUMN "provider_id" uuid;--> statement-breakpoint
+ALTER TABLE "drive_volumes" ADD CONSTRAINT "drive_volumes_provider_id_providers_id_fk" FOREIGN KEY ("provider_id") REFERENCES "public"."providers"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "ux_drive_volumes_public_id" ON "drive_volumes" USING btree ("public_id");--> statement-breakpoint
+CREATE INDEX "ix_drive_volumes_provider" ON "drive_volumes" USING btree ("provider_id");--> statement-breakpoint
+ALTER TABLE "drive_volumes" DROP COLUMN "cloud_config";
+
+
+DROP INDEX "ix_drive_entries_trashed";--> statement-breakpoint
+ALTER TABLE "drive_entries" DROP COLUMN "is_trashed";--> statement-breakpoint
+ALTER TABLE "drive_entries" DROP COLUMN "trashed_at";--> statement-breakpoint
+ALTER TABLE "drive_entries" DROP COLUMN "etag";--> statement-breakpoint
+ALTER TABLE "drive_entries" DROP COLUMN "checksum";--> statement-breakpoint
+ALTER TABLE "drive_volumes" DROP COLUMN "is_default";--> statement-breakpoint
+ALTER TABLE "drive_volumes" DROP COLUMN "is_available";

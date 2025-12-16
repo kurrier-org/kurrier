@@ -20,6 +20,7 @@
 	},
 	"packageManager": "pnpm@10.0.0",
 	"devDependencies": {
+		"@aws-sdk/types": "3.910.0",
 		"@biomejs/biome": "2.2.4",
 		"@changesets/changelog-github": "^0.5.1",
 		"@changesets/cli": "^2.29.7",
@@ -36,6 +37,7 @@
 		"@aws-sdk/client-sesv2": "^3.910.0",
 		"@aws-sdk/client-sns": "^3.910.0",
 		"@aws-sdk/client-sts": "^3.910.0",
+		"@aws-sdk/s3-request-presigner": "3.910.0",
 		"@sindresorhus/slugify": "^3.0.0",
 		"@supabase/supabase-js": "^2.75.0",
 		"@vvo/tzdb": "^6.197.0",

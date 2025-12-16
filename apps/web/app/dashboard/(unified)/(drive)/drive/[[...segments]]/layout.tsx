@@ -1,8 +1,15 @@
 import React from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
+import DriveTopBar from "@/components/dashboard/drive/drive-top-bar";
+import {normalizeWithinPath} from "@/lib/actions/drive";
+import {isSignedIn} from "@/lib/actions/auth";
 
-export default async function DriveLayout({ children }: { children: React.ReactNode }) {
+export default async function DriveSegmentsLayout({ children, params }: { children: React.ReactNode, params: Promise<{ segments: string[] }> }) {
+    const { segments } = await params;
+    const ctx = await normalizeWithinPath(segments ?? []);
+    const user = await isSignedIn()
+
     return (
         <>
             <header className="flex items-center gap-2 border-b  bg-background/60 backdrop-blur py-4 px-4">
@@ -11,7 +18,7 @@ export default async function DriveLayout({ children }: { children: React.ReactN
                     orientation="vertical"
                     className="data-[orientation=vertical]:h-4"
                 />
-                <h1 className="text-xl font- text-brand dark:text-brand-300">My Drive</h1>
+                <DriveTopBar ctx={ctx} userId={String(user?.id)} />
             </header>
 
             <main>

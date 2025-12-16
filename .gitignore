@@ -54,3 +54,5 @@ db/dav_data
 db/kurrier-logs.txt
 db/webdav
 packages/db/src/drizzle/meta
+db/caddy
+apps/web/.pnpm-store/
