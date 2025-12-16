@@ -3,15 +3,16 @@ import fs from "node:fs";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
-import { db, driveVolumes } from "@db";
-import { and, eq } from "drizzle-orm";
-import { createSupabaseFromRequest } from "../../../../lib/create-client-ssr-from-request";
+import { db, driveUploadIntents, driveVolumes } from "@db";
+import { and, eq, isNull } from "drizzle-orm";
 
 const isProd = process.env.NODE_ENV === "production";
 
 const LOCAL_ROOT = isProd
     ? "/webdav-data"
     : path.join(process.cwd(), "../../db/webdav/data");
+
+const trimSlashes = (s: string) => s.replace(/^\/+|\/+$/g, "");
 
 const saveFilePath = async (outPath: string, event: H3Event) => {
     await mkdir(path.dirname(outPath), { recursive: true });
@@ -26,8 +27,8 @@ const saveFilePath = async (outPath: string, event: H3Event) => {
     }
 };
 
-function decodeRoutePathToPosix(p: string) {
-    const raw = String(p || "");
+function normalizeTargetPath(p: string) {
+    const raw = String(p || "").trim();
     const parts = raw.split("/").filter(Boolean).map((seg) => decodeURIComponent(seg));
 
     for (const seg of parts) {
@@ -38,43 +39,85 @@ function decodeRoutePathToPosix(p: string) {
 }
 
 export default defineEventHandler(async (event) => {
-    const supabase = createSupabaseFromRequest(event);
-    const { data } = await supabase.auth.getUser();
-
-    if (!data.user) {
-        setResponseStatus(event, 401);
-        return "Unauthorized";
-    }
-
-    const ownerId = data.user.id;
     const query = getQuery(event);
-    const queryPath = query.path ? String(query.path) : "";
+    const token = query.token ? String(query.token) : "";
 
-    if (!queryPath) {
+    if (!token) {
         setResponseStatus(event, 400);
-        return "Missing path";
+        return "Missing token";
     }
 
-    let decodedPath: string;
+    const now = new Date();
+
+    const intentRow = await db.transaction(async (tx) => {
+        const [row] = await tx
+            .select({
+                id: driveUploadIntents.id,
+                token: driveUploadIntents.token,
+                targetPath: driveUploadIntents.targetPath,
+                singleUse: driveUploadIntents.singleUse,
+                usedAt: driveUploadIntents.usedAt,
+                expiresAt: driveUploadIntents.expiresAt,
+                volumeId: driveUploadIntents.volumeId,
+                volumeBasePath: driveVolumes.basePath,
+                volumeCode: driveVolumes.code,
+            })
+            .from(driveUploadIntents)
+            .innerJoin(driveVolumes, eq(driveVolumes.id, driveUploadIntents.volumeId))
+            .where(eq(driveUploadIntents.token, token))
+            .limit(1);
+
+        if (!row) return null;
+        if (!row.expiresAt || row.expiresAt.getTime() <= now.getTime()) return { expired: true } as any;
+
+        if (row.singleUse) {
+            const [updated] = await tx
+                .update(driveUploadIntents)
+                .set({ usedAt: now, updatedAt: now })
+                .where(and(eq(driveUploadIntents.id, row.id), isNull(driveUploadIntents.usedAt)))
+                .returning({ id: driveUploadIntents.id });
+
+            if (!updated) return { alreadyUsed: true } as any;
+        }
+
+        return row;
+    });
+
+    console.log("intentRow", intentRow)
+
+    if (!intentRow) {
+        setResponseStatus(event, 404);
+        return "Invalid token";
+    }
+
+    if ((intentRow as any).expired) {
+        setResponseStatus(event, 410);
+        return "Token expired";
+    }
+
+    if ((intentRow as any).alreadyUsed) {
+        setResponseStatus(event, 409);
+        return "Token already used";
+    }
+
+    if (!intentRow.volumeBasePath) {
+        setResponseStatus(event, 404);
+        return "Volume missing basePath";
+    }
+
+    let normalizedTargetPath: string;
     try {
-        decodedPath = decodeRoutePathToPosix(queryPath);
+        normalizedTargetPath = normalizeTargetPath(intentRow.targetPath);
     } catch {
         setResponseStatus(event, 400);
-        return "Invalid path";
+        return "Invalid targetPath";
     }
 
-    const [volume] = await db
-        .select()
-        .from(driveVolumes)
-        .where(and(eq(driveVolumes.ownerId, ownerId), eq(driveVolumes.code, "home")))
-        .limit(1);
+    const filePath = path.posix.join(
+        String(intentRow.volumeBasePath),
+        trimSlashes(normalizedTargetPath),
+    );
 
-    if (!volume?.basePath) {
-        setResponseStatus(event, 404);
-        return "Home volume not found";
-    }
-
-    const filePath = path.posix.join(volume.basePath, decodedPath);
     const outPath = path.join(LOCAL_ROOT, filePath);
 
     const res = await saveFilePath(outPath, event);

@@ -4,7 +4,7 @@ import { ActionIcon, Progress } from "@mantine/core";
 import { X } from "lucide-react";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { DriveState } from "@schema";
-import {getCloudUploadUrl, refreshViewAfterUpload} from "@/lib/actions/drive";
+import { generateUploadToken, getCloudUploadUrl, refreshViewAfterUpload } from "@/lib/actions/drive";
 
 export type DriveUploaderHandle = {
     openPicker: () => void;
@@ -45,25 +45,54 @@ const DriveUploader = forwardRef<DriveUploaderHandle>(function DriveUploader(_pr
 
     const uploadBase = useMemo(() => {
         if (!ctx) return null;
-        return {
-            withinPath: ctx.withinPath ?? "/",
-        };
+        return { withinPath: ctx.withinPath ?? "/" };
     }, [ctx]);
 
-    useImperativeHandle(ref, () => ({
-        openPicker() {
-            if (!canUpload) return;
-            inputRef.current?.click();
-        },
-    }), [canUpload]);
+    const inFlightRef = useRef(0);
+    const refreshTimerRef = useRef<number | null>(null);
 
-    function startUpload(itemId: string, file: File, targetFullPath: string) {
+    const bumpInFlight = (delta: number) => {
+        inFlightRef.current = Math.max(0, inFlightRef.current + delta);
+        if (inFlightRef.current === 0) scheduleRefresh();
+    };
+
+    const scheduleRefresh = () => {
+        if (refreshTimerRef.current) window.clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = window.setTimeout(() => {
+            refreshTimerRef.current = null;
+            refreshViewAfterUpload();
+        }, 600);
+    };
+
+    useImperativeHandle(
+        ref,
+        () => ({
+            openPicker() {
+                if (!canUpload) return;
+                inputRef.current?.click();
+            },
+        }),
+        [canUpload],
+    );
+
+    async function startUpload(itemId: string, file: File, targetFullPath: string) {
         const xhr = new XMLHttpRequest();
-
         const urlPath = encodePathForRoute(targetFullPath);
-        const url = `/webdav/entries?path=${urlPath}`;
+
+        const intentRow = await generateUploadToken({ targetPath: urlPath });
+        const url = `/webdav/entries?token=${intentRow.token}`;
 
         xhr.open("POST", url, true);
+
+        bumpInFlight(1);
+
+        let finalized = false;
+        const finalizeOnce = (fn: () => void) => {
+            if (finalized) return;
+            finalized = true;
+            fn();
+            bumpInFlight(-1);
+        };
 
         xhr.upload.onprogress = (e) => {
             if (!e.lengthComputable) return;
@@ -72,20 +101,35 @@ const DriveUploader = forwardRef<DriveUploaderHandle>(function DriveUploader(_pr
         };
 
         xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, progress: 100, state: "done" } : it)));
-                refreshViewAfterUpload();
-            } else {
-                setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, state: "error", error: `HTTP ${xhr.status}` } : it)));
-            }
+            finalizeOnce(() => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    setItems((prev) =>
+                        prev.map((it) => (it.id === itemId ? { ...it, progress: 100, state: "done" } : it)),
+                    );
+                } else {
+                    setItems((prev) =>
+                        prev.map((it) =>
+                            it.id === itemId ? { ...it, state: "error", error: `HTTP ${xhr.status}` } : it,
+                        ),
+                    );
+                }
+            });
         };
 
         xhr.onerror = () => {
-            setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, state: "error", error: "Network error" } : it)));
+            finalizeOnce(() => {
+                setItems((prev) =>
+                    prev.map((it) => (it.id === itemId ? { ...it, state: "error", error: "Network error" } : it)),
+                );
+            });
         };
 
         xhr.onabort = () => {
-            setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, state: "canceled" } : it)));
+            finalizeOnce(() => {
+                setItems((prev) =>
+                    prev.map((it) => (it.id === itemId ? { ...it, state: "canceled" } : it)),
+                );
+            });
         };
 
         setItems((prev) =>
@@ -95,35 +139,43 @@ const DriveUploader = forwardRef<DriveUploaderHandle>(function DriveUploader(_pr
         xhr.send(file);
     }
 
-
     async function startCloudUpload(itemId: string, file: File) {
         if (!ctx?.driveVolume || ctx.driveVolume.kind !== "cloud") throw new Error("Missing cloud volume");
 
-        try {
-            const presign = await getCloudUploadUrl(ctx, {
-                filename: file.name,
-                sizeBytes: file.size,
-                contentType: file.type || null,
-            });
+        const presign = await getCloudUploadUrl(ctx, {
+            filename: file.name,
+            sizeBytes: file.size,
+            contentType: file.type || null,
+        });
 
-            const xhr = new XMLHttpRequest();
+        const xhr = new XMLHttpRequest();
 
-            setItems((prev) =>
-                prev.map((it) => (it.id === itemId ? { ...it, xhr, state: "uploading", progress: 0 } : it)),
-            );
+        bumpInFlight(1);
 
-            xhr.upload.onprogress = (e) => {
-                if (!e.lengthComputable) return;
-                const p = Math.max(0, Math.min(100, Math.round((e.loaded / e.total) * 100)));
-                setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, progress: p } : it)));
-            };
+        let finalized = false;
+        const finalizeOnce = (fn: () => void) => {
+            if (finalized) return;
+            finalized = true;
+            fn();
+            bumpInFlight(-1);
+        };
 
-            xhr.onload = () => {
+        setItems((prev) =>
+            prev.map((it) => (it.id === itemId ? { ...it, xhr, state: "uploading", progress: 0 } : it)),
+        );
+
+        xhr.upload.onprogress = (e) => {
+            if (!e.lengthComputable) return;
+            const p = Math.max(0, Math.min(100, Math.round((e.loaded / e.total) * 100)));
+            setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, progress: p } : it)));
+        };
+
+        xhr.onload = () => {
+            finalizeOnce(() => {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     setItems((prev) =>
                         prev.map((it) => (it.id === itemId ? { ...it, progress: 100, state: "done" } : it)),
                     );
-                    refreshViewAfterUpload();
                 } else {
                     setItems((prev) =>
                         prev.map((it) =>
@@ -131,42 +183,40 @@ const DriveUploader = forwardRef<DriveUploaderHandle>(function DriveUploader(_pr
                         ),
                     );
                 }
-            };
+            });
+        };
 
-            xhr.onerror = () => {
+        xhr.onerror = () => {
+            finalizeOnce(() => {
                 setItems((prev) =>
                     prev.map((it) => (it.id === itemId ? { ...it, state: "error", error: "Network error" } : it)),
                 );
-            };
+            });
+        };
 
-            xhr.onabort = () => {
+        xhr.onabort = () => {
+            finalizeOnce(() => {
                 setItems((prev) =>
                     prev.map((it) => (it.id === itemId ? { ...it, state: "canceled" } : it)),
                 );
-            };
+            });
+        };
 
-            xhr.open("PUT", presign.url, true);
+        xhr.open("PUT", presign.url, true);
 
-            const headers = presign.headers || {};
-            for (const [k, v] of Object.entries(headers)) xhr.setRequestHeader(k, v);
+        const headers = presign.headers || {};
+        for (const [k, v] of Object.entries(headers)) xhr.setRequestHeader(k, v);
 
-            if (!("content-type" in Object.keys(headers).reduce((a, k) => ((a[k.toLowerCase()] = true), a), {} as Record<string, boolean>))) {
-                xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
-            }
+        const lower = Object.keys(headers).reduce((a, k) => ((a[k.toLowerCase()] = true), a), {} as Record<string, boolean>);
+        if (!lower["content-type"]) xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
 
-            xhr.send(file);
-        } catch (e: any) {
-            setItems((prev) =>
-                prev.map((it) => (it.id === itemId ? { ...it, state: "error", error: e?.message || "Upload failed" } : it)),
-            );
-        }
+        xhr.send(file);
     }
 
     async function enqueueFiles(files: File[]) {
-        if (!uploadBase) return;
+        if (!uploadBase || !ctx) return;
 
-        // const isCloud = ctx?.driveVolume?.kind === "cloud";
-        const isCloud = ctx?.scope === "cloud";
+        const isCloud = ctx.scope === "cloud";
         if (isCloud && !ctx.driveVolume) return;
 
         const now = Date.now();

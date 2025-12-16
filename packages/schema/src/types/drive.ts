@@ -6,6 +6,11 @@ export const driveVolumesList = [
 ] as const;
 export const driveEntryTypes = ["file", "folder"] as const;
 
+export const driveUploadIntentTypes = [
+    "home",
+    "cloud",
+] as const;
+
 export type DriveState = {
     localVolumes: DriveVolumeEntity[]
     cloudVolumes: DriveVolumeEntity[]
