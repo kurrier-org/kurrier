@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 1.1.2
+
+### Patch Changes
+
+- [`88b3775`](https://github.com/kurrier-org/kurrier/commit/88b3775f95c8d439c485e5e1a2358bdad1152dad) Thanks [@krokhale](https://github.com/krokhale)! - path fix for local volume build + other fixes
+
 ## 1.1.1
 
 ### Patch Changes
