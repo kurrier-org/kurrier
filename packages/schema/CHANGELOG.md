@@ -1,5 +1,11 @@
 # @kurrier/schema
 
+## 1.1.0
+
+### Minor Changes
+
+- [#365](https://github.com/kurrier-org/kurrier/pull/365) [`aa428b9`](https://github.com/kurrier-org/kurrier/commit/aa428b93451769e960c47c0860c9426f539a340c) Thanks [@krokhale](https://github.com/krokhale)! - Support added for the new Kurrier drive for local drives and S3 compatible cloud storage
+
 ## 1.0.22
 
 ### Patch Changes
