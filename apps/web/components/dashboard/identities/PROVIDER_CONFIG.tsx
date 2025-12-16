@@ -10,6 +10,13 @@ export const PROVIDER_CONFIG: Record<
 		textDark: string;
 	}
 > = {
+    s3: {
+        name: "AWS S3",
+        dot: "bg-orange-500",
+        chip: "bg-orange-50 border-orange-200 text-orange-700",
+        chipDark: "dark:bg-orange-500/10 dark:border-orange-900/40",
+        textDark: "dark:text-orange-300",
+    },
 	ses: {
 		name: "Amazon SES",
 		dot: "bg-orange-500",

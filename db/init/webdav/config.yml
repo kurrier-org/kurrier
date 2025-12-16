@@ -1,0 +1,10 @@
+#address: 0.0.0.0
+port: 6065
+
+directory: /data
+permissions: CRUD
+
+behindProxy: false
+
+# no internal users, no auth
+users: []

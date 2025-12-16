@@ -72,7 +72,7 @@ export default function ProviderCard({
 				decryptedSecret,
 			);
 
-			if (res.ok && res.meta?.send) {
+			if (res.ok && (res.meta?.send || res.meta?.store)) {
 				toast.success(
 					`${userProvider.type.toUpperCase()} connection verified`,
 					{
@@ -86,6 +86,8 @@ export default function ProviderCard({
 									return "SendGrid API key is valid and sending is enabled.";
 								case "mailgun":
 									return "Mailgun credentials are valid and the account is reachable.";
+                                case "s3":
+                                    return "S3 credentials are valid and the account is reachable.";
 								default:
 									return "Outgoing mail server is reachable and credentials are valid.";
 							}
@@ -127,31 +129,25 @@ export default function ProviderCard({
 							</div>
 						</div>
 
-						{/* Actions BELOW (unchanged) */}
 						<div className="flex flex-wrap gap-2">
 							<CardAction className="flex w-full flex-wrap gap-2 lg:w-auto lg:flex-nowrap lg:justify-end">
-								{/*<StatusBadge ok={allGood} />*/}
 
 								<Button
 									variant="outline"
-									// asChild
 									component={"a"}
 									size={"xs"}
 									href={spec.docsUrl}
 									target="_blank"
-									// className="h-8 px-3 text-xs lg:h-9 lg:px-4 lg:text-sm"
 									leftSection={<ExternalLink className="size-4" />}
 								>
 									Docs
 								</Button>
 
 								<Button
-									// onClick={() => initTestAccount()}
 									onClick={initVerifyAccount}
 									loading={testing}
 									size={"xs"}
 									leftSection={<Play className="size-4" />}
-									// className="h-8 px-3 text-xs lg:h-9 lg:px-4 lg:text-sm gap-2"
 								>
 									Verify Connection
 								</Button>

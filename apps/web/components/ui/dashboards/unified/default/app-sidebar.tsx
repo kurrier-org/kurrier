@@ -2,15 +2,15 @@
 
 import * as React from "react";
 import {
-	Calendar,
-	Command,
-	Contact,
-	FolderSync,
-	Inbox,
-	Key,
-	LayoutDashboard,
-	Plug,
-	Send,
+    Calendar,
+    Command,
+    Contact,
+    FolderSync, HardDrive,
+    Inbox,
+    Key,
+    LayoutDashboard,
+    Plug,
+    Send,
 } from "lucide-react";
 
 import { NavUser } from "@/components/ui/dashboards/workspace/nav-user";
@@ -83,6 +83,12 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				icon: Calendar,
 				isActive: true,
 			},
+            {
+                title: "Drive",
+                url: "/dashboard/drive",
+                icon: HardDrive,
+                isActive: true,
+            },
 			{
 				title: "Platform",
 				url: "/dashboard/platform/overview",
@@ -129,16 +135,19 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 	const isOnPlatform = pathName?.includes("/platform");
 	const isOnContacts = pathName?.includes("/contacts");
 	const isOnCalendar = pathName?.includes("/calendar");
+	const isOnDrive = pathName?.includes("/drive");
 
-	type SidebarSection = "mail" | "contacts" | "platform" | "calendar";
+	type SidebarSection = "mail" | "contacts" | "platform" | "calendar" | "drive";
 
-	const section: SidebarSection = isOnPlatform
-		? "platform"
-		: isOnContacts
-			? "contacts"
-			: isOnCalendar
-				? "calendar"
-				: "mail";
+    const section: SidebarSection = isOnPlatform
+        ? "platform"
+        : isOnContacts
+            ? "contacts"
+            : isOnCalendar
+                ? "calendar"
+                : isOnDrive
+                    ? "drive"
+                    : "mail";
 
 	const [activeItem, setActiveItem] = React.useState(() => {
 		if (section === "platform") {
@@ -156,6 +165,11 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				data.navMain.find((i) => i.url.includes("/calendar")) ?? data.navMain[0]
 			);
 		}
+        if (section === "drive") {
+            return (
+                data.navMain.find((i) => i.url.includes("/drive")) ?? data.navMain[0]
+            );
+        }
 		return data.navMain.find((i) => i.url.includes("/mail")) ?? data.navMain[0];
 	});
 
@@ -175,6 +189,11 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				data.navMain.find((i) => i.url.includes("/contacts")) ??
 					data.navMain[0],
 			);
+        } else if (section === "drive") {
+            setActiveItem(
+                data.navMain.find((i) => i.url.includes("/drive")) ??
+                data.navMain[0],
+            );
 		} else {
 			setActiveItem(
 				data.navMain.find((i) => i.url.includes("/mail")) ?? data.navMain[0],
