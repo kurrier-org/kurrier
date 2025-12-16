@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 1.1.1
+
+### Patch Changes
+
+- [#370](https://github.com/kurrier-org/kurrier/pull/370) [`23a5a0e`](https://github.com/kurrier-org/kurrier/commit/23a5a0e7fa3d8bbfcea12ec5a0e83fcf4d736c0e) Thanks [@krokhale](https://github.com/krokhale)! - upload intent tokens for kurrier drive
+
 ## 1.1.0
 
 ### Minor Changes
