@@ -5,7 +5,7 @@ import DriveTopBar from "@/components/dashboard/drive/drive-top-bar";
 import {normalizeWithinPath} from "@/lib/actions/drive";
 import {isSignedIn} from "@/lib/actions/auth";
 
-export default async function DriveSegmentsLayout({ children, params }: { children: React.ReactNode, params: Promise<{ segments: string[] }> }) {
+export default async function DriveSegmentsLayout({ children, params }: { children: React.ReactNode, params: Record<any, any> }) {
     const { segments } = await params;
     const ctx = await normalizeWithinPath(segments ?? []);
     const user = await isSignedIn()
