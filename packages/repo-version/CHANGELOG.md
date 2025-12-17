@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 1.1.4
+
+### Patch Changes
+
+- [#374](https://github.com/kurrier-org/kurrier/pull/374) [`5b4fa18`](https://github.com/kurrier-org/kurrier/commit/5b4fa18c85741b789d4e1d03440ffb32fce4a292) Thanks [@krokhale](https://github.com/krokhale)! - added ability to schedule and send emails
+
 ## 1.1.3
 
 ### Patch Changes

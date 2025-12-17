@@ -1,6 +1,6 @@
 {
 	"name": "@kurrier/web",
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"private": true,
 	"scripts": {
 		"dev": "next dev --turbopack -p \"$WEB_PORT\"",
