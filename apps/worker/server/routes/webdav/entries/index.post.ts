@@ -82,8 +82,6 @@ export default defineEventHandler(async (event) => {
         return row;
     });
 
-    console.log("intentRow", intentRow)
-
     if (!intentRow) {
         setResponseStatus(event, 404);
         return "Invalid token";

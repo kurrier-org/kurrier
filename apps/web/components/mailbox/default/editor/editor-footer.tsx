@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { ActionIcon, Button, Popover, Progress } from "@mantine/core";
-import { Baseline, Paperclip, X as IconX } from "lucide-react";
+import {Baseline, Paperclip, X as IconX} from "lucide-react";
 import { RichTextEditor } from "@mantine/tiptap";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { createClient } from "@/lib/supabase/client";
@@ -8,6 +8,7 @@ import type { PublicConfig } from "@schema";
 import { v4 as uuidv4 } from "uuid";
 import { extension } from "mime-types";
 import { MessageEntity } from "@db";
+import ScheduleSend from "@/components/mailbox/default/editor/schedule-send";
 
 type UploadItem = {
 	name: string;
@@ -240,15 +241,16 @@ export default function EditorFooter() {
 			)}
 
 			<div className="border-t items-center flex py-2 px-2">
-				<div className="mx-2">
+				<div className="mx-2 flex items-center gap-[1px]">
 					<Button
 						loading={!!state.isPending}
-						size="xs"
-						radius="xl"
+						size="sm"
 						type="submit"
+                        className={"!rounded-l-4xl !rounded-r-xs"}
 					>
 						Send
 					</Button>
+                    <ScheduleSend />
 				</div>
 
 				<Popover position="top-start" withArrow shadow="md">

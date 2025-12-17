@@ -15,7 +15,7 @@ import {
     addressBooks,
     calendars,
     calendarEvents,
-    calendarEventAttendees, driveVolumes, driveEntries,
+    calendarEventAttendees, driveVolumes, driveEntries, draftMessages,
 } from "./schema";
 import { decryptedSecrets } from "./supabase-schema";
 import { z } from "zod";
@@ -107,3 +107,6 @@ export const CalendarEventAttendeeInsertSchema = createInsertSchema(calendarEven
 
 export type DriveVolumeEntity = typeof driveVolumes.$inferSelect;
 export type DriveEntryEntity = typeof driveEntries.$inferSelect;
+
+export type DraftMessageEntity = typeof draftMessages.$inferSelect;
+export const DraftMessageInsertSchema = createInsertSchema(draftMessages);

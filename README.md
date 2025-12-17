@@ -1,7 +1,6 @@
 # Kurrier
 The self-hosted open-source workspace for **email, calendars, contacts and storage**.
 
----
 
 ## ✨ What's New
 

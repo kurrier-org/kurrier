@@ -24,7 +24,7 @@ import {
     calendarAttendeePartstatList,
     calendarAttendeeRoleList,
     calendarBusyStatusList,
-    calendarEventStatusList, driveEntryTypes, driveUploadIntentTypes, driveVolumesList,
+    calendarEventStatusList, draftMessageStates, driveEntryTypes, driveUploadIntentTypes, driveVolumesList,
     identityStatusList,
     identityTypesList,
     labelScopesList,
@@ -77,6 +77,7 @@ export const CalendarAttendeePartstatEnum = pgEnum(
 export const DriveVolumeKindEnum = pgEnum("drive_volume_kind", driveVolumesList);
 export const DriveEntryTypeEnum = pgEnum("drive_entry_type", driveEntryTypes);
 export const DriveUploadIntentScopeEnum = pgEnum("drive_upload_intent_scope", driveUploadIntentTypes);
+export const DraftMessageStatusEnum = pgEnum("draft_message_status", draftMessageStates);
 
 export const secretsMeta = pgTable(
 	"secrets_meta",
@@ -1756,5 +1757,42 @@ export const driveUploadIntents = pgTable(
             to: authenticatedRole,
             using: sql`${t.ownerId} = ${authUid}`,
         }),
+    ],
+).enableRLS();
+
+
+export const draftMessages = pgTable(
+    "draft_messages",
+    {
+        id: uuid("id").defaultRandom().primaryKey(),
+        ownerId: uuid("owner_id")
+            .references(() => users.id)
+            .notNull()
+            .default(sql`auth.uid()`),
+        mailboxId: uuid("mailbox_id")
+            .references(() => mailboxes.id, { onDelete: "cascade" })
+            .notNull(),
+        status: DraftMessageStatusEnum("status").notNull().default("draft"),
+        scheduledAt: timestamp("scheduled_at", { withTimezone: true }).default(null),
+        payload: jsonb("payload").$type<Record<string, any>>().notNull(),
+
+        createdAt: timestamp("created_at", { withTimezone: true })
+            .defaultNow()
+            .notNull(),
+        updatedAt: timestamp("updated_at", { withTimezone: true })
+            .defaultNow()
+            .notNull(),
+    },
+    (t) => [
+        index("ix_draft_messages_owner").on(t.ownerId),
+        index("ix_draft_messages_mailbox").on(t.mailboxId),
+        index("ix_draft_messages_status").on(t.status),
+        index("ix_draft_messages_scheduled_at").on(t.scheduledAt),
+        index("ix_draft_messages_updated_at").on(t.updatedAt),
+
+        pgPolicy("draft_messages_select_own", { for: "select", to: authenticatedRole, using: sql`${t.ownerId} = ${authUid}`}),
+        pgPolicy("draft_messages_insert_own", { for: "insert", to: authenticatedRole, withCheck: sql`${t.ownerId} = ${authUid}`}),
+        pgPolicy("draft_messages_update_own", { for: "update", to: authenticatedRole, using: sql`${t.ownerId} = ${authUid}`, withCheck: sql`${t.ownerId} = ${authUid}`}),
+        pgPolicy("draft_messages_delete_own", { for: "delete", to: authenticatedRole, using: sql`${t.ownerId} = ${authUid}`}),
     ],
 ).enableRLS();

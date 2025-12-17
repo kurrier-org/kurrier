@@ -25,6 +25,7 @@ import { IdentityEntity, MailboxEntity } from "@db";
 import AddNewFolder from "@/components/mailbox/default/add-new-folder";
 import { Menu } from "@mantine/core";
 import DeleteMailboxFolder from "@/components/mailbox/default/delete-folder";
+import {IconMailFast} from "@tabler/icons-react";
 
 const ORDER: MailboxKind[] = [
 	"inbox",
@@ -114,10 +115,12 @@ function buildTree(
 export default function IdentityMailboxesList({
 	identityMailboxes,
 	unreadCounts,
+    scheduledCounts,
 	onComplete,
 }: {
 	identityMailboxes: FetchIdentityMailboxListResult;
 	unreadCounts: FetchMailboxUnreadCountsResult;
+    scheduledCounts: number;
 	onComplete?: () => void;
 }) {
 	const pathname = usePathname();
@@ -125,6 +128,10 @@ export default function IdentityMailboxesList({
 		identityPublicId?: string;
 		mailboxSlug?: string;
 	};
+    const currentSlug = React.useMemo(() => {
+        const parts = pathname.split("/").filter(Boolean);
+        return parts.at(-1) ?? "inbox";
+    }, [pathname]);
 
 	const Item = ({
 		m,
@@ -140,10 +147,9 @@ export default function IdentityMailboxesList({
 		const Icon = ICON[m.kind] ?? Folder;
 		const slug = m.slug ?? "inbox";
 		const href = `/dashboard/mail/${identityPublicId}/${slug}`;
-		const isActive =
-			pathname === href ||
-			(params.identityPublicId === identityPublicId &&
-				(params.mailboxSlug ?? "inbox") === slug);
+        const isActive =
+            pathname === href ||
+            (params.identityPublicId === identityPublicId && currentSlug === slug);
 
 		const [open, setOpen] = React.useState(true);
 		const hasChildren = m.children.length > 0;
@@ -257,6 +263,11 @@ export default function IdentityMailboxesList({
 								/>
 							))}
 						</div>
+                        <Link href={`/dashboard/mail/${params.identityPublicId}/scheduled`} className={`my-4 rounded hover:dark:bg-neutral-800 ${currentSlug === "scheduled" ? "dark:bg-neutral-800 dark:text-brand-foreground bg-brand-200 text-brand" : ""} flex justify-start gap-1 w-full p-1.5`}>
+                            <IconMailFast size={22}/>
+                            <span className={"font-normal text-sm"}>Scheduled ({scheduledCounts})</span>
+                        </Link>
+
 					</div>
 				);
 			})}
