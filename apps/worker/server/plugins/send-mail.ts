@@ -13,24 +13,24 @@ const publicConfig = getPublicEnv();
 import IORedis from "ioredis";
 import { Worker } from "bullmq";
 import {
-	db,
-	decryptAdminSecrets,
-	identities,
-	mailboxes,
-	MessageAttachmentInsertSchema,
-	messageAttachments,
-	MessageCreate,
-	MessageInsertSchema,
-	messages,
-	providers,
-	providerSecrets,
-	smtpAccounts,
-	smtpAccountSecrets,
-	threads,
+    db,
+    decryptAdminSecrets, draftMessages,
+    identities,
+    mailboxes,
+    MessageAttachmentInsertSchema,
+    messageAttachments,
+    MessageCreate,
+    MessageInsertSchema,
+    messages,
+    providers,
+    providerSecrets,
+    smtpAccounts,
+    smtpAccountSecrets,
+    threads,
 } from "@db";
 import { createMailer } from "@providers";
 import { toArray } from "drizzle-orm/mysql-core";
-import { eq } from "drizzle-orm";
+import {and, eq} from "drizzle-orm";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 const supabase = createClient(
 	publicConfig.API_URL,
@@ -58,11 +58,19 @@ export default defineNitroPlugin(async (nitroApp) => {
 	const worker = new Worker(
 		"send-mail",
 		async (job) => {
-			if (job.name === "send-and-reconcile") {
-				await send(job.data);
-				return { success: true };
-			}
-			return { success: true };
+            switch (job.name) {
+                case "send-scheduled-draft":
+                    await processDraft(job.data);
+                    return { success: true };
+                case "send-and-reconcile":
+                    await send(job.data);
+                    return { success: true };
+                default:
+                    return { success: true };
+            }
+
+
+
 		},
 		{ connection },
 	);
@@ -122,6 +130,52 @@ export default defineNitroPlugin(async (nitroApp) => {
 			.join(", ");
 		return { value, html: joined, text: joined };
 	}
+
+    const processDraft = async ({ draftMessageId }: { draftMessageId: string }) => {
+        const [draft] = await db
+            .select()
+            .from(draftMessages)
+            .where(eq(draftMessages.id, draftMessageId))
+            .limit(1);
+
+        if (!draft) throw new Error("Draft not found");
+
+        const claimed = await db
+            .update(draftMessages)
+            .set({ status: "sending", updatedAt: new Date() })
+            .where(
+                and(
+                    eq(draftMessages.id, draft.id),
+                    eq(draftMessages.status, "scheduled"),
+                ),
+            )
+            .returning({ id: draftMessages.id });
+
+        if (claimed.length === 0) return;
+
+        try {
+            await send(draft.payload);
+
+            await db
+                .update(draftMessages)
+                .set({ status: "sent", updatedAt: new Date() })
+                .where(eq(draftMessages.id, draft.id));
+        } catch (err: any) {
+            await db
+                .update(draftMessages)
+                .set({
+                    status: "failed",
+                    payload: {
+                        ...draft.payload,
+                        __error: err?.message ? String(err.message) : String(err),
+                    },
+                    updatedAt: new Date(),
+                })
+                .where(eq(draftMessages.id, draft.id));
+
+            throw err;
+        }
+    };
 
 	const send = async (decodedForm: Record<any, unknown>) => {
 		return await db.transaction(async (tx) => {

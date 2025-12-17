@@ -3,18 +3,18 @@
 import { cache } from "react";
 import { rlsClient } from "@/lib/actions/clients";
 import {
-	db,
-	identities,
-	mailboxes,
-	mailboxSync,
-	mailboxThreads,
-	messageAttachments,
-	messages,
-	threads,
+    db, DraftMessageInsertSchema, draftMessages,
+    identities,
+    mailboxes,
+    mailboxSync,
+    mailboxThreads,
+    messageAttachments,
+    messages,
+    threads,
 } from "@db";
 import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { FormState, getServerEnv, SearchThreadsResponse } from "@schema";
+import {FormState, getServerEnv, handleAction, SearchThreadsResponse} from "@schema";
 import { decode } from "decode-formdata";
 import { toArray } from "@/lib/utils";
 
@@ -24,6 +24,7 @@ import slugify from "@sindresorhus/slugify";
 import { redirect } from "next/navigation";
 import { PAGE_SIZE } from "@common/mail-client";
 import { getRedis } from "@/lib/actions/get-redis";
+import dayjs from "dayjs";
 
 let typeSenseClient: Client | null = null;
 function getTypeSenseClient(): Client {
@@ -244,20 +245,64 @@ export const revalidateMailbox = async (path: string) => {
 	revalidatePath(path);
 };
 
-export async function sendMail(
-	_prev: FormState,
-	formData: FormData,
-): Promise<FormState> {
-	const decodedForm = decode(formData);
 
-	if (toArray(decodedForm.to as any).length === 0) {
-		return { error: "Please provide at least one recipient in the To field." };
-	}
-	const { sendMailQueue, sendMailEvents } = await getRedis();
-	const job = await sendMailQueue.add("send-and-reconcile", decodedForm);
-	const result = await job.waitUntilFinished(sendMailEvents);
-	return result;
+
+
+export async function sendMail(_prev: FormState, formData: FormData): Promise<FormState> {
+    const decodedForm = decode(formData) as any;
+
+    if (toArray(decodedForm.to as any).length === 0) {
+        return { success: false, error: "Please provide at least one recipient in the To field." };
+    }
+
+    const scheduledAtRaw = decodedForm.scheduledAt ? String(decodedForm.scheduledAt) : "";
+    if (scheduledAtRaw) {
+        const d = dayjs(scheduledAtRaw);
+        if (!d.isValid()) {
+            return { success: false, error: "Invalid scheduled time." };
+        }
+
+        const parsed = DraftMessageInsertSchema.safeParse({
+            mailboxId: decodedForm.mailboxId,
+            payload: decodedForm,
+            status: "scheduled",
+            scheduledAt: d.toDate(),
+        });
+
+        if (!parsed.success) {
+            return { success: false, error: "There was an error trying to schedule your mail." };
+        }
+
+        const rls = await rlsClient();
+        const row = await rls(async (tx) => {
+            const [created] = await tx.insert(draftMessages).values(parsed.data).returning({
+                id: draftMessages.id,
+                scheduledAt: draftMessages.scheduledAt,
+            });
+            return created ?? null;
+        });
+
+        if (!row?.id || !row.scheduledAt) {
+            return { success: false, error: "Failed to schedule your mail." };
+        }
+
+        const { sendMailQueue } = await getRedis();
+        const delay = Math.max(0, Number(new Date(row.scheduledAt)) - Number(new Date()));
+
+        await sendMailQueue.add(
+            "send-scheduled-draft",
+            { draftMessageId: row.id },
+            { jobId: row.id, delay },
+        );
+
+        return { success: true, data: { draftMessageId: row.id } };
+    }
+
+    const { sendMailQueue, sendMailEvents } = await getRedis();
+    const job = await sendMailQueue.add("send-and-reconcile", decodedForm);
+    return await job.waitUntilFinished(sendMailEvents);
 }
+
 
 export const deltaFetch = async ({ identityId }: { identityId: string }) => {
 	const { smtpQueue, smtpEvents } = await getRedis();
@@ -1061,3 +1106,46 @@ export const clearImapClients = async (identityId: string) => {
 		},
 	);
 };
+
+
+export const fetchScheduledCount = async () => {
+    const rls = await rlsClient();
+    const [row] = await rls((tx) =>
+        tx
+            .select({
+                count: sql<number>`count(*)`,
+            })
+            .from(draftMessages)
+            .where(eq(draftMessages.status, "scheduled")),
+    );
+    return row?.count ?? 0;
+};
+
+export const fetchScheduledDrafts = async () => {
+    const rls = await rlsClient();
+    const rows = await rls((tx) =>
+        tx
+            .select()
+            .from(draftMessages)
+            .where(eq(draftMessages.status, "scheduled")),
+    );
+    return rows;
+};
+
+export async function deleteScheduledDraft(
+    _prev: FormState,
+    formData: FormData,
+): Promise<FormState> {
+    return handleAction(async () => {
+        const decodedForm = decode(formData) as Record<string, unknown>;
+        const rls = await rlsClient();
+        await rls(async (tx) => {
+            await tx
+                .delete(draftMessages)
+                .where(eq(draftMessages.id, String(decodedForm.draftId)),);
+        })
+
+        revalidatePath("/dashboard/mail");
+        return { success: true };
+    });
+}

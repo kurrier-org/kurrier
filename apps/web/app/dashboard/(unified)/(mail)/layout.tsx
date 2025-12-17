@@ -1,10 +1,10 @@
 import { SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/ui/dashboards/unified/default/app-sidebar";
 import {
-	fetchIdentityMailboxList,
-	fetchMailboxUnreadCounts,
+    fetchIdentityMailboxList,
+    fetchMailboxUnreadCounts, fetchScheduledCount,
 } from "@/lib/actions/mailbox";
-import { fetchLabelsWithCounts } from "@/lib/actions/labels";
+import {fetchLabelsWithCounts} from "@/lib/actions/labels";
 import { getPublicEnv, LabelScope } from "@schema";
 import { isSignedIn } from "@/lib/actions/auth";
 import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
@@ -19,12 +19,13 @@ export default async function DashboardLayout({
 	children: React.ReactNode;
 }) {
 	const publicConfig = getPublicEnv();
-	const [identityMailboxes, unreadCounts, user, globalLabels] =
+	const [identityMailboxes, unreadCounts, user, globalLabels, scheduledCounts] =
 		await Promise.all([
 			fetchIdentityMailboxList(),
 			fetchMailboxUnreadCounts(),
 			isSignedIn(),
 			fetchLabelsWithCounts(),
+            fetchScheduledCount()
 		]);
 
 	return (
@@ -34,7 +35,7 @@ export default async function DashboardLayout({
 				user={user}
 				identityMailboxes={identityMailboxes}
 				sidebarTopContent={
-					<div className={"-mt-1"}>
+					<div className={"-mt-1"} key={"mail-sidebar-compose"}>
 						{identityMailboxes.length > 0 && (
 							<ComposeMail publicConfig={publicConfig} />
 						)}
@@ -45,6 +46,7 @@ export default async function DashboardLayout({
 						<IdentityMailboxesList
 							identityMailboxes={identityMailboxes}
 							unreadCounts={unreadCounts}
+                            scheduledCounts={scheduledCounts}
 						/>
 						<DynamicContextProvider
 							initialState={{

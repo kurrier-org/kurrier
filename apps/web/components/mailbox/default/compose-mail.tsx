@@ -151,7 +151,7 @@ export default function ComposeMail({
 							aria-modal="true"
 							className={[
 								"fixed z-[1000] bg-background border shadow-xl rounded-lg overflow-hidden",
-								"right-4 bottom-4",
+								"right-12 bottom-4",
 								// expanded ? "w-[720px] h-[70vh]" : "w-[520px] h-auto",
 								expanded ? "w-[720px] h-[70vh]" : "w-[520px] h-auto",
 								"transition-[width,height] duration-200 ease-out",
@@ -195,9 +195,6 @@ export default function ComposeMail({
 										ref={editorRef}
 										publicConfig={publicConfig}
 										message={null}
-										// onReady={() =>
-										// 	requestAnimationFrame(() => editorRef.current?.focus())
-										// }
 										showEditorMode={showEditorMode}
 										handleClose={handleClose}
 									/>

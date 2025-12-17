@@ -121,3 +121,13 @@ export const imapQuotaList = [
 ] as const;
 
 export const defaultImapQuota = 500 * 1024 * 1024;
+
+
+export const draftMessageStates = [
+    "draft",
+    "scheduled",
+    "sending",
+    "sent",
+    "canceled",
+    "failed",
+] as const
