@@ -774,7 +774,7 @@ export const toggleStar = async (
 	revalidatePath("/mail");
 };
 
-export const fetchMailboxThreadss = async (
+export const fetchMailboxThreadsOld = async (
 	identityPublicId: string,
 	mailboxSlug: string,
 	page: number,
@@ -1245,7 +1245,6 @@ export const fetchIdentitySnoozedThreads = async (identityPublicId: string) => {
             .from(mailboxThreads)
             .where(
                 and(
-                    eq(mailboxThreads.identityPublicId, identityPublicId),
                     isNotNull(mailboxThreads.snoozedUntil),
                     gt(mailboxThreads.snoozedUntil, now),
                 ),

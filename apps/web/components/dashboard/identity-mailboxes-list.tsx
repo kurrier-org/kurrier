@@ -250,6 +250,7 @@ export default function IdentityMailboxesList({
 				const tree = buildTree(mailboxes as MailboxEntity[], unreadCounts);
 
                 const scheduledCounts = scheduledDrafts.filter(draft => draft.identityId === identity.id).length;
+                const snoozedCounts = snoozedThreads.filter(snoozed => snoozed.identityId === identity.id).length;
 				return (
 					<div key={identity.id}>
 						<div className="px-1 mb-1 mt-2 text-xs font-semibold text-sidebar-foreground/60 flex items-center gap-1">
@@ -271,7 +272,7 @@ export default function IdentityMailboxesList({
                             <span className={"font-normal text-sm"}>Scheduled ({scheduledCounts})</span>
                         </Link>}
 
-                        {snoozedThreads.length > 0 && <Link href={`/dashboard/mail/${params.identityPublicId}/snoozed`} className={`my-2 rounded hover:dark:bg-neutral-800 ${currentSlug === "snoozed" ? "dark:bg-neutral-800 dark:text-brand-foreground bg-brand-200 text-brand" : ""} flex justify-start gap-1 w-full p-1.5 items-center`}>
+                        {snoozedCounts > 0 && <Link href={`/dashboard/mail/${params.identityPublicId}/snoozed`} className={`my-2 rounded hover:dark:bg-neutral-800 ${currentSlug === "snoozed" ? "dark:bg-neutral-800 dark:text-brand-foreground bg-brand-200 text-brand" : ""} flex justify-start gap-1 w-full p-1.5 items-center`}>
                             <Clock4 size={16}/>
                             <span className={"font-normal text-sm"}>Snoozed ({snoozedThreads.length})</span>
                         </Link>}

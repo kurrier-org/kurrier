@@ -20,6 +20,10 @@ export default async function SnoozedPage({
     const firstMailboxSlug = threads[0]?.mailboxSlug || "inbox";
     const { activeMailbox } = await fetchMailbox(identityPublicId, firstMailboxSlug);
 
+    const filteredThreads = threads.filter(thread => thread.identityPublicId === identityPublicId);
+
+
+
     return (
         <div className="p-4 space-y-4">
             <header className="flex items-center justify-between">
@@ -27,11 +31,11 @@ export default async function SnoozedPage({
                 <div className="text-sm text-muted-foreground">Threads: {threads.length}</div>
             </header>
 
-            {threads.length === 0 ? (
+            {filteredThreads.length === 0 ? (
                 <div className="text-sm text-muted-foreground">No snoozed threads.</div>
             ) : (
                 <WebmailList
-                    mailboxThreads={threads}
+                    mailboxThreads={filteredThreads}
                     publicConfig={publicConfig}
                     activeMailbox={activeMailbox}
                     identityPublicId={identityPublicId}
