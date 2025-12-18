@@ -3,14 +3,10 @@
 import * as React from "react";
 import {
     Calendar,
-    Command,
     Contact,
-    FolderSync, HardDrive,
+    HardDrive,
     Inbox,
-    Key,
-    LayoutDashboard,
-    Plug,
-    Send,
+    MailOpen,
 } from "lucide-react";
 
 import { NavUser } from "@/components/ui/dashboards/workspace/nav-user";
@@ -223,7 +219,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 							<SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
 								<Link href={"/dashboard/platform/overview"}>
 									<div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-										<Command className="size-4" />
+										<MailOpen className="size-4" />
 									</div>
 									<div className="grid flex-1 text-left text-sm leading-tight">
 										<span className="truncate font-medium">Kurrier</span>
@@ -259,14 +255,14 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 											isActive={activeItem?.title === item.title}
 											className={"px-2.5 md:px-2"}
 										>
-											<item.icon
-												className={
-													item.title === activeItem?.title
-														? "text-brand dark:text-white"
-														: ""
-												}
-											/>
-											<span>{item.title}</span>
+                                            <item.icon
+                                                className={
+                                                    item.title === activeItem?.title
+                                                        ? "text-brand dark:text-white"
+                                                        : ""
+                                                }
+                                            />
+                                            <span>{item.title}</span>
 										</SidebarMenuButton>
 									</SidebarMenuItem>
 								))}

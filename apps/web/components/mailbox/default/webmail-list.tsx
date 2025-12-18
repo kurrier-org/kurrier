@@ -12,11 +12,10 @@ import {
 } from "@/lib/actions/labels";
 import MailListHeader from "@/components/mailbox/default/mail-list-header";
 import WebmailListItem from "@/components/mailbox/default/webmail-list-item";
-import { useEffect } from "react";
 import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
-import { toast } from "sonner";
 import { useMediaQuery } from "@mantine/hooks";
 import WebmailListItemMobile from "@/components/mailbox/default/webmail-list-item-mobile";
+import {useParams} from "next/navigation";
 
 type WebListProps = {
 	mailboxThreads: FetchMailboxThreadsResult;
@@ -39,21 +38,13 @@ export default function WebmailList({
 	globalLabels,
 	labelsByThreadId,
 }: WebListProps) {
-	// Disable mailbox busy toast for now
-	// useEffect(() => {
-	// 	if (mailboxSync) {
-	// 		if (mailboxSync?.phase !== "IDLE") {
-	// 			toast.info("Mailbox Busy", {
-	// 				description: "Mailbox is currently syncing",
-	// 			});
-	// 		}
-	// 	}
-	// }, [mailboxSync, mailboxSync?.phase]);
 
 	const isMobile = useMediaQuery("(max-width: 768px)");
+    const params = useParams();
+
 
 	return (
-		<>
+		<div className={params?.threadId ? "hidden" : ""}>
 			<DynamicContextProvider
 				initialState={{
 					selectedThreadIds: new Set(),
@@ -76,7 +67,7 @@ export default function WebmailList({
 							activeMailbox={activeMailbox}
 						/>
 
-						<ul role="list" className="divide-y rounded-4xl">
+						<ul role="list" className={`divide-y rounded-4xl`}>
 							{mailboxThreads.map((mailboxThreadItem) =>
 								isMobile ? (
 									<WebmailListItemMobile
@@ -107,6 +98,6 @@ export default function WebmailList({
 					</div>
 				)}
 			</DynamicContextProvider>
-		</>
+		</div>
 	);
 }
