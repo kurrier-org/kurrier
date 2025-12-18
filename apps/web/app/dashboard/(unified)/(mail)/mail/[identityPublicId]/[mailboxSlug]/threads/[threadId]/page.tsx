@@ -17,7 +17,6 @@ async function Page({
 		identityPublicId,
 		mailboxSlug,
 	);
-	// await markAsRead(threadId, activeMailbox.id, !!mailboxSync, false);
 	const activeThread = await fetchWebMailThreadDetail(threadId);
 
 	return (
