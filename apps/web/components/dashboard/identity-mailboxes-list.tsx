@@ -263,7 +263,7 @@ export default function IdentityMailboxesList({
 								/>
 							))}
 						</div>
-                        <Link href={`/dashboard/mail/${params.identityPublicId}/scheduled`} className={`my-4 rounded hover:dark:bg-neutral-800 ${currentSlug === "scheduled" ? "dark:bg-neutral-800 dark:text-brand-foreground bg-brand-200 text-brand" : ""} flex justify-start gap-1 w-full p-1.5`}>
+                        <Link href={`/dashboard/mail/${params.identityPublicId}/scheduled`} className={`my-2 rounded hover:dark:bg-neutral-800 ${currentSlug === "scheduled" ? "dark:bg-neutral-800 dark:text-brand-foreground bg-brand-200 text-brand" : ""} flex justify-start gap-1 w-full p-1.5`}>
                             <IconMailFast size={22}/>
                             <span className={"font-normal text-sm"}>Scheduled ({scheduledCounts})</span>
                         </Link>

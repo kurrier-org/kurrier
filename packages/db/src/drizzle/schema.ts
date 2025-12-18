@@ -1772,6 +1772,9 @@ export const draftMessages = pgTable(
         mailboxId: uuid("mailbox_id")
             .references(() => mailboxes.id, { onDelete: "cascade" })
             .notNull(),
+        identityId: uuid("identity_id")
+            .references(() => identities.id, { onDelete: "cascade" })
+            .default(null),
         status: DraftMessageStatusEnum("status").notNull().default("draft"),
         scheduledAt: timestamp("scheduled_at", { withTimezone: true }).default(null),
         payload: jsonb("payload").$type<Record<string, any>>().notNull(),
@@ -1786,6 +1789,7 @@ export const draftMessages = pgTable(
     (t) => [
         index("ix_draft_messages_owner").on(t.ownerId),
         index("ix_draft_messages_mailbox").on(t.mailboxId),
+        index("ix_draft_messages_identity").on(t.identityId),
         index("ix_draft_messages_status").on(t.status),
         index("ix_draft_messages_scheduled_at").on(t.scheduledAt),
         index("ix_draft_messages_updated_at").on(t.updatedAt),

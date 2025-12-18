@@ -255,6 +255,7 @@ export async function sendMail(_prev: FormState, formData: FormData): Promise<Fo
         return { success: false, error: "Please provide at least one recipient in the To field." };
     }
 
+    const rls = await rlsClient();
     const scheduledAtRaw = decodedForm.scheduledAt ? String(decodedForm.scheduledAt) : "";
     if (scheduledAtRaw) {
         const d = dayjs(scheduledAtRaw);
@@ -262,7 +263,15 @@ export async function sendMail(_prev: FormState, formData: FormData): Promise<Fo
             return { success: false, error: "Invalid scheduled time." };
         }
 
+        const identityId = await rls(async (tx) => {
+            const [identity] = await tx.select({
+                identityId: mailboxes.identityId,
+            }).from(mailboxes).where(eq(mailboxes.id, decodedForm.mailboxId));
+            return identity?.identityId;
+        });
+
         const parsed = DraftMessageInsertSchema.safeParse({
+            identityId,
             mailboxId: decodedForm.mailboxId,
             payload: decodedForm,
             status: "scheduled",
@@ -273,7 +282,7 @@ export async function sendMail(_prev: FormState, formData: FormData): Promise<Fo
             return { success: false, error: "There was an error trying to schedule your mail." };
         }
 
-        const rls = await rlsClient();
+
         const row = await rls(async (tx) => {
             const [created] = await tx.insert(draftMessages).values(parsed.data).returning({
                 id: draftMessages.id,
@@ -294,7 +303,7 @@ export async function sendMail(_prev: FormState, formData: FormData): Promise<Fo
             { draftMessageId: row.id },
             { jobId: row.id, delay },
         );
-
+        revalidatePath("/dashboard/mail");
         return { success: true, data: { draftMessageId: row.id } };
     }
 
@@ -1121,13 +1130,24 @@ export const fetchScheduledCount = async () => {
     return row?.count ?? 0;
 };
 
-export const fetchScheduledDrafts = async () => {
+export const fetchScheduledDrafts = async (identityPublicId: string) => {
     const rls = await rlsClient();
+    const [identity] = await rls((tx) =>
+        tx
+            .select()
+            .from(identities)
+            .where(eq(identities.publicId, identityPublicId)),
+    );
     const rows = await rls((tx) =>
         tx
             .select()
             .from(draftMessages)
-            .where(eq(draftMessages.status, "scheduled")),
+            .where(
+                and(
+                    eq(draftMessages.status, "scheduled"),
+                    eq(draftMessages.identityId, identity.id)
+                )
+            ),
     );
     return rows;
 };

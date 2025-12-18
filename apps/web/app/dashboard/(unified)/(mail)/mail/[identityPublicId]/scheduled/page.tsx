@@ -2,8 +2,9 @@ import React from 'react';
 import ScheduledList from "@/components/mailbox/default/scheduled-list";
 import {fetchScheduledDrafts} from "@/lib/actions/mailbox";
 
-async function Page() {
-    const scheduledDrafts = await fetchScheduledDrafts()
+async function Page(props: { params: Promise<{ identityPublicId: string; mailboxSlug: string }> }) {
+    const { identityPublicId } = await props.params;
+    const scheduledDrafts = await fetchScheduledDrafts(identityPublicId)
     return <>
 
         <div className="p-4">
