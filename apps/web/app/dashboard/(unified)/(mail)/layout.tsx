@@ -2,7 +2,7 @@ import { SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/ui/dashboards/unified/default/app-sidebar";
 import {
     fetchIdentityMailboxList,
-    fetchMailboxUnreadCounts, fetchScheduledCount,
+    fetchMailboxUnreadCounts, fetchScheduledDraftCounts,
 } from "@/lib/actions/mailbox";
 import {fetchLabelsWithCounts} from "@/lib/actions/labels";
 import { getPublicEnv, LabelScope } from "@schema";
@@ -19,13 +19,13 @@ export default async function DashboardLayout({
 	children: React.ReactNode;
 }) {
 	const publicConfig = getPublicEnv();
-	const [identityMailboxes, unreadCounts, user, globalLabels, scheduledCounts] =
+	const [identityMailboxes, unreadCounts, user, globalLabels, scheduledDrafts] =
 		await Promise.all([
 			fetchIdentityMailboxList(),
 			fetchMailboxUnreadCounts(),
 			isSignedIn(),
 			fetchLabelsWithCounts(),
-            fetchScheduledCount()
+            fetchScheduledDraftCounts()
 		]);
 
 	return (
@@ -46,7 +46,7 @@ export default async function DashboardLayout({
 						<IdentityMailboxesList
 							identityMailboxes={identityMailboxes}
 							unreadCounts={unreadCounts}
-                            scheduledCounts={scheduledCounts}
+                            scheduledDrafts={scheduledDrafts}
 						/>
 						<DynamicContextProvider
 							initialState={{

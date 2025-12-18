@@ -1,3 +1,4 @@
+"use client";
 import React, { useRef, useEffect, useState } from "react";
 import { MailOpen, RotateCw, Trash2 } from "lucide-react";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
@@ -158,13 +159,6 @@ function MailListHeader({
 							variant="subtle"
 							onClick={reload}
 							title="Sync"
-							// disabled={
-							// 	mailboxSync
-							// 		? !identityIdRef.current ||
-							// 			reloading ||
-							// 			mailboxSync?.phase !== "IDLE"
-							// 		: !identityIdRef.current || reloading
-							// }
 							className="h-8 w-8"
 						>
 							<RotateCw className={reloading ? "animate-spin" : ""} size={16} />

@@ -21,7 +21,7 @@ import {
 	FetchMailboxUnreadCountsResult,
 } from "@/lib/actions/mailbox";
 import { MailboxKind } from "@schema";
-import { IdentityEntity, MailboxEntity } from "@db";
+import {DraftMessageEntity, IdentityEntity, MailboxEntity} from "@db";
 import AddNewFolder from "@/components/mailbox/default/add-new-folder";
 import { Menu } from "@mantine/core";
 import DeleteMailboxFolder from "@/components/mailbox/default/delete-folder";
@@ -115,12 +115,12 @@ function buildTree(
 export default function IdentityMailboxesList({
 	identityMailboxes,
 	unreadCounts,
-    scheduledCounts,
+    scheduledDrafts,
 	onComplete,
 }: {
 	identityMailboxes: FetchIdentityMailboxListResult;
 	unreadCounts: FetchMailboxUnreadCountsResult;
-    scheduledCounts: number;
+    scheduledDrafts: DraftMessageEntity[];
 	onComplete?: () => void;
 }) {
 	const pathname = usePathname();
@@ -176,7 +176,7 @@ export default function IdentityMailboxesList({
 					<div className="flex w-full items-start">
 						<Link
 							href={href}
-							onClick={onComplete ? () => onComplete() : undefined}
+                            onClick={onComplete ? () => onComplete() : undefined}
 							aria-disabled={!m.selectable}
 							className={cn(
 								"flex min-w-0 flex-1 items-center gap-2 rounded-md py-1.5 pl-2 text-sm",
@@ -247,6 +247,7 @@ export default function IdentityMailboxesList({
 			{identityMailboxes.map(({ identity, mailboxes }) => {
 				const tree = buildTree(mailboxes as MailboxEntity[], unreadCounts);
 
+                const scheduledCounts = scheduledDrafts.filter(draft => draft.identityId === identity.id).length;
 				return (
 					<div key={identity.id}>
 						<div className="px-1 mb-1 mt-2 text-xs font-semibold text-sidebar-foreground/60 flex items-center gap-1">
@@ -263,10 +264,10 @@ export default function IdentityMailboxesList({
 								/>
 							))}
 						</div>
-                        <Link href={`/dashboard/mail/${params.identityPublicId}/scheduled`} className={`my-2 rounded hover:dark:bg-neutral-800 ${currentSlug === "scheduled" ? "dark:bg-neutral-800 dark:text-brand-foreground bg-brand-200 text-brand" : ""} flex justify-start gap-1 w-full p-1.5`}>
+                        {scheduledCounts > 0 && <Link href={`/dashboard/mail/${params.identityPublicId}/scheduled`} className={`my-2 rounded hover:dark:bg-neutral-800 ${currentSlug === "scheduled" ? "dark:bg-neutral-800 dark:text-brand-foreground bg-brand-200 text-brand" : ""} flex justify-start gap-1 w-full p-1.5`}>
                             <IconMailFast size={22}/>
                             <span className={"font-normal text-sm"}>Scheduled ({scheduledCounts})</span>
-                        </Link>
+                        </Link>}
 
 					</div>
 				);

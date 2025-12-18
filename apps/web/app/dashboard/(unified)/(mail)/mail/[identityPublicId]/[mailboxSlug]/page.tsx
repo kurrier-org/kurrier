@@ -15,26 +15,21 @@ async function Page({
 	params: { identityPublicId: string; mailboxSlug?: string };
 	searchParams: { page?: string };
 }) {
-	const { page } = await searchParams;
-	const { identityPublicId, mailboxSlug } = await params;
-	const { activeMailbox, count, mailboxSync } = await fetchMailbox(
-		identityPublicId,
-		mailboxSlug,
-	);
 
-	// TODO: We have IMAP IDLE detection support in the worker now. We probably don't need this?
-	// if (mailboxSync) {
-	// 	if (mailboxSync.phase === "IDLE") {
-	// 		await deltaFetch({ identityId: activeMailbox.identityId });
-	// 	}
-	// }
+    const { page } = await searchParams;
+    const { identityPublicId, mailboxSlug } = await params;
+    const publicConfig = getPublicEnv();
+    const { activeMailbox, count, mailboxSync } = await fetchMailbox(
+        identityPublicId,
+        mailboxSlug,
+    );
 
-	const publicConfig = getPublicEnv();
 	const mailboxThreads = await fetchMailboxThreads(
 		identityPublicId,
 		String(mailboxSlug),
 		Number(page),
 	);
+
 	const labelsByThreadId = await fetchMailboxThreadLabels(mailboxThreads);
 	const identityMailboxes = await fetchIdentityMailboxList();
 	const globalLabels = await fetchLabels();

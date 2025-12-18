@@ -1117,17 +1117,15 @@ export const clearImapClients = async (identityId: string) => {
 };
 
 
-export const fetchScheduledCount = async () => {
+export const fetchScheduledDraftCounts = async () => {
     const rls = await rlsClient();
-    const [row] = await rls((tx) =>
+    const rows = await rls((tx) =>
         tx
-            .select({
-                count: sql<number>`count(*)`,
-            })
+            .select()
             .from(draftMessages)
             .where(eq(draftMessages.status, "scheduled")),
     );
-    return row?.count ?? 0;
+    return rows
 };
 
 export const fetchScheduledDrafts = async (identityPublicId: string) => {
