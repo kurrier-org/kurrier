@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 1.1.5
+
+### Patch Changes
+
+- [`8b5202a`](https://github.com/kurrier-org/kurrier/commit/8b5202a8cd1f256381027c0cedae844f69e70c80) Thanks [@krokhale](https://github.com/krokhale)! - identity id constraint for scheduled drafts
+
 ## 1.1.4
 
 ### Patch Changes
