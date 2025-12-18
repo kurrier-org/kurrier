@@ -1,5 +1,11 @@
 # web
 
+## 0.2.3
+
+### Patch Changes
+
+- [`a950258`](https://github.com/kurrier-org/kurrier/commit/a9502580ad03df30895467aaa97d749d4a16d2a2) Thanks [@krokhale](https://github.com/krokhale)! - Updated nextjs and react version
+
 ## 0.2.2
 
 ### Patch Changes
