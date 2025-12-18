@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 1.1.6
+
+### Patch Changes
+
+- [`773952e`](https://github.com/kurrier-org/kurrier/commit/773952ef868b0a55070895ebfeecd24134b7310c) Thanks [@krokhale](https://github.com/krokhale)! - support for snoozing mails + routing and scroll position fixes
+
 ## 1.1.5
 
 ### Patch Changes
