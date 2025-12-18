@@ -1,13 +1,14 @@
 "use client";
 
 import {
-    ChevronRight,
-    FolderSync, HardDrive,
-    Key,
-    LayoutDashboard,
-    type LucideIcon,
-    Plug,
-    Send,
+	ChevronRight,
+	FolderSync,
+	HardDrive,
+	Key,
+	LayoutDashboard,
+	type LucideIcon,
+	Plug,
+	Send,
 } from "lucide-react";
 
 import {
@@ -56,12 +57,12 @@ export function NavMain() {
 			icon: Send,
 			items: [],
 		},
-        {
-            title: "Storage",
-            url: "/dashboard/platform/storage",
-            icon: HardDrive,
-            items: [],
-        },
+		{
+			title: "Storage",
+			url: "/dashboard/platform/storage",
+			icon: HardDrive,
+			items: [],
+		},
 		{
 			title: "Sync Services",
 			url: "/dashboard/platform/sync-services",

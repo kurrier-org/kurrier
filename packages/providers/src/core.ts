@@ -159,91 +159,112 @@ export interface Mailer {
 	): Promise<DomainIdentity>;
 }
 
-
 export type AddBucketResult = {
-    ok: boolean;
-    message?: string;
-    meta?: Record<string, unknown>;
+	ok: boolean;
+	message?: string;
+	meta?: Record<string, unknown>;
 };
 
-
 export type ListPathEntry = {
-    type: "folder" | "file";
-    name: string;
-    path: string;
-    sizeBytes?: number;
-    etag?: string | null;
-    lastModified?: string | null;
+	type: "folder" | "file";
+	name: string;
+	path: string;
+	sizeBytes?: number;
+	etag?: string | null;
+	lastModified?: string | null;
 };
 
 export type ListPathResult = {
-    ok: boolean;
-    message?: string;
-    meta?: Record<string, unknown>;
-    data?: {
-        bucket: string;
-        prefix: string;
-        path: string;
-        entries: ListPathEntry[];
-        nextToken?: string | null;
-    };
+	ok: boolean;
+	message?: string;
+	meta?: Record<string, unknown>;
+	data?: {
+		bucket: string;
+		prefix: string;
+		path: string;
+		entries: ListPathEntry[];
+		nextToken?: string | null;
+	};
 };
 
 export type DeleteEntryResult = {
-    ok: boolean;
-    message: string;
-    meta?: Record<string, any>;
+	ok: boolean;
+	message: string;
+	meta?: Record<string, any>;
 };
 
 export type DownloadResult = {
-    ok: boolean;
-    message: string;
-    meta?: Record<string, any>;
-    data?: { url: string; expiresIn: number };
+	ok: boolean;
+	message: string;
+	meta?: Record<string, any>;
+	data?: { url: string; expiresIn: number };
 };
 
 export type UploadUrlResult =
-    | { ok: true; message: string; meta: any; data: { url: string; expiresIn: number; method: "PUT"; headers: Record<string, string> } }
-    | { ok: false; message: string; meta?: any };
-
+	| {
+			ok: true;
+			message: string;
+			meta: any;
+			data: {
+				url: string;
+				expiresIn: number;
+				method: "PUT";
+				headers: Record<string, string>;
+			};
+	  }
+	| { ok: false; message: string; meta?: any };
 
 export type AddFolderResult = {
-    ok: boolean;
-    message: string;
-    meta?: Record<string, any>;
-    data?: {
-        bucket: string;
-        path: string;
-        prefix: string;
-    };
+	ok: boolean;
+	message: string;
+	meta?: Record<string, any>;
+	data?: {
+		bucket: string;
+		path: string;
+		prefix: string;
+	};
 };
 
 export interface StorageProvider {
-    verify(id: string, metaData?: Record<any, any>): Promise<VerifyResult>;
-    addBucket(
-        id: string,
-        input: { bucket: string; makePublicBlocked?: boolean },
-    ): Promise<AddBucketResult>;
-    listPath(
-        id: string,
-        input: { bucket: string; path?: string; maxKeys?: number; continuationToken?: string | null },
-    ): Promise<ListPathResult>;
+	verify(id: string, metaData?: Record<any, any>): Promise<VerifyResult>;
+	addBucket(
+		id: string,
+		input: { bucket: string; makePublicBlocked?: boolean },
+	): Promise<AddBucketResult>;
+	listPath(
+		id: string,
+		input: {
+			bucket: string;
+			path?: string;
+			maxKeys?: number;
+			continuationToken?: string | null;
+		},
+	): Promise<ListPathResult>;
 
-    deleteEntry(id: string, input: { bucket: string; path: string; type: "file" | "folder" }): Promise<DeleteEntryResult>;
-    downloadUrl(id: string, input: { bucket: string; path: string; expiresIn?: number }): Promise<DownloadResult>;
+	deleteEntry(
+		id: string,
+		input: { bucket: string; path: string; type: "file" | "folder" },
+	): Promise<DeleteEntryResult>;
+	downloadUrl(
+		id: string,
+		input: { bucket: string; path: string; expiresIn?: number },
+	): Promise<DownloadResult>;
 
-    uploadUrl(
-        id: string,
-        input: {
-            bucket: string;
-            path: string;
-            expiresIn?: number;
-            contentType?: string | null;
-            cacheControl?: string | null;
-            contentDisposition?: string | null;
-            metadata?: Record<string, string> | null;
-        },
-    ): Promise<UploadUrlResult>;
+	uploadUrl(
+		id: string,
+		input: {
+			bucket: string;
+			path: string;
+			expiresIn?: number;
+			contentType?: string | null;
+			cacheControl?: string | null;
+			contentDisposition?: string | null;
+			metadata?: Record<string, string> | null;
+		},
+	): Promise<UploadUrlResult>;
 
-    addFolder(id: string, input: { bucket: string; path: string }): Promise<AddFolderResult>;
+	addFolder(
+		id: string,
+		input: { bucket: string; path: string },
+	): Promise<AddFolderResult>;
 }

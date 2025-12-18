@@ -1,11 +1,11 @@
 import { defineNitroPlugin } from "nitropack/runtime";
-import {JobScheduler, Worker} from "bullmq";
+import { JobScheduler, Worker } from "bullmq";
 import { getRedis } from "../../lib/get-redis";
-import {db, mailboxThreads, MessageEntity, providers} from "@db";
-import {PROVIDERS, STORAGE_PROVIDERS} from "@schema";
+import { db, mailboxThreads, MessageEntity, providers } from "@db";
+import { PROVIDERS, STORAGE_PROVIDERS } from "@schema";
 import { kvDel, kvGet, kvSet } from "@common";
 import { processWebhook } from "../../lib/webhooks/message.received";
-import {and, isNull, lte} from "drizzle-orm";
+import { and, isNull, lte } from "drizzle-orm";
 
 export default defineNitroPlugin(async (nitroApp) => {
 	const connection = (await getRedis()).connection;
@@ -18,7 +18,12 @@ export default defineNitroPlugin(async (nitroApp) => {
 					const { userId } = job.data as { userId: string };
 					await db
 						.insert(providers)
-						.values([...PROVIDERS, ...STORAGE_PROVIDERS].map((k) => ({ type: k.key, ownerId: userId })))
+						.values(
+							[...PROVIDERS, ...STORAGE_PROVIDERS].map((k) => ({
+								type: k.key,
+								ownerId: userId,
+							})),
+						)
 						.onConflictDoNothing({
 							target: [providers.ownerId, providers.type],
 						})
@@ -33,24 +38,24 @@ export default defineNitroPlugin(async (nitroApp) => {
 					await processWebhook({ message, rawEmail });
 					return { success: true };
 				}
-                case "mail:snooze-tick": {
-                    const now = new Date();
-                    await db
-                        .update(mailboxThreads)
-                        .set({
-                            snoozedUntil: null,
-                            unsnoozedAt: now,
-                            updatedAt: now,
-                        })
-                        .where(
-                            and(
-                                lte(mailboxThreads.snoozedUntil, now),
-                                isNull(mailboxThreads.unsnoozedAt),
-                            ),
-                        );
+				case "mail:snooze-tick": {
+					const now = new Date();
+					await db
+						.update(mailboxThreads)
+						.set({
+							snoozedUntil: null,
+							unsnoozedAt: now,
+							updatedAt: now,
+						})
+						.where(
+							and(
+								lte(mailboxThreads.snoozedUntil, now),
+								isNull(mailboxThreads.unsnoozedAt),
+							),
+						);
 
-                    return { success: true };
-                }
+					return { success: true };
+				}
 				default:
 					return { success: true };
 			}
@@ -58,26 +63,20 @@ export default defineNitroPlugin(async (nitroApp) => {
 		{ connection },
 	);
 
+	const scheduler = new JobScheduler("common-worker", { connection });
 
-
-    const scheduler = new JobScheduler("common-worker", { connection });
-
-    await scheduler.upsertJobScheduler(
-        "snooze-tick-scheduler",
-        { every: 60000 },
-        "mail:snooze-tick",
-        {},
-        {
-            removeOnComplete: true,
-            removeOnFail: false,
-            attempts: 1,
-        },
-        { override: true },
-    );
-
-
-
-
+	await scheduler.upsertJobScheduler(
+		"snooze-tick-scheduler",
+		{ every: 60000 },
+		"mail:snooze-tick",
+		{},
+		{
+			removeOnComplete: true,
+			removeOnFail: false,
+			attempts: 1,
+		},
+		{ override: true },
+	);
 
 	worker.on("completed", async (job) => {
 		console.log(`[COMMON] ${job.name} ${job.id} has completed!`);
@@ -100,17 +99,17 @@ export default defineNitroPlugin(async (nitroApp) => {
 
 		nitroApp.hooks.hookOnce("close", async () => {
 			console.log("Closing common-worker tunnel");
-            // try {
-            //     await scheduler.removeJobScheduler("snooze-tick-scheduler");
-            // } catch {}
+			// try {
+			//     await scheduler.removeJobScheduler("snooze-tick-scheduler");
+			// } catch {}
 		});
 	} else {
 		console.log("Local tunnel not enabled");
 		await kvDel("local-tunnel-url");
-        nitroApp.hooks.hookOnce("close", async () => {
-            // try {
-            //     await scheduler.removeJobScheduler("snooze-tick-scheduler");
-            // } catch {}
-        });
+		nitroApp.hooks.hookOnce("close", async () => {
+			// try {
+			//     await scheduler.removeJobScheduler("snooze-tick-scheduler");
+			// } catch {}
+		});
 	}
 });

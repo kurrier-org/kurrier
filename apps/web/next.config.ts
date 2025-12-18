@@ -5,11 +5,11 @@ const nextConfig: NextConfig = {
 	output: "standalone",
 	serverExternalPackages: ["pino", "pino-pretty", "thread-stream"],
 	reactCompiler: true,
-    experimental: {
-        proxyClientMaxBodySize: "10gb"
-    },
-    // cacheComponents: true,
-    images: {
+	experimental: {
+		proxyClientMaxBodySize: "10gb",
+	},
+	// cacheComponents: true,
+	images: {
 		remotePatterns: [
 			{
 				protocol: "https",

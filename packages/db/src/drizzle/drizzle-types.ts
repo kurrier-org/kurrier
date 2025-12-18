@@ -1,21 +1,24 @@
 import {
-    providers,
-    smtpAccounts,
-    identities,
-    mailboxes,
-    messages,
-    threads,
-    messageAttachments,
-    mailboxSync,
-    mailboxThreads,
-    webhooks,
-    labels,
-    mailboxThreadLabels,
-    contacts,
-    addressBooks,
-    calendars,
-    calendarEvents,
-    calendarEventAttendees, driveVolumes, driveEntries, draftMessages,
+	providers,
+	smtpAccounts,
+	identities,
+	mailboxes,
+	messages,
+	threads,
+	messageAttachments,
+	mailboxSync,
+	mailboxThreads,
+	webhooks,
+	labels,
+	mailboxThreadLabels,
+	contacts,
+	addressBooks,
+	calendars,
+	calendarEvents,
+	calendarEventAttendees,
+	driveVolumes,
+	driveEntries,
+	draftMessages,
 } from "./schema";
 import { decryptedSecrets } from "./supabase-schema";
 import { z } from "zod";
@@ -102,8 +105,9 @@ export type CalendarEventEntity = typeof calendarEvents.$inferSelect;
 
 export type CalendarEventAttendeeEntity =
 	typeof calendarEventAttendees.$inferSelect;
-export const CalendarEventAttendeeInsertSchema = createInsertSchema(calendarEventAttendees,);
-
+export const CalendarEventAttendeeInsertSchema = createInsertSchema(
+	calendarEventAttendees,
+);
 
 export type DriveVolumeEntity = typeof driveVolumes.$inferSelect;
 export type DriveEntryEntity = typeof driveEntries.$inferSelect;

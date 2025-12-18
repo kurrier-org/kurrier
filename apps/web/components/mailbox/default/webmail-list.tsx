@@ -15,7 +15,7 @@ import WebmailListItem from "@/components/mailbox/default/webmail-list-item";
 import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
 import { useMediaQuery } from "@mantine/hooks";
 import WebmailListItemMobile from "@/components/mailbox/default/webmail-list-item-mobile";
-import {useParams} from "next/navigation";
+import { useParams } from "next/navigation";
 
 type WebListProps = {
 	mailboxThreads: FetchMailboxThreadsResult;
@@ -38,10 +38,8 @@ export default function WebmailList({
 	globalLabels,
 	labelsByThreadId,
 }: WebListProps) {
-
 	const isMobile = useMediaQuery("(max-width: 768px)");
-    const params = useParams();
-
+	const params = useParams();
 
 	return (
 		<div className={params?.threadId ? "hidden" : ""}>

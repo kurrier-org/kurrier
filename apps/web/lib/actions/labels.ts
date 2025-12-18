@@ -3,14 +3,14 @@
 import { FormState, handleAction, LabelScope } from "@schema";
 import { rlsClient } from "@/lib/actions/clients";
 import {
-    contactLabels,
-    LabelCreate,
-    LabelEntity,
-    LabelInsertSchema,
-    labels,
-    MailboxThreadLabelEntity,
-    mailboxThreadLabels,
-    mailboxThreads,
+	contactLabels,
+	LabelCreate,
+	LabelEntity,
+	LabelInsertSchema,
+	labels,
+	MailboxThreadLabelEntity,
+	mailboxThreadLabels,
+	mailboxThreads,
 } from "@db";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { decode } from "decode-formdata";
@@ -68,7 +68,6 @@ export type FetchLabelsWithCountResult = Awaited<
 	ReturnType<typeof fetchLabelsWithCounts>
 >;
 export type FetchLabelsResult = Awaited<ReturnType<typeof fetchLabels>>;
-
 
 export const fetchContactLabelsWithCounts = async () => {
 	const rls = await rlsClient();

@@ -19,21 +19,25 @@ import { users } from "./supabase-schema";
 import { authenticatedRole, authUid } from "drizzle-orm/supabase";
 import { sql } from "drizzle-orm";
 import {
-    AddressObjectJSON,
-    apiScopeList,
-    calendarAttendeePartstatList,
-    calendarAttendeeRoleList,
-    calendarBusyStatusList,
-    calendarEventStatusList, draftMessageStates, driveEntryTypes, driveUploadIntentTypes, driveVolumesList,
-    identityStatusList,
-    identityTypesList,
-    labelScopesList,
-    mailboxKindsList,
-    mailboxSyncPhase,
-    messagePriorityList,
-    messageStatesList,
-    providersList,
-    webHookList,
+	AddressObjectJSON,
+	apiScopeList,
+	calendarAttendeePartstatList,
+	calendarAttendeeRoleList,
+	calendarBusyStatusList,
+	calendarEventStatusList,
+	draftMessageStates,
+	driveEntryTypes,
+	driveUploadIntentTypes,
+	driveVolumesList,
+	identityStatusList,
+	identityTypesList,
+	labelScopesList,
+	mailboxKindsList,
+	mailboxSyncPhase,
+	messagePriorityList,
+	messageStatesList,
+	providersList,
+	webHookList,
 } from "@schema";
 import { DnsRecord } from "@providers";
 import { nanoid } from "nanoid";
@@ -74,10 +78,19 @@ export const CalendarAttendeePartstatEnum = pgEnum(
 	calendarAttendeePartstatList,
 );
 
-export const DriveVolumeKindEnum = pgEnum("drive_volume_kind", driveVolumesList);
+export const DriveVolumeKindEnum = pgEnum(
+	"drive_volume_kind",
+	driveVolumesList,
+);
 export const DriveEntryTypeEnum = pgEnum("drive_entry_type", driveEntryTypes);
-export const DriveUploadIntentScopeEnum = pgEnum("drive_upload_intent_scope", driveUploadIntentTypes);
-export const DraftMessageStatusEnum = pgEnum("draft_message_status", draftMessageStates);
+export const DriveUploadIntentScopeEnum = pgEnum(
+	"drive_upload_intent_scope",
+	driveUploadIntentTypes,
+);
+export const DraftMessageStatusEnum = pgEnum(
+	"draft_message_status",
+	draftMessageStates,
+);
 
 export const secretsMeta = pgTable(
 	"secrets_meta",
@@ -774,8 +787,12 @@ export const mailboxThreads = pgTable(
 			bcc?: { n?: string; e: string }[];
 		}>(),
 
-        snoozedUntil: timestamp("snoozed_until", { withTimezone: true }).default(null),
-        unsnoozedAt: timestamp("unsnoozed_at", { withTimezone: true }).default(null),
+		snoozedUntil: timestamp("snoozed_until", { withTimezone: true }).default(
+			null,
+		),
+		unsnoozedAt: timestamp("unsnoozed_at", { withTimezone: true }).default(
+			null,
+		),
 
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()
@@ -797,13 +814,13 @@ export const mailboxThreads = pgTable(
 			t.threadId,
 		),
 
-        index("ix_mbth_identity_slug_effective_activity").on(
-            t.identityPublicId,
-            t.mailboxSlug,
-            sql`COALESCE(${t.unsnoozedAt}, ${t.lastActivityAt})`,
-            t.lastActivityAt,
-            t.threadId,
-        ),
+		index("ix_mbth_identity_slug_effective_activity").on(
+			t.identityPublicId,
+			t.mailboxSlug,
+			sql`COALESCE(${t.unsnoozedAt}, ${t.lastActivityAt})`,
+			t.lastActivityAt,
+			t.threadId,
+		),
 
 		index("ix_mbth_identity_slug").on(t.identityId, t.mailboxSlug),
 		index("ix_mbth_identity_public_id").on(t.identityPublicId),
@@ -811,8 +828,8 @@ export const mailboxThreads = pgTable(
 		index("ix_mbth_mailbox_unread").on(t.mailboxId, t.unreadCount),
 		index("ix_mbth_mailbox_starred").on(t.mailboxId, t.starred),
 
-        index("ix_mbth_mailbox_snoozed_until").on(t.mailboxId, t.snoozedUntil),
-        index("ix_mbth_mailbox_unsnoozed_at").on(t.mailboxId, t.unsnoozedAt),
+		index("ix_mbth_mailbox_snoozed_until").on(t.mailboxId, t.snoozedUntil),
+		index("ix_mbth_mailbox_unsnoozed_at").on(t.mailboxId, t.unsnoozedAt),
 
 		uniqueIndex("ux_mbth_thread_mailbox").on(t.threadId, t.mailboxId),
 
@@ -1578,239 +1595,250 @@ export const calendarEventAttendees = pgTable(
 	],
 ).enableRLS();
 
-
 export const driveVolumes = pgTable(
-    "drive_volumes",
-    {
-        id: uuid("id").defaultRandom().primaryKey(),
-        ownerId: uuid("owner_id")
-            .references(() => users.id)
-            .notNull()
-            .default(sql`auth.uid()`),
+	"drive_volumes",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		ownerId: uuid("owner_id")
+			.references(() => users.id)
+			.notNull()
+			.default(sql`auth.uid()`),
 
-        publicId: text("public_id")
-            .notNull()
-            .$defaultFn(() => nanoid(10)),
+		publicId: text("public_id")
+			.notNull()
+			.$defaultFn(() => nanoid(10)),
 
-        kind: DriveVolumeKindEnum("kind").notNull().default("local"),
+		kind: DriveVolumeKindEnum("kind").notNull().default("local"),
 
-        code: text("code").notNull(),
-        label: text("label").notNull(),
+		code: text("code").notNull(),
+		label: text("label").notNull(),
 
-        basePath: text("base_path"),
+		basePath: text("base_path"),
 
-        providerId: uuid("provider_id").references(() => providers.id, {
-            onDelete: "set null",
-        }),
+		providerId: uuid("provider_id").references(() => providers.id, {
+			onDelete: "set null",
+		}),
 
-        metaData: jsonb("meta")
-            .$type<Record<string, any> | null>()
-            .default(null),
+		metaData: jsonb("meta").$type<Record<string, any> | null>().default(null),
 
-        createdAt: timestamp("created_at", { withTimezone: true })
-            .defaultNow()
-            .notNull(),
-        updatedAt: timestamp("updated_at", { withTimezone: true })
-            .defaultNow()
-            .notNull(),
-    },
-    (t) => [
-        uniqueIndex("ux_drive_volumes_owner_code").on(t.ownerId, t.code),
-        uniqueIndex("ux_drive_volumes_public_id").on(t.publicId),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		uniqueIndex("ux_drive_volumes_owner_code").on(t.ownerId, t.code),
+		uniqueIndex("ux_drive_volumes_public_id").on(t.publicId),
 
-        index("ix_drive_volumes_owner").on(t.ownerId),
-        index("ix_drive_volumes_provider").on(t.providerId),
+		index("ix_drive_volumes_owner").on(t.ownerId),
+		index("ix_drive_volumes_provider").on(t.providerId),
 
-        pgPolicy("drive_volumes_select_own", {
-            for: "select",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("drive_volumes_insert_own", {
-            for: "insert",
-            to: authenticatedRole,
-            withCheck: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("drive_volumes_update_own", {
-            for: "update",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-            withCheck: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("drive_volumes_delete_own", {
-            for: "delete",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-        }),
-    ],
+		pgPolicy("drive_volumes_select_own", {
+			for: "select",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("drive_volumes_insert_own", {
+			for: "insert",
+			to: authenticatedRole,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("drive_volumes_update_own", {
+			for: "update",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("drive_volumes_delete_own", {
+			for: "delete",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+	],
 ).enableRLS();
 
 export const driveEntries = pgTable(
-    "drive_entries",
-    {
-        id: uuid("id").defaultRandom().primaryKey(),
+	"drive_entries",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
 
-        ownerId: uuid("owner_id")
-            .references(() => users.id)
-            .notNull()
-            .default(sql`auth.uid()`),
+		ownerId: uuid("owner_id")
+			.references(() => users.id)
+			.notNull()
+			.default(sql`auth.uid()`),
 
-        volumeId: uuid("volume_id")
-            .references(() => driveVolumes.id, { onDelete: "cascade" })
-            .notNull(),
+		volumeId: uuid("volume_id")
+			.references(() => driveVolumes.id, { onDelete: "cascade" })
+			.notNull(),
 
-        type: DriveEntryTypeEnum("type").notNull().default("file"),
+		type: DriveEntryTypeEnum("type").notNull().default("file"),
 
-        path: text("path").notNull(),
-        name: text("name").notNull(),
+		path: text("path").notNull(),
+		name: text("name").notNull(),
 
-        sizeBytes: bigint("size_bytes", { mode: "number" }).default(0),
-        mimeType: text("mime_type"),
+		sizeBytes: bigint("size_bytes", { mode: "number" }).default(0),
+		mimeType: text("mime_type"),
 
-        lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+		lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
 
-        metaData: jsonb("meta")
-            .$type<Record<string, any> | null>()
-            .default(null),
+		metaData: jsonb("meta").$type<Record<string, any> | null>().default(null),
 
-        createdAt: timestamp("created_at", { withTimezone: true })
-            .defaultNow()
-            .notNull(),
-        updatedAt: timestamp("updated_at", { withTimezone: true })
-            .defaultNow()
-            .notNull(),
-    },
-    (t) => [
-        uniqueIndex("ux_drive_entries_owner_volume_path").on(
-            t.ownerId,
-            t.volumeId,
-            t.path,
-        ),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		uniqueIndex("ux_drive_entries_owner_volume_path").on(
+			t.ownerId,
+			t.volumeId,
+			t.path,
+		),
 
-        index("ix_drive_entries_owner").on(t.ownerId),
-        index("ix_drive_entries_volume").on(t.volumeId),
+		index("ix_drive_entries_owner").on(t.ownerId),
+		index("ix_drive_entries_volume").on(t.volumeId),
 
-        pgPolicy("drive_entries_select_own", {
-            for: "select",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("drive_entries_insert_own", {
-            for: "insert",
-            to: authenticatedRole,
-            withCheck: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("drive_entries_update_own", {
-            for: "update",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-            withCheck: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("drive_entries_delete_own", {
-            for: "delete",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-        }),
-    ],
+		pgPolicy("drive_entries_select_own", {
+			for: "select",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("drive_entries_insert_own", {
+			for: "insert",
+			to: authenticatedRole,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("drive_entries_update_own", {
+			for: "update",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("drive_entries_delete_own", {
+			for: "delete",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+	],
 ).enableRLS();
-
-
 
 export const driveUploadIntents = pgTable(
-    "drive_upload_intents",
-    {
-        id: uuid("id").defaultRandom().primaryKey(),
+	"drive_upload_intents",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
 
-        ownerId: uuid("owner_id")
-            .references(() => users.id)
-            .notNull()
-            .default(sql`auth.uid()`),
+		ownerId: uuid("owner_id")
+			.references(() => users.id)
+			.notNull()
+			.default(sql`auth.uid()`),
 
-        volumeId: uuid("volume_id")
-            .references(() => driveVolumes.id, { onDelete: "cascade" })
-            .notNull(),
-        scope: DriveUploadIntentScopeEnum("scope").notNull().default("home"),
-        token: text("token").notNull(),
-        targetPath: text("target_path").notNull(),
-        singleUse: boolean("single_use").notNull().default(true),
-        usedAt: timestamp("used_at", { withTimezone: true }),
-        expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-        createdAt: timestamp("created_at", { withTimezone: true })
-            .defaultNow()
-            .notNull(),
+		volumeId: uuid("volume_id")
+			.references(() => driveVolumes.id, { onDelete: "cascade" })
+			.notNull(),
+		scope: DriveUploadIntentScopeEnum("scope").notNull().default("home"),
+		token: text("token").notNull(),
+		targetPath: text("target_path").notNull(),
+		singleUse: boolean("single_use").notNull().default(true),
+		usedAt: timestamp("used_at", { withTimezone: true }),
+		expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
 
-        updatedAt: timestamp("updated_at", { withTimezone: true })
-            .defaultNow()
-            .notNull(),
-    },
-    (t) => [
-        uniqueIndex("ux_drive_upload_intents_token").on(t.token),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		uniqueIndex("ux_drive_upload_intents_token").on(t.token),
 
-        index("ix_drive_upload_intents_owner").on(t.ownerId),
-        index("ix_drive_upload_intents_volume").on(t.volumeId),
-        index("ix_drive_upload_intents_expires").on(t.expiresAt),
+		index("ix_drive_upload_intents_owner").on(t.ownerId),
+		index("ix_drive_upload_intents_volume").on(t.volumeId),
+		index("ix_drive_upload_intents_expires").on(t.expiresAt),
 
-        pgPolicy("drive_upload_intents_select_own", {
-            for: "select",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("drive_upload_intents_insert_own", {
-            for: "insert",
-            to: authenticatedRole,
-            withCheck: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("drive_upload_intents_update_own", {
-            for: "update",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-            withCheck: sql`${t.ownerId} = ${authUid}`,
-        }),
-        pgPolicy("drive_upload_intents_delete_own", {
-            for: "delete",
-            to: authenticatedRole,
-            using: sql`${t.ownerId} = ${authUid}`,
-        }),
-    ],
+		pgPolicy("drive_upload_intents_select_own", {
+			for: "select",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("drive_upload_intents_insert_own", {
+			for: "insert",
+			to: authenticatedRole,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("drive_upload_intents_update_own", {
+			for: "update",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("drive_upload_intents_delete_own", {
+			for: "delete",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+	],
 ).enableRLS();
 
-
 export const draftMessages = pgTable(
-    "draft_messages",
-    {
-        id: uuid("id").defaultRandom().primaryKey(),
-        ownerId: uuid("owner_id")
-            .references(() => users.id)
-            .notNull()
-            .default(sql`auth.uid()`),
-        mailboxId: uuid("mailbox_id")
-            .references(() => mailboxes.id, { onDelete: "cascade" })
-            .notNull(),
-        identityId: uuid("identity_id")
-            .references(() => identities.id, { onDelete: "cascade" })
-            .default(null),
-        status: DraftMessageStatusEnum("status").notNull().default("draft"),
-        scheduledAt: timestamp("scheduled_at", { withTimezone: true }).default(null),
-        payload: jsonb("payload").$type<Record<string, any>>().notNull(),
+	"draft_messages",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		ownerId: uuid("owner_id")
+			.references(() => users.id)
+			.notNull()
+			.default(sql`auth.uid()`),
+		mailboxId: uuid("mailbox_id")
+			.references(() => mailboxes.id, { onDelete: "cascade" })
+			.notNull(),
+		identityId: uuid("identity_id")
+			.references(() => identities.id, { onDelete: "cascade" })
+			.default(null),
+		status: DraftMessageStatusEnum("status").notNull().default("draft"),
+		scheduledAt: timestamp("scheduled_at", { withTimezone: true }).default(
+			null,
+		),
+		payload: jsonb("payload").$type<Record<string, any>>().notNull(),
 
-        createdAt: timestamp("created_at", { withTimezone: true })
-            .defaultNow()
-            .notNull(),
-        updatedAt: timestamp("updated_at", { withTimezone: true })
-            .defaultNow()
-            .notNull(),
-    },
-    (t) => [
-        index("ix_draft_messages_owner").on(t.ownerId),
-        index("ix_draft_messages_mailbox").on(t.mailboxId),
-        index("ix_draft_messages_identity").on(t.identityId),
-        index("ix_draft_messages_status").on(t.status),
-        index("ix_draft_messages_scheduled_at").on(t.scheduledAt),
-        index("ix_draft_messages_updated_at").on(t.updatedAt),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		index("ix_draft_messages_owner").on(t.ownerId),
+		index("ix_draft_messages_mailbox").on(t.mailboxId),
+		index("ix_draft_messages_identity").on(t.identityId),
+		index("ix_draft_messages_status").on(t.status),
+		index("ix_draft_messages_scheduled_at").on(t.scheduledAt),
+		index("ix_draft_messages_updated_at").on(t.updatedAt),
 
-        pgPolicy("draft_messages_select_own", { for: "select", to: authenticatedRole, using: sql`${t.ownerId} = ${authUid}`}),
-        pgPolicy("draft_messages_insert_own", { for: "insert", to: authenticatedRole, withCheck: sql`${t.ownerId} = ${authUid}`}),
-        pgPolicy("draft_messages_update_own", { for: "update", to: authenticatedRole, using: sql`${t.ownerId} = ${authUid}`, withCheck: sql`${t.ownerId} = ${authUid}`}),
-        pgPolicy("draft_messages_delete_own", { for: "delete", to: authenticatedRole, using: sql`${t.ownerId} = ${authUid}`}),
-    ],
+		pgPolicy("draft_messages_select_own", {
+			for: "select",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("draft_messages_insert_own", {
+			for: "insert",
+			to: authenticatedRole,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("draft_messages_update_own", {
+			for: "update",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+			withCheck: sql`${t.ownerId} = ${authUid}`,
+		}),
+		pgPolicy("draft_messages_delete_own", {
+			for: "delete",
+			to: authenticatedRole,
+			using: sql`${t.ownerId} = ${authUid}`,
+		}),
+	],
 ).enableRLS();

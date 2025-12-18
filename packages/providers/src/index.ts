@@ -1,5 +1,5 @@
 import type { Providers } from "@schema";
-import {Mailer, StorageProvider} from "./core";
+import { Mailer, StorageProvider } from "./core";
 import { SmtpMailer } from "./mail/smtp";
 import { SesMailer } from "./mail/ses";
 import { SendgridMailer } from "./mail/sendgrid";
@@ -25,13 +25,16 @@ export function createMailer(provider: Providers, config: unknown): Mailer {
 	}
 }
 
-export function createStore(provider: Providers, config: unknown): StorageProvider {
-    switch (provider) {
-        case "s3":
-            return S3Store.from(config);
-        default:
-            throw new Error(`Provider not implemented: ${provider}`);
-    }
+export function createStore(
+	provider: Providers,
+	config: unknown,
+): StorageProvider {
+	switch (provider) {
+		case "s3":
+			return S3Store.from(config);
+		default:
+			throw new Error(`Provider not implemented: ${provider}`);
+	}
 }
 
 export * from "./core";

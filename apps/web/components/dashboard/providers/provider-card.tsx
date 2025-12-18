@@ -86,8 +86,8 @@ export default function ProviderCard({
 									return "SendGrid API key is valid and sending is enabled.";
 								case "mailgun":
 									return "Mailgun credentials are valid and the account is reachable.";
-                                case "s3":
-                                    return "S3 credentials are valid and the account is reachable.";
+								case "s3":
+									return "S3 credentials are valid and the account is reachable.";
 								default:
 									return "Outgoing mail server is reachable and credentials are valid.";
 							}
@@ -131,7 +131,6 @@ export default function ProviderCard({
 
 						<div className="flex flex-wrap gap-2">
 							<CardAction className="flex w-full flex-wrap gap-2 lg:w-auto lg:flex-nowrap lg:justify-end">
-
 								<Button
 									variant="outline"
 									component={"a"}

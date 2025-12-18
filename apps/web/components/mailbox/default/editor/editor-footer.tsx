@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { ActionIcon, Button, Popover, Progress } from "@mantine/core";
-import {Baseline, Paperclip, X as IconX} from "lucide-react";
+import { Baseline, Paperclip, X as IconX } from "lucide-react";
 import { RichTextEditor } from "@mantine/tiptap";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { createClient } from "@/lib/supabase/client";
@@ -246,11 +246,11 @@ export default function EditorFooter() {
 						loading={!!state.isPending}
 						size="sm"
 						type="submit"
-                        className={"!rounded-l-4xl !rounded-r-xs"}
+						className={"!rounded-l-4xl !rounded-r-xs"}
 					>
 						Send
 					</Button>
-                    <ScheduleSend />
+					<ScheduleSend />
 				</div>
 
 				<Popover position="top-start" withArrow shadow="md">

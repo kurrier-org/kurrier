@@ -18,7 +18,7 @@ export default function HomePage() {
 					<Highlighter action="underline" color="#FF9800">
 						<span className={"font-bold"}>
 							{/*Unified email, calendar, and contacts*/}
-                            Email, calendar, contacts, and storage
+							Email, calendar, contacts, and storage
 						</span>
 					</Highlighter>{" "}
 					{/*for{" "}*/}
@@ -29,14 +29,16 @@ export default function HomePage() {
 				</h1>
 
 				<p className="mt-4 text-xl text-neutral-600 max-w-3xl">
-					Your <Highlighter action="highlight" color="#FF9800">
-                    open-source workspace
-                </Highlighter>{" "} , perfectly synced and beautifully integrated.
-                </p>
+					Your{" "}
+					<Highlighter action="highlight" color="#FF9800">
+						open-source workspace
+					</Highlighter>{" "}
+					, perfectly synced and beautifully integrated.
+				</p>
 
 				<div className="text-xl max-w-5xl py-8 mx-auto text-center leading-relaxed flex gap-2">
-                    Fast, private, and fully searchable - powered by your existing
-                    SMTP, IMAP, CalDAV, CardDAV, and WebDAV services.
+					Fast, private, and fully searchable - powered by your existing SMTP,
+					IMAP, CalDAV, CardDAV, and WebDAV services.
 				</div>
 			</div>
 

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { Pagination } from "@mantine/core";
-import {useParams, usePathname, useRouter} from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 
 function MailPagination({
 	count,
@@ -17,7 +17,7 @@ function MailPagination({
 	const [activePage, setPage] = useState(page || 1);
 	const router = useRouter();
 	const pathname = usePathname();
-    const params = useParams();
+	const params = useParams();
 
 	const updatePageNumber = async (number: number) => {
 		if (number < 1) return;
@@ -33,13 +33,15 @@ function MailPagination({
 		setPage(number);
 	};
 
-	return <div className={params?.threadId ? "hidden" : ""}>
-		<Pagination
-			value={activePage}
-			onChange={updatePageNumber}
-			total={count > 0 ? count / 50 : 0}
-		/>
-    </div>
+	return (
+		<div className={params?.threadId ? "hidden" : ""}>
+			<Pagination
+				value={activePage}
+				onChange={updatePageNumber}
+				total={count > 0 ? count / 50 : 0}
+			/>
+		</div>
+	);
 }
 
 export default MailPagination;

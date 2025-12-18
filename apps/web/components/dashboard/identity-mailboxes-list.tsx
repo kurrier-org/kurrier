@@ -4,16 +4,17 @@ import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-    Inbox,
-    Send,
-    FileText,
-    Archive,
-    Ban,
-    Trash2,
-    Folder,
-    ChevronRight,
-    ChevronDown,
-    MoreVertical, Clock4,
+	Inbox,
+	Send,
+	FileText,
+	Archive,
+	Ban,
+	Trash2,
+	Folder,
+	ChevronRight,
+	ChevronDown,
+	MoreVertical,
+	Clock4,
 } from "lucide-react";
 import * as React from "react";
 import {
@@ -21,11 +22,16 @@ import {
 	FetchMailboxUnreadCountsResult,
 } from "@/lib/actions/mailbox";
 import { MailboxKind } from "@schema";
-import {DraftMessageEntity, IdentityEntity, MailboxEntity, MailboxThreadEntity} from "@db";
+import {
+	DraftMessageEntity,
+	IdentityEntity,
+	MailboxEntity,
+	MailboxThreadEntity,
+} from "@db";
 import AddNewFolder from "@/components/mailbox/default/add-new-folder";
 import { Menu } from "@mantine/core";
 import DeleteMailboxFolder from "@/components/mailbox/default/delete-folder";
-import {IconMailFast} from "@tabler/icons-react";
+import { IconMailFast } from "@tabler/icons-react";
 
 const ORDER: MailboxKind[] = [
 	"inbox",
@@ -115,14 +121,14 @@ function buildTree(
 export default function IdentityMailboxesList({
 	identityMailboxes,
 	unreadCounts,
-    scheduledDrafts,
-    snoozedThreads,
+	scheduledDrafts,
+	snoozedThreads,
 	onComplete,
 }: {
 	identityMailboxes: FetchIdentityMailboxListResult;
 	unreadCounts: FetchMailboxUnreadCountsResult;
-    scheduledDrafts: DraftMessageEntity[];
-    snoozedThreads: MailboxThreadEntity[];
+	scheduledDrafts: DraftMessageEntity[];
+	snoozedThreads: MailboxThreadEntity[];
 	onComplete?: () => void;
 }) {
 	const pathname = usePathname();
@@ -130,10 +136,10 @@ export default function IdentityMailboxesList({
 		identityPublicId?: string;
 		mailboxSlug?: string;
 	};
-    const currentSlug = React.useMemo(() => {
-        const parts = pathname.split("/").filter(Boolean);
-        return parts.at(-1) ?? "inbox";
-    }, [pathname]);
+	const currentSlug = React.useMemo(() => {
+		const parts = pathname.split("/").filter(Boolean);
+		return parts.at(-1) ?? "inbox";
+	}, [pathname]);
 
 	const Item = ({
 		m,
@@ -149,9 +155,9 @@ export default function IdentityMailboxesList({
 		const Icon = ICON[m.kind] ?? Folder;
 		const slug = m.slug ?? "inbox";
 		const href = `/dashboard/mail/${identityPublicId}/${slug}`;
-        const isActive =
-            pathname === href ||
-            (params.identityPublicId === identityPublicId && currentSlug === slug);
+		const isActive =
+			pathname === href ||
+			(params.identityPublicId === identityPublicId && currentSlug === slug);
 
 		const [open, setOpen] = React.useState(true);
 		const hasChildren = m.children.length > 0;
@@ -178,7 +184,7 @@ export default function IdentityMailboxesList({
 					<div className="flex w-full items-start">
 						<Link
 							href={href}
-                            onClick={onComplete ? () => onComplete() : undefined}
+							onClick={onComplete ? () => onComplete() : undefined}
 							aria-disabled={!m.selectable}
 							className={cn(
 								"flex min-w-0 flex-1 items-center gap-2 rounded-md py-1.5 pl-2 text-sm",
@@ -249,8 +255,12 @@ export default function IdentityMailboxesList({
 			{identityMailboxes.map(({ identity, mailboxes }) => {
 				const tree = buildTree(mailboxes as MailboxEntity[], unreadCounts);
 
-                const scheduledCounts = scheduledDrafts.filter(draft => draft.identityId === identity.id).length;
-                const snoozedCounts = snoozedThreads.filter(snoozed => snoozed.identityId === identity.id).length;
+				const scheduledCounts = scheduledDrafts.filter(
+					(draft) => draft.identityId === identity.id,
+				).length;
+				const snoozedCounts = snoozedThreads.filter(
+					(snoozed) => snoozed.identityId === identity.id,
+				).length;
 				return (
 					<div key={identity.id}>
 						<div className="px-1 mb-1 mt-2 text-xs font-semibold text-sidebar-foreground/60 flex items-center gap-1">
@@ -267,16 +277,29 @@ export default function IdentityMailboxesList({
 								/>
 							))}
 						</div>
-                        {scheduledCounts > 0 && <Link href={`/dashboard/mail/${params.identityPublicId}/scheduled`} className={`my-2 rounded hover:dark:bg-neutral-800 ${currentSlug === "scheduled" ? "dark:bg-neutral-800 dark:text-brand-foreground bg-brand-200 text-brand" : ""} flex justify-start gap-1 w-full p-1.5`}>
-                            <IconMailFast size={22}/>
-                            <span className={"font-normal text-sm"}>Scheduled ({scheduledCounts})</span>
-                        </Link>}
+						{scheduledCounts > 0 && (
+							<Link
+								href={`/dashboard/mail/${params.identityPublicId}/scheduled`}
+								className={`my-2 rounded hover:dark:bg-neutral-800 ${currentSlug === "scheduled" ? "dark:bg-neutral-800 dark:text-brand-foreground bg-brand-200 text-brand" : ""} flex justify-start gap-1 w-full p-1.5`}
+							>
+								<IconMailFast size={22} />
+								<span className={"font-normal text-sm"}>
+									Scheduled ({scheduledCounts})
+								</span>
+							</Link>
+						)}
 
-                        {snoozedCounts > 0 && <Link href={`/dashboard/mail/${params.identityPublicId}/snoozed`} className={`my-2 rounded hover:dark:bg-neutral-800 ${currentSlug === "snoozed" ? "dark:bg-neutral-800 dark:text-brand-foreground bg-brand-200 text-brand" : ""} flex justify-start gap-1 w-full p-1.5 items-center`}>
-                            <Clock4 size={16}/>
-                            <span className={"font-normal text-sm"}>Snoozed ({snoozedThreads.length})</span>
-                        </Link>}
-
+						{snoozedCounts > 0 && (
+							<Link
+								href={`/dashboard/mail/${params.identityPublicId}/snoozed`}
+								className={`my-2 rounded hover:dark:bg-neutral-800 ${currentSlug === "snoozed" ? "dark:bg-neutral-800 dark:text-brand-foreground bg-brand-200 text-brand" : ""} flex justify-start gap-1 w-full p-1.5 items-center`}
+							>
+								<Clock4 size={16} />
+								<span className={"font-normal text-sm"}>
+									Snoozed ({snoozedThreads.length})
+								</span>
+							</Link>
+						)}
 					</div>
 				);
 			})}

@@ -1,13 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-    Calendar,
-    Contact,
-    HardDrive,
-    Inbox,
-    MailOpen,
-} from "lucide-react";
+import { Calendar, Contact, HardDrive, Inbox, MailOpen } from "lucide-react";
 
 import { NavUser } from "@/components/ui/dashboards/workspace/nav-user";
 import {
@@ -79,12 +73,12 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				icon: Calendar,
 				isActive: true,
 			},
-            {
-                title: "Drive",
-                url: "/dashboard/drive",
-                icon: HardDrive,
-                isActive: true,
-            },
+			{
+				title: "Drive",
+				url: "/dashboard/drive",
+				icon: HardDrive,
+				isActive: true,
+			},
 			{
 				title: "Platform",
 				url: "/dashboard/platform/overview",
@@ -135,15 +129,15 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 
 	type SidebarSection = "mail" | "contacts" | "platform" | "calendar" | "drive";
 
-    const section: SidebarSection = isOnPlatform
-        ? "platform"
-        : isOnContacts
-            ? "contacts"
-            : isOnCalendar
-                ? "calendar"
-                : isOnDrive
-                    ? "drive"
-                    : "mail";
+	const section: SidebarSection = isOnPlatform
+		? "platform"
+		: isOnContacts
+			? "contacts"
+			: isOnCalendar
+				? "calendar"
+				: isOnDrive
+					? "drive"
+					: "mail";
 
 	const [activeItem, setActiveItem] = React.useState(() => {
 		if (section === "platform") {
@@ -161,11 +155,11 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				data.navMain.find((i) => i.url.includes("/calendar")) ?? data.navMain[0]
 			);
 		}
-        if (section === "drive") {
-            return (
-                data.navMain.find((i) => i.url.includes("/drive")) ?? data.navMain[0]
-            );
-        }
+		if (section === "drive") {
+			return (
+				data.navMain.find((i) => i.url.includes("/drive")) ?? data.navMain[0]
+			);
+		}
 		return data.navMain.find((i) => i.url.includes("/mail")) ?? data.navMain[0];
 	});
 
@@ -185,11 +179,10 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				data.navMain.find((i) => i.url.includes("/contacts")) ??
 					data.navMain[0],
 			);
-        } else if (section === "drive") {
-            setActiveItem(
-                data.navMain.find((i) => i.url.includes("/drive")) ??
-                data.navMain[0],
-            );
+		} else if (section === "drive") {
+			setActiveItem(
+				data.navMain.find((i) => i.url.includes("/drive")) ?? data.navMain[0],
+			);
 		} else {
 			setActiveItem(
 				data.navMain.find((i) => i.url.includes("/mail")) ?? data.navMain[0],
@@ -255,14 +248,14 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 											isActive={activeItem?.title === item.title}
 											className={"px-2.5 md:px-2"}
 										>
-                                            <item.icon
-                                                className={
-                                                    item.title === activeItem?.title
-                                                        ? "text-brand dark:text-white"
-                                                        : ""
-                                                }
-                                            />
-                                            <span>{item.title}</span>
+											<item.icon
+												className={
+													item.title === activeItem?.title
+														? "text-brand dark:text-white"
+														: ""
+												}
+											/>
+											<span>{item.title}</span>
 										</SidebarMenuButton>
 									</SidebarMenuItem>
 								))}

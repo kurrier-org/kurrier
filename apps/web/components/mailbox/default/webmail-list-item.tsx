@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import {Mail, MailOpen, Paperclip, Trash2} from "lucide-react";
+import { Mail, MailOpen, Paperclip, Trash2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { MailboxEntity, MailboxSyncEntity } from "@db";
 import {
@@ -77,82 +77,82 @@ export default function WebmailListItem({
 		});
 	}
 
-    function formatRelative(input?: string | number | Date) {
-        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        if (!input) return "";
+	function formatRelative(input?: string | number | Date) {
+		const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+		if (!input) return "";
 
-        let zdt: Temporal.ZonedDateTime;
-        try {
-            const instant = Temporal.Instant.from(new Date(input).toISOString());
-            zdt = instant.toZonedDateTimeISO(tz);
-        } catch {
-            return "";
-        }
+		let zdt: Temporal.ZonedDateTime;
+		try {
+			const instant = Temporal.Instant.from(new Date(input).toISOString());
+			zdt = instant.toZonedDateTimeISO(tz);
+		} catch {
+			return "";
+		}
 
-        const now = Temporal.Now.zonedDateTimeISO(tz);
-        const dur = now.since(zdt, { largestUnit: "day" });
+		const now = Temporal.Now.zonedDateTimeISO(tz);
+		const dur = now.since(zdt, { largestUnit: "day" });
 
-        const days = Math.abs(dur.days);
-        const hours = Math.abs(dur.hours);
-        const minutes = Math.abs(dur.minutes);
+		const days = Math.abs(dur.days);
+		const hours = Math.abs(dur.hours);
+		const minutes = Math.abs(dur.minutes);
 
-        if (days >= 1) return `${days}d ago`;
-        if (hours >= 1) return `${hours}h ago`;
-        if (minutes >= 1) return `${minutes}m ago`;
-        return "just now";
-    }
+		if (days >= 1) return `${days}d ago`;
+		if (hours >= 1) return `${hours}h ago`;
+		if (minutes >= 1) return `${minutes}m ago`;
+		return "just now";
+	}
 
-    function getThreadTimeLabel(item: typeof mailboxThreadItem) {
-        const now = Date.now();
+	function getThreadTimeLabel(item: typeof mailboxThreadItem) {
+		const now = Date.now();
 
-        if (item.snoozedUntil && new Date(item.snoozedUntil).getTime() > now) {
-            return {
-                text: "Snoozed",
-                className: "text-sm text-orange-400",
-                title: `Snoozed until ${new Date(item.snoozedUntil).toLocaleString()}`,
-            };
-        }
+		if (item.snoozedUntil && new Date(item.snoozedUntil).getTime() > now) {
+			return {
+				text: "Snoozed",
+				className: "text-sm text-orange-400",
+				title: `Snoozed until ${new Date(item.snoozedUntil).toLocaleString()}`,
+			};
+		}
 
-        if (item.unsnoozedAt) {
-            const ageMs = now - new Date(item.unsnoozedAt).getTime();
-            const showWindowMs = 60 * 60 * 1000;
+		if (item.unsnoozedAt) {
+			const ageMs = now - new Date(item.unsnoozedAt).getTime();
+			const showWindowMs = 60 * 60 * 1000;
 
-            if (ageMs >= 0 && ageMs <= showWindowMs) {
-                return {
-                    text: `Snoozed back ${formatRelative(item.unsnoozedAt)}`,
-                    className: "text-sm text-orange-400",
-                    title: `Returned from snooze ${new Date(item.unsnoozedAt).toLocaleString()}`,
-                };
-            }
-        }
+			if (ageMs >= 0 && ageMs <= showWindowMs) {
+				return {
+					text: `Snoozed back ${formatRelative(item.unsnoozedAt)}`,
+					className: "text-sm text-orange-400",
+					title: `Returned from snooze ${new Date(item.unsnoozedAt).toLocaleString()}`,
+				};
+			}
+		}
 
-        const date = new Date(item.lastActivityAt || now);
-        return {
-            text: formatDateLabel(date),
-            className: "text-sm text-foreground",
-            title: "",
-        };
-    }
+		const date = new Date(item.lastActivityAt || now);
+		return {
+			text: formatDateLabel(date),
+			className: "text-sm text-foreground",
+			title: "",
+		};
+	}
 
 	const router = useRouter();
 
 	const date = new Date(mailboxThreadItem.lastActivityAt || Date.now());
 	const dateLabel = formatDateLabel(date);
-    const timeLabel = getThreadTimeLabel(mailboxThreadItem);
+	const timeLabel = getThreadTimeLabel(mailboxThreadItem);
 
 	const pathname = usePathname();
-    const isOnSnoozedPage = pathname.split("/").includes("snoozed")
+	const isOnSnoozedPage = pathname.split("/").includes("snoozed");
 
 	const openThread = async () => {
 		const url = pathname.match("/dashboard/mail")
 			? `/dashboard/mail/${identityPublicId}/${activeMailbox.slug}/threads/${mailboxThreadItem.threadId}`
 			: `/mail/${identityPublicId}/${activeMailbox.slug}/threads/${mailboxThreadItem.threadId}`;
 
-        // TODO: Fix full page reload on snoozed page, hoist @thread layout to higher level
-        if (isOnSnoozedPage){
-            window.location.href = url;
-            return;
-        }
+		// TODO: Fix full page reload on snoozed page, hoist @thread layout to higher level
+		if (isOnSnoozedPage) {
+			window.location.href = url;
+			return;
+		}
 		router.push(url);
 	};
 
@@ -214,22 +214,26 @@ export default function WebmailListItem({
 				].join(" ")}
 			>
 				<div className="flex items-center">
-                    {!isOnSnoozedPage && <input
-						type="checkbox"
-						onChange={(e) => {
-							const newSet = new Set(state?.selectedThreadIds);
-							if (e.target.checked) {
-								newSet.add(mailboxThreadItem.threadId);
-							} else {
-								newSet.delete(mailboxThreadItem.threadId);
-							}
-							setState({ selectedThreadIds: newSet });
-						}}
-						checked={state?.selectedThreadIds?.has(mailboxThreadItem.threadId)}
-						aria-label={`Select thread ${mailboxThreadItem.subject}`}
-						className="h-4 w-4 rounded border-muted-foreground/40"
-						onClick={(e) => e.stopPropagation()}
-					/>}
+					{!isOnSnoozedPage && (
+						<input
+							type="checkbox"
+							onChange={(e) => {
+								const newSet = new Set(state?.selectedThreadIds);
+								if (e.target.checked) {
+									newSet.add(mailboxThreadItem.threadId);
+								} else {
+									newSet.delete(mailboxThreadItem.threadId);
+								}
+								setState({ selectedThreadIds: newSet });
+							}}
+							checked={state?.selectedThreadIds?.has(
+								mailboxThreadItem.threadId,
+							)}
+							aria-label={`Select thread ${mailboxThreadItem.subject}`}
+							className="h-4 w-4 rounded border-muted-foreground/40"
+							onClick={(e) => e.stopPropagation()}
+						/>
+					)}
 				</div>
 
 				<button
@@ -289,12 +293,12 @@ export default function WebmailListItem({
 					{/*<time className="whitespace-nowrap text-sm text-foreground">*/}
 					{/*	{dateLabel}*/}
 					{/*</time>*/}
-                    <time
-                        className={["whitespace-nowrap", timeLabel.className].join(" ")}
-                        title={timeLabel.title}
-                    >
-                        {timeLabel.text}
-                    </time>
+					<time
+						className={["whitespace-nowrap", timeLabel.className].join(" ")}
+						title={timeLabel.title}
+					>
+						{timeLabel.text}
+					</time>
 				</div>
 
 				<div
@@ -344,9 +348,10 @@ export default function WebmailListItem({
 						</button>
 					)}
 
-                    <SnoozeMail mailboxThreadId={mailboxThreadItem.threadId}
-                                activeMailboxId={activeMailbox.id} />
-
+					<SnoozeMail
+						mailboxThreadId={mailboxThreadItem.threadId}
+						activeMailboxId={activeMailbox.id}
+					/>
 
 					<button
 						onClick={async () => {

@@ -1,22 +1,23 @@
 "use server";
 
 import {
-    apiKeys,
-    createSecret,
-    davAccounts, driveVolumes,
-    getSecret,
-    identities,
-    IdentityCreate,
-    IdentityEntity,
-    IdentityInsertSchema,
-    mailboxes,
-    messages,
-    providers,
-    providerSecrets,
-    secretsMeta,
-    smtpAccounts,
-    smtpAccountSecrets,
-    updateSecret,
+	apiKeys,
+	createSecret,
+	davAccounts,
+	driveVolumes,
+	getSecret,
+	identities,
+	IdentityCreate,
+	IdentityEntity,
+	IdentityInsertSchema,
+	mailboxes,
+	messages,
+	providers,
+	providerSecrets,
+	secretsMeta,
+	smtpAccounts,
+	smtpAccountSecrets,
+	updateSecret,
 } from "@db";
 import {
 	apiScopeList,
@@ -36,7 +37,12 @@ import { and, count, eq, sql, gte, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { decode } from "decode-formdata";
 import { PgColumn, PgTable } from "drizzle-orm/pg-core";
-import {createMailer, createStore, DomainIdentity, VerifyResult} from "@providers";
+import {
+	createMailer,
+	createStore,
+	DomainIdentity,
+	VerifyResult,
+} from "@providers";
 import { parseSecret } from "@/lib/utils";
 import { z } from "zod";
 import slugify from "@sindresorhus/slugify";
@@ -698,32 +704,31 @@ export const verifyProviderAccount = async (
 				);
 			}
 		} else if (providerType === "s3") {
-            const store = createStore(providerType, providerSecret.parsedSecret);
-            res = await store.verify(String(providerSecret?.metaId), {});
-            const data = providerSecret.parsedSecret;
-            data.verified = res.ok;
-            const session = await currentSession();
-            await updateSecret(session, String(providerSecret?.linkRow?.secretId), {
-                value: JSON.stringify(data),
-            });
+			const store = createStore(providerType, providerSecret.parsedSecret);
+			res = await store.verify(String(providerSecret?.metaId), {});
+			const data = providerSecret.parsedSecret;
+			data.verified = res.ok;
+			const session = await currentSession();
+			await updateSecret(session, String(providerSecret?.linkRow?.secretId), {
+				value: JSON.stringify(data),
+			});
 
-            if (res.ok) {
-                const rls = await rlsClient();
-                await rls((tx) =>
-                    tx
-                        .update(providers)
-                        .set({
-                            metaData: {
-                                ...(providerSecret?.provider?.metaData ?? {}),
-                                ...{ verification: res.meta },
-                            },
-                        })
-                        .where(
-                            eq(providers.id, String(providerSecret?.linkRow?.providerId)),
-                        ),
-                );
-            }
-
+			if (res.ok) {
+				const rls = await rlsClient();
+				await rls((tx) =>
+					tx
+						.update(providers)
+						.set({
+							metaData: {
+								...(providerSecret?.provider?.metaData ?? {}),
+								...{ verification: res.meta },
+							},
+						})
+						.where(
+							eq(providers.id, String(providerSecret?.linkRow?.providerId)),
+						),
+				);
+			}
 		} else if (providerType === "mailgun") {
 			const mailer = createMailer(providerType, providerSecret.parsedSecret);
 			res = await mailer.verify(String(providerSecret?.metaId), {});
@@ -985,48 +990,44 @@ export const regenerateDavPassword = async () => {
 	return job.returnvalue;
 };
 
+export async function addNewVolume(_prev: FormState, formData: FormData) {
+	return handleAction(async () => {
+		const rls = await rlsClient();
+		const data = decode(formData);
+		const [secret] = await fetchDecryptedSecrets({
+			linkTable: providerSecrets,
+			foreignCol: providerSecrets.providerId,
+			secretIdCol: providerSecrets.secretId,
+			parentId: String(data.provider),
+		});
 
-export async function addNewVolume(
-    _prev: FormState,
-    formData: FormData,
-) {
-    return handleAction(async () => {
-        const rls = await rlsClient();
-        const data = decode(formData);
-        const [secret] = await fetchDecryptedSecrets({
-            linkTable: providerSecrets,
-            foreignCol: providerSecrets.providerId,
-            secretIdCol: providerSecrets.secretId,
-            parentId: String(data.provider),
-        });
+		// We assume S3 for now since we only have S3 volumes
+		const providerType = "s3" as Providers;
+		const store = createStore(providerType, secret.parsedSecret);
+		const bucket = await store.addBucket(String(data.provider), {
+			bucket: String(data.bucketName),
+		});
 
-        // We assume S3 for now since we only have S3 volumes
-        const providerType = "s3" as Providers;
-        const store = createStore(providerType, secret.parsedSecret);
-        const bucket = await store.addBucket(String(data.provider), {
-            bucket: String(data.bucketName)
-        })
+		if (bucket.ok) {
+			const user = await isSignedIn();
+			await rls((tx) =>
+				tx.insert(driveVolumes).values({
+					ownerId: String(user?.id),
+					label: String(data.bucketName),
+					kind: "cloud",
+					code: String(data.bucketName)?.toLowerCase(),
+					providerId: String(data.provider),
+					metaData: bucket.meta,
+				}),
+			);
+		} else {
+			throw new Error("Failed to create volume: " + bucket.message);
+		}
 
-        if (bucket.ok) {
-            const user = await isSignedIn();
-            await rls((tx) =>
-                tx.insert(driveVolumes).values({
-                    ownerId: String(user?.id),
-                    label: String(data.bucketName),
-                    kind: "cloud",
-                    code: String(data.bucketName)?.toLowerCase(),
-                    providerId: String(data.provider),
-                    metaData: bucket.meta,
-                }),
-            );
-        } else {
-            throw new Error("Failed to create volume: " + bucket.message);
-        }
-
-        revalidatePath("/dashboard/platform/storage");
-        return {
-            success: true,
-            message: "Added new volume",
-        };
-    });
+		revalidatePath("/dashboard/platform/storage");
+		return {
+			success: true,
+			message: "Added new volume",
+		};
+	});
 }

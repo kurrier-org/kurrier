@@ -78,19 +78,23 @@ async function Page({
 			attendeeContacts={contacts}
 			allDayByDay={allDayByDay}
 		/>
-	) : (view === "month" ? <MonthGrid
-        events={expandedEvents}
-        byDayMap={timedByDay}
-        attendees={attendees}
-        attendeeContacts={contacts}
-        allDayByDay={allDayByDay}
-    /> : <DayGrid
-        events={expandedEvents}
-        byDayMap={timedByDay}
-        attendees={attendees}
-        attendeeContacts={contacts}
-        allDayByDay={allDayByDay}
-    />);
+	) : view === "month" ? (
+		<MonthGrid
+			events={expandedEvents}
+			byDayMap={timedByDay}
+			attendees={attendees}
+			attendeeContacts={contacts}
+			allDayByDay={allDayByDay}
+		/>
+	) : (
+		<DayGrid
+			events={expandedEvents}
+			byDayMap={timedByDay}
+			attendees={attendees}
+			attendeeContacts={contacts}
+			allDayByDay={allDayByDay}
+		/>
+	);
 }
 
 export default Page;

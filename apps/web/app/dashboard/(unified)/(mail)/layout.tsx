@@ -1,10 +1,12 @@
 import { SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/ui/dashboards/unified/default/app-sidebar";
 import {
-    fetchIdentityMailboxList, fetchIdentitySnoozedThreads,
-    fetchMailboxUnreadCounts, fetchScheduledDraftCounts,
+	fetchIdentityMailboxList,
+	fetchIdentitySnoozedThreads,
+	fetchMailboxUnreadCounts,
+	fetchScheduledDraftCounts,
 } from "@/lib/actions/mailbox";
-import {fetchLabelsWithCounts} from "@/lib/actions/labels";
+import { fetchLabelsWithCounts } from "@/lib/actions/labels";
 import { getPublicEnv, LabelScope } from "@schema";
 import { isSignedIn } from "@/lib/actions/auth";
 import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
@@ -25,10 +27,11 @@ export default async function DashboardLayout({
 			fetchMailboxUnreadCounts(),
 			isSignedIn(),
 			fetchLabelsWithCounts(),
-            fetchScheduledDraftCounts(),
+			fetchScheduledDraftCounts(),
 		]);
-    const {threads: snoozedThreads} = await fetchIdentitySnoozedThreads(identityMailboxes[0]?.identity?.publicId)
-
+	const { threads: snoozedThreads } = await fetchIdentitySnoozedThreads(
+		identityMailboxes[0]?.identity?.publicId,
+	);
 
 	return (
 		<>
@@ -48,8 +51,8 @@ export default async function DashboardLayout({
 						<IdentityMailboxesList
 							identityMailboxes={identityMailboxes}
 							unreadCounts={unreadCounts}
-                            scheduledDrafts={scheduledDrafts}
-                            snoozedThreads={snoozedThreads}
+							scheduledDrafts={scheduledDrafts}
+							snoozedThreads={snoozedThreads}
 						/>
 						<DynamicContextProvider
 							initialState={{

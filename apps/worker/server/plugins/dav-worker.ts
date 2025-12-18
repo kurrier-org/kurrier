@@ -34,19 +34,19 @@ export default defineNitroPlugin(async (nitroApp) => {
 				job.id,
 			);
 			switch (job.name) {
-                case "dav:drive:list-volumes":
-                    return listVolumes();
-                case "dav:drive:discover-user-volumes":
-                    return discoverVolumesForOwner(job.data.userId);
-                case "dav:drive:delete-path":
-                    return deletePath(job.data);
-                case "dav:drive:add-folder-path":
-                    return addFolderPath(job.data);
-                case "dav:drive:list-path":
-                    return webdavListPath({
-                        ownerId: job.data.ownerId,
-                        segments: job.data.segments
-                    });
+				case "dav:drive:list-volumes":
+					return listVolumes();
+				case "dav:drive:discover-user-volumes":
+					return discoverVolumesForOwner(job.data.userId);
+				case "dav:drive:delete-path":
+					return deletePath(job.data);
+				case "dav:drive:add-folder-path":
+					return addFolderPath(job.data);
+				case "dav:drive:list-path":
+					return webdavListPath({
+						ownerId: job.data.ownerId,
+						segments: job.data.segments,
+					});
 
 				case "dav:create-account":
 					return createAccount(job.data.userId);

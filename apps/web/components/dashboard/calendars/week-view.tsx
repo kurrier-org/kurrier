@@ -44,7 +44,7 @@ export function WeekGrid({
 	const { setState, state } = useDynamicContext<CalendarState>();
 	const params = useParams();
 	const dayjsTz = getDayjsTz(state.defaultCalendar.timezone);
-    const contacts = React.use(attendeeContacts);
+	const contacts = React.use(attendeeContacts);
 
 	useEffect(() => {
 		setState((prev) => ({

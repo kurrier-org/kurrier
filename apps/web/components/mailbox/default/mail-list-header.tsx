@@ -30,7 +30,7 @@ import { PublicConfig } from "@schema";
 import { useMediaQuery } from "@mantine/hooks";
 import { clsx } from "clsx";
 import MoveToFolder from "@/components/mailbox/default/move-to-folder";
-import {usePathname} from "next/navigation";
+import { usePathname } from "next/navigation";
 
 function MailListHeader({
 	mailboxThreads,
@@ -129,30 +129,32 @@ function MailListHeader({
 	};
 
 	const isMobile = useMediaQuery("(max-width: 768px)");
-    const pathName = usePathname()
-    const isOnSnoozedPage = pathName.split("/").includes("snoozed")
+	const pathName = usePathname();
+	const isOnSnoozedPage = pathName.split("/").includes("snoozed");
 
 	return (
 		<>
 			<div className="sticky top-0 z-10 flex items-center bg-background/95 px-3 py-2 backdrop-blur rounded-t-2xl">
-                {!isOnSnoozedPage && <input
-					type="checkbox"
-					onChange={(e) => {
-						const newSet = new Set(state?.selectedThreadIds ?? []);
-						if (e.target.checked) {
-							mailboxThreads.forEach((t) => newSet.add(t.threadId));
-						} else {
-							mailboxThreads.forEach((t) => newSet.delete(t.threadId));
-						}
-						setState((prev) => ({
-							...(prev ?? {}),
-							selectedThreadIds: newSet,
-						}));
-					}}
-					checked={isChecked}
-					aria-label="Select all"
-					className="h-4 w-4 rounded border-muted-foreground/40"
-				/>}
+				{!isOnSnoozedPage && (
+					<input
+						type="checkbox"
+						onChange={(e) => {
+							const newSet = new Set(state?.selectedThreadIds ?? []);
+							if (e.target.checked) {
+								mailboxThreads.forEach((t) => newSet.add(t.threadId));
+							} else {
+								mailboxThreads.forEach((t) => newSet.delete(t.threadId));
+							}
+							setState((prev) => ({
+								...(prev ?? {}),
+								selectedThreadIds: newSet,
+							}));
+						}}
+						checked={isChecked}
+						aria-label="Select all"
+						className="h-4 w-4 rounded border-muted-foreground/40"
+					/>
+				)}
 
 				<div className="flex-1" />
 

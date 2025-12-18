@@ -6,7 +6,7 @@ export const providersList = [
 	"mailgun",
 	"postmark",
 	"sendgrid",
-    "s3"
+	"s3",
 ] as const;
 export const ProvidersEnum = z.enum(providersList);
 export type Providers = z.infer<typeof ProvidersEnum>;
@@ -18,7 +18,7 @@ export const ProviderLabels: Record<Providers, string> = {
 	mailgun: "Mailgun",
 	postmark: "Postmark",
 	sendgrid: "SendGrid",
-    s3: "AWS S3",
+	s3: "AWS S3",
 };
 
 /** Minimal spec used by the Providers page */
@@ -35,11 +35,7 @@ export const PROVIDERS: ProviderSpec[] = [
 		key: "ses",
 		name: ProviderLabels.ses,
 		docsUrl: "https://docs.aws.amazon.com/ses/latest/dg/Welcome.html",
-		requiredEnv: [
-			"SES_ACCESS_KEY_ID",
-			"SES_SECRET_ACCESS_KEY",
-			"SES_REGION",
-		],
+		requiredEnv: ["SES_ACCESS_KEY_ID", "SES_SECRET_ACCESS_KEY", "SES_REGION"],
 	},
 	{
 		key: "sendgrid",
@@ -87,16 +83,11 @@ export const SMTP_SPEC = {
 		"IMAP vars are optional and only needed if you plan to receive/sync messages.",
 };
 
-
 export const STORAGE_PROVIDERS: ProviderSpec[] = [
-    {
-        key: "s3",
-        name: ProviderLabels.s3,
-        docsUrl: "https://docs.aws.amazon.com/s3",
-        requiredEnv: [
-            "S3_ACCESS_KEY_ID",
-            "S3_SECRET_ACCESS_KEY",
-            "S3_REGION"
-        ],
-    },
+	{
+		key: "s3",
+		name: ProviderLabels.s3,
+		docsUrl: "https://docs.aws.amazon.com/s3",
+		requiredEnv: ["S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY", "S3_REGION"],
+	},
 ];

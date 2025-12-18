@@ -17,29 +17,26 @@ export default async function DriveLayout({
 	const publicConfig = getPublicEnv();
 	const [identityMailboxes, user] = await Promise.all([
 		fetchIdentityMailboxList(),
-		isSignedIn()
+		isSignedIn(),
 	]);
 
-    const {localVolumes, cloudVolumes} = await fetchVolumes()
-    const userId = await isSignedIn()
-    const initialState: DriveState = {
-        localVolumes, cloudVolumes,
-        driveRouteContext: null,
-        userId: String(userId?.id),
-    };
+	const { localVolumes, cloudVolumes } = await fetchVolumes();
+	const userId = await isSignedIn();
+	const initialState: DriveState = {
+		localVolumes,
+		cloudVolumes,
+		driveRouteContext: null,
+		userId: String(userId?.id),
+	};
 
 	return (
 		<>
-			<DynamicContextProvider
-				initialState={initialState}
-			>
+			<DynamicContextProvider initialState={initialState}>
 				<AppSidebar
 					publicConfig={publicConfig}
 					user={user}
 					identityMailboxes={identityMailboxes}
-					sidebarSectionContent={
-						<DriveSideBar />
-					}
+					sidebarSectionContent={<DriveSideBar />}
 					sidebarTopContent={
 						<>
 							<div className={"-mt-1"}>

@@ -3,18 +3,38 @@
 import { cache } from "react";
 import { rlsClient } from "@/lib/actions/clients";
 import {
-    db, DraftMessageInsertSchema, draftMessages,
-    identities,
-    mailboxes,
-    mailboxSync,
-    mailboxThreads,
-    messageAttachments,
-    messages,
-    threads,
+	db,
+	DraftMessageInsertSchema,
+	draftMessages,
+	identities,
+	mailboxes,
+	mailboxSync,
+	mailboxThreads,
+	messageAttachments,
+	messages,
+	threads,
 } from "@db";
-import {and, asc, count, desc, eq, inArray, isNotNull, isNull, lte, or, sql, gt} from "drizzle-orm";
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	inArray,
+	isNotNull,
+	isNull,
+	lte,
+	or,
+	sql,
+	gt,
+} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import {FormState, getServerEnv, handleAction, SearchThreadsResponse} from "@schema";
+import {
+	FormState,
+	getServerEnv,
+	handleAction,
+	SearchThreadsResponse,
+} from "@schema";
 import { decode } from "decode-formdata";
 import { toArray } from "@/lib/utils";
 
@@ -245,73 +265,88 @@ export const revalidateMailbox = async (path: string) => {
 	revalidatePath(path);
 };
 
+export async function sendMail(
+	_prev: FormState,
+	formData: FormData,
+): Promise<FormState> {
+	const decodedForm = decode(formData) as any;
 
+	if (toArray(decodedForm.to as any).length === 0) {
+		return {
+			success: false,
+			error: "Please provide at least one recipient in the To field.",
+		};
+	}
 
+	const rls = await rlsClient();
+	const scheduledAtRaw = decodedForm.scheduledAt
+		? String(decodedForm.scheduledAt)
+		: "";
+	if (scheduledAtRaw) {
+		const d = dayjs(scheduledAtRaw);
+		if (!d.isValid()) {
+			return { success: false, error: "Invalid scheduled time." };
+		}
 
-export async function sendMail(_prev: FormState, formData: FormData): Promise<FormState> {
-    const decodedForm = decode(formData) as any;
+		const identityId = await rls(async (tx) => {
+			const [identity] = await tx
+				.select({
+					identityId: mailboxes.identityId,
+				})
+				.from(mailboxes)
+				.where(eq(mailboxes.id, decodedForm.mailboxId));
+			return identity?.identityId;
+		});
 
-    if (toArray(decodedForm.to as any).length === 0) {
-        return { success: false, error: "Please provide at least one recipient in the To field." };
-    }
+		const parsed = DraftMessageInsertSchema.safeParse({
+			identityId,
+			mailboxId: decodedForm.mailboxId,
+			payload: decodedForm,
+			status: "scheduled",
+			scheduledAt: d.toDate(),
+		});
 
-    const rls = await rlsClient();
-    const scheduledAtRaw = decodedForm.scheduledAt ? String(decodedForm.scheduledAt) : "";
-    if (scheduledAtRaw) {
-        const d = dayjs(scheduledAtRaw);
-        if (!d.isValid()) {
-            return { success: false, error: "Invalid scheduled time." };
-        }
+		if (!parsed.success) {
+			return {
+				success: false,
+				error: "There was an error trying to schedule your mail.",
+			};
+		}
 
-        const identityId = await rls(async (tx) => {
-            const [identity] = await tx.select({
-                identityId: mailboxes.identityId,
-            }).from(mailboxes).where(eq(mailboxes.id, decodedForm.mailboxId));
-            return identity?.identityId;
-        });
+		const row = await rls(async (tx) => {
+			const [created] = await tx
+				.insert(draftMessages)
+				.values(parsed.data)
+				.returning({
+					id: draftMessages.id,
+					scheduledAt: draftMessages.scheduledAt,
+				});
+			return created ?? null;
+		});
 
-        const parsed = DraftMessageInsertSchema.safeParse({
-            identityId,
-            mailboxId: decodedForm.mailboxId,
-            payload: decodedForm,
-            status: "scheduled",
-            scheduledAt: d.toDate(),
-        });
+		if (!row?.id || !row.scheduledAt) {
+			return { success: false, error: "Failed to schedule your mail." };
+		}
 
-        if (!parsed.success) {
-            return { success: false, error: "There was an error trying to schedule your mail." };
-        }
+		const { sendMailQueue } = await getRedis();
+		const delay = Math.max(
+			0,
+			Number(new Date(row.scheduledAt)) - Number(new Date()),
+		);
 
+		await sendMailQueue.add(
+			"send-scheduled-draft",
+			{ draftMessageId: row.id },
+			{ jobId: row.id, delay },
+		);
+		revalidatePath("/dashboard/mail");
+		return { success: true, data: { draftMessageId: row.id } };
+	}
 
-        const row = await rls(async (tx) => {
-            const [created] = await tx.insert(draftMessages).values(parsed.data).returning({
-                id: draftMessages.id,
-                scheduledAt: draftMessages.scheduledAt,
-            });
-            return created ?? null;
-        });
-
-        if (!row?.id || !row.scheduledAt) {
-            return { success: false, error: "Failed to schedule your mail." };
-        }
-
-        const { sendMailQueue } = await getRedis();
-        const delay = Math.max(0, Number(new Date(row.scheduledAt)) - Number(new Date()));
-
-        await sendMailQueue.add(
-            "send-scheduled-draft",
-            { draftMessageId: row.id },
-            { jobId: row.id, delay },
-        );
-        revalidatePath("/dashboard/mail");
-        return { success: true, data: { draftMessageId: row.id } };
-    }
-
-    const { sendMailQueue, sendMailEvents } = await getRedis();
-    const job = await sendMailQueue.add("send-and-reconcile", decodedForm);
-    return await job.waitUntilFinished(sendMailEvents);
+	const { sendMailQueue, sendMailEvents } = await getRedis();
+	const job = await sendMailQueue.add("send-and-reconcile", decodedForm);
+	return await job.waitUntilFinished(sendMailEvents);
 }
-
 
 export const deltaFetch = async ({ identityId }: { identityId: string }) => {
 	const { smtpQueue, smtpEvents } = await getRedis();
@@ -799,34 +834,41 @@ export const fetchMailboxThreadsOld = async (
 };
 
 export const fetchMailboxThreads = async (
-    identityPublicId: string,
-    mailboxSlug: string,
-    page: number,
+	identityPublicId: string,
+	mailboxSlug: string,
+	page: number,
 ) => {
-    page = page && page > 0 ? page : 1;
+	page = page && page > 0 ? page : 1;
 
-    const rls = await rlsClient();
+	const rls = await rlsClient();
 
-    const now = new Date();
-    const effectiveActivityAt = sql`COALESCE(${mailboxThreads.unsnoozedAt}, ${mailboxThreads.lastActivityAt})`;
+	const now = new Date();
+	const effectiveActivityAt = sql`COALESCE(${mailboxThreads.unsnoozedAt}, ${mailboxThreads.lastActivityAt})`;
 
-    const threads = await rls((tx) =>
-        tx
-            .select()
-            .from(mailboxThreads)
-            .where(
-                and(
-                    eq(mailboxThreads.identityPublicId, identityPublicId),
-                    eq(mailboxThreads.mailboxSlug, mailboxSlug),
-                    or(isNull(mailboxThreads.snoozedUntil), lte(mailboxThreads.snoozedUntil, now)),
-                ),
-            )
-            .orderBy(desc(effectiveActivityAt), desc(mailboxThreads.lastActivityAt), desc(mailboxThreads.threadId))
-            .offset((page - 1) * PAGE_SIZE)
-            .limit(PAGE_SIZE),
-    );
+	const threads = await rls((tx) =>
+		tx
+			.select()
+			.from(mailboxThreads)
+			.where(
+				and(
+					eq(mailboxThreads.identityPublicId, identityPublicId),
+					eq(mailboxThreads.mailboxSlug, mailboxSlug),
+					or(
+						isNull(mailboxThreads.snoozedUntil),
+						lte(mailboxThreads.snoozedUntil, now),
+					),
+				),
+			)
+			.orderBy(
+				desc(effectiveActivityAt),
+				desc(mailboxThreads.lastActivityAt),
+				desc(mailboxThreads.threadId),
+			)
+			.offset((page - 1) * PAGE_SIZE)
+			.limit(PAGE_SIZE),
+	);
 
-    return threads;
+	return threads;
 };
 
 export type FetchMailboxThreadsResult = Awaited<
@@ -1147,110 +1189,107 @@ export const clearImapClients = async (identityId: string) => {
 	);
 };
 
-
 export const fetchScheduledDraftCounts = async () => {
-    const rls = await rlsClient();
-    const rows = await rls((tx) =>
-        tx
-            .select()
-            .from(draftMessages)
-            .where(eq(draftMessages.status, "scheduled")),
-    );
-    return rows
+	const rls = await rlsClient();
+	const rows = await rls((tx) =>
+		tx
+			.select()
+			.from(draftMessages)
+			.where(eq(draftMessages.status, "scheduled")),
+	);
+	return rows;
 };
 
 export const fetchScheduledDrafts = async (identityPublicId: string) => {
-    const rls = await rlsClient();
-    const [identity] = await rls((tx) =>
-        tx
-            .select()
-            .from(identities)
-            .where(eq(identities.publicId, identityPublicId)),
-    );
-    const rows = await rls((tx) =>
-        tx
-            .select()
-            .from(draftMessages)
-            .where(
-                and(
-                    eq(draftMessages.status, "scheduled"),
-                    eq(draftMessages.identityId, identity.id)
-                )
-            ),
-    );
-    return rows;
+	const rls = await rlsClient();
+	const [identity] = await rls((tx) =>
+		tx
+			.select()
+			.from(identities)
+			.where(eq(identities.publicId, identityPublicId)),
+	);
+	const rows = await rls((tx) =>
+		tx
+			.select()
+			.from(draftMessages)
+			.where(
+				and(
+					eq(draftMessages.status, "scheduled"),
+					eq(draftMessages.identityId, identity.id),
+				),
+			),
+	);
+	return rows;
 };
 
 export async function deleteScheduledDraft(
-    _prev: FormState,
-    formData: FormData,
+	_prev: FormState,
+	formData: FormData,
 ): Promise<FormState> {
-    return handleAction(async () => {
-        const decodedForm = decode(formData) as Record<string, unknown>;
-        const rls = await rlsClient();
-        await rls(async (tx) => {
-            await tx
-                .delete(draftMessages)
-                .where(eq(draftMessages.id, String(decodedForm.draftId)),);
-        })
+	return handleAction(async () => {
+		const decodedForm = decode(formData) as Record<string, unknown>;
+		const rls = await rlsClient();
+		await rls(async (tx) => {
+			await tx
+				.delete(draftMessages)
+				.where(eq(draftMessages.id, String(decodedForm.draftId)));
+		});
 
-        revalidatePath("/dashboard/mail");
-        return { success: true };
-    });
+		revalidatePath("/dashboard/mail");
+		return { success: true };
+	});
 }
-
 
 export async function snoozeThread(input: {
-    mailboxThreadId: string;
-    activeMailboxId: string;
-    snoozedUntil: string | null;
+	mailboxThreadId: string;
+	activeMailboxId: string;
+	snoozedUntil: string | null;
 }) {
-    return handleAction(async () => {
+	return handleAction(async () => {
+		const { mailboxThreadId, activeMailboxId, snoozedUntil } = input;
 
-        const {
-            mailboxThreadId,
-            activeMailboxId,
-            snoozedUntil
-        } = input;
+		const rls = await rlsClient();
+		await rls(async (tx) => {
+			return tx
+				.update(mailboxThreads)
+				.set({
+					snoozedUntil: snoozedUntil ? new Date(snoozedUntil) : null,
+					unsnoozedAt: snoozedUntil ? null : new Date(),
+					updatedAt: new Date(),
+				})
+				.where(
+					and(
+						eq(mailboxThreads.threadId, mailboxThreadId),
+						eq(mailboxThreads.mailboxId, activeMailboxId),
+					),
+				)
+				.returning();
+		});
 
-        const rls = await rlsClient();
-        await rls(async (tx) => {
-            return tx
-                .update(mailboxThreads)
-                .set({
-                    snoozedUntil: snoozedUntil ? new Date(snoozedUntil) : null,
-                    unsnoozedAt: snoozedUntil ? null : new Date(),
-                    updatedAt: new Date(),
-                })
-                .where(and(
-                    eq(mailboxThreads.threadId, mailboxThreadId),
-                    eq(mailboxThreads.mailboxId, activeMailboxId)
-                )).returning()
-        })
-
-        revalidatePath("/dashboard/mail");
-        return { success: true };
-    });
-
+		revalidatePath("/dashboard/mail");
+		return { success: true };
+	});
 }
 
-
 export const fetchIdentitySnoozedThreads = async (identityPublicId: string) => {
-    const rls = await rlsClient();
-    const now = new Date();
+	const rls = await rlsClient();
+	const now = new Date();
 
-    const threads = await rls((tx) => {
-        return tx
-            .select()
-            .from(mailboxThreads)
-            .where(
-                and(
-                    isNotNull(mailboxThreads.snoozedUntil),
-                    gt(mailboxThreads.snoozedUntil, now),
-                ),
-            )
-            .orderBy(desc(mailboxThreads.snoozedUntil), desc(mailboxThreads.lastActivityAt));
-    });
+	const threads = await rls((tx) => {
+		return tx
+			.select()
+			.from(mailboxThreads)
+			.where(
+				and(
+					isNotNull(mailboxThreads.snoozedUntil),
+					gt(mailboxThreads.snoozedUntil, now),
+				),
+			)
+			.orderBy(
+				desc(mailboxThreads.snoozedUntil),
+				desc(mailboxThreads.lastActivityAt),
+			);
+	});
 
-    return { threads };
+	return { threads };
 };

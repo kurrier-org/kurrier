@@ -15,14 +15,13 @@ async function Page({
 	params: { identityPublicId: string; mailboxSlug?: string };
 	searchParams: { page?: string };
 }) {
-
-    const { page } = await searchParams;
-    const { identityPublicId, mailboxSlug } = await params;
-    const publicConfig = getPublicEnv();
-    const { activeMailbox, count, mailboxSync } = await fetchMailbox(
-        identityPublicId,
-        mailboxSlug,
-    );
+	const { page } = await searchParams;
+	const { identityPublicId, mailboxSlug } = await params;
+	const publicConfig = getPublicEnv();
+	const { activeMailbox, count, mailboxSync } = await fetchMailbox(
+		identityPublicId,
+		mailboxSlug,
+	);
 
 	const mailboxThreads = await fetchMailboxThreads(
 		identityPublicId,
