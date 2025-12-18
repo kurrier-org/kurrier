@@ -12,7 +12,7 @@ import {
     messages,
     threads,
 } from "@db";
-import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
+import {and, asc, count, desc, eq, inArray, isNotNull, isNull, lte, or, sql, gt} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import {FormState, getServerEnv, handleAction, SearchThreadsResponse} from "@schema";
 import { decode } from "decode-formdata";
@@ -774,7 +774,7 @@ export const toggleStar = async (
 	revalidatePath("/mail");
 };
 
-export const fetchMailboxThreads = async (
+export const fetchMailboxThreadss = async (
 	identityPublicId: string,
 	mailboxSlug: string,
 	page: number,
@@ -796,6 +796,37 @@ export const fetchMailboxThreads = async (
 			.limit(PAGE_SIZE);
 	});
 	return threads;
+};
+
+export const fetchMailboxThreads = async (
+    identityPublicId: string,
+    mailboxSlug: string,
+    page: number,
+) => {
+    page = page && page > 0 ? page : 1;
+
+    const rls = await rlsClient();
+
+    const now = new Date();
+    const effectiveActivityAt = sql`COALESCE(${mailboxThreads.unsnoozedAt}, ${mailboxThreads.lastActivityAt})`;
+
+    const threads = await rls((tx) =>
+        tx
+            .select()
+            .from(mailboxThreads)
+            .where(
+                and(
+                    eq(mailboxThreads.identityPublicId, identityPublicId),
+                    eq(mailboxThreads.mailboxSlug, mailboxSlug),
+                    or(isNull(mailboxThreads.snoozedUntil), lte(mailboxThreads.snoozedUntil, now)),
+                ),
+            )
+            .orderBy(desc(effectiveActivityAt), desc(mailboxThreads.lastActivityAt), desc(mailboxThreads.threadId))
+            .offset((page - 1) * PAGE_SIZE)
+            .limit(PAGE_SIZE),
+    );
+
+    return threads;
 };
 
 export type FetchMailboxThreadsResult = Awaited<
@@ -1167,3 +1198,60 @@ export async function deleteScheduledDraft(
         return { success: true };
     });
 }
+
+
+export async function snoozeThread(input: {
+    mailboxThreadId: string;
+    activeMailboxId: string;
+    snoozedUntil: string | null;
+}) {
+    return handleAction(async () => {
+
+        const {
+            mailboxThreadId,
+            activeMailboxId,
+            snoozedUntil
+        } = input;
+
+        const rls = await rlsClient();
+        await rls(async (tx) => {
+            return tx
+                .update(mailboxThreads)
+                .set({
+                    snoozedUntil: snoozedUntil ? new Date(snoozedUntil) : null,
+                    unsnoozedAt: snoozedUntil ? null : new Date(),
+                    updatedAt: new Date(),
+                })
+                .where(and(
+                    eq(mailboxThreads.threadId, mailboxThreadId),
+                    eq(mailboxThreads.mailboxId, activeMailboxId)
+                )).returning()
+        })
+
+        revalidatePath("/dashboard/mail");
+        return { success: true };
+    });
+
+}
+
+
+export const fetchIdentitySnoozedThreads = async (identityPublicId: string) => {
+    const rls = await rlsClient();
+    const now = new Date();
+
+    const threads = await rls((tx) => {
+        return tx
+            .select()
+            .from(mailboxThreads)
+            .where(
+                and(
+                    eq(mailboxThreads.identityPublicId, identityPublicId),
+                    isNotNull(mailboxThreads.snoozedUntil),
+                    gt(mailboxThreads.snoozedUntil, now),
+                ),
+            )
+            .orderBy(desc(mailboxThreads.snoozedUntil), desc(mailboxThreads.lastActivityAt));
+    });
+
+    return { threads };
+};

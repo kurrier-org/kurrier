@@ -1,7 +1,7 @@
 import { SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/ui/dashboards/unified/default/app-sidebar";
 import {
-    fetchIdentityMailboxList,
+    fetchIdentityMailboxList, fetchIdentitySnoozedThreads,
     fetchMailboxUnreadCounts, fetchScheduledDraftCounts,
 } from "@/lib/actions/mailbox";
 import {fetchLabelsWithCounts} from "@/lib/actions/labels";
@@ -25,8 +25,10 @@ export default async function DashboardLayout({
 			fetchMailboxUnreadCounts(),
 			isSignedIn(),
 			fetchLabelsWithCounts(),
-            fetchScheduledDraftCounts()
+            fetchScheduledDraftCounts(),
 		]);
+    const {threads: snoozedThreads} = await fetchIdentitySnoozedThreads(identityMailboxes[0]?.identity?.publicId)
+
 
 	return (
 		<>
@@ -47,6 +49,7 @@ export default async function DashboardLayout({
 							identityMailboxes={identityMailboxes}
 							unreadCounts={unreadCounts}
                             scheduledDrafts={scheduledDrafts}
+                            snoozedThreads={snoozedThreads}
 						/>
 						<DynamicContextProvider
 							initialState={{

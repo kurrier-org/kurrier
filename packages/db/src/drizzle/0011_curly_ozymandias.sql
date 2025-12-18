@@ -1,0 +1,1 @@
+CREATE INDEX "ix_mbth_identity_slug_effective_activity" ON "mailbox_threads" USING btree ("identity_public_id","mailbox_slug",COALESCE("unsnoozed_at", "last_activity_at"),"last_activity_at","thread_id");

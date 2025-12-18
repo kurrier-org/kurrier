@@ -774,6 +774,9 @@ export const mailboxThreads = pgTable(
 			bcc?: { n?: string; e: string }[];
 		}>(),
 
+        snoozedUntil: timestamp("snoozed_until", { withTimezone: true }).default(null),
+        unsnoozedAt: timestamp("unsnoozed_at", { withTimezone: true }).default(null),
+
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()
 			.defaultNow(),
@@ -794,11 +797,22 @@ export const mailboxThreads = pgTable(
 			t.threadId,
 		),
 
+        index("ix_mbth_identity_slug_effective_activity").on(
+            t.identityPublicId,
+            t.mailboxSlug,
+            sql`COALESCE(${t.unsnoozedAt}, ${t.lastActivityAt})`,
+            t.lastActivityAt,
+            t.threadId,
+        ),
+
 		index("ix_mbth_identity_slug").on(t.identityId, t.mailboxSlug),
 		index("ix_mbth_identity_public_id").on(t.identityPublicId),
 
 		index("ix_mbth_mailbox_unread").on(t.mailboxId, t.unreadCount),
 		index("ix_mbth_mailbox_starred").on(t.mailboxId, t.starred),
+
+        index("ix_mbth_mailbox_snoozed_until").on(t.mailboxId, t.snoozedUntil),
+        index("ix_mbth_mailbox_unsnoozed_at").on(t.mailboxId, t.unsnoozedAt),
 
 		uniqueIndex("ux_mbth_thread_mailbox").on(t.threadId, t.mailboxId),
 

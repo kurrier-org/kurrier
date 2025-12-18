@@ -4,16 +4,16 @@ import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-	Inbox,
-	Send,
-	FileText,
-	Archive,
-	Ban,
-	Trash2,
-	Folder,
-	ChevronRight,
-	ChevronDown,
-	MoreVertical,
+    Inbox,
+    Send,
+    FileText,
+    Archive,
+    Ban,
+    Trash2,
+    Folder,
+    ChevronRight,
+    ChevronDown,
+    MoreVertical, Clock4,
 } from "lucide-react";
 import * as React from "react";
 import {
@@ -21,7 +21,7 @@ import {
 	FetchMailboxUnreadCountsResult,
 } from "@/lib/actions/mailbox";
 import { MailboxKind } from "@schema";
-import {DraftMessageEntity, IdentityEntity, MailboxEntity} from "@db";
+import {DraftMessageEntity, IdentityEntity, MailboxEntity, MailboxThreadEntity} from "@db";
 import AddNewFolder from "@/components/mailbox/default/add-new-folder";
 import { Menu } from "@mantine/core";
 import DeleteMailboxFolder from "@/components/mailbox/default/delete-folder";
@@ -116,11 +116,13 @@ export default function IdentityMailboxesList({
 	identityMailboxes,
 	unreadCounts,
     scheduledDrafts,
+    snoozedThreads,
 	onComplete,
 }: {
 	identityMailboxes: FetchIdentityMailboxListResult;
 	unreadCounts: FetchMailboxUnreadCountsResult;
     scheduledDrafts: DraftMessageEntity[];
+    snoozedThreads: MailboxThreadEntity[];
 	onComplete?: () => void;
 }) {
 	const pathname = usePathname();
@@ -267,6 +269,11 @@ export default function IdentityMailboxesList({
                         {scheduledCounts > 0 && <Link href={`/dashboard/mail/${params.identityPublicId}/scheduled`} className={`my-2 rounded hover:dark:bg-neutral-800 ${currentSlug === "scheduled" ? "dark:bg-neutral-800 dark:text-brand-foreground bg-brand-200 text-brand" : ""} flex justify-start gap-1 w-full p-1.5`}>
                             <IconMailFast size={22}/>
                             <span className={"font-normal text-sm"}>Scheduled ({scheduledCounts})</span>
+                        </Link>}
+
+                        {snoozedThreads.length > 0 && <Link href={`/dashboard/mail/${params.identityPublicId}/snoozed`} className={`my-2 rounded hover:dark:bg-neutral-800 ${currentSlug === "snoozed" ? "dark:bg-neutral-800 dark:text-brand-foreground bg-brand-200 text-brand" : ""} flex justify-start gap-1 w-full p-1.5 items-center`}>
+                            <Clock4 size={16}/>
+                            <span className={"font-normal text-sm"}>Snoozed ({snoozedThreads.length})</span>
                         </Link>}
 
 					</div>
