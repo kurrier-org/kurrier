@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 1.1.9
+
+### Patch Changes
+
+- [`d64032b`](https://github.com/kurrier-org/kurrier/commit/d64032bb9cf8167e697c99c3aa48fa7379eaa9f0) Thanks [@krokhale](https://github.com/krokhale)! - added subscribe list ingestion and unsubscribe links on mail page
+
 ## 1.1.8
 
 ### Patch Changes
