@@ -3,16 +3,16 @@
 import { cache } from "react";
 import { rlsClient } from "@/lib/actions/clients";
 import {
-	db,
-	DraftMessageInsertSchema,
-	draftMessages,
-	identities,
-	mailboxes,
-	mailboxSync,
-	mailboxThreads,
-	messageAttachments,
-	messages,
-	threads,
+    db,
+    DraftMessageInsertSchema,
+    draftMessages,
+    identities,
+    mailboxes,
+    mailboxSync,
+    mailboxThreads, mailSubscriptions,
+    messageAttachments,
+    messages,
+    threads,
 } from "@db";
 import {
 	and,
@@ -1293,3 +1293,120 @@ export const fetchIdentitySnoozedThreads = async (identityPublicId: string) => {
 
 	return { threads };
 };
+
+
+
+function subscriptionKeyFromHeadersJson(headersJson: any) {
+    const list = headersJson?.list ?? null;
+    const rawListId = String(headersJson?.["list-id"] ?? "").trim() || null;
+
+    let unsubscribeHttpUrl: string | null = null;
+
+    const fromList = list?.unsubscribe?.url || list?.unsubscribe?.href;
+    if (typeof fromList === "string" && fromList) unsubscribeHttpUrl = fromList;
+
+    const fromHeader = headersJson?.["list-unsubscribe"];
+    if (!unsubscribeHttpUrl && typeof fromHeader === "string") {
+        const parts = fromHeader
+            .split(",")
+            .map((s: string) => s.trim().replace(/^<|>$/g, ""));
+        const http = parts.find((p: string) => /^https?:/i.test(p));
+        if (http) unsubscribeHttpUrl = http;
+    }
+
+    if (rawListId) {
+        const cleaned = rawListId
+            .replace(/^<|>$/g, "")
+            .replace(/\s+/g, "")
+            .toLowerCase();
+        return cleaned ? `list-id:${cleaned}` : null;
+    }
+
+    if (unsubscribeHttpUrl) {
+        try {
+            const u = new URL(unsubscribeHttpUrl);
+            const p = (u.pathname || "/").replace(/\/+$/, "") || "/";
+            return `${u.protocol}//${u.host.toLowerCase()}${p}`;
+        } catch {
+            return null;
+        }
+    }
+
+    return null;
+}
+
+export async function fetchThreadMailSubscriptions(opts: {
+    ownerId: string;
+    messages: Array<{ id: string; headersJson: any }>;
+}) {
+    const keysByMessageId = new Map<string, string>();
+
+    for (const m of opts.messages) {
+        const key = subscriptionKeyFromHeadersJson(m.headersJson);
+        if (key) keysByMessageId.set(m.id, key);
+    }
+
+    const uniqueKeys = Array.from(new Set(keysByMessageId.values()));
+    if (!uniqueKeys.length) {
+        return { byMessageId: new Map<string, any>(), keysByMessageId };
+    }
+
+    const rows = await db
+        .select()
+        .from(mailSubscriptions)
+        .where(
+            and(
+                eq(mailSubscriptions.ownerId, opts.ownerId),
+                inArray(mailSubscriptions.subscriptionKey, uniqueKeys),
+            ),
+        );
+
+    const byKey = new Map(rows.map((r) => [r.subscriptionKey, r]));
+    const byMessageId = new Map<string, any>();
+
+    for (const [messageId, key] of keysByMessageId.entries()) {
+        byMessageId.set(messageId, byKey.get(key) ?? null);
+    }
+
+    return { byMessageId, keysByMessageId };
+}
+
+export type FetchThreadMailSubsResult = Awaited<
+    ReturnType<typeof fetchThreadMailSubscriptions>
+>;
+
+
+export async function oneClickUnsubscribe(
+    _prev: FormState,
+    formData: FormData,
+): Promise<FormState> {
+    return handleAction(async () => {
+        const decodedForm = decode(formData);
+        const id = String(decodedForm.mailSubscriptionId);
+        const [sub] = await db
+            .select()
+            .from(mailSubscriptions)
+            .where(and(eq(mailSubscriptions.id, id)))
+            .limit(1);
+        if (!sub?.unsubscribeHttpUrl) return { success: false, error: "Subscription not found" };
+        await fetch(sub.unsubscribeHttpUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "List-Unsubscribe=One-Click",
+            redirect: "follow",
+        });
+        await db
+            .update(mailSubscriptions)
+            .set({
+                status: "unsubscribed",
+                unsubscribedAt: new Date(),
+                updatedAt: new Date(),
+            })
+            .where(eq(mailSubscriptions.id, id));
+        revalidatePath(String(decodedForm.pathname));
+        return { success: true };
+    });
+
+
+
+}

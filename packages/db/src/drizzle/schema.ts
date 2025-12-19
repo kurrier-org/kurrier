@@ -19,25 +19,25 @@ import { users } from "./supabase-schema";
 import { authenticatedRole, authUid } from "drizzle-orm/supabase";
 import { sql } from "drizzle-orm";
 import {
-	AddressObjectJSON,
-	apiScopeList,
-	calendarAttendeePartstatList,
-	calendarAttendeeRoleList,
-	calendarBusyStatusList,
-	calendarEventStatusList,
-	draftMessageStates,
-	driveEntryTypes,
-	driveUploadIntentTypes,
-	driveVolumesList,
-	identityStatusList,
-	identityTypesList,
-	labelScopesList,
-	mailboxKindsList,
-	mailboxSyncPhase,
-	messagePriorityList,
-	messageStatesList,
-	providersList,
-	webHookList,
+    AddressObjectJSON,
+    apiScopeList,
+    calendarAttendeePartstatList,
+    calendarAttendeeRoleList,
+    calendarBusyStatusList,
+    calendarEventStatusList,
+    draftMessageStates,
+    driveEntryTypes,
+    driveUploadIntentTypes,
+    driveVolumesList,
+    identityStatusList,
+    identityTypesList,
+    labelScopesList,
+    mailboxKindsList,
+    mailboxSyncPhase, mailSubscriptionStatusList,
+    messagePriorityList,
+    messageStatesList,
+    providersList,
+    webHookList,
 } from "@schema";
 import { DnsRecord } from "@providers";
 import { nanoid } from "nanoid";
@@ -91,6 +91,8 @@ export const DraftMessageStatusEnum = pgEnum(
 	"draft_message_status",
 	draftMessageStates,
 );
+
+export const MailSubscriptionStatusEnum = pgEnum("mail_subscription_status", mailSubscriptionStatusList);
 
 export const secretsMeta = pgTable(
 	"secrets_meta",
@@ -1841,4 +1843,61 @@ export const draftMessages = pgTable(
 			using: sql`${t.ownerId} = ${authUid}`,
 		}),
 	],
+).enableRLS();
+
+
+export const mailSubscriptions = pgTable(
+    "mail_subscriptions",
+    {
+        id: uuid("id").defaultRandom().primaryKey(),
+
+        ownerId: uuid("owner_id")
+            .references(() => users.id)
+            .notNull()
+            .default(sql`auth.uid()`),
+
+        subscriptionKey: text("subscription_key").notNull(),
+
+        listId: text("list_id"),
+        unsubscribeHttpUrl: text("unsubscribe_http_url"),
+        unsubscribeMailto: text("unsubscribe_mailto"),
+        oneClick: boolean("one_click").notNull().default(false),
+
+        status: MailSubscriptionStatusEnum("status")
+            .notNull()
+            .default("subscribed"),
+
+        lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+        unsubscribedAt: timestamp("unsubscribed_at", { withTimezone: true }),
+
+        createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    },
+    (t) => [
+        uniqueIndex("uniq_mail_subscriptions_owner_key").on(t.ownerId, t.subscriptionKey),
+        index("idx_mail_subscriptions_status").on(t.ownerId, t.status),
+        index("idx_mail_subscriptions_last_seen").on(t.ownerId, t.lastSeenAt),
+
+        pgPolicy("mail_subscriptions_select_own", {
+            for: "select",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("mail_subscriptions_insert_own", {
+            for: "insert",
+            to: authenticatedRole,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("mail_subscriptions_update_own", {
+            for: "update",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("mail_subscriptions_delete_own", {
+            for: "delete",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+    ],
 ).enableRLS();
