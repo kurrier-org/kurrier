@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 1.1.8
+
+### Patch Changes
+
+- [`94fadea`](https://github.com/kurrier-org/kurrier/commit/94fadea7dd8f47ff5b659f2f578a3971dd0789af) Thanks [@krokhale](https://github.com/krokhale)! - support calendar event preview in mail
+
 ## 1.1.7
 
 ### Patch Changes
