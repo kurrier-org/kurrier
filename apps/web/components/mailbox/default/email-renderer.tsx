@@ -392,24 +392,21 @@ function EmailRenderer({
 
 			{children}
 
-			{attachments?.length > 0 && (
-				<div className={"border-t border-dotted"}>
-					<div className={"font-semibold my-4"}>
-						{attachments?.length} attachments
-					</div>
-					<div className={"flex flex-col"}>
-						{attachments?.map((attachment) => {
-							return (
-								<EditorAttachmentItem
-									key={attachment.id}
-									attachment={attachment}
-									publicConfig={publicConfig}
-								/>
-							);
-						})}
-					</div>
-				</div>
-			)}
+            {attachments?.length > 0 && (
+                <div className="border-t border-dotted py-4">
+                    <div className="font-semibold mb-4">{attachments.length} attachments</div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {attachments.map((attachment) => (
+                            <EditorAttachmentItem
+                                key={attachment.id}
+                                attachment={attachment}
+                                publicConfig={publicConfig}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
 
 			{threadIndex === numberOfMessages - 1 && !showEditor && (
 				<div className={"flex gap-6"}>
