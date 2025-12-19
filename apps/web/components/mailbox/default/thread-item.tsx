@@ -3,7 +3,7 @@ import { MessageEntity } from "@db";
 import EmailViewer from "@/components/mailbox/default/email-viewer";
 import EmailRenderer from "@/components/mailbox/default/email-renderer";
 import { Avatar } from "@mantine/core";
-import { fetchMessageAttachments } from "@/lib/actions/mailbox";
+import {fetchMessageAttachments, FetchThreadMailSubsResult} from "@/lib/actions/mailbox";
 import { getPublicEnv } from "@schema";
 import { getMessageAddress, getMessageName } from "@common/mail-client";
 import { Container } from "@/components/common/containers";
@@ -17,7 +17,8 @@ export default async function ThreadItem({
 	threadId,
 	activeMailboxId,
 	markSmtp,
-    identityPublicId
+    identityPublicId,
+    mailSubscription
 }: {
 	message: MessageEntity;
 	threadIndex: number;
@@ -26,6 +27,7 @@ export default async function ThreadItem({
 	activeMailboxId: string;
 	markSmtp: boolean;
     identityPublicId: string;
+    mailSubscription: FetchThreadMailSubsResult["byMessageId"] | null;
 }) {
 	const { attachments } = await fetchMessageAttachments(message.id);
 	const publicConfig = getPublicEnv();
@@ -59,6 +61,7 @@ export default async function ThreadItem({
 							threadId={threadId}
 							markSmtp={markSmtp}
 							activeMailboxId={activeMailboxId}
+                            mailSubscription={mailSubscription}
 						>
 							<EmailViewer message={message} />
 						</EmailRenderer>

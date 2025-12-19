@@ -11,10 +11,11 @@ import { ActionIcon, Button, Menu, Modal } from "@mantine/core";
 import { EmailEditorHandle } from "@/components/mailbox/default/editor/email-editor";
 import EditorAttachmentItem from "@/components/mailbox/default/editor/editor-attachment-item";
 import { PublicConfig } from "@schema";
-import { fetchMailbox, markAsRead } from "@/lib/actions/mailbox";
+import {fetchMailbox, FetchThreadMailSubsResult, markAsRead} from "@/lib/actions/mailbox";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useDisclosure } from "@mantine/hooks";
+import MailUnsubscriber from "@/components/mailbox/default/mail-unsubscriber";
 const EmailEditor = dynamic(
 	() => import("@/components/mailbox/default/editor/email-editor"),
 	{
@@ -86,6 +87,7 @@ function EmailRenderer({
 	threadId,
 	markSmtp,
 	activeMailboxId,
+    mailSubscription,
 	children,
 }: {
 	threadIndex: number;
@@ -96,6 +98,7 @@ function EmailRenderer({
 	threadId: string;
 	markSmtp: boolean;
 	activeMailboxId: string;
+    mailSubscription: FetchThreadMailSubsResult["byMessageId"] | null;
 	children?: React.ReactNode;
 }) {
 	const formatted = Temporal.Instant.from(message.createdAt.toISOString())
@@ -300,11 +303,12 @@ function EmailRenderer({
 
 			<div className={"grid grid-cols-12"}>
 				<div className={"col-span-12"}>
-					{threadIndex === 0 && (
-						<h1 className="text-xl font-base">
+					{threadIndex === 0 && <div className={"flex gap-3 items-center"}>
+						<div className="text-xl font-base">
 							{message.subject || "No Subject"}
-						</h1>
-					)}
+						</div>
+                        <MailUnsubscriber mailSubscription={mailSubscription} message={message}/>
+                    </div>}
 				</div>
 
 				<div className={"md:col-span-6 col-span-12 flex flex-col"}>

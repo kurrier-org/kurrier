@@ -1,15 +1,15 @@
 import { simpleParser, ParsedMail, Attachment } from "mailparser";
 import {
-	db,
-	messages,
-	messageAttachments,
-	threads,
-	MessageInsertSchema,
-	MessageCreate,
-	MessageAttachmentCreate,
-	MessageAttachmentInsertSchema,
-	contacts,
-	ContactCreate,
+    db,
+    messages,
+    messageAttachments,
+    threads,
+    MessageInsertSchema,
+    MessageCreate,
+    MessageAttachmentCreate,
+    MessageAttachmentInsertSchema,
+    contacts,
+    ContactCreate, mailSubscriptions,
 } from "@db";
 import { createClient } from "@supabase/supabase-js";
 import { getPublicEnv, getServerEnv } from "@schema";
@@ -400,6 +400,12 @@ export async function parseAndStoreEmail(
 		.returning();
 
 	if (!message) return null;
+    await ingestMailSubscriptionFromMessage({
+        ownerId,
+        parsed,
+        headersJson: (decoratedParsed as any).headersJson,
+    });
+
 	const contactId = await upsertContactsFromMessage(ownerId, parsed);
 	await upsertMailboxThreadItem(message.id);
 
@@ -493,4 +499,92 @@ export async function parseAndStoreEmail(
 	}
 
 	return message;
+}
+
+
+
+async function ingestMailSubscriptionFromMessage(opts: {
+    ownerId: string;
+    parsed: ParsedMail;
+    headersJson: Record<string, any>;
+}) {
+    const { ownerId, parsed, headersJson } = opts;
+
+    const headers = parsed.headers as Map<string, any>;
+    const list =
+        (headers.get("list") as any) ??
+        (headersJson as any)?.list ??
+        null;
+
+    const rawListId =
+        String(headers.get("list-id") ?? (headersJson as any)?.["list-id"] ?? "")
+            .trim() || null;
+
+    const unsubscribeUrl =
+        (list?.unsubscribe?.url as string | undefined) ||
+        (list?.unsubscribe?.href as string | undefined) ||
+        null;
+
+    const unsubscribePost =
+        String(list?.["unsubscribe-post"]?.name ?? "").toLowerCase() || null;
+
+    let unsubscribeMailto: string | null = null;
+    const rawListUnsub = headers.get("list-unsubscribe") ?? (headersJson as any)?.["list-unsubscribe"];
+    if (typeof rawListUnsub === "string" && rawListUnsub.toLowerCase().includes("mailto:")) {
+        const m = rawListUnsub.match(/mailto:([^>\s,]+)/i);
+        unsubscribeMailto = (m?.[1] ?? "").trim().toLowerCase() || null;
+    }
+
+    if (!rawListId && !unsubscribeUrl && !unsubscribeMailto) return;
+
+    let subscriptionKey: string | null = null;
+
+    if (rawListId) {
+        const cleaned = rawListId
+            .replace(/^<|>$/g, "")
+            .replace(/\s+/g, "")
+            .toLowerCase();
+        subscriptionKey = cleaned ? `list-id:${cleaned}` : null;
+    } else if (unsubscribeUrl) {
+        try {
+            const u = new URL(unsubscribeUrl);
+            const p = (u.pathname || "/").replace(/\/+$/, "") || "/";
+            subscriptionKey = `${u.protocol}//${u.host}${p}`;
+        } catch {
+            subscriptionKey = null;
+        }
+    } else if (unsubscribeMailto) {
+        subscriptionKey = `mailto:${unsubscribeMailto}`;
+    } else {
+        const from = getFromAddress(parsed);
+        if (from?.email?.includes("@")) {
+            subscriptionKey = `from-domain:${from.email.split("@")[1]}`;
+        }
+    }
+
+    if (!subscriptionKey) return;
+
+    const oneClick = unsubscribePost?.includes("one-click") ?? false;
+
+    await db
+        .insert(mailSubscriptions)
+        .values({
+            ownerId,
+            subscriptionKey,
+            listId: rawListId,
+            unsubscribeHttpUrl: unsubscribeUrl,
+            unsubscribeMailto,
+            oneClick,
+            lastSeenAt: new Date(),
+        } as any)
+        .onConflictDoUpdate({
+            target: [mailSubscriptions.ownerId, mailSubscriptions.subscriptionKey],
+            set: {
+                listId: rawListId,
+                unsubscribeHttpUrl: unsubscribeUrl,
+                unsubscribeMailto,
+                oneClick,
+                lastSeenAt: new Date(),
+            } as any,
+        });
 }

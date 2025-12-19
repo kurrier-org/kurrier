@@ -1,7 +1,8 @@
 import React from "react";
-import { fetchMailbox, fetchWebMailThreadDetail } from "@/lib/actions/mailbox";
+import {fetchMailbox, fetchThreadMailSubscriptions, fetchWebMailThreadDetail} from "@/lib/actions/mailbox";
 import ThreadItem from "@/components/mailbox/default/thread-item";
 import { Divider } from "@mantine/core";
+import {MessageEntity} from "@db";
 
 async function Page({
 	params,
@@ -19,6 +20,15 @@ async function Page({
 	);
 	const activeThread = await fetchWebMailThreadDetail(threadId);
 
+    const { byMessageId } = await fetchThreadMailSubscriptions({
+        ownerId: activeMailbox.ownerId,
+        messages:
+            activeThread?.messages.map((m: MessageEntity) => ({
+                id: m.id,
+                headersJson: m.headersJson,
+            })) ?? [],
+    });
+
 	return (
 		<>
 			{activeThread?.messages.map((message, threadIndex) => {
@@ -32,7 +42,8 @@ async function Page({
 							activeMailboxId={activeMailbox.id}
 							markSmtp={!!mailboxSync}
                             identityPublicId={identityPublicId}
-						/>
+                            mailSubscription={byMessageId.get(message.id) ?? null}
+                        />
 						<Divider className={"opacity-50 mb-6"} ml={"xl"} mr={"xl"} />
 					</div>
 				);

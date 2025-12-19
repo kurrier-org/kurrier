@@ -130,3 +130,12 @@ export const draftMessageStates = [
 	"canceled",
 	"failed",
 ] as const;
+
+
+export const mailSubscriptionStatusList = [
+    "subscribed",
+    "unsubscribed",
+    "pending",
+    "failed",
+] as const;
+
