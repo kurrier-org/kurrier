@@ -2,9 +2,9 @@
 import React from "react";
 import Link from "next/link";
 import { ContactEntity } from "@db";
-import NextImage from "next/image";
 import { useParams } from "next/navigation";
 import { Star } from "lucide-react";
+import ContactListAvatar from "@/components/dashboard/contacts/contact-list-avatar";
 
 export type ContactWithFavorite = ContactEntity & {
 	isFavorite: boolean;
@@ -61,20 +61,8 @@ function ContactsList({
 								: `/dashboard/contacts/${c.publicId}`
 						}
 					>
-						{imagePath ? (
-							<NextImage
-								src={imagePath}
-								alt={c.firstName}
-								unoptimized
-								width={50}
-								height={50}
-								className="rounded-full h-8 w-8 object-cover object-top-left"
-							/>
-						) : (
-							<div className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold text-white bg-pink-500">
-								{c?.firstName?.[0] ?? "?"}
-							</div>
-						)}
+
+                        <ContactListAvatar signedUrl={imagePath} alt={c?.firstName} />
 
 						<div className="min-w-0 flex-1">
 							<div className="truncate text-sm font-medium text-foreground flex justify-between">

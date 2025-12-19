@@ -31,6 +31,7 @@ async function Page({
 							threadId={threadId}
 							activeMailboxId={activeMailbox.id}
 							markSmtp={!!mailboxSync}
+                            identityPublicId={identityPublicId}
 						/>
 						<Divider className={"opacity-50 mb-6"} ml={"xl"} mr={"xl"} />
 					</div>

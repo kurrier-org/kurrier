@@ -1,14 +1,14 @@
 "use server";
 import { rlsClient } from "@/lib/actions/clients";
 import {
-	CalendarEventAttendeeEntity,
-	CalendarEventEntity,
-	CalendarEventInsertSchema,
-	calendarEvents,
-	CalendarEventUpdateSchema,
-	calendars,
-	contacts,
-	identities,
+    CalendarEventAttendeeEntity,
+    CalendarEventEntity,
+    CalendarEventInsertSchema,
+    calendarEvents,
+    CalendarEventUpdateSchema,
+    calendars,
+    contacts,
+    identities, MessageAttachmentEntity,
 } from "@db";
 import {
 	and,
@@ -997,3 +997,68 @@ export async function fetchCalendarEventsForRange(
 			),
 	);
 }
+
+const isCalendar = (a: MessageAttachmentEntity) => {
+    const ct = (a.contentType || "").toLowerCase();
+    const fn = (a.filenameOriginal || "").toLowerCase();
+    return (
+        ct.includes("text/calendar") ||
+        ct.includes("application/ics") ||
+        ct.includes("application/octet-stream") && fn.endsWith(".ics") ||
+        fn.endsWith(".ics") ||
+        fn.endsWith(".calendar")
+    );
+};
+function extractIcalUid(icsText: string): string | null {
+    const unfolded = icsText.replace(/\r?\n[ \t]/g, "");
+    const match = unfolded.match(/^UID:(.+)$/m);
+    return match ? match[1].trim() : null;
+}
+export async function fetchEventPreviewItems(
+    attachments: MessageAttachmentEntity[],
+    identityPublicId: string,
+) {
+    const messageAttachment = attachments?.find(isCalendar);
+    if (!messageAttachment) {
+        return { calendarEvent: null, attendees: null, identity: null };
+    }
+    const supabase = await createClient();
+    const { data } = await supabase.storage
+        .from("attachments")
+        .download(String(messageAttachment.path));
+    const rawICS = await data?.text();
+    const uid = rawICS ? extractIcalUid(rawICS) : null;
+    const rls = await rlsClient();
+
+    const [calendarEvent] = await rls((tx) =>
+        tx
+            .select()
+            .from(calendarEvents)
+            .where(eq(calendarEvents.icalUid, String(uid)))
+    );
+
+    if (!calendarEvent) {
+        return { calendarEvent: null, attendees: null, identity: null };
+    }
+
+    const attendees = await rls((tx) =>
+        tx
+            .select()
+            .from(calendarEventAttendees)
+            .where(eq(calendarEventAttendees.eventId, calendarEvent.id))
+    );
+
+    const [identity] = await rls((tx) =>
+        tx
+            .select()
+            .from(identities)
+            .where(eq(identities.publicId, identityPublicId))
+    );
+
+    return { calendarEvent, attendees, identity }
+
+}
+
+export type FetchEventPreviewItemsResult = Awaited<
+    ReturnType<typeof fetchEventPreviewItems>
+>;
