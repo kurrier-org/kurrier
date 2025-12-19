@@ -7,6 +7,8 @@ import { fetchMessageAttachments } from "@/lib/actions/mailbox";
 import { getPublicEnv } from "@schema";
 import { getMessageAddress, getMessageName } from "@common/mail-client";
 import { Container } from "@/components/common/containers";
+import RenderInvite from "@/components/mailbox/default/render-invite";
+import {fetchEventPreviewItems} from "@/lib/actions/calendar";
 
 export default async function ThreadItem({
 	message,
@@ -15,6 +17,7 @@ export default async function ThreadItem({
 	threadId,
 	activeMailboxId,
 	markSmtp,
+    identityPublicId
 }: {
 	message: MessageEntity;
 	threadIndex: number;
@@ -22,9 +25,12 @@ export default async function ThreadItem({
 	threadId: string;
 	activeMailboxId: string;
 	markSmtp: boolean;
+    identityPublicId: string;
 }) {
 	const { attachments } = await fetchMessageAttachments(message.id);
 	const publicConfig = getPublicEnv();
+    const preview = await fetchEventPreviewItems(attachments, identityPublicId)
+
 	return (
 		<>
 			<Container variant="wide">
@@ -40,6 +46,10 @@ export default async function ThreadItem({
 						/>
 					</div>
 					<div className={"col-span-12 md:col-span-11"}>
+                        {preview?.calendarEvent && preview?.attendees && preview?.identity && (
+                            <RenderInvite calendarEvent={preview.calendarEvent} attendees={preview.attendees ?? []} identity={preview.identity}/>
+                        )}
+
 						<EmailRenderer
 							threadIndex={threadIndex}
 							numberOfMessages={numberOfMessages}

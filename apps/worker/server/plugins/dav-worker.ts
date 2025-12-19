@@ -56,6 +56,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 					return createCalendarEvent(
 						job.data.eventId,
 						job.data.notifyAttendees,
+                        job.data.uid,
 					);
 				case "dav:calendar:update-event":
 					return updateCalendarEvent(

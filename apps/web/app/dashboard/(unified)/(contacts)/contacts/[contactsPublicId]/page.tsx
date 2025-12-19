@@ -1,5 +1,4 @@
 import React from "react";
-import NextImage from "next/image";
 import { eq } from "drizzle-orm";
 import { rlsClient } from "@/lib/actions/clients";
 import { contacts } from "@db";
@@ -8,7 +7,6 @@ import { ActionIcon } from "@mantine/core";
 import {
 	IconEdit,
 	IconLabelFilled,
-	IconLocation,
 	IconMap,
 } from "@tabler/icons-react";
 import Link from "next/link";
@@ -26,6 +24,7 @@ import Form from "next/form";
 import { getCountryDataList, TCountryCode } from "countries-list";
 import { getRedis } from "@/lib/actions/get-redis";
 import { isSignedIn } from "@/lib/actions/auth";
+import ContactListAvatar from "@/components/dashboard/contacts/contact-list-avatar";
 
 async function Page({ params }: { params: { contactsPublicId: string } }) {
 	const { contactsPublicId } = await params;
@@ -42,13 +41,6 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 			</div>
 		);
 	}
-
-	const initials =
-		[contact.firstName, contact.lastName]
-			.filter(Boolean)
-			.map((s) => s?.trim()[0])
-			.join("")
-			.toUpperCase() || "?";
 
 	const emails = Array.isArray(contact.emails) ? contact.emails : [];
 	const phones = Array.isArray(contact.phones) ? contact.phones : [];
@@ -121,20 +113,7 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 			<div className="bg-gradient-to-b from-primary/5 via-background to-background/80 dark:from-primary/15 dark:via-background dark:to-background/40 px-3 py-4 sm:px-6 lg:px-8 shadow-[0_1px_0_rgba(15,23,42,0.04)] dark:shadow-[0_1px_0_rgba(15,23,42,0.6)]">
 				<div className="mx-auto flex max-w-5xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 					<div className="flex items-start gap-4">
-						{profilePictureUrl ? (
-							<NextImage
-								src={profilePictureUrl}
-								alt={contact.firstName}
-								unoptimized
-								width={80}
-								height={80}
-								className="h-16 w-16 rounded-full object-cover object-top-left ring-2 ring-primary/30 dark:ring-primary/60"
-							/>
-						) : (
-							<div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-tr from-primary/80 to-primary text-lg font-semibold uppercase text-primary-foreground shadow-sm dark:shadow-[0_0_18px_rgba(129,140,248,0.35)]">
-								{initials}
-							</div>
-						)}
+                        <ContactListAvatar signedUrl={profilePictureUrl} alt={contact?.firstName} size={64} />
 
 						<div className="min-w-0 flex-1 space-y-1.5">
 							<div className="flex flex-wrap items-center gap-2">

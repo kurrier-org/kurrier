@@ -669,6 +669,7 @@ async function applyIncomingRequest({
 		await davWorkerQueue.add("dav:calendar:create-event", {
 			eventId,
 			notifyAttendees: false,
+            uid,
 		});
 	} else {
 		eventId = existing.id;

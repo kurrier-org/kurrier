@@ -55,6 +55,7 @@ async function createCalendarObjectViaHttp(opts: {
 export const createCalendarEvent = async (
 	eventId: string,
 	notifyAttendees: boolean,
+    uid?: string,
 ) => {
 	const [event] = await db
 		.select()
@@ -121,6 +122,7 @@ export const createCalendarEvent = async (
 			davUri,
 			davEtag: normalizeEtag(etag),
 			rawIcs: icalData,
+            icalUid: uid ? uid : event.id,
 			updatedAt: new Date(),
 		})
 		.where(eq(calendarEvents.id, event.id));
