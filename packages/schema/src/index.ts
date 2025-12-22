@@ -10,3 +10,4 @@ export * from "./types/common";
 export * from "./types/api";
 export * from "./types/calendar";
 export * from "./types/drive";
+export * from "./types/mail-rules";

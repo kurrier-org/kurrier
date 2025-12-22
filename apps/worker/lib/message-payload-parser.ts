@@ -28,6 +28,7 @@ const supabase = createClient(
 
 const SEARCH_BATCH_SIZE = 100;
 const WEBHOOK_BATCH_SIZE = 100;
+const RULES_BATCH_SIZE = 100;
 const CALENDAR_BATCH_SIZE = 100;
 const FLUSH_INTERVAL_MS = 1000;
 
@@ -42,14 +43,18 @@ type ICSJob = {
 	messageAttachmentId: string;
 	mailboxId: string;
 };
+type RulesJob = {
+    messageId: string;
+};
 
 let searchBuffer: SearchJob[] = [];
 let webhookBuffer: WebhookJob[] = [];
 let icsBuffer: ICSJob[] = [];
+let rulesBuffer: RulesJob[] = [];
 let flushTimer: any = null;
 
 async function flushBatches() {
-	if (!searchBuffer.length && !webhookBuffer.length && !icsBuffer.length)
+	if (!searchBuffer.length && !webhookBuffer.length && !icsBuffer.length && !rulesBuffer.length)
 		return;
 
 	try {
@@ -105,6 +110,17 @@ async function flushBatches() {
 			await commonWorkerQueue.addBulk(jobs);
 			webhookBuffer = [];
 		}
+
+        if (rulesBuffer.length) {
+            const jobs = rulesBuffer.map((job) => ({
+                name: "rules:processor",
+                data: {
+                    messageId: job.messageId
+                },
+            }));
+            await commonWorkerQueue.addBulk(jobs);
+            rulesBuffer = [];
+        }
 	} catch (err: any) {
 		console.error(
 			"[parseAndStoreEmail] Error flushing batches:",
@@ -491,7 +507,8 @@ export async function parseAndStoreEmail(
 
 	if (mode === "live") {
 		webhookBuffer.push({ message, rawEmail });
-		if (webhookBuffer.length >= WEBHOOK_BATCH_SIZE) {
+		rulesBuffer.push({ messageId: message.id });
+		if ((webhookBuffer.length >= WEBHOOK_BATCH_SIZE) || (rulesBuffer.length >= RULES_BATCH_SIZE)) {
 			await flushBatches();
 		} else {
 			scheduleFlush();

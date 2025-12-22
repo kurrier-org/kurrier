@@ -1,0 +1,1 @@
+DROP INDEX "uniq_mail_rules_owner_identity_name";
