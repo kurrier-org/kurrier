@@ -33,7 +33,8 @@ import {
     identityTypesList,
     labelScopesList,
     mailboxKindsList,
-    mailboxSyncPhase, mailSubscriptionStatusList,
+    mailboxSyncPhase, MailRuleMatchV1,
+    mailRulesActionsList, mailRulesFieldsList, mailRulesLogicList, mailRulesOpsList, mailSubscriptionStatusList,
     messagePriorityList,
     messageStatesList,
     providersList,
@@ -93,6 +94,7 @@ export const DraftMessageStatusEnum = pgEnum(
 );
 
 export const MailSubscriptionStatusEnum = pgEnum("mail_subscription_status", mailSubscriptionStatusList);
+export const MailRuleActionTypeEnum = pgEnum("mail_rule_action_type", mailRulesActionsList);
 
 export const secretsMeta = pgTable(
 	"secrets_meta",
@@ -1895,6 +1897,109 @@ export const mailSubscriptions = pgTable(
             withCheck: sql`${t.ownerId} = ${authUid}`,
         }),
         pgPolicy("mail_subscriptions_delete_own", {
+            for: "delete",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+    ],
+).enableRLS();
+
+
+
+
+export const mailRules = pgTable(
+    "mail_rules",
+    {
+        id: uuid("id").defaultRandom().primaryKey(),
+
+        ownerId: uuid("owner_id")
+            .references(() => users.id)
+            .notNull()
+            .default(sql`auth.uid()`),
+
+        identityId: uuid("identity_id")
+            .references(() => identities.id, { onDelete: "cascade" })
+            .notNull(),
+
+        name: text("name").notNull(),
+        enabled: boolean("enabled").notNull().default(true),
+
+        priority: integer("priority").notNull().default(100),
+        stopProcessing: boolean("stop_processing").notNull().default(false),
+
+        match: jsonb("match").$type<MailRuleMatchV1>().notNull(),
+
+        createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    },
+    (t) => [
+        index("idx_mail_rules_owner_identity").on(t.ownerId, t.identityId),
+        index("idx_mail_rules_owner_enabled_priority").on(t.ownerId, t.enabled, t.priority),
+
+        pgPolicy("mail_rules_select_own", {
+            for: "select",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("mail_rules_insert_own", {
+            for: "insert",
+            to: authenticatedRole,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("mail_rules_update_own", {
+            for: "update",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("mail_rules_delete_own", {
+            for: "delete",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+    ],
+).enableRLS();
+
+export const mailRuleActions = pgTable(
+    "mail_rule_actions",
+    {
+        id: uuid("id").defaultRandom().primaryKey(),
+        ownerId: uuid("owner_id")
+            .references(() => users.id)
+            .notNull()
+            .default(sql`auth.uid()`),
+        ruleId: uuid("rule_id")
+            .references(() => mailRules.id, { onDelete: "cascade" })
+            .notNull(),
+        actionType: MailRuleActionTypeEnum("action_type").notNull(),
+        order: integer("order").notNull().default(0),
+        params: jsonb("params")
+            .$type<{ labelId?: string; mailboxId?: string } | null>()
+            .default(sql`null`),
+        createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    },
+    (t) => [
+        uniqueIndex("uniq_mail_rule_actions_rule_order").on(t.ruleId, t.order),
+        index("idx_mail_rule_actions_rule").on(t.ruleId),
+
+        pgPolicy("mail_rule_actions_select_own", {
+            for: "select",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("mail_rule_actions_insert_own", {
+            for: "insert",
+            to: authenticatedRole,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("mail_rule_actions_update_own", {
+            for: "update",
+            to: authenticatedRole,
+            using: sql`${t.ownerId} = ${authUid}`,
+            withCheck: sql`${t.ownerId} = ${authUid}`,
+        }),
+        pgPolicy("mail_rule_actions_delete_own", {
             for: "delete",
             to: authenticatedRole,
             using: sql`${t.ownerId} = ${authUid}`,

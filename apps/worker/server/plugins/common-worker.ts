@@ -6,6 +6,7 @@ import { PROVIDERS, STORAGE_PROVIDERS } from "@schema";
 import { kvDel, kvGet, kvSet } from "@common";
 import { processWebhook } from "../../lib/webhooks/message.received";
 import { and, isNull, lte } from "drizzle-orm";
+import { processRules } from "../../lib/rules/rules-processor";
 
 export default defineNitroPlugin(async (nitroApp) => {
 	const connection = (await getRedis()).connection;
@@ -38,6 +39,13 @@ export default defineNitroPlugin(async (nitroApp) => {
 					await processWebhook({ message, rawEmail });
 					return { success: true };
 				}
+                case "rules:processor": {
+                    const { messageId } = job.data as {
+                        messageId: string;
+                    };
+                    await processRules({ messageId });
+                    return { success: true };
+                }
 				case "mail:snooze-tick": {
 					const now = new Date();
 					await db
@@ -99,17 +107,11 @@ export default defineNitroPlugin(async (nitroApp) => {
 
 		nitroApp.hooks.hookOnce("close", async () => {
 			console.log("Closing common-worker tunnel");
-			// try {
-			//     await scheduler.removeJobScheduler("snooze-tick-scheduler");
-			// } catch {}
 		});
 	} else {
 		console.log("Local tunnel not enabled");
 		await kvDel("local-tunnel-url");
 		nitroApp.hooks.hookOnce("close", async () => {
-			// try {
-			//     await scheduler.removeJobScheduler("snooze-tick-scheduler");
-			// } catch {}
 		});
 	}
 });
