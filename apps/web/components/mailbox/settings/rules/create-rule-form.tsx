@@ -6,6 +6,7 @@ import { ReusableForm } from "@/components/common/reusable-form";
 import type { BaseFormProps } from "@schema";
 import { ReusableFormItems } from "@/components/common/reusable-form-items";
 import { LabelEntity } from "@db";
+import {FetchAppLabelsResult} from "@/lib/actions/mail-rules";
 
 type BoolSwitchProps = {
     name: string;
@@ -107,7 +108,7 @@ const SIZE_UNIT_OPTIONS = [
     { value: "MB", label: "MB" },
 ] as const;
 
-export default function CreateRuleFormGmailV1({ action, identityId, appLabels, initialName = "New rule"}: { action: any; identityId: string; appLabels: LabelEntity[], initialName?: string; }) {
+export default function CreateRuleFormGmailV1({ action, identityId, appLabels, initialName = "New rule"}: { action: any; identityId: string; appLabels: FetchAppLabelsResult, initialName?: string; }) {
     const [applyLabel, setApplyLabel] = useState(false);
 
     const criteriaFields: BaseFormProps["fields"] = [

@@ -3,7 +3,7 @@ import { eq, ne } from "drizzle-orm";
 import { identities, labels } from "@db";
 import SectionCard from "@/components/mailbox/settings/settings-section-card";
 import CreateMailRuleForm from "@/components/mailbox/settings/rules/create-rule-form";
-import { createRule, fetchMailRules } from "@/lib/actions/mail-rules";
+import {createRule, fetchMailRules, getAppLabels} from "@/lib/actions/mail-rules";
 import { rlsClient } from "@/lib/actions/clients";
 import MailRulesList from "@/components/mailbox/settings/rules/mail-rules-list";
 import { Divider } from "@mantine/core";
@@ -20,9 +20,7 @@ async function Page({ params }: { params: { identityPublicId: string } }) {
             .where(eq(identities.publicId, resolvedParams.identityPublicId)),
     );
 
-    const appLabels = await rls((tx) =>
-        tx.select().from(labels).where(ne(labels.isSystem, true))
-    );
+
 
 
     if (!identity) {
@@ -35,6 +33,7 @@ async function Page({ params }: { params: { identityPublicId: string } }) {
         );
     }
 
+    const appLabels = await getAppLabels();
     const rules = await fetchMailRules(identity.id);
 
     return (

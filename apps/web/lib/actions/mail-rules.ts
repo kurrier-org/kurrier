@@ -1,9 +1,9 @@
 "use server";
 
 import { rlsClient } from "@/lib/actions/clients";
-import { mailRules, mailRuleActions } from "@db";
+import {mailRules, mailRuleActions, labels} from "@db";
 import { handleAction, mailRulesActionsList, mailRulesFieldsList, mailRulesOpsList } from "@schema";
-import { asc, eq } from "drizzle-orm";
+import {asc, eq, ne} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { decode } from "decode-formdata";
 
@@ -290,3 +290,14 @@ export async function toggleRule(_prev: any, formData: FormData) {
         return { success: true };
     });
 }
+
+export async function getAppLabels() {
+    const rls = await rlsClient();
+    return await rls((tx) =>
+        tx.select().from(labels).where(ne(labels.isSystem, true))
+    );
+}
+
+export type FetchAppLabelsResult = Awaited<
+    ReturnType<typeof getAppLabels>
+>;
