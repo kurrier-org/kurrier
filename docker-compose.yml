@@ -1,7 +1,6 @@
 name: kurrier
 services:
   web:
-
     image: ghcr.io/kurrier-org/kurrier-web:v1.1.11
     restart: unless-stopped
     ports:
