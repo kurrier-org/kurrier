@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 1.1.10
+
+### Patch Changes
+
+- [`321189d`](https://github.com/kurrier-org/kurrier/commit/321189dc1c77b5613038e991c5763d6c18a3fe15) Thanks [@krokhale](https://github.com/krokhale)! - support for rules and actions for mailboxes
+
 ## 1.1.9
 
 ### Patch Changes
