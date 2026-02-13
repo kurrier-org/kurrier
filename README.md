@@ -1,24 +1,6 @@
 # Kurrier
 The self-hosted open-source workspace for **email, calendars, contacts and storage**.
 
-## ☁️ Try Kurrier Cloud (Hosted)
-
-> **Don’t want to self-host right now?**
-
-Kurrier is also available as a **fully hosted service** at  
-👉 **https://www.kurrier.io**
-
-- No setup or maintenance
-- Bring your own email providers (SES, SMTP, Mailgun, Postmark)
-- Shared workspaces, inboxes, identities, calendars, and contacts out of the box
-
-👉 **[Create a free account →](https://www.kurrier.io)**
-
-<sub>
-Kurrier Cloud helps fund ongoing open-source development.  
-You can self-host Kurrier at any time — no lock-in.
-</sub>
-
 
 ## ✨ What's New
 
