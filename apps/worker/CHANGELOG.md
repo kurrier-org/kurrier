@@ -1,5 +1,11 @@
 # @kurrier/worker
 
+## 0.2.3
+
+### Patch Changes
+
+- [`91a1948`](https://github.com/kurrier-org/kurrier/commit/91a19484d76595b7045f8ffa6dd399fe05ba2a3a) Thanks [@krokhale](https://github.com/krokhale)! - Stability update for safe reconnection
+
 ## 0.2.2
 
 ### Patch Changes
