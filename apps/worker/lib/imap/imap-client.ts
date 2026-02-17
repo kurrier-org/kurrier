@@ -2,10 +2,22 @@ import { db, decryptAdminSecrets, identities, smtpAccountSecrets } from "@db";
 import { eq } from "drizzle-orm";
 import { ImapFlow } from "imapflow";
 
+const retryCounts = new Map<string, number>();
+const MAX_RETRIES = 3;
+
 function safeReconnect(
 	identityId: string,
 	imapInstances: Map<string, ImapFlow>,
 ) {
+	const currentRetries = retryCounts.get(identityId) ?? 0;
+
+	if (currentRetries >= MAX_RETRIES) {
+		console.error(`[IMAP:${identityId}] Max retries reached. Giving up.`);
+		return;
+	}
+
+	retryCounts.set(identityId, currentRetries + 1);
+
 	const existing = imapInstances.get(identityId);
 	if (existing) {
 		try {
@@ -13,10 +25,10 @@ function safeReconnect(
 		} catch {}
 		imapInstances.delete(identityId);
 	}
-	setTimeout(
-		() => initSmtpClient(identityId, imapInstances).catch(console.error),
-		5000,
-	);
+
+	setTimeout(() => {
+		initSmtpClient(identityId, imapInstances).catch(console.error);
+	}, 5000);
 }
 
 export const initSmtpClient = async (
