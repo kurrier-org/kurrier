@@ -33,6 +33,7 @@ services:
       SEARCH_REBUILD_ON_BOOT: ${SEARCH_REBUILD_ON_BOOT}
       WORKER_URL: ${WORKER_URL}
       DAV_URL: http://dav:5232
+      DISABLE_SIGNUP: ${DISABLE_SIGNUP}
 
   worker:
     image: ghcr.io/kurrier-org/kurrier-worker:v0.0.85
