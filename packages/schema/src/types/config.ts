@@ -32,6 +32,7 @@ export const ZPublicConfig = z.object({
 	ANON_KEY: z.string("ANON_KEY must be present"),
 	WEB_URL: z.string("WEB_URL must be present"),
 	DOCS_URL: z.string().optional(),
+	DISABLE_SIGNUP: z.string().optional().transform((val) => val === "true").default(false),
 });
 
 export type ServerConfig = z.infer<typeof ZServerConfig>;

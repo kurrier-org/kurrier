@@ -1,6 +1,6 @@
 "use server";
 
-import { FormState, getServerEnv } from "@schema";
+import { FormState, getServerEnv, getPublicEnv } from "@schema";
 import { formDataToJson } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -76,6 +76,15 @@ export async function signup(
 	prev: FormState,
 	formData: FormData,
 ): Promise<FormState> {
+	// Check if signup is disabled
+	const { DISABLE_SIGNUP } = getPublicEnv();
+	if (DISABLE_SIGNUP) {
+		return {
+			success: false,
+			error: "Signup is currently disabled. Please contact your administrator.",
+		};
+	}
+
 	const values = formDataToJson(formData);
 	const supabase = await createClient();
 	const { data, error } = await supabase.auth.signUp({
