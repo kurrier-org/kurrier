@@ -1,6 +1,22 @@
 # Kurrier
 The self-hosted open-source workspace for **email, calendars, contacts and storage**.
 
+## 🚀 Sponsored Roadmap
+
+The following features are open for sponsorship:
+
+• Native Mobile Client (iOS & Android)  
+• Multi-Tenant Hosting Administration Panel  
+• Enterprise Compliance Toolkit
+• Advanced White-Label & Branding Controls
+
+## Sponsor Development
+
+Organizations and institutions interested in accelerating specific features (e.g., mobile client, alternative database support, enterprise admin tooling) can sponsor development.
+
+Contact: support@kurrier.org
+👉 **[Support development](https://buy.stripe.com/dRmfZje75d4OaGG8ux3Nm00)**
+
 
 ## ✨ What's New
 
