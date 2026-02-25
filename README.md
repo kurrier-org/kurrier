@@ -1,6 +1,8 @@
 # Kurrier
 The self-hosted open-source workspace for **email, calendars, contacts and storage**.
 
+>![img.png](img.png) If Kurrier is useful to you, please consider ⭐ starring the repository and sharing it with others who care about open, self-hosted infrastructure. Word of mouth and GitHub stars help the project grow, attract contributors, and accelerate development.
+
 ## 🚀 Sponsored Roadmap
 
 The following features are open for sponsorship:
