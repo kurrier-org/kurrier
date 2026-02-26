@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 1.1.13
+
+### Patch Changes
+
+- [`eb8f392`](https://github.com/kurrier-org/kurrier/commit/eb8f3928533bd4772134b383afdb6dd288b5a371) Thanks [@krokhale](https://github.com/krokhale)! - hide registration link when signup is disabled
+
 ## 1.1.12
 
 ### Patch Changes
