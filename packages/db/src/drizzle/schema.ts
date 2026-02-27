@@ -39,6 +39,7 @@ import {
     messageStatesList,
     providersList,
     webHookList,
+    FolderMappings,
 } from "@schema";
 import { DnsRecord } from "@providers";
 import { nanoid } from "nanoid";
@@ -392,6 +393,9 @@ export const identities = pgTable(
 
 		dnsRecords: jsonb("dns_records").$type<DnsRecord[] | null>().default(null),
 		metaData: jsonb("meta").$type<Record<string, any> | null>().default(null),
+		folderMappings: jsonb("folder_mappings")
+			.$type<FolderMappings | null>()
+			.default(sql`NULL`),
 		providerId: uuid("provider_id").references(() => providers.id), // SES/SendGrid/Mailgun/Postmark
 		smtpAccountId: uuid("smtp_account_id").references(() => smtpAccounts.id), // Custom SMTP
 

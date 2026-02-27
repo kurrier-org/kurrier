@@ -13,7 +13,9 @@ import {
 	ensureParentChain,
 	findLocalByPath,
 	inferKind,
+	getKindFromMapping,
 } from "./discover-helpers";
+import { FolderMappings } from "@schema";
 import { ensureTrashFolder } from "./discover-trash";
 
 export const discoverMailboxes = async (
@@ -25,6 +27,8 @@ export const discoverMailboxes = async (
 		.from(identities)
 		.where(eq(identities.id, identityId));
 	if (!identity) return;
+
+	const folderMappings = (identity as any).folderMappings as FolderMappings | null;
 
 	const locals = await db
 		.select()
@@ -92,7 +96,7 @@ export const discoverMailboxes = async (
 			parentId,
 			name,
 			slug: slugify(mbx.name.toLowerCase()),
-			kind: inferKind(mbx.name, mbx.specialUse as string | undefined),
+			kind: getKindFromMapping(path, folderMappings) ?? inferKind(mbx.name, mbx.specialUse as string | undefined),
 			isDefault: path === "INBOX",
 			metaData: meta,
 		};
@@ -122,6 +126,7 @@ export const discoverMailboxes = async (
 					parentId,
 					name,
 					slug: slugify(path.toLowerCase()),
+					kind: getKindFromMapping(path, folderMappings) ?? inferKind(mbx.name, mbx.specialUse as string | undefined),
 					metaData: meta as any,
 					updatedAt: new Date(),
 				} as any)
