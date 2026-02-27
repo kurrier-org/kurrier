@@ -38,7 +38,7 @@ function MailPagination({
 			<Pagination
 				value={activePage}
 				onChange={updatePageNumber}
-				total={count > 0 ? count / 50 : 0}
+				total={count > 0 ? Math.ceil(count / 50) : 0}
 			/>
 		</div>
 	);
