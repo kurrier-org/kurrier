@@ -3,22 +3,8 @@ The self-hosted open-source workspace for **email, calendars, contacts and stora
 
 > If Kurrier is useful to you, please consider ⭐ starring the repository and sharing it with others who care about open, self-hosted infrastructure. Word of mouth and GitHub stars help the project grow, attract contributors, and accelerate development.
 
-## 🚀 Sponsored Roadmap
 
-The following features are open for sponsorship:
-
-• Native Mobile Client (iOS & Android)  
-• Multi-Tenant Hosting Administration Panel  
-• Enterprise Compliance Toolkit
-• Advanced White-Label & Branding Controls
-
-## Sponsor Development
-
-Organizations and institutions interested in accelerating specific features (e.g., mobile client, alternative database support, enterprise admin tooling) can sponsor development.
-
-Contact: support@kurrier.org
-👉 **[Support development](https://buy.stripe.com/dRmfZje75d4OaGG8ux3Nm00)**
-
+### 🚀 Don't want to self-host? Try the hosted version **[here](https://www.kurriermail.com)**
 
 ## ✨ What's New
 
