@@ -48,6 +48,7 @@ async function Page({
 				/>
 
 				<MailPagination
+					key={page}
 					count={count}
 					mailboxSlug={activeMailbox.slug}
 					identityPublicId={identityPublicId}
