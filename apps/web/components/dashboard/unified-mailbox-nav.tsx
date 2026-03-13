@@ -1,21 +1,21 @@
 "use client";
 
-import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import type { IdentityEntity, MailboxEntity } from "@db";
+import type { MailboxKind } from "@schema";
 import {
-	Inbox,
-	Send,
-	FileText,
 	Archive,
 	Ban,
-	Trash2,
+	FileText,
 	Folder,
+	Inbox,
 	Plus,
+	Send,
+	Trash2,
 } from "lucide-react";
-import { IdentityEntity, MailboxEntity } from "@db";
-import { FetchIdentityMailboxListResult } from "@/lib/actions/mailbox";
-import { MailboxKind } from "@schema";
+import Link from "next/link";
+import { useParams, usePathname } from "next/navigation";
+import type { FetchIdentityMailboxListResult } from "@/lib/actions/mailbox";
+import { cn } from "@/lib/utils";
 
 type Mailbox = {
 	slug: string | null;

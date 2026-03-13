@@ -1,6 +1,7 @@
 "use client";
 
 import type { MailboxEntity } from "@db";
+import type { MailboxKind } from "@schema";
 import {
 	Archive,
 	Ban,
@@ -14,16 +15,6 @@ import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { MailboxColorPicker } from "./mailbox-color-picker";
-
-type MailboxKind =
-	| "inbox"
-	| "sent"
-	| "drafts"
-	| "archive"
-	| "spam"
-	| "trash"
-	| "outbox"
-	| "custom";
 
 export function MailboxNav({
 	mailboxes,
