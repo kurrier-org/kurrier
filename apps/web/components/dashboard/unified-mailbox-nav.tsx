@@ -118,6 +118,12 @@ export function UnifiedMailboxNav({
 					isActive && "bg-sidebar-accent text-sidebar-accent-foreground",
 				)}
 			>
+				{m.mailbox.color ? (
+					<div
+						className="h-2.5 w-2.5 shrink-0 rounded-full"
+						style={{ backgroundColor: m.mailbox.color }}
+					/>
+				) : null}
 				<Icon className="h-4 w-4 shrink-0" />
 				<span className="min-w-0 truncate">
 					{m.mailbox.kind === "custom"

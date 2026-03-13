@@ -452,6 +452,7 @@ export const mailboxes = pgTable(
 		name: text("name"),
 		slug: text("slug"),
 		isDefault: boolean("is_default").notNull().default(false),
+		color: text("color"),
 		metaData: jsonb("meta").$type<Record<string, any> | null>().default(null),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()

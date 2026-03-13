@@ -1,35 +1,29 @@
 "use client";
 
-import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import type { MailboxEntity } from "@db";
 import {
-	Inbox,
-	Send,
-	FileText,
 	Archive,
 	Ban,
-	Trash2,
+	FileText,
 	Folder,
-	Plus,
+	Inbox,
+	Send,
+	Trash2,
 } from "lucide-react";
-import { MailboxEntity } from "@db";
+import Link from "next/link";
+import { useParams, usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { MailboxColorPicker } from "./mailbox-color-picker";
 
-type Mailbox = {
-	slug: string | null;
-	kind:
-		| "inbox"
-		| "sent"
-		| "drafts"
-		| "archive"
-		| "spam"
-		| "trash"
-		| "outbox"
-		| "custom";
-	name?: string | null;
-	unreadCount?: number | null;
-};
+type MailboxKind =
+	| "inbox"
+	| "sent"
+	| "drafts"
+	| "archive"
+	| "spam"
+	| "trash"
+	| "outbox"
+	| "custom";
 
 export function MailboxNav({
 	mailboxes,
@@ -43,7 +37,7 @@ export function MailboxNav({
 	const pathname = usePathname();
 	const params = useParams() as { mailboxSlug?: string };
 
-	const systemOrder: Mailbox["kind"][] = [
+	const systemOrder: MailboxKind[] = [
 		"inbox",
 		"starred" as any, // if you add later
 		"drafts",
@@ -51,9 +45,9 @@ export function MailboxNav({
 		"archive",
 		"spam",
 		"trash",
-	].filter(Boolean) as Mailbox["kind"][];
+	].filter(Boolean) as MailboxKind[];
 
-	const iconFor: Record<Mailbox["kind"], React.ElementType> = {
+	const iconFor: Record<MailboxKind, React.ElementType> = {
 		inbox: Inbox,
 		sent: Send,
 		drafts: FileText,
@@ -71,7 +65,7 @@ export function MailboxNav({
 
 	const custom = mailboxes.filter((m) => m.kind === "custom");
 
-	const Item = ({ m }: { m: Mailbox }) => {
+	const Item = ({ m }: { m: MailboxEntity }) => {
 		const Icon = iconFor[m.kind] ?? Folder;
 		const slug = m.slug ?? "inbox";
 		const href = `/mail/${identityPublicId}/${slug}`;
@@ -88,18 +82,19 @@ export function MailboxNav({
 					isActive && "bg-sidebar-accent text-sidebar-accent-foreground",
 				)}
 			>
+				{m.color ? (
+					<div
+						className="h-2.5 w-2.5 shrink-0 rounded-full"
+						style={{ backgroundColor: m.color }}
+					/>
+				) : null}
 				<Icon className="h-4 w-4 shrink-0" />
 				<span className="min-w-0 truncate">
 					{m.kind === "custom" ? (m.name ?? "Label") : titleFor(m.kind)}
 				</span>
-				{m.unreadCount ? (
-					<Badge
-						variant={isActive ? "secondary" : "outline"}
-						className="ml-auto"
-					>
-						{m.unreadCount}
-					</Badge>
-				) : null}
+				<span className="ml-auto">
+					<MailboxColorPicker mailboxId={m.id} currentColor={m.color} />
+				</span>
 			</Link>
 		);
 	};
@@ -115,7 +110,7 @@ export function MailboxNav({
 	);
 }
 
-function titleFor(kind: Mailbox["kind"]) {
+function titleFor(kind: MailboxKind) {
 	switch (kind) {
 		case "inbox":
 			return "Inbox";

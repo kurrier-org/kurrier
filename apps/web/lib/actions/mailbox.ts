@@ -1013,6 +1013,10 @@ export async function addNewMailboxFolder(
 			decodedForm.parentId && decodedForm.parentId !== "none"
 				? String(decodedForm.parentId)
 				: null;
+		const color =
+			decodedForm.color && String(decodedForm.color).trim()
+				? String(decodedForm.color).trim()
+				: null;
 
 		if (parentId) {
 			const [parent] = await db
@@ -1036,6 +1040,7 @@ export async function addNewMailboxFolder(
 				name,
 				slug: slugify(name.toLowerCase()),
 				isDefault: false,
+				color,
 				metaData: {},
 			})
 			.returning();
@@ -1409,4 +1414,27 @@ export async function oneClickUnsubscribe(
 
 
 
+}
+
+export async function updateMailboxColor(
+	mailboxId: string,
+	color: string | null,
+) {
+	const user = await isSignedIn();
+	if (!user) throw new Error("Not authenticated");
+
+	const [mailbox] = await db
+		.select({ id: mailboxes.id })
+		.from(mailboxes)
+		.where(and(eq(mailboxes.id, mailboxId), eq(mailboxes.ownerId, user.id)))
+		.limit(1);
+
+	if (!mailbox) throw new Error("Mailbox not found");
+
+	await db
+		.update(mailboxes)
+		.set({ color, updatedAt: new Date() })
+		.where(eq(mailboxes.id, mailboxId));
+
+	revalidatePath("/dashboard/mail");
 }
