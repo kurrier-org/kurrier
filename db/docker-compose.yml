@@ -138,7 +138,7 @@ services:
     image: caddy:latest
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8082:80"
     volumes:
       - ./caddy/conf/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./caddy/caddy_data:/data
