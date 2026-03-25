@@ -1,50 +1,50 @@
 "use server";
 
-import { cache } from "react";
-import { rlsClient } from "@/lib/actions/clients";
+import { PAGE_SIZE } from "@common/mail-client";
 import {
-    db,
-    DraftMessageInsertSchema,
-    draftMessages,
-    identities,
-    mailboxes,
-    mailboxSync,
-    mailboxThreads, mailSubscriptions,
-    messageAttachments,
-    messages,
-    threads,
+	DraftMessageInsertSchema,
+	db,
+	draftMessages,
+	identities,
+	mailboxes,
+	mailboxSync,
+	mailboxThreads,
+	mailSubscriptions,
+	messageAttachments,
+	messages,
+	threads,
 } from "@db";
+import {
+	type FormState,
+	getServerEnv,
+	handleAction,
+	type SearchThreadsResponse,
+} from "@schema";
+import slugify from "@sindresorhus/slugify";
+import dayjs from "dayjs";
+import { decode } from "decode-formdata";
 import {
 	and,
 	asc,
 	count,
 	desc,
 	eq,
+	gt,
 	inArray,
 	isNotNull,
 	isNull,
 	lte,
 	or,
 	sql,
-	gt,
 } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import {
-	FormState,
-	getServerEnv,
-	handleAction,
-	SearchThreadsResponse,
-} from "@schema";
-import { decode } from "decode-formdata";
-import { toArray } from "@/lib/utils";
-
-import Typesense, { Client } from "typesense";
-import { isSignedIn } from "@/lib/actions/auth";
-import slugify from "@sindresorhus/slugify";
 import { redirect } from "next/navigation";
-import { PAGE_SIZE } from "@common/mail-client";
+import { cache } from "react";
+import Typesense, { type Client } from "typesense";
+import { isSignedIn } from "@/lib/actions/auth";
+import { rlsClient } from "@/lib/actions/clients";
 import { getRedis } from "@/lib/actions/get-redis";
-import dayjs from "dayjs";
+import { toArray } from "@/lib/utils";
 
 let typeSenseClient: Client | null = null;
 function getTypeSenseClient(): Client {
@@ -1013,6 +1013,10 @@ export async function addNewMailboxFolder(
 			decodedForm.parentId && decodedForm.parentId !== "none"
 				? String(decodedForm.parentId)
 				: null;
+		const color =
+			decodedForm.color && String(decodedForm.color).trim()
+				? String(decodedForm.color).trim()
+				: null;
 
 		if (parentId) {
 			const [parent] = await db
@@ -1036,6 +1040,7 @@ export async function addNewMailboxFolder(
 				name,
 				slug: slugify(name.toLowerCase()),
 				isDefault: false,
+				color,
 				metaData: {},
 			})
 			.returning();
@@ -1294,119 +1299,137 @@ export const fetchIdentitySnoozedThreads = async (identityPublicId: string) => {
 	return { threads };
 };
 
-
-
 function subscriptionKeyFromHeadersJson(headersJson: any) {
-    const list = headersJson?.list ?? null;
-    const rawListId = String(headersJson?.["list-id"] ?? "").trim() || null;
+	const list = headersJson?.list ?? null;
+	const rawListId = String(headersJson?.["list-id"] ?? "").trim() || null;
 
-    let unsubscribeHttpUrl: string | null = null;
+	let unsubscribeHttpUrl: string | null = null;
 
-    const fromList = list?.unsubscribe?.url || list?.unsubscribe?.href;
-    if (typeof fromList === "string" && fromList) unsubscribeHttpUrl = fromList;
+	const fromList = list?.unsubscribe?.url || list?.unsubscribe?.href;
+	if (typeof fromList === "string" && fromList) unsubscribeHttpUrl = fromList;
 
-    const fromHeader = headersJson?.["list-unsubscribe"];
-    if (!unsubscribeHttpUrl && typeof fromHeader === "string") {
-        const parts = fromHeader
-            .split(",")
-            .map((s: string) => s.trim().replace(/^<|>$/g, ""));
-        const http = parts.find((p: string) => /^https?:/i.test(p));
-        if (http) unsubscribeHttpUrl = http;
-    }
+	const fromHeader = headersJson?.["list-unsubscribe"];
+	if (!unsubscribeHttpUrl && typeof fromHeader === "string") {
+		const parts = fromHeader
+			.split(",")
+			.map((s: string) => s.trim().replace(/^<|>$/g, ""));
+		const http = parts.find((p: string) => /^https?:/i.test(p));
+		if (http) unsubscribeHttpUrl = http;
+	}
 
-    if (rawListId) {
-        const cleaned = rawListId
-            .replace(/^<|>$/g, "")
-            .replace(/\s+/g, "")
-            .toLowerCase();
-        return cleaned ? `list-id:${cleaned}` : null;
-    }
+	if (rawListId) {
+		const cleaned = rawListId
+			.replace(/^<|>$/g, "")
+			.replace(/\s+/g, "")
+			.toLowerCase();
+		return cleaned ? `list-id:${cleaned}` : null;
+	}
 
-    if (unsubscribeHttpUrl) {
-        try {
-            const u = new URL(unsubscribeHttpUrl);
-            const p = (u.pathname || "/").replace(/\/+$/, "") || "/";
-            return `${u.protocol}//${u.host.toLowerCase()}${p}`;
-        } catch {
-            return null;
-        }
-    }
+	if (unsubscribeHttpUrl) {
+		try {
+			const u = new URL(unsubscribeHttpUrl);
+			const p = (u.pathname || "/").replace(/\/+$/, "") || "/";
+			return `${u.protocol}//${u.host.toLowerCase()}${p}`;
+		} catch {
+			return null;
+		}
+	}
 
-    return null;
+	return null;
 }
 
 export async function fetchThreadMailSubscriptions(opts: {
-    ownerId: string;
-    messages: Array<{ id: string; headersJson: any }>;
+	ownerId: string;
+	messages: Array<{ id: string; headersJson: any }>;
 }) {
-    const keysByMessageId = new Map<string, string>();
+	const keysByMessageId = new Map<string, string>();
 
-    for (const m of opts.messages) {
-        const key = subscriptionKeyFromHeadersJson(m.headersJson);
-        if (key) keysByMessageId.set(m.id, key);
-    }
+	for (const m of opts.messages) {
+		const key = subscriptionKeyFromHeadersJson(m.headersJson);
+		if (key) keysByMessageId.set(m.id, key);
+	}
 
-    const uniqueKeys = Array.from(new Set(keysByMessageId.values()));
-    if (!uniqueKeys.length) {
-        return { byMessageId: new Map<string, any>(), keysByMessageId };
-    }
+	const uniqueKeys = Array.from(new Set(keysByMessageId.values()));
+	if (!uniqueKeys.length) {
+		return { byMessageId: new Map<string, any>(), keysByMessageId };
+	}
 
-    const rows = await db
-        .select()
-        .from(mailSubscriptions)
-        .where(
-            and(
-                eq(mailSubscriptions.ownerId, opts.ownerId),
-                inArray(mailSubscriptions.subscriptionKey, uniqueKeys),
-            ),
-        );
+	const rows = await db
+		.select()
+		.from(mailSubscriptions)
+		.where(
+			and(
+				eq(mailSubscriptions.ownerId, opts.ownerId),
+				inArray(mailSubscriptions.subscriptionKey, uniqueKeys),
+			),
+		);
 
-    const byKey = new Map(rows.map((r) => [r.subscriptionKey, r]));
-    const byMessageId = new Map<string, any>();
+	const byKey = new Map(rows.map((r) => [r.subscriptionKey, r]));
+	const byMessageId = new Map<string, any>();
 
-    for (const [messageId, key] of keysByMessageId.entries()) {
-        byMessageId.set(messageId, byKey.get(key) ?? null);
-    }
+	for (const [messageId, key] of keysByMessageId.entries()) {
+		byMessageId.set(messageId, byKey.get(key) ?? null);
+	}
 
-    return { byMessageId, keysByMessageId };
+	return { byMessageId, keysByMessageId };
 }
 
 export type FetchThreadMailSubsResult = Awaited<
-    ReturnType<typeof fetchThreadMailSubscriptions>
+	ReturnType<typeof fetchThreadMailSubscriptions>
 >;
 
-
 export async function oneClickUnsubscribe(
-    _prev: FormState,
-    formData: FormData,
+	_prev: FormState,
+	formData: FormData,
 ): Promise<FormState> {
-    return handleAction(async () => {
-        const decodedForm = decode(formData);
-        const id = String(decodedForm.mailSubscriptionId);
-        const [sub] = await db
-            .select()
-            .from(mailSubscriptions)
-            .where(and(eq(mailSubscriptions.id, id)))
-            .limit(1);
-        if (!sub?.unsubscribeHttpUrl) return { success: false, error: "Subscription not found" };
-        await fetch(sub.unsubscribeHttpUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: "List-Unsubscribe=One-Click",
-            redirect: "follow",
-        });
-        await db
-            .update(mailSubscriptions)
-            .set({
-                status: "unsubscribed",
-                unsubscribedAt: new Date(),
-                updatedAt: new Date(),
-            })
-            .where(eq(mailSubscriptions.id, id));
-        revalidatePath(String(decodedForm.pathname));
-        return { success: true };
-    });
+	return handleAction(async () => {
+		const decodedForm = decode(formData);
+		const id = String(decodedForm.mailSubscriptionId);
+		const [sub] = await db
+			.select()
+			.from(mailSubscriptions)
+			.where(and(eq(mailSubscriptions.id, id)))
+			.limit(1);
+		if (!sub?.unsubscribeHttpUrl)
+			return { success: false, error: "Subscription not found" };
+		await fetch(sub.unsubscribeHttpUrl, {
+			method: "POST",
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+			body: "List-Unsubscribe=One-Click",
+			redirect: "follow",
+		});
+		await db
+			.update(mailSubscriptions)
+			.set({
+				status: "unsubscribed",
+				unsubscribedAt: new Date(),
+				updatedAt: new Date(),
+			})
+			.where(eq(mailSubscriptions.id, id));
+		revalidatePath(String(decodedForm.pathname));
+		return { success: true };
+	});
+}
 
+export async function updateMailboxColor(
+	mailboxId: string,
+	color: string | null,
+) {
+	const user = await isSignedIn();
+	if (!user) throw new Error("Not authenticated");
 
+	const [mailbox] = await db
+		.select({ id: mailboxes.id })
+		.from(mailboxes)
+		.where(and(eq(mailboxes.id, mailboxId), eq(mailboxes.ownerId, user.id)))
+		.limit(1);
 
+	if (!mailbox) throw new Error("Mailbox not found");
+
+	await db
+		.update(mailboxes)
+		.set({ color, updatedAt: new Date() })
+		.where(eq(mailboxes.id, mailboxId));
+
+	revalidatePath("/dashboard/mail");
 }

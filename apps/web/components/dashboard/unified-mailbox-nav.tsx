@@ -1,21 +1,21 @@
 "use client";
 
-import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import type { IdentityEntity, MailboxEntity } from "@db";
+import type { MailboxKind } from "@schema";
 import {
-	Inbox,
-	Send,
-	FileText,
 	Archive,
 	Ban,
-	Trash2,
+	FileText,
 	Folder,
+	Inbox,
 	Plus,
+	Send,
+	Trash2,
 } from "lucide-react";
-import { IdentityEntity, MailboxEntity } from "@db";
-import { FetchIdentityMailboxListResult } from "@/lib/actions/mailbox";
-import { MailboxKind } from "@schema";
+import Link from "next/link";
+import { useParams, usePathname } from "next/navigation";
+import type { FetchIdentityMailboxListResult } from "@/lib/actions/mailbox";
+import { cn } from "@/lib/utils";
 
 type Mailbox = {
 	slug: string | null;
@@ -118,6 +118,12 @@ export function UnifiedMailboxNav({
 					isActive && "bg-sidebar-accent text-sidebar-accent-foreground",
 				)}
 			>
+				{m.mailbox.color ? (
+					<div
+						className="h-2.5 w-2.5 shrink-0 rounded-full"
+						style={{ backgroundColor: m.mailbox.color }}
+					/>
+				) : null}
 				<Icon className="h-4 w-4 shrink-0" />
 				<span className="min-w-0 truncate">
 					{m.mailbox.kind === "custom"
