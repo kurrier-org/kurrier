@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Container } from "@/components/common/containers";
 import { Card, CardContent } from "@/components/ui/card";
-import { ActionIcon, Button, CopyButton, Tooltip } from "@mantine/core";
+import { ActionIcon, Badge, Button, CopyButton, Tooltip } from "@mantine/core";
 import {
 	ArrowDownFromLine,
 	ArrowUpFromLine,
@@ -21,6 +21,7 @@ import {
 import { parseSecret } from "@/lib/utils";
 import { modals } from "@mantine/modals";
 import AddEmailIdentityForm from "@/components/dashboard/identities/add-email-identity-form";
+import FolderMappingForm from "@/components/dashboard/identities/folder-mapping-form";
 import {
 	deleteDomainIdentity,
 	deleteEmailIdentity,
@@ -335,6 +336,32 @@ export default function MailIdentities({
 		});
 	};
 
+	const openFolderMappings = (
+		userIdentity: FetchUserIdentitiesResult[number],
+	) => {
+		const openModalId = modals.open({
+			title: (
+				<div className="font-semibold text-brand-foreground">
+					Folder Mappings — {userIdentity.identities.value}
+				</div>
+			),
+			closeOnEscape: false,
+			closeOnClickOutside: false,
+			size: "md",
+			children: (
+				<div className="p-2">
+					<FolderMappingForm
+						identityId={userIdentity.identities.id}
+						initialMappings={
+							(userIdentity.identities as any).folderMappings ?? null
+						}
+						onSaved={() => modals.close(openModalId)}
+					/>
+				</div>
+			),
+		});
+	};
+
 	const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
 	const [verifyingDomainId, setVerifyingDomainId] = useState<string | null>(
 		null,
@@ -573,6 +600,11 @@ export default function MailIdentities({
 									);
 								}
 
+								const isSmtp = !!userIdentity.smtp_accounts;
+								const hasNoTrash =
+									isSmtp &&
+									!(userIdentity.identities as any).folderMappings?.trash;
+
 								return (
 									<div
 										key={userIdentity.identities.id}
@@ -583,8 +615,15 @@ export default function MailIdentities({
 											<div className="flex items-start gap-2">
 												<Mail className="mt-1 size-4 shrink-0 text-muted-foreground" />
 												<div className="min-w-0">
-													<div className="truncate font-semibold text-brand-foreground">
-														{userIdentity.identities.value}
+													<div className="flex items-center gap-2 flex-wrap">
+														<span className="truncate font-semibold text-brand-foreground">
+															{userIdentity.identities.value}
+														</span>
+														{isSmtp && hasNoTrash && (
+															<Badge color="yellow" size="xs">
+																Folder mapping needed
+															</Badge>
+														)}
 													</div>
 
 													<div className="mt-2 flex flex-wrap items-center gap-2">
@@ -630,6 +669,16 @@ export default function MailIdentities({
 											>
 												Send Test Email
 											</Button>
+											{isSmtp && (
+												<Button
+													size="xs"
+													variant="outline"
+													className="flex-1 sm:flex-none"
+													onClick={() => openFolderMappings(userIdentity)}
+												>
+													Folder Mappings
+												</Button>
+											)}
 
 											<ActionIcon
 												color="red"

@@ -30,6 +30,8 @@ import {
 } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import {
+	FolderMappings,
+	FolderMappingsSchema,
 	FormState,
 	getServerEnv,
 	handleAction,
@@ -438,6 +440,21 @@ export const backfillMailboxes = async (identityId: string) => {
 	backfillAccount(identityId);
 };
 
+export const saveFolderMappings = async (
+	identityId: string,
+	mappings: FolderMappings,
+) => {
+	const rls = await rlsClient();
+	await rls((tx) =>
+		tx
+			.update(identities)
+			.set({ folderMappings: FolderMappingsSchema.parse(mappings) } as any)
+			.where(eq(identities.id, identityId)),
+	);
+	await backfillMailboxes(identityId);
+	revalidatePath("/mail");
+};
+
 export const backfillAccount = async (identityId: string) => {
 	const { smtpQueue } = await getRedis();
 	await smtpQueue.add(
@@ -677,6 +694,31 @@ export const moveToTrash = async (
 		.filter(Boolean);
 
 	if (!ids.length || !mailboxId) return;
+
+	// Pre-flight: check trash mailbox exists and is selectable
+	const rls = await rlsClient();
+	const [srcMailbox] = await rls((tx) =>
+		tx.select().from(mailboxes).where(eq(mailboxes.id, mailboxId)),
+	);
+	if (srcMailbox) {
+		const [trashMailbox] = await rls((tx) =>
+			tx
+				.select()
+				.from(mailboxes)
+				.where(
+					and(
+						eq(mailboxes.identityId, srcMailbox.identityId),
+						eq(mailboxes.kind, "trash"),
+					),
+				),
+		);
+		if (!trashMailbox || !(trashMailbox.metaData as any)?.imap?.selectable) {
+			return {
+				error: "no_trash_folder",
+				identityId: srcMailbox.identityId,
+			};
+		}
+	}
 
 	const { smtpQueue, searchIngestQueue } = await getRedis();
 
