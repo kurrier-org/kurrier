@@ -1,0 +1,1 @@
+ALTER TABLE "identities" ADD COLUMN "folder_mappings" jsonb DEFAULT NULL;

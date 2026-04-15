@@ -1,7 +1,7 @@
 import { db, mailboxes, type IdentityEntity, type MailboxEntity } from "@db";
 import { and, eq, sql } from "drizzle-orm";
 import slugify from "@sindresorhus/slugify";
-import { MailboxKind } from "@schema";
+import { FolderMappings, MailboxKind, MappableFolderRole } from "@schema";
 
 export type PathIdMap = Map<string, string>;
 
@@ -80,6 +80,19 @@ export async function ensureParentChain(opts: {
 
 	pathIdMap.set(parentPath, parentRow.id);
 	return parentRow.id;
+}
+
+export function getKindFromMapping(
+	imapPath: string,
+	folderMappings: FolderMappings | null | undefined,
+): MailboxKind | null {
+	if (!folderMappings) return null;
+	for (const [role, path] of Object.entries(folderMappings) as Array<
+		[MappableFolderRole, string | null]
+	>) {
+		if (path && path === imapPath) return role;
+	}
+	return null;
 }
 
 export function inferKind(mbxName: string, specialUse?: string): MailboxKind {

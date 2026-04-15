@@ -7,6 +7,8 @@ import { ReusableForm } from "@/components/common/reusable-form";
 import React from "react";
 import { parseSecret } from "@/lib/utils";
 import { imapQuotaList } from "@schema";
+import { Button } from "@mantine/core";
+import FolderMappingForm from "@/components/dashboard/identities/folder-mapping-form";
 
 function AddEmailIdentityForm({
 	onCompleted,
@@ -21,6 +23,10 @@ function AddEmailIdentityForm({
 	providerAccounts: FetchDecryptedSecretsResult;
 	userDomainIdentities: FetchUserIdentitiesResult;
 }) {
+	const [createdIdentityId, setCreatedIdentityId] = React.useState<
+		string | null
+	>(null);
+
 	const [provider, setProvider] = React.useState<
 		FetchDecryptedSecretsResult[number] | null
 	>(null);
@@ -230,9 +236,30 @@ function AddEmailIdentityForm({
 		...extraFields,
 	];
 
-	const finalizeEmail = async () => {
-		if (onCompleted) onCompleted();
+	const finalizeEmail = async (data?: { identityId?: string }) => {
+		const isSmtp = smtpAccount?.linkRow.accountId === activeId;
+		if (isSmtp && data?.identityId) {
+			setCreatedIdentityId(data.identityId);
+		} else {
+			if (onCompleted) onCompleted();
+		}
 	};
+
+	if (createdIdentityId) {
+		return (
+			<div>
+				<FolderMappingForm
+					identityId={createdIdentityId}
+					onSaved={onCompleted}
+				/>
+				<div className="mt-3 flex justify-end">
+					<Button variant="subtle" size="xs" onClick={onCompleted}>
+						Skip
+					</Button>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div>
