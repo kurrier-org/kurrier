@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import DOMPurify from "dompurify";
 import type { MessageEntity } from "@db";
-import { ActionIcon } from "@mantine/core";
+import {ActionIcon, Button} from "@mantine/core";
 import { Ellipsis } from "lucide-react";
 
 const BASE_CSS = `
@@ -106,6 +106,34 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 	const hostRef = useRef<HTMLDivElement>(null);
 	const [hideQuotes, setHideQuotes] = useState(true);
 
+	const [showRemoteImages, setShowRemoteImages] = useState(false);
+	const [hasBlockedImages, setHasBlockedImages] = useState(false);
+
+	function blockRemoteImages(html: string, allowImages: boolean) {
+		const doc = new DOMParser().parseFromString(html, "text/html");
+		const images = doc.querySelectorAll<HTMLImageElement>("img[src]");
+		let blocked = false;
+
+		images.forEach((img) => {
+			const src = img.getAttribute("src") || "";
+
+			if (/^https?:\/\//i.test(src)) {
+				blocked = true;
+
+				if (!allowImages) {
+					img.setAttribute("data-blocked-src", src);
+					img.removeAttribute("src");
+					img.setAttribute("alt", img.getAttribute("alt") || "Remote image blocked");
+				}
+			}
+		});
+
+		return {
+			html: doc.body.innerHTML,
+			blocked,
+		};
+	}
+
 	const hasQuotes = useMemo(() => {
 		const html = message.html || "";
 		if (!html.trim()) return false;
@@ -113,6 +141,20 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 			html,
 		);
 	}, [message.html]);
+
+	const senderEmail = message?.from?.value?.[0]?.address || "unknown";
+
+	const remoteImagePreferenceKey = `kurrier:remote-images:${senderEmail}`;
+
+	useEffect(() => {
+		if (!senderEmail || senderEmail === "unknown") return;
+		setShowRemoteImages(localStorage.getItem(remoteImagePreferenceKey) === "true");
+	}, [remoteImagePreferenceKey, senderEmail]);
+
+	const allowRemoteImagesForSender = () => {
+		localStorage.setItem(remoteImagePreferenceKey, "true");
+		setShowRemoteImages(true);
+	};
 
 	useEffect(() => {
 		if (!hostRef.current) return;
@@ -132,9 +174,16 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 							(c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c] as string,
 						)}</div>`;
 
-		const safeHtml = DOMPurify.sanitize(rawHtml, {
+		const sanitized = DOMPurify.sanitize(rawHtml, {
 			USE_PROFILES: { html: true },
 		});
+
+		const { html: safeHtml, blocked } = blockRemoteImages(
+			sanitized,
+			showRemoteImages,
+		);
+
+		setHasBlockedImages(blocked);
 
 		shadow.innerHTML = `
       <style>${BASE_CSS}${hideQuotes ? QUOTE_HIDE_CSS : ""}</style>
@@ -149,10 +198,29 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 				a.rel = "nofollow noopener noreferrer";
 			});
 		}
-	}, [message.html, message.text, hideQuotes]);
+	}, [message.html, message.text, hideQuotes, showRemoteImages]);
 
 	return (
 		<div className="mb-24 mt-6 overflow-x-hidden">
+			{hasBlockedImages && !showRemoteImages && (
+				<div className="mb-3 flex gap-2">
+					<Button
+						size="xs"
+						variant="default"
+						onClick={() => setShowRemoteImages(true)}
+					>
+						Load remote images once
+					</Button>
+
+					<Button
+						size="xs"
+						variant="default"
+						onClick={allowRemoteImagesForSender}
+					>
+						Always load for this sender
+					</Button>
+				</div>
+			)}
 			<div ref={hostRef} style={{ display: "block", width: "100%" }} />
 			{hasQuotes && (
 				<ActionIcon
