@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
 	Inbox,
@@ -29,7 +29,7 @@ import {
 	MailboxThreadEntity,
 } from "@db";
 import AddNewFolder from "@/components/mailbox/default/add-new-folder";
-import { Menu } from "@mantine/core";
+import {Menu, Select} from "@mantine/core";
 import DeleteMailboxFolder from "@/components/mailbox/default/delete-folder";
 import { IconMailFast } from "@tabler/icons-react";
 
@@ -140,6 +140,9 @@ export default function IdentityMailboxesList({
 		const parts = pathname.split("/").filter(Boolean);
 		return parts.at(-1) ?? "inbox";
 	}, [pathname]);
+
+	const router = useRouter()
+
 
 	const Item = ({
 		m,
@@ -252,6 +255,18 @@ export default function IdentityMailboxesList({
 
 	return (
 		<div className="space-y-2 px-2">
+			<div className={"my-2"}>
+				<Select placeholder="Pick value"
+				        size={"xs"}
+						onChange={(publicId) => {
+							router.push(`/dashboard/mail/${publicId}/inbox`)
+						}}
+				        value={params.identityPublicId}
+				        data={identityMailboxes.map((id) => {
+							return {value: id.identity.publicId, label: id.identity.value}
+						})} />
+			</div>
+
 			{identityMailboxes.map(({ identity, mailboxes }) => {
 				const tree = buildTree(mailboxes as MailboxEntity[], unreadCounts);
 
