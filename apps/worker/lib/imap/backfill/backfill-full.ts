@@ -119,17 +119,29 @@ async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 
 	let cursor = Number(sync.backfillCursorUid ?? 0);
 
-	// Nothing left to backfill for this mailbox
 	if (cursor <= 0) {
+		if (top <= 0) {
+			await db
+				.update(mailboxSync)
+				.set({
+					phase: "IDLE",
+					backfillCursorUid: 0,
+					updatedAt: new Date(),
+				})
+				.where(eq(mailboxSync.id, sync.id));
+			return;
+		}
+
+		cursor = top;
+
 		await db
 			.update(mailboxSync)
 			.set({
-				phase: "IDLE",
-				backfillCursorUid: 0,
+				backfillCursorUid: cursor,
+				phase: "BACKFILL",
 				updatedAt: new Date(),
 			})
 			.where(eq(mailboxSync.id, sync.id));
-		return;
 	}
 
 	await db
