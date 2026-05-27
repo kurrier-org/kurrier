@@ -204,7 +204,14 @@ export const fetchIdentityMailboxList = cache(async () => {
 		]),
 	);
 
-	return Object.values(byIdentity);
+	return Object.values(byIdentity).map((entry) => ({
+		...entry,
+		mailboxes: entry.mailboxes.map((mailbox) => ({
+			...mailbox,
+			unreadCount: aggByMailbox.get(mailbox.id)?.unreadTotal ?? 0,
+			unreadThreads: aggByMailbox.get(mailbox.id)?.unreadThreads ?? 0,
+		})),
+	}));
 });
 
 export type FetchIdentityMailboxListResult = Awaited<
@@ -523,13 +530,84 @@ export const fetchWebMailThreadDetail = cache(async (threadId: string) => {
 	return result;
 });
 
-export const markAsRead = cache(
-	async (
-		threadIds: string | string[],
-		mailboxId: string,
-		markSmtp: boolean,
-		refresh = true,
-	) => {
+export const fetchAdjacentMailboxThreads = cache(
+	async (identityPublicId: string, mailboxSlug: string, threadId: string) => {
+		const rls = await rlsClient();
+		const now = new Date();
+		const effectiveActivityAt = sql`COALESCE(${mailboxThreads.unsnoozedAt}, ${mailboxThreads.lastActivityAt})`;
+		const visibleInMailbox = and(
+			eq(mailboxThreads.identityPublicId, identityPublicId),
+			eq(mailboxThreads.mailboxSlug, mailboxSlug),
+			or(isNull(mailboxThreads.snoozedUntil), lte(mailboxThreads.snoozedUntil, now)),
+		);
+
+		const [current] = await rls((tx) =>
+			tx
+				.select({
+					threadId: mailboxThreads.threadId,
+					effectiveActivityAt,
+					lastActivityAt: mailboxThreads.lastActivityAt,
+				})
+				.from(mailboxThreads)
+				.where(and(visibleInMailbox, eq(mailboxThreads.threadId, threadId)))
+				.limit(1),
+		);
+
+		if (!current) {
+			return { previousThreadId: null, nextThreadId: null };
+		}
+
+		const cursor = sql`(${current.effectiveActivityAt}, ${current.lastActivityAt}, ${current.threadId})`;
+
+		const [previous] = await rls((tx) =>
+			tx
+				.select({ threadId: mailboxThreads.threadId })
+				.from(mailboxThreads)
+				.where(
+					and(
+						visibleInMailbox,
+						sql`(
+							COALESCE(${mailboxThreads.unsnoozedAt}, ${mailboxThreads.lastActivityAt}),
+							${mailboxThreads.lastActivityAt},
+							${mailboxThreads.threadId}
+						) > ${cursor}`,
+					),
+				)
+				.orderBy(asc(effectiveActivityAt), asc(mailboxThreads.lastActivityAt), asc(mailboxThreads.threadId))
+				.limit(1),
+		);
+
+		const [next] = await rls((tx) =>
+			tx
+				.select({ threadId: mailboxThreads.threadId })
+				.from(mailboxThreads)
+				.where(
+					and(
+						visibleInMailbox,
+						sql`(
+							COALESCE(${mailboxThreads.unsnoozedAt}, ${mailboxThreads.lastActivityAt}),
+							${mailboxThreads.lastActivityAt},
+							${mailboxThreads.threadId}
+						) < ${cursor}`,
+					),
+				)
+				.orderBy(desc(effectiveActivityAt), desc(mailboxThreads.lastActivityAt), desc(mailboxThreads.threadId))
+				.limit(1),
+		);
+
+		return {
+			previousThreadId: previous?.threadId ?? null,
+			nextThreadId: next?.threadId ?? null,
+		};
+	},
+);
+
+export const markAsRead = async (
+	threadIds: string | string[],
+	mailboxId: string,
+	markSmtp: boolean,
+	refresh = true,
+) => {
 		const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
 			.map(String)
 			.filter(Boolean);
@@ -599,8 +677,7 @@ export const markAsRead = cache(
 				),
 			);
 		}
-	},
-);
+	};
 
 export const markAsUnread = async (
 	threadIds: string | string[],

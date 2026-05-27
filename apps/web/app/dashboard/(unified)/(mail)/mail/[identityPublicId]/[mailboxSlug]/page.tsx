@@ -18,14 +18,29 @@ async function Page({
 	const { page } = await searchParams;
 	const { identityPublicId, mailboxSlug } = await params;
 	const publicConfig = getPublicEnv();
+	const resolvedMailboxSlug = mailboxSlug || "inbox";
 	const { activeMailbox, count, mailboxSync } = await fetchMailbox(
 		identityPublicId,
-		mailboxSlug,
+		resolvedMailboxSlug,
 	);
+
+	if (!activeMailbox) {
+		return (
+			<div className="flex flex-1 flex-col gap-3 p-4">
+				<h2 className="text-lg font-semibold">Mailbox is being prepared</h2>
+				<p className="max-w-prose text-sm text-muted-foreground">
+					The identity exists, but the requested mailbox is not available yet.
+					This can happen briefly right after creating a new email identity
+					while Kurrier creates the default folders. Refresh this page in a
+					moment.
+				</p>
+			</div>
+		);
+	}
 
 	const mailboxThreads = await fetchMailboxThreads(
 		identityPublicId,
-		String(mailboxSlug),
+		resolvedMailboxSlug,
 		Number(page),
 	);
 
