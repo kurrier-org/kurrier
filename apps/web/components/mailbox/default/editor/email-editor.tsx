@@ -12,7 +12,7 @@ import {
 	TextEditorHandle,
 } from "@/components/mailbox/default/editor/rich-text-editor";
 import Form from "next/form";
-import { sendMail } from "@/lib/actions/mailbox";
+import {FetchIdentityMailboxListResult, sendMail} from "@/lib/actions/mailbox";
 import type { FormState, PublicConfig } from "@schema";
 import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
 import { toast } from "sonner";
@@ -29,6 +29,7 @@ type Props = {
 	showEditorMode: string;
 	sentMailboxId: string;
 	handleClose: () => void;
+	identityMailboxes: FetchIdentityMailboxListResult;
 };
 
 const EmailEditor = forwardRef<EmailEditorHandle, Props>(
@@ -40,6 +41,7 @@ const EmailEditor = forwardRef<EmailEditorHandle, Props>(
 			showEditorMode,
 			sentMailboxId,
 			handleClose,
+			identityMailboxes
 		},
 		ref,
 	) => {
@@ -81,30 +83,13 @@ const EmailEditor = forwardRef<EmailEditorHandle, Props>(
 			<>
 				<div className="mt-4" tabIndex={-1}>
 					<DynamicContextProvider
-						initialState={{ isPending, message, publicConfig, showEditorMode }}
+						initialState={{ isPending, message, publicConfig, showEditorMode, identityMailboxes }}
 					>
 						<Form action={formAction}>
 							<input
 								type={"hidden"}
 								name={"messageMailboxId"}
 								value={message?.mailboxId}
-							/>
-							<input
-								type={"hidden"}
-								name={"sentMailboxId"}
-								value={sentMailboxId}
-							/>
-
-							<input
-								type={"hidden"}
-								name={"mailboxId"}
-								value={
-									sentMailboxId
-										? sentMailboxId
-										: message?.mailboxId
-											? message?.mailboxId
-											: ""
-								}
 							/>
 							<TextEditor name={"html"} ref={textEditorRef} />
 						</Form>

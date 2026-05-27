@@ -3,12 +3,10 @@ import {
 	ActionIcon,
 	Select,
 	SelectProps,
-	TagsInput,
 	Group,
 	Text,
 	Input,
 	FocusTrap,
-	FocusTrapInitialFocus,
 } from "@mantine/core";
 import { Forward, Reply } from "lucide-react";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
@@ -16,12 +14,15 @@ import { MessageEntity } from "@db";
 import { getMessageAddress } from "@common/mail-client";
 import { useMediaQuery } from "@mantine/hooks";
 import EmailHeaderContacts from "@/components/mailbox/default/editor/email-header-contacts";
+import {FetchIdentityMailboxListResult} from "@/lib/actions/mailbox";
+import {useParams} from "next/navigation";
 
 function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 	const { state } = useDynamicContext<{
 		isPending: boolean;
 		message: MessageEntity;
 		showEditorMode: "reply" | "forward" | "compose";
+		identityMailboxes: FetchIdentityMailboxListResult;
 	}>();
 
 	const [mode, setMode] = useState<"reply" | "forward" | "compose">(
@@ -77,6 +78,18 @@ function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 	const isMobile = useMediaQuery("(max-width: 768px)");
 
 	const [subjectFocus, setSubjectFocus] = useState<boolean>(false);
+
+	const params = useParams() as {
+		identityPublicId?: string;
+		mailboxSlug?: string;
+	};
+	const [identityPublicId, setIdentityPublicId] = useState<string>(params.identityPublicId || "");
+	const fromOptions = useMemo(() => {
+		return state.identityMailboxes.map((item) => ({
+			value: item.identity.publicId,
+			label: item.identity.value,
+		}));
+	}, [state.identityMailboxes]);
 
 	return isMobile ? (
 		<>
@@ -197,6 +210,31 @@ function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 					onChange={(e) => setSubject(e.currentTarget.value)}
 				/>
 			</div>
+			<div className="border-b px-3 py-2 grid items-center gap-2 sm:grid-cols-[72px,1fr]">
+				<span className="text-[13px] text-muted-foreground sm:text-right leading-6">
+					From
+				</span>
+				<div className={"my-2"}>
+					<Select
+						placeholder="Pick value"
+						size="sm"
+						variant="unstyled"
+						w={260}
+						name={"identityPublicId"}
+						onChange={(publicId) => {
+							if (publicId) setIdentityPublicId(publicId);
+						}}
+						value={identityPublicId || null}
+						data={fromOptions}
+						comboboxProps={{
+							withinPortal: true,
+							position: "bottom-start",
+							offset: 8,
+							zIndex: 3000,
+						}}
+					/>
+				</div>
+			</div>
 		</>
 	) : (
 		<>
@@ -310,6 +348,29 @@ function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 						onChange={(e) => setSubject(e.currentTarget.value)}
 					/>
 				</FocusTrap>
+			</div>
+			<div className={"border-b flex justify-start items-center px-2 gap-2"}>
+				<span className="text-sm text-muted-foreground">From</span>
+					<div className={"my-2"}>
+						<Select
+							placeholder="Pick value"
+							size="sm"
+							variant="unstyled"
+							w={260}
+							name={"identityPublicId"}
+							onChange={(publicId) => {
+								if (publicId) setIdentityPublicId(publicId);
+							}}
+							value={identityPublicId || null}
+							data={fromOptions}
+							comboboxProps={{
+								withinPortal: true,
+								position: "bottom-start",
+								offset: 8,
+								zIndex: 3000,
+							}}
+						/>
+					</div>
 			</div>
 		</>
 	);
