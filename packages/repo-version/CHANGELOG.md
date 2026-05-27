@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 1.2.0
+
+### Minor Changes
+
+- [`f767793`](https://github.com/kurrier-org/kurrier/commit/f7677937cf1927c5d0c45dfaf8fd9b4523cdbb82) Thanks [@krokhale](https://github.com/krokhale)! - Upgraded nextjs version and other features
+
 ## 1.1.13
 
 ### Patch Changes
