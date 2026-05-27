@@ -8,7 +8,7 @@ import EmailEditor, {
 } from "@/components/mailbox/default/editor/email-editor";
 import { PublicConfig } from "@schema";
 import { Button } from "@/components/ui/button";
-import { fetchMailbox } from "@/lib/actions/mailbox";
+import {FetchIdentityMailboxListResult, fetchMailbox} from "@/lib/actions/mailbox";
 import { useParams } from "next/navigation";
 import { useMediaQuery } from "@mantine/hooks";
 import { ActionIcon } from "@mantine/core";
@@ -33,8 +33,10 @@ function Portal({ children }: { children: React.ReactNode }) {
 
 export default function ComposeMail({
 	publicConfig,
+	identityMailboxes
 }: {
 	publicConfig: PublicConfig;
+	identityMailboxes: FetchIdentityMailboxListResult;
 }) {
 	const [open, setOpen] = useState(false);
 	const [appeared, setAppeared] = useState(false);
@@ -136,6 +138,7 @@ export default function ComposeMail({
 									sentMailboxId={String(sentMailboxId)}
 									ref={editorRef}
 									publicConfig={publicConfig}
+									identityMailboxes={identityMailboxes}
 									message={null}
 									onReady={() =>
 										requestAnimationFrame(() => editorRef.current?.focus())
@@ -164,7 +167,6 @@ export default function ComposeMail({
 							onClick={(e) => e.stopPropagation()}
 						>
 							<div className="flex items-center justify-between border-b px-4 py-2">
-								{/*<div className="text-sm font-medium">New Message</div>*/}
 								<div className="flex items-center gap-2">
 									<IconBtn
 										label={minimized ? "Restore" : "Minimize"}
@@ -194,6 +196,7 @@ export default function ComposeMail({
 										sentMailboxId={String(sentMailboxId)}
 										ref={editorRef}
 										publicConfig={publicConfig}
+										identityMailboxes={identityMailboxes}
 										message={null}
 										showEditorMode={showEditorMode}
 										handleClose={handleClose}

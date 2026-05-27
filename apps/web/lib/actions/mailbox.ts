@@ -270,6 +270,42 @@ export async function sendMail(
 	formData: FormData,
 ): Promise<FormState> {
 	const decodedForm = decode(formData) as any;
+	const rls = await rlsClient();
+	const identity = await rls(async (tx) => {
+		const [identity] = await tx
+			.select()
+			.from(identities)
+			.where(eq(identities.publicId, decodedForm.identityPublicId));
+		return identity
+	});
+	if (!identity) {
+		return {
+			success: false,
+			error: "Identity not found.",
+		}
+	}
+	const boxes = await rls(async (tx) => {
+		const resultRows = await tx
+			.select()
+			.from(mailboxes)
+			.where(eq(mailboxes.identityId, identity.id));
+		return resultRows;
+	});
+
+	const sentMailbox = boxes.find((b) => b.kind === "sent");
+	const inboxMailbox = boxes.find((b) => b.kind === "inbox");
+
+
+	if (!sentMailbox || !inboxMailbox) {
+		return {
+			success: false,
+			error: "Required mailboxes (inbox and sent) not found for the identity.",
+		}
+	}
+
+	decodedForm.sentMailboxId = sentMailbox.id;
+	decodedForm.mailboxId = inboxMailbox.id;
+	decodedForm.identityId = identity.id;
 
 	if (toArray(decodedForm.to as any).length === 0) {
 		return {
@@ -278,7 +314,6 @@ export async function sendMail(
 		};
 	}
 
-	const rls = await rlsClient();
 	const scheduledAtRaw = decodedForm.scheduledAt
 		? String(decodedForm.scheduledAt)
 		: "";
