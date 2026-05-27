@@ -138,7 +138,7 @@ export function AppSidebar({
 						<span className="text-lg font-semibold">kurrier</span>
 					</div>
 					<div className={"-mt-1"}>
-						<ComposeMail publicConfig={publicConfig} />
+						{/*<ComposeMail publicConfig={publicConfig} />*/}
 					</div>
 				</SidebarHeader>
 				<SidebarContent>

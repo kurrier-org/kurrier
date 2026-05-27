@@ -200,7 +200,7 @@ function MailListHeader({
 						</button>
 					</div>
 
-					{isMobile && <ComposeMail publicConfig={publicConfig} />}
+					{isMobile && <ComposeMail identityMailboxes={identityMailboxes} publicConfig={publicConfig} />}
 				</div>
 			</div>
 
