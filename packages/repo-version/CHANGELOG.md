@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 1.2.2
+
+### Patch Changes
+
+- [`71d0db2`](https://github.com/kurrier-org/kurrier/commit/71d0db2a3d95fef7580e52bf9df1e54330cf932b) Thanks [@krokhale](https://github.com/krokhale)! - build type fixes
+
 ## 1.2.1
 
 ### Patch Changes
