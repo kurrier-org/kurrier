@@ -1,5 +1,4 @@
 import {
-	fetchAdjacentMailboxThreads,
 	fetchMailbox,
 	fetchThreadMailSubscriptions,
 	fetchWebMailThreadDetail,
@@ -34,28 +33,19 @@ async function Page({
 	}
 
 	const baseHref = `/dashboard/mail/${identityPublicId}/${mailboxSlug}`;
-	const [adjacentThreads, mailSubscriptions] = await Promise.all([
-		fetchAdjacentMailboxThreads(identityPublicId, mailboxSlug, threadId),
-		fetchThreadMailSubscriptions({
-			ownerId: activeMailbox.ownerId,
-			messages:
-				activeThread?.messages.map((m: MessageEntity) => ({
-					id: m.id,
-					headersJson: m.headersJson,
-				})) ?? [],
-		}),
-	]);
-	const { previousThreadId, nextThreadId } = adjacentThreads;
-	const { byMessageId } = mailSubscriptions;
+	const { byMessageId } = await fetchThreadMailSubscriptions({
+		ownerId: activeMailbox.ownerId,
+		messages:
+			activeThread?.messages.map((m: MessageEntity) => ({
+				id: m.id,
+				headersJson: m.headersJson,
+			})) ?? [],
+	});
 
 	return (
 		<>
 			<ThreadNavigationControls
 				backHref={baseHref}
-				previousHref={
-					previousThreadId ? `${baseHref}/threads/${previousThreadId}` : null
-				}
-				nextHref={nextThreadId ? `${baseHref}/threads/${nextThreadId}` : null}
 				messageCount={activeThread?.messages.length ?? 0}
 			/>
 			{activeThread?.messages.map((message, threadIndex) => {
