@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 1.2.1
+
+### Patch Changes
+
+- [`0335f77`](https://github.com/kurrier-org/kurrier/commit/0335f77b543ad2aca08d240048ceb5bba5abd20f) Thanks [@krokhale](https://github.com/krokhale)! - pinning node version
+
 ## 1.2.0
 
 ### Minor Changes
