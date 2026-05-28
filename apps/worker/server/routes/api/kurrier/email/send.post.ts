@@ -1,19 +1,19 @@
 import { createError, defineEventHandler } from "h3";
 import { EmailSendSchema } from "@schema";
-import { db, identities, mailboxes } from "@db";
+import { db, mailboxes } from "@db";
 import { and, eq } from "drizzle-orm";
 import { getRedis } from "../../../../../lib/get-redis";
 import { createSupabaseServiceClient } from "../../../../../lib/create-client-ssr";
 import {
 	apiSuccess,
-	validateApiKey,
+	validateApiKey, validateIdentityOwnership,
 	validateJSONBody,
 } from "../../../../../lib/api-helpers";
 import { extension } from "mime-types";
 import { base64ToBlob } from "@common";
 
 export default defineEventHandler(async (event) => {
-	await validateApiKey(event);
+	const { ownerId } = await validateApiKey(event);
 	const { json } = await validateJSONBody(event);
 
 	const parsed = EmailSendSchema.safeParse(json);
@@ -33,11 +33,8 @@ export default defineEventHandler(async (event) => {
 	}
 
 	const data = parsed.data;
+	const identity = await validateIdentityOwnership({identityId: data.identityId, ownerId: ownerId});
 	const id = crypto.randomUUID();
-	const [identity] = await db
-		.select()
-		.from(identities)
-		.where(eq(identities.id, data.identityId));
 	if (!identity) {
 		throw createError({
 			statusCode: 400,
@@ -63,12 +60,12 @@ export default defineEventHandler(async (event) => {
 	}
 
 	const payload = {
+		...data,
 		newMessageId: id,
 		messageMailboxId: "",
 		sentMailboxId: String(sentMailbox.id),
 		mailboxId: String(sentMailbox.id),
-		mode: "compose",
-		...data,
+		mode: "compose"
 	} as any;
 
 	const supabase = await createSupabaseServiceClient();
