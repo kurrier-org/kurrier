@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 1.2.4
+
+### Patch Changes
+
+- [#446](https://github.com/kurrier-org/kurrier/pull/446) [`22fad36`](https://github.com/kurrier-org/kurrier/commit/22fad36fb1bc79e3038184ddd485fb235217475c) Thanks [@krokhale](https://github.com/krokhale)! - scope api resources by owner
+
 ## 1.2.3
 
 ### Patch Changes
