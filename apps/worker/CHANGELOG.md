@@ -1,5 +1,11 @@
 # @kurrier/worker
 
+## 0.2.4
+
+### Patch Changes
+
+- [#444](https://github.com/kurrier-org/kurrier/pull/444) [`9b7fdc5`](https://github.com/kurrier-org/kurrier/commit/9b7fdc5a34aeed04c4a40e6e6126c9a580786367) Thanks [@divrajbajwa](https://github.com/divrajbajwa)! - Reconnect IMAP IDLE after socket close
+
 ## 0.2.3
 
 ### Patch Changes
