@@ -5,6 +5,10 @@ import type { ImapFlow } from "imapflow";
 import type { FlagsEvent } from "imapflow";
 import { deltaFetch } from "../../lib/imap/imap-delta-fetch";
 
+const MAX_RECONNECT_ATTEMPTS = 5;
+const RECONNECT_BACKOFFS_MS = [5000, 10000, 20000, 40000, 80000];
+const reconnectAttempts = new Map<string, number>();
+
 async function handleFlagsUpdate(
 	identityId: string,
 	uid: number,
@@ -247,27 +251,62 @@ function attachRealtimeEventHandlers(
 	});
 }
 
-async function idleForever(identityId: string, client: ImapFlow) {
+async function idleForever(
+	identityId: string,
+	client: ImapFlow,
+	idleImapInstances: Map<string, ImapFlow>,
+	imapInstances: Map<string, ImapFlow>,
+) {
 	console.log(`[realtime:${identityId}] entering idle loop...`);
 	while (client.authenticated && client.usable) {
 		try {
 			await client.idle();
+			reconnectAttempts.set(identityId, 0);
 		} catch (err) {
 			console.error(`[realtime:${identityId}] idle error`, err);
 		}
 	}
 	console.warn(`[realtime:${identityId}] idle loop ended (client closed)`);
+
+	const attempts = reconnectAttempts.get(identityId) ?? 0;
+	if (attempts >= MAX_RECONNECT_ATTEMPTS) {
+		console.error(`[realtime:${identityId}] reconnect cap reached, giving up`);
+		return;
+	}
+
+	const backoffMs = RECONNECT_BACKOFFS_MS[attempts];
+	reconnectAttempts.set(identityId, attempts + 1);
+
+	try {
+		await client.logout();
+	} catch {}
+	idleImapInstances.delete(identityId);
+
+	console.log(
+		`[realtime:${identityId}] reconnecting in ${backoffMs / 1000}s (attempt ${attempts + 1}/${MAX_RECONNECT_ATTEMPTS})`,
+	);
+
+	setTimeout(() => {
+		startRealtimeForIdentity(
+			identityId,
+			idleImapInstances,
+			imapInstances,
+		).catch((err) =>
+			console.error(`[realtime:${identityId}] reconnect failed`, err),
+		);
+	}, backoffMs);
 }
 
 async function startRealtimeSyncForIdentity(
 	identityId: string,
 	client: ImapFlow,
+	idleImapInstances: Map<string, ImapFlow>,
 	imapInstances: Map<string, ImapFlow>,
 ) {
 	try {
 		await client.getMailboxLock("INBOX");
 		attachRealtimeEventHandlers(identityId, client, imapInstances);
-		idleForever(identityId, client);
+		idleForever(identityId, client, idleImapInstances, imapInstances);
 	} catch (err) {
 		console.error(
 			`[realtime:${identityId}] failed to start realtime sync`,
@@ -295,7 +334,12 @@ export async function startRealtimeForIdentity(
 	}
 
 	(client as any).__kurrierRealtimeStarted = true;
-	await startRealtimeSyncForIdentity(identityId, client, imapInstances);
+	await startRealtimeSyncForIdentity(
+		identityId,
+		client,
+		idleImapInstances,
+		imapInstances,
+	);
 }
 
 export async function stopRealtimeForIdentity(
