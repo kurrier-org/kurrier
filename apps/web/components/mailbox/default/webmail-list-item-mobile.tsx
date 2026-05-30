@@ -97,10 +97,11 @@ export default function WebmailListItemMobile({
 	}
 
 	const displayNames = names(mailboxThreadItem.participants);
-	const canMarkAsRead = mailboxThreadItem.unreadCount > 0;
+	const unreadCount = Number(mailboxThreadItem.unreadCount ?? 0);
+	const canMarkAsRead = unreadCount > 0;
 	const canMarkAsUnread =
-		mailboxThreadItem.messageCount > 0 && mailboxThreadItem.unreadCount === 0;
-	const isRead = mailboxThreadItem.unreadCount === 0;
+		mailboxThreadItem.messageCount > 0 && unreadCount === 0;
+	const isRead = unreadCount === 0;
 
 	const { state, setState } = useDynamicContext<{
 		selectedThreadIds: Set<string>;
@@ -112,7 +113,7 @@ export default function WebmailListItemMobile({
 				"relative group grid cursor-pointer",
 				"grid-cols-[auto_1fr_auto] md:grid-cols-[auto_auto_minmax(16rem,1fr)_minmax(10rem,2fr)_auto]",
 				"items-start gap-3 px-3 py-3 transition-colors hover:bg-muted/50",
-				isRead ? "bg-muted/50" : "font-semibold",
+				isRead ? "bg-muted/40 text-muted-foreground" : "bg-background font-semibold text-foreground",
 				`md:pr-[${ACTIONS_W}px]`,
 			].join(" ")}
 			onClick={openThread}
@@ -157,6 +158,9 @@ export default function WebmailListItemMobile({
 			{/* content (2-line layout) */}
 			<div className="min-w-0 flex flex-col">
 				<div className="flex items-center gap-2 truncate">
+					{!isRead ? (
+						<span className="h-2 w-2 shrink-0 rounded-full bg-primary" title={`${unreadCount} unread`} />
+					) : null}
 					<span className="truncate">{displayNames}</span>
 					{mailboxThreadItem.messageCount > 1 && (
 						<span className="text-xs text-muted-foreground font-normal">

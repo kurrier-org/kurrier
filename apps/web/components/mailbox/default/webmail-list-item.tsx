@@ -193,8 +193,9 @@ export default function WebmailListItem({
 	const canMarkAsUnread =
 		mailboxThreadItem.messageCount > 0 && mailboxThreadItem.unreadCount === 0;
 
-	const isUnread = mailboxThreadItem.unreadCount > 0;
-	const isRead = mailboxThreadItem.unreadCount === 0;
+	const unreadCount = Number(mailboxThreadItem.unreadCount ?? 0);
+	const isUnread = unreadCount > 0;
+	const isRead = unreadCount === 0;
 
 	const { state, setState } = useDynamicContext<{
 		selectedThreadIds: Set<string>;
@@ -209,7 +210,7 @@ export default function WebmailListItem({
 					"grid-cols-[auto_auto_20rem_minmax(10rem,2fr)_auto]",
 					// "grid-cols-[auto_auto_minmax(8rem,12rem)_minmax(10rem,2fr)_auto]",
 					"items-center gap-3 px-3 py-2 transition-colors hover:bg-muted/50",
-					isRead ? "bg-muted/50" : "font-semibold",
+					isRead ? "bg-muted/40 text-muted-foreground" : "bg-background font-semibold text-foreground",
 					`pr-[${ACTIONS_W}]`,
 				].join(" ")}
 			>
@@ -256,7 +257,12 @@ export default function WebmailListItem({
 					)}
 				</button>
 
-				<div onClick={openThread} className="truncate pr-2">
+				<div onClick={openThread} className="flex min-w-0 items-center gap-2 truncate pr-2">
+					{isUnread ? (
+						<span className="h-2 w-2 shrink-0 rounded-full bg-primary" title={`${unreadCount} unread`} />
+					) : (
+						<span className="h-2 w-2 shrink-0 rounded-full bg-transparent" />
+					)}
 					<span className="truncate">{allNames}</span>{" "}
 					{mailboxThreadItem.messageCount > 1 && (
 						<span className="text-xs text-muted-foreground font-normal">

@@ -204,7 +204,14 @@ export const fetchIdentityMailboxList = cache(async () => {
 		]),
 	);
 
-	return Object.values(byIdentity);
+	return Object.values(byIdentity).map((entry) => ({
+		...entry,
+		mailboxes: entry.mailboxes.map((mailbox) => ({
+			...mailbox,
+			unreadCount: aggByMailbox.get(mailbox.id)?.unreadTotal ?? 0,
+			unreadThreads: aggByMailbox.get(mailbox.id)?.unreadThreads ?? 0,
+		})),
+	}));
 });
 
 export type FetchIdentityMailboxListResult = Awaited<
@@ -523,13 +530,12 @@ export const fetchWebMailThreadDetail = cache(async (threadId: string) => {
 	return result;
 });
 
-export const markAsRead = cache(
-	async (
-		threadIds: string | string[],
-		mailboxId: string,
-		markSmtp: boolean,
-		refresh = true,
-	) => {
+export const markAsRead = async (
+	threadIds: string | string[],
+	mailboxId: string,
+	markSmtp: boolean,
+	refresh = true,
+) => {
 		const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
 			.map(String)
 			.filter(Boolean);
@@ -599,8 +605,7 @@ export const markAsRead = cache(
 				),
 			);
 		}
-	},
-);
+	};
 
 export const markAsUnread = async (
 	threadIds: string | string[],

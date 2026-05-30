@@ -4,77 +4,63 @@ import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import {
-	Inbox,
-	Send,
-	FileText,
-	Archive,
-	Ban,
-	Trash2,
-	Folder,
-	Plus,
-} from "lucide-react";
+import { Inbox, Send, FileText, Archive, Ban, Trash2, Folder } from "lucide-react";
 import { MailboxEntity } from "@db";
 
-type Mailbox = {
-	slug: string | null;
-	kind:
-		| "inbox"
-		| "sent"
-		| "drafts"
-		| "archive"
-		| "spam"
-		| "trash"
-		| "outbox"
-		| "custom";
-	name?: string | null;
+type Mailbox = MailboxEntity & {
 	unreadCount?: number | null;
+	unreadThreads?: number | null;
+};
+
+const systemOrder: Mailbox["kind"][] = [
+	"inbox",
+	"drafts",
+	"sent",
+	"archive",
+	"spam",
+	"trash",
+	"outbox",
+];
+
+const orderIndex = (kind: Mailbox["kind"]) => {
+	const index = systemOrder.indexOf(kind);
+	return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+};
+
+const iconFor: Record<Mailbox["kind"], React.ElementType> = {
+	inbox: Inbox,
+	sent: Send,
+	drafts: FileText,
+	archive: Archive,
+	spam: Ban,
+	trash: Trash2,
+	outbox: Send,
+	custom: Folder,
 };
 
 export function MailboxNav({
 	mailboxes,
 	identityPublicId,
-	onCreateLabel,
 }: {
-	mailboxes: MailboxEntity[];
+	mailboxes: Mailbox[];
 	identityPublicId: string;
 	onCreateLabel?: () => void;
 }) {
 	const pathname = usePathname();
 	const params = useParams() as { mailboxSlug?: string };
 
-	const systemOrder: Mailbox["kind"][] = [
-		"inbox",
-		"starred" as any, // if you add later
-		"drafts",
-		"sent",
-		"archive",
-		"spam",
-		"trash",
-	].filter(Boolean) as Mailbox["kind"][];
+	const sortedMailboxes = [...mailboxes].sort((a, b) => {
+		const ai = orderIndex(a.kind);
+		const bi = orderIndex(b.kind);
+		if (ai !== bi) return ai - bi;
+		return (a.name ?? a.slug ?? "").localeCompare(b.name ?? b.slug ?? "");
+	});
 
-	const iconFor: Record<Mailbox["kind"], React.ElementType> = {
-		inbox: Inbox,
-		sent: Send,
-		drafts: FileText,
-		archive: Archive,
-		spam: Ban,
-		trash: Trash2,
-		outbox: Send,
-		custom: Folder,
-	};
-
-	const system = mailboxes
-		.filter((m) => m.kind !== "custom")
-		.filter((m) => m.kind !== "drafts")
-		.sort((a, b) => systemOrder.indexOf(a.kind) - systemOrder.indexOf(b.kind));
-
-	const custom = mailboxes.filter((m) => m.kind === "custom");
-
-	const Item = ({ m }: { m: Mailbox }) => {
-		const Icon = iconFor[m.kind] ?? Folder;
-		const slug = m.slug ?? "inbox";
-		const href = `/mail/${identityPublicId}/${slug}`;
+	const Item = ({ mailbox }: { mailbox: Mailbox }) => {
+		const Icon = iconFor[mailbox.kind] ?? Folder;
+		const slug = mailbox.slug ?? "inbox";
+		const href = `/dashboard/mail/${identityPublicId}/${slug}`;
+		const unreadCount = Number(mailbox.unreadCount ?? 0);
 
 		const isActive =
 			pathname === href || (params.mailboxSlug == null && slug === "inbox");
@@ -90,14 +76,13 @@ export function MailboxNav({
 			>
 				<Icon className="h-4 w-4 shrink-0" />
 				<span className="min-w-0 truncate">
-					{m.kind === "custom" ? (m.name ?? "Label") : titleFor(m.kind)}
+					{mailbox.kind === "custom"
+						? (mailbox.name ?? "Folder")
+						: titleFor(mailbox.kind)}
 				</span>
-				{m.unreadCount ? (
-					<Badge
-						variant={isActive ? "secondary" : "outline"}
-						className="ml-auto"
-					>
-						{m.unreadCount}
+				{unreadCount > 0 ? (
+					<Badge variant={isActive ? "secondary" : "outline"} className="ml-auto">
+						{unreadCount}
 					</Badge>
 				) : null}
 			</Link>
@@ -107,8 +92,8 @@ export function MailboxNav({
 	return (
 		<div className="space-y-4 px-2">
 			<div className="space-y-1">
-				{system.map((m) => (
-					<Item key={m.slug ?? m.kind} m={m} />
+				{sortedMailboxes.map((mailbox) => (
+					<Item key={mailbox.id} mailbox={mailbox} />
 				))}
 			</div>
 		</div>
