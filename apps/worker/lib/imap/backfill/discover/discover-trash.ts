@@ -2,6 +2,7 @@ import { ImapFlow } from "imapflow";
 import { db, mailboxes, mailboxSync, type IdentityEntity } from "@db";
 import { and, eq, or } from "drizzle-orm";
 import slugify from "@sindresorhus/slugify";
+import { FolderMappings } from "@schema";
 
 const TRASH_NAME_CANDIDATES = [
 	"trash",
@@ -35,6 +36,9 @@ export async function ensureTrashFolder(
 	client: ImapFlow,
 	identity: IdentityEntity,
 ) {
+	const mappings = (identity as any).folderMappings as FolderMappings | null;
+	if (mappings?.trash) return; // trust that discover-mailboxes already set kind=trash
+
 	const all: Array<any> = [];
 	for await (const mbx of await client.list()) all.push(mbx);
 

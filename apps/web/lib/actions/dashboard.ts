@@ -494,6 +494,8 @@ export async function addNewEmailIdentity(
 		const rls = await rlsClient();
 		const data = decode(formData);
 
+		let createdIdentityId: string | null = null;
+
 		if (data.smtpAccountId) {
 			const identityData = IdentityInsertSchema.parse(data);
 			identityData.metaData = {
@@ -506,6 +508,7 @@ export async function addNewEmailIdentity(
 					.returning(),
 			);
 			await initializeMailboxes(identity);
+			createdIdentityId = identity.id;
 		} else {
 			data.domainIdentityId = data.domain;
 
@@ -548,6 +551,7 @@ export async function addNewEmailIdentity(
 		return {
 			success: true,
 			message: "Added new identity",
+			data: createdIdentityId ? { identityId: createdIdentityId } : undefined,
 		};
 	});
 }

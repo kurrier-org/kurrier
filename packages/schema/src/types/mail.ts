@@ -25,6 +25,29 @@ export const MailboxKindDisplay: Record<MailboxKind, string> = {
 	custom: "Custom Folder",
 };
 
+export const MAPPABLE_FOLDER_ROLES = [
+	"inbox",
+	"sent",
+	"drafts",
+	"trash",
+	"spam",
+	"archive",
+] as const satisfies Array<MailboxKind>;
+
+export type MappableFolderRole = (typeof MAPPABLE_FOLDER_ROLES)[number];
+
+// Values are full IMAP paths (e.g. "[Gmail]/Sent Mail"), null = unset / auto-detect
+export type FolderMappings = Partial<Record<MappableFolderRole, string | null>>;
+
+export const FolderMappingsSchema = z.object({
+	inbox: z.string().nullable().optional(),
+	sent: z.string().nullable().optional(),
+	drafts: z.string().nullable().optional(),
+	trash: z.string().nullable().optional(),
+	spam: z.string().nullable().optional(),
+	archive: z.string().nullable().optional(),
+});
+
 //
 // Message states
 //
