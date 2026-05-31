@@ -1,5 +1,11 @@
 # @kurrier/db
 
+## 2.0.0
+
+### Major Changes
+
+- [#449](https://github.com/kurrier-org/kurrier/pull/449) [`4a63387`](https://github.com/kurrier-org/kurrier/commit/4a63387eb93bf3dde9aeda194eb6a2cf0fed4cd5) Thanks [@krokhale](https://github.com/krokhale)! - refactor: simplify platform architecture, routing, storage, and db setup
+
 ## 1.1.2
 
 ### Patch Changes
