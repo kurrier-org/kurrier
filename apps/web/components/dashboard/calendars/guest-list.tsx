@@ -14,7 +14,6 @@ export type UiGuest = {
 	email: string;
 	name: string | null;
 	avatar: string | null;
-	contactId: string | null;
 	isOrganizer: boolean;
 	isPersisted: boolean;
 	partstat: UiGuestStatus;

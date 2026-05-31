@@ -3,7 +3,7 @@ import * as React from "react";
 import { MailboxEntity, MailboxSyncEntity } from "@db";
 import { PublicConfig } from "@schema";
 import {
-	FetchIdentityMailboxListResult,
+	FetchIdentityMailboxListResult, FetchMailboxResult,
 	FetchMailboxThreadsResult,
 } from "@/lib/actions/mailbox";
 import {
@@ -16,28 +16,31 @@ import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
 import { useMediaQuery } from "@mantine/hooks";
 import WebmailListItemMobile from "@/components/mailbox/default/webmail-list-item-mobile";
 import { useParams } from "next/navigation";
+import {use} from "react";
 
 type WebListProps = {
-	mailboxThreads: FetchMailboxThreadsResult;
+	mailboxThreadPromise: Promise<{ mailboxThreads: FetchMailboxThreadsResult, labelsByThreadId: FetchMailboxThreadLabelsResult }>;
 	publicConfig: PublicConfig;
-	activeMailbox: MailboxEntity;
 	identityPublicId: string;
-	identityMailboxes: FetchIdentityMailboxListResult;
-	globalLabels: FetchLabelsResult;
-	labelsByThreadId: FetchMailboxThreadLabelsResult;
-	mailboxSync?: MailboxSyncEntity;
+	identityMailboxesPromise: Promise<FetchIdentityMailboxListResult>;
+	fetchMailboxPromise: Promise<FetchMailboxResult>;
+	globalLabelsPromise: Promise<FetchLabelsResult>;
+	workspacePublicId?: string;
 };
 
 export default function WebmailList({
-	mailboxThreads,
-	activeMailbox,
+	mailboxThreadPromise,
 	identityPublicId,
-	mailboxSync,
 	publicConfig,
-	identityMailboxes,
-	globalLabels,
-	labelsByThreadId,
+	identityMailboxesPromise,
+	globalLabelsPromise,
+	workspacePublicId,
+	fetchMailboxPromise
 }: WebListProps) {
+	const {labelsByThreadId, mailboxThreads} = use(mailboxThreadPromise)
+	const globalLabels = use(globalLabelsPromise)
+	const {mailboxSync, activeMailbox} = use(fetchMailboxPromise)
+	const identityMailboxes = use(identityMailboxesPromise)
 	const isMobile = useMediaQuery("(max-width: 768px)");
 	const params = useParams();
 
@@ -59,7 +62,7 @@ export default function WebmailList({
 					<div className="rounded-xl border bg-background/50 z-[50]">
 						<MailListHeader
 							mailboxThreads={mailboxThreads}
-							mailboxSync={mailboxSync}
+							mailboxSync={mailboxSync ?? undefined}
 							publicConfig={publicConfig}
 							identityMailboxes={identityMailboxes}
 							activeMailbox={activeMailbox}
@@ -75,7 +78,7 @@ export default function WebmailList({
 										mailboxThreadItem={mailboxThreadItem}
 										activeMailbox={activeMailbox}
 										identityPublicId={identityPublicId}
-										mailboxSync={mailboxSync}
+										mailboxSync={mailboxSync ?? undefined}
 										labelsByThreadId={labelsByThreadId}
 									/>
 								) : (
@@ -84,9 +87,10 @@ export default function WebmailList({
 											mailboxThreadItem.threadId + mailboxThreadItem.mailboxId
 										}
 										mailboxThreadItem={mailboxThreadItem}
+										workspacePublicId={workspacePublicId}
 										activeMailbox={activeMailbox}
 										identityPublicId={identityPublicId}
-										mailboxSync={mailboxSync}
+										mailboxSync={mailboxSync ?? undefined}
 										globalLabels={globalLabels}
 										labelsByThreadId={labelsByThreadId}
 									/>

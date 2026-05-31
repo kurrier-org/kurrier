@@ -9,11 +9,13 @@ import { useRouter } from "next/navigation";
 
 type DeleteContactButtonProps = {
 	contact: ContactEntity;
+	workspacePublicId: string;
 	onDeleteAction: (id: string) => Promise<{ success: boolean }>;
 };
 
 function DeleteContactButton({
 	contact,
+	workspacePublicId,
 	onDeleteAction,
 }: DeleteContactButtonProps) {
 	const router = useRouter();
@@ -40,7 +42,7 @@ function DeleteContactButton({
 			confirmProps: { color: "red" },
 			onConfirm: async () => {
 				await onDeleteAction(contact.id);
-				router.push("/dashboard/contacts");
+				router.push(`/w/${workspacePublicId}/dashboard/contacts`);
 			},
 		});
 	};

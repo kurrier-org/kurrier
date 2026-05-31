@@ -8,6 +8,10 @@ export const messagesSearchSchema: CollectionCreateSchema = {
 		{ name: "mailboxId", type: "string", facet: true },
 		{ name: "threadId", type: "string", facet: true },
 
+		{ name: "workspacePublicId", type: "string", facet: true },
+		{ name: "identityPublicId", type: "string", facet: true },
+		{ name: "mailboxSlug", type: "string", facet: true },
+
 		{ name: "subject", type: "string" },
 		{ name: "text", type: "string" },
 		{ name: "html", type: "string" },
@@ -39,7 +43,7 @@ export type SearchResult = {
 	subject: string | null;
 	text: string | null;
 	snippet: string;
-	createdAt?: number; // optional if you decide to include it later
+	createdAt?: number;
 };
 
 export interface ThreadHit {
@@ -59,11 +63,16 @@ export interface ThreadHit {
 	starred: boolean;
 }
 
+
 export type ToSearchDocInput = {
 	id: string;
 	ownerId: string;
 	mailboxId: string;
 	threadId: string;
+
+	workspacePublicId: string;
+	identityPublicId: string;
+	mailboxSlug: string;
 
 	subject?: string | null;
 	text?: string | null;
@@ -80,6 +89,7 @@ export type ToSearchDocInput = {
 	hasAttachments?: boolean;
 	seen?: boolean;
 	sizeBytes?: number | null;
+
 	createdAt?: Date | string | null;
 	lastInThreadAt?: Date | string | null;
 

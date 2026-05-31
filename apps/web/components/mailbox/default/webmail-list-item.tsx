@@ -23,6 +23,7 @@ type Props = {
 	mailboxSync: MailboxSyncEntity | undefined;
 	globalLabels: FetchLabelsResult;
 	labelsByThreadId: FetchMailboxThreadLabelsResult;
+	workspacePublicId?: string;
 };
 import { Temporal } from "@js-temporal/polyfill";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
@@ -38,6 +39,7 @@ export default function WebmailListItem({
 	mailboxSync,
 	globalLabels,
 	labelsByThreadId,
+	workspacePublicId
 }: Props) {
 	function formatDateLabel(input?: string | number | Date) {
 		const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -145,7 +147,7 @@ export default function WebmailListItem({
 
 	const openThread = async () => {
 		const url = pathname.match("/dashboard/mail")
-			? `/dashboard/mail/${identityPublicId}/${activeMailbox.slug}/threads/${mailboxThreadItem.threadId}`
+			? `/w/${workspacePublicId}/dashboard/mail/${identityPublicId}/${activeMailbox.slug}/threads/${mailboxThreadItem.threadId}`
 			: `/mail/${identityPublicId}/${activeMailbox.slug}/threads/${mailboxThreadItem.threadId}`;
 
 		// TODO: Fix full page reload on snoozed page, hoist @thread layout to higher level

@@ -1,27 +1,31 @@
 "use client";
 
-import React from "react";
+import React, {useState} from "react";
 import ContactsList, {
 	ContactWithFavorite,
 } from "@/components/dashboard/contacts/contacts-list";
 import NewContactButton from "@/components/dashboard/contacts/new-contact-button";
 import { useParams, usePathname } from "next/navigation";
 import { useMediaQuery } from "@mantine/hooks";
-
-type ProfileImage = {
-	error: string | null;
-	path: string | null;
+import {AddressBookEntity} from "@db";
+export type ProfileImage = {
+	path: string;
 	signedUrl: string;
 };
+
 
 export default function ContactsShell({
 	children,
 	userContacts,
 	profileImages,
+	workspacePublicId,
+	userBook
 }: {
 	children: React.ReactNode;
 	userContacts: ContactWithFavorite[];
-	profileImages: ProfileImage[] | null;
+	profileImages: (ProfileImage | null)[];
+	workspacePublicId: string;
+	userBook: AddressBookEntity
 }) {
 	const pathname = usePathname();
 	const params = useParams<{
@@ -39,6 +43,7 @@ export default function ContactsShell({
 
 	const showList = !isMobile || !isDetailRoute;
 	const showDetail = !isMobile || isDetailRoute;
+	const [selectedAddressBook, setSelectedAddressBook] = useState(userBook.id);
 
 	return (
 		<main className="flex flex-1 flex-col h-[calc(100vh-4rem)] overflow-hidden p-3 sm:p-4">
@@ -55,11 +60,16 @@ export default function ContactsShell({
 							<span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 								All contacts
 							</span>
-							<NewContactButton />
+							<div className={"flex gap-2"}>
+								<NewContactButton workspacePublicId={workspacePublicId} />
+							</div>
 						</div>
 						<ContactsList
 							userContacts={userContacts}
+							selectedAddressBook={selectedAddressBook}
+							onAddressBookChange={setSelectedAddressBook}
 							profileImages={profileImages}
+							workspacePublicId={workspacePublicId}
 						/>
 					</section>
 				)}

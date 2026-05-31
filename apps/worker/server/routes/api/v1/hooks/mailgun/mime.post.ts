@@ -4,16 +4,7 @@ import { db, identities, mailboxes } from "@db";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { parseAndStoreEmail } from "../../../../../../lib/message-payload-parser";
-import { getPublicEnv, getServerEnv } from "@schema";
-import { createClient } from "@supabase/supabase-js";
 import { getToEmails } from "../sendgrid/inbound.post";
-
-const publicConfig = getPublicEnv();
-const serverConfig = getServerEnv();
-const supabase = createClient(
-	publicConfig.API_URL,
-	serverConfig.SERVICE_ROLE_KEY,
-);
 
 export default defineEventHandler(async (event) => {
 	try {
@@ -33,15 +24,10 @@ export default defineEventHandler(async (event) => {
 			return { ok: false, error: "No identity found for toAddress" };
 		}
 
-		const encoder = new TextEncoder();
-		const emailBuffer = encoder.encode(rawMime);
-
 		const emlId = uuidv4();
-		const supaRes = await supabase.storage
-			.from("attachments")
-			.upload(`eml/${identity.ownerId}/${emlId}`, emailBuffer, {
-				contentType: "message/rfc822",
-			});
+
+		// Define your raw storage key directly
+		const rawStorageKey = `eml/${identity.ownerId}/${emlId}`;
 
 		const headers = parsed.headers as Map<string, any>;
 
@@ -68,8 +54,9 @@ export default defineEventHandler(async (event) => {
 
 		await parseAndStoreEmail(rawMime, {
 			ownerId: identity.ownerId,
+			workspaceId: identity.workspaceId,
 			mailboxId: authSaysJunk ? String(spamMb?.id) : String(inbox?.id),
-			rawStorageKey: String(supaRes?.data?.path),
+			rawStorageKey,
 			emlKey: emlId,
 		});
 

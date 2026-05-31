@@ -12,17 +12,18 @@ import { getCountryDataList, getEmojiFlag, TCountryCode } from "countries-list";
 import { FieldConfig, FormState, PublicConfig } from "@schema";
 import NextImage from "next/image";
 import { createThumbnail } from "@/lib/utils";
-import { User } from "@supabase/supabase-js";
 import { nanoid } from "nanoid";
 import { extension } from "mime-types";
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { ContactEntity } from "@db";
+import {uploadContactProfileAction} from "@/lib/actions/uploads-actions";
+import {FetchIsSignedInResult} from "@/lib/actions/auth";
 
 export default function NewContactForm({
 	contact = null,
 	profilePictureUrl,
 	createContactAction,
+	workspacePublicId,
 	user,
 	publicConfig,
 }: {
@@ -32,7 +33,8 @@ export default function NewContactForm({
 		_prev: FormState,
 		formData: FormData,
 	) => Promise<FormState>;
-	user: User | null;
+	user: FetchIsSignedInResult;
+	workspacePublicId: string;
 	publicConfig: PublicConfig;
 }) {
 	const [preview, setPreview] = React.useState<string | null>(
@@ -89,7 +91,6 @@ export default function NewContactForm({
 		const base64 = (await createThumbnail(file, "dataUrl", 512, 0.2)) as string;
 		setPreview(base64);
 
-		const supabase = createClient(publicConfig);
 		const basePath = `private/${user.id}/contacts/${newContactPublicId.current}`;
 		const ext = (extension(file.type) || "jpg").toString();
 
@@ -99,18 +100,22 @@ export default function NewContactForm({
 		const mainFile = (await createThumbnail(file, "file", 1920, 1)) as File;
 		const thumbFile = (await createThumbnail(file, "file", 128, 0.2)) as File;
 
-		const [mainRes, thumbRes] = await Promise.all([
-			supabase.storage.from("attachments").upload(mainPath, mainFile),
-			supabase.storage.from("attachments").upload(thumbPath, thumbFile),
-		]);
+		try {
+			await uploadContactProfileAction({
+				mainFile,
+				thumbFile,
+				mainPath,
+				thumbPath,
+			});
 
-		if (!mainRes.error && !thumbRes.error) {
 			const profileField = document.querySelector(
 				"input[name='profilePicture']",
 			) as HTMLInputElement | null;
+
 			const profileXsField = document.querySelector(
 				"input[name='profilePictureXs']",
 			) as HTMLInputElement | null;
+
 			const publicIdField = document.querySelector(
 				"input[name='publicId']",
 			) as HTMLInputElement | null;
@@ -118,6 +123,9 @@ export default function NewContactForm({
 			if (profileField) profileField.value = mainPath;
 			if (profileXsField) profileXsField.value = thumbPath;
 			if (publicIdField) publicIdField.value = newContactPublicId.current;
+
+		} catch (err) {
+			console.error("Upload failed", err);
 		}
 	};
 
@@ -169,6 +177,7 @@ export default function NewContactForm({
 						ref={fileRef}
 						onChange={handleFileSelect}
 					/>
+					<input type="hidden" name="addressBookId" value={contact?.addressBookId} />
 					<button
 						type="button"
 						onClick={() => fileRef.current?.click()}
@@ -496,7 +505,7 @@ export default function NewContactForm({
 			<div className="flex items-center justify-between my-2 mb-8">
 				<h1 className="text-xl font-bold text-foreground">
 					{contact
-						? `Edit ${contact.firstName} ${contact.lastName}`
+						? `Edit ${contact.firstName} ${contact?.lastName || ""}`
 						: "New Contact Form"}
 				</h1>
 			</div>
@@ -504,7 +513,7 @@ export default function NewContactForm({
 				fields={fields}
 				action={createContactAction}
 				onSuccess={(newContact) =>
-					router.push(`/dashboard/contacts/${newContact.publicId}`)
+					router.push(`/w/${workspacePublicId}/dashboard/contacts/${newContact.publicId}`)
 				}
 			/>
 		</Container>

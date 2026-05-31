@@ -12,8 +12,8 @@ import { EmailEditorHandle } from "@/components/mailbox/default/editor/email-edi
 import EditorAttachmentItem from "@/components/mailbox/default/editor/editor-attachment-item";
 import { PublicConfig } from "@schema";
 import {fetchMailbox, FetchThreadMailSubsResult, markAsRead} from "@/lib/actions/mailbox";
+import {getRawMessageDownloadUrl} from "@/lib/actions/uploads-actions";
 import { useParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { useDisclosure } from "@mantine/hooks";
 import MailUnsubscriber from "@/components/mailbox/default/mail-unsubscriber";
 const EmailEditor = dynamic(
@@ -25,6 +25,9 @@ const EmailEditor = dynamic(
 		),
 	},
 );
+export type MessageAttachmentWithUrl = MessageAttachmentEntity & {
+	signedUrl: string;
+};
 
 function getScrollParent(el: HTMLElement): HTMLElement {
 	let p: HTMLElement | null = el.parentElement;
@@ -93,7 +96,8 @@ function EmailRenderer({
 	threadIndex: number;
 	numberOfMessages: number;
 	message: MessageEntity;
-	attachments: MessageAttachmentEntity[];
+	// attachments: MessageAttachmentEntity[];
+	attachments: MessageAttachmentWithUrl[];
 	publicConfig: PublicConfig;
 	threadId: string;
 	markSmtp: boolean;
@@ -143,39 +147,28 @@ function EmailRenderer({
 	}, [activeMailboxId]);
 
 	const downloadEml = async () => {
-		const supabase = createClient(publicConfig);
-		const { data } = await supabase.storage
-			.from("attachments")
-			.createSignedUrl(String(message.rawStorageKey), 3600, {
-				download: true,
-			});
-		if (data?.signedUrl) {
-			window.open(data.signedUrl, "_blank");
+		const { url } = await getRawMessageDownloadUrl(message.id);
+		if (url) {
+			window.open(url, "_blank");
 		}
 	};
 
 	const [opened, { open, close }] = useDisclosure(false);
 	const [emailString, setEmailString] = useState<string | null>(null);
 
+
 	useEffect(() => {
-		if (opened) {
-			const supabase = createClient(publicConfig);
-			supabase.storage
-				.from("attachments")
-				.download(String(message.rawStorageKey))
-				.then(({ data, error }) => {
-					if (error) {
-						console.error("Error downloading original message:", error);
-						return;
-					}
-					if (data) {
-						data.text().then((raw) => {
-							setEmailString(raw.slice(0, 10000));
-						});
-					}
-				});
-		}
+		if (!opened) return;
+
+		getRawMessageDownloadUrl(message.id).then(({ url }) => {
+			if (!url) return;
+
+			fetch(url)
+				.then(res => res.text())
+				.then(raw => setEmailString(raw.slice(0, 10000)));
+		});
 	}, [opened]);
+
 
 	const formattedTime = useMemo(() => {
 		return Temporal.Instant.from(message.createdAt.toISOString())

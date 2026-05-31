@@ -1,19 +1,26 @@
 "use client";
-import React, { useState } from "react";
+import React, {use, useEffect, useState} from "react";
 import { Pagination } from "@mantine/core";
 import { useParams, usePathname, useRouter } from "next/navigation";
+import {FetchMailboxResult} from "@/lib/actions/mailbox";
 
 function MailPagination({
-	count,
-	mailboxSlug,
+	// count,
+	// mailboxSlug,
+	workspacePublicId,
 	identityPublicId,
-	page,
+	fetchMailboxPromise,
+	page
 }: {
-	count: number;
-	mailboxSlug: string | null;
+	// count: number;
+	// mailboxSlug: string | null;
+	workspacePublicId: string;
 	identityPublicId: string;
+	fetchMailboxPromise: Promise<FetchMailboxResult>;
 	page?: number;
 }) {
+	const {count, activeMailbox} = use(fetchMailboxPromise)
+	const mailboxSlug = activeMailbox?.slug || null;
 	const [activePage, setPage] = useState(page || 1);
 	const router = useRouter();
 	const pathname = usePathname();
@@ -23,12 +30,12 @@ function MailPagination({
 		if (number < 1) return;
 		if (Number(number) === 1) {
 			router.push(
-				`${pathname.match("/dashboard/mail") ? "/dashboard" : ""}/mail/${identityPublicId}/${mailboxSlug}`,
+				`/w/${workspacePublicId}/dashboard/mail/${identityPublicId}/${mailboxSlug}`,
 			);
 			return;
 		}
 		router.push(
-			`${pathname.match("/dashboard/mail") ? "/dashboard" : ""}/mail/${identityPublicId}/${mailboxSlug}?page=${number}`,
+			`/w/${workspacePublicId}/dashboard/mail/${identityPublicId}/${mailboxSlug}?page=${number}`,
 		);
 		setPage(number);
 	};
@@ -38,7 +45,7 @@ function MailPagination({
 			<Pagination
 				value={activePage}
 				onChange={updatePageNumber}
-				total={count > 0 ? Math.ceil(count / 50) : 0}
+				total={count > 0 ? count / 50 : 0}
 			/>
 		</div>
 	);

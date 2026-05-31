@@ -37,9 +37,16 @@ function NewCalendarEventForm({
 	const { state } = useDynamicContext<CalendarState>();
 	const dayjsTz = getDayjsTz(state.defaultCalendar.timezone);
 	const editEvent = state.activePopoverEditEvent;
+	const defaultOrganizer =
+		state.defaultCalendar.identityId
+			? state.organizers.find(
+			(o) => o.value === state.defaultCalendar.identityId,
+		) ?? null
+			: null;
+
 	const [selectedOrganizer, setSelectedOrganizer] =
 		useState<CalendarOrganizerType | null>(
-			state.organizers[0] ? state.organizers[0] : null,
+			defaultOrganizer ?? state.organizers[0] ?? null,
 		);
 	const pathname = usePathname();
 	const [allDay, setIsAllDay] = useState<boolean>(!!editEvent?.isAllDay);
@@ -160,6 +167,7 @@ function NewCalendarEventForm({
 			props: {
 				data: state.organizers,
 				allowDeselect: false,
+				readOnly: true,
 				required: true,
 				value: selectedOrganizer?.value,
 				onChange: (val: string | null) => {

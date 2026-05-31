@@ -16,16 +16,16 @@ import {
 import KurrierLogo from "@/components/common/kurrier-logo";
 import Link from "next/link";
 import { PublicConfig } from "@schema";
-import { UserResponse } from "@supabase/supabase-js";
 import { NavUser } from "@/components/ui/dashboards/workspace/nav-user";
 import { Switch } from "@mantine/core";
 import { IconMoonStars, IconSun } from "@tabler/icons-react";
 import { useAppearance } from "@/components/providers/appearance-provider";
 import ThemeColorPicker from "@/components/common/theme-color-picker";
+import {FetchIsSignedInResult} from "@/lib/actions/auth";
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	publicConfig: PublicConfig;
-	user: UserResponse["data"]["user"];
+	user: FetchIsSignedInResult;
 	avatar: string;
 };
 
@@ -107,7 +107,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
 				</div>
 			</SidebarContent>
 			<SidebarFooter>
-				<NavUser user={user} />
+				{/*<NavUser user={user} />*/}
 			</SidebarFooter>
 		</Sidebar>
 	);

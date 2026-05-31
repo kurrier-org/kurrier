@@ -5,29 +5,32 @@ import {
 	contacts,
 	db,
 } from "@db";
-import { and, eq } from "drizzle-orm";
-import { davCards, DavCardsEntity, davDb } from "../dav-schema";
+import {and, eq, isNull} from "drizzle-orm";
+import {davAddressbooks, davCards, DavCardsEntity, davDb} from "../dav-schema";
 import { parseVCardToContact } from "./dav-vcard";
 import { nanoid } from "nanoid";
 import { davParsePhoto } from "./dav-profile-image";
+import {createContact} from "../../../lib/dav/dav-create-contact";
 
 const fetchContactData = async (card: DavCardsEntity) => {
 	const vcardBytes = card.carddata as Uint8Array;
 	return Buffer.from(vcardBytes).toString("utf8");
 };
 
-const createContact = async ({
-	card,
-	book,
-}: {
+const createContactFromDav = async ({
+										card,
+										book,
+									}: {
 	card: DavCardsEntity;
 	book: AddressBookEntity;
 }) => {
+	console.log("Creating contact from DAV card:", { uri: card.uri, etag: card.etag });
 	const parsed = parseVCardToContact(await fetchContactData(card));
 
 	const newContactPublicId = nanoid(10);
 	const payload = {
 		ownerId: book.ownerId,
+		workspaceId: book.workspaceId,
 		addressBookId: book.id,
 		publicId: newContactPublicId,
 		...parsed,
@@ -47,10 +50,10 @@ const createContact = async ({
 };
 
 const updateContact = async ({
-	card,
-	book,
-	localContact,
-}: {
+								 card,
+								 book,
+								 localContact,
+							 }: {
 	card: DavCardsEntity;
 	book: AddressBookEntity;
 	localContact: ContactEntity;
@@ -77,23 +80,44 @@ const updateContact = async ({
 	return contact;
 };
 
-const syncBook = async (
-	book: AddressBookEntity,
-	defaultDavBookId: number | null,
-) => {
-	const parts = book.remotePath.split("/");
-	if (parts.length !== 3 || parts[0] !== "addressbooks") return;
+const syncBook = async (book: AddressBookEntity) => {
+	if (!book.davAddressBookId) return;
 
-	let davBookId = book.davAddressBookId || defaultDavBookId;
-	if (!davBookId) {
-		console.info("[DAV SYNC] Skipping book without davAddressBookId", book.id);
+	const unsyncedContacts = await db
+		.select()
+		.from(contacts)
+		.where(
+			and(
+				eq(contacts.addressBookId, book.id),
+				isNull(contacts.davUri)
+			),
+		);
+
+	for (const local of unsyncedContacts) {
+		console.log("Pushing local contact to DAV:", local.id);
+
+		await createContact(local.id, book.ownerId);
+	}
+
+	const [davBook] = await davDb
+		.select()
+		.from(davAddressbooks)
+		.where(eq(davAddressbooks.id, book.davAddressBookId))
+		.limit(1);
+
+	if (!davBook) return;
+
+	const remoteToken = String(davBook.synctoken);
+	const localToken = book.davSyncToken;
+
+	if (localToken && localToken === remoteToken) {
 		return;
 	}
 
 	const cards = await davDb
 		.select()
 		.from(davCards)
-		.where(eq(davCards.addressbookid, davBookId));
+		.where(eq(davCards.addressbookid, book.davAddressBookId));
 
 	const remoteUris = new Set<string>();
 
@@ -104,8 +128,10 @@ const syncBook = async (
 			.select()
 			.from(contacts)
 			.where(
-				// and(eq(contacts.addressBookId, book.id), eq(contacts.davUri, card.uri)),
-				and(eq(contacts.ownerId, book.ownerId), eq(contacts.davUri, card.uri)),
+				and(
+					eq(contacts.addressBookId, book.id),
+					eq(contacts.davUri, card.uri),
+				),
 			);
 
 		if (localContact) {
@@ -113,13 +139,7 @@ const syncBook = async (
 				await updateContact({ card, book, localContact });
 			}
 		} else {
-			console.info(
-				"[DAV SYNC] New contact from DAV:",
-				card.uri,
-				"-> book",
-				book.id,
-			);
-			await createContact({ card, book });
+			await createContactFromDav({ card, book });
 		}
 	}
 
@@ -128,51 +148,27 @@ const syncBook = async (
 		.from(contacts)
 		.where(eq(contacts.addressBookId, book.id));
 
-	const deletedIds: string[] = [];
-
 	for (const local of localContacts) {
 		if (local.davUri && !remoteUris.has(local.davUri)) {
 			await db.delete(contacts).where(eq(contacts.id, local.id));
-			deletedIds.push(String(local.id));
 		}
 	}
 
-	if (deletedIds.length) {
-		console.info("[DAV SYNC] Deleted local contacts removed remotely:", {
-			bookId: book.id,
-			count: deletedIds.length,
-			ids: deletedIds,
-		});
-	}
+	await db.update(addressBooks)
+		.set({ davSyncToken: remoteToken })
+		.where(eq(addressBooks.id, book.id));
 };
 
+
 export const davSyncDb = async () => {
-	const books = await db
-		.select()
-		.from(addressBooks)
-		.where(eq(addressBooks.isDefault, true));
-
-	const defaultDavBookId: number | null =
-		books.length === 1 ? (books[0].davAddressBookId ?? null) : null;
-
-	if (!books.length) {
-		console.info("[DAV SYNC] No DAV books found.");
-		return;
-	}
-
+	const books = await db.select().from(addressBooks)
 	for (const book of books) {
 		try {
-			await syncBook(book as AddressBookEntity, defaultDavBookId);
+			await syncBook(book);
 		} catch (err: any) {
-			console.error(
-				"[DAV SYNC] Error syncing book",
-				book.id,
-				err?.message ?? err,
-			);
+			console.error("DAV sync error:", book.id, err?.message ?? err);
 		}
 	}
-
-	console.info("[DAV SYNC] Completed.");
 };
 
 export function normalizeEtag(etag?: string | null): string | null {

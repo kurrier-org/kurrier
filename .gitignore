@@ -53,6 +53,12 @@ db/dav_config
 db/dav_data
 db/kurrier-logs.txt
 db/webdav
+db/baikal-data
+db/data
+db/garage
+db/postgres
 packages/db/src/drizzle/meta
 db/caddy
 apps/web/.pnpm-store/
+.pnpm-store
+packages/db/src/drizzle/*.sql

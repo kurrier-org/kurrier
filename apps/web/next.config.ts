@@ -25,10 +25,6 @@ const nextConfig: NextConfig = {
 		return {
 			beforeFiles: [
 				{
-					source: "/api/kong/:path*",
-					destination: `${process.env.API_URL}/:path*`,
-				},
-				{
 					source: "/api/v1/:path*",
 					destination: `${process.env.WORKER_URL}:3001/api/v1/:path*`,
 				},
@@ -53,10 +49,6 @@ const nextConfig: NextConfig = {
 					source: "/principals/:path*",
 					destination: `${process.env.DAV_URL}/dav.php/principals/:path*`,
 				},
-				// {
-				//     source: "/.well-known/carddav",
-				//     destination: `${DAV}/dav.php/principals/kurrier/`,
-				// },
 				{
 					source: "/.well-known/caldav",
 					destination: `${process.env.DAV_URL}/dav.php`,

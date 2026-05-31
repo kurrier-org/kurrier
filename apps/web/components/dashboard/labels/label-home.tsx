@@ -97,8 +97,8 @@ function LabelHome() {
 		const color = labelNode.colorBg ?? colors.indigo["500"];
 		const routeTo =
 			state.scope === "contact"
-				? `/dashboard/contacts/label/${labelNode.slug}`
-				: `/dashboard/mail/${identityPublicId}/${mailboxSlug}/label/${labelNode.slug}`;
+				? `/w/${state.workspacePublicId}/dashboard/contacts/label/${labelNode.slug}`
+				: `/w/${state.workspacePublicId}/dashboard/mail/${identityPublicId}/${mailboxSlug}/label/${labelNode.slug}`;
 
 		return (
 			<div

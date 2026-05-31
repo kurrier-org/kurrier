@@ -5,9 +5,11 @@ import type { ImapFlow } from "imapflow";
 import type { FlagsEvent } from "imapflow";
 import { deltaFetch } from "../../lib/imap/imap-delta-fetch";
 
+
 const MAX_RECONNECT_ATTEMPTS = 5;
 const RECONNECT_BACKOFFS_MS = [5000, 10000, 20000, 40000, 80000];
 const reconnectAttempts = new Map<string, number>();
+
 
 async function handleFlagsUpdate(
 	identityId: string,
@@ -251,12 +253,7 @@ function attachRealtimeEventHandlers(
 	});
 }
 
-async function idleForever(
-	identityId: string,
-	client: ImapFlow,
-	idleImapInstances: Map<string, ImapFlow>,
-	imapInstances: Map<string, ImapFlow>,
-) {
+async function idleForever(identityId: string, client: ImapFlow, idleImapInstances: Map<string, ImapFlow>, imapInstances: Map<string, ImapFlow>) {
 	console.log(`[realtime:${identityId}] entering idle loop...`);
 	while (client.authenticated && client.usable) {
 		try {
@@ -373,6 +370,7 @@ export const imapIdleSync = async (
 	idleImapInstances: Map<string, ImapFlow>,
 	imapInstances: Map<string, ImapFlow>,
 ) => {
+
 	const identityRows = await db
 		.select()
 		.from(identities)

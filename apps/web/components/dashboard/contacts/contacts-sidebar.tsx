@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, UploadCloud, Plus } from "lucide-react";
+import {Users, Plus} from "lucide-react";
 
 import {
 	SidebarGroup,
@@ -14,7 +14,9 @@ import {
 
 export default function ContactsNav({
 	onComplete,
+	workspacePublicId
 }: {
+	workspacePublicId: string;
 	onComplete?: () => void;
 }) {
 	const pathName = usePathname();
@@ -22,19 +24,14 @@ export default function ContactsNav({
 	const mainItems = [
 		{
 			title: "New Contact",
-			url: "/dashboard/contacts/new",
+			url: `/w/${workspacePublicId}/dashboard/contacts/new`,
 			icon: Plus,
 		},
 		{
 			title: "All contacts",
-			url: "/dashboard/contacts",
+			url: `/w/${workspacePublicId}/dashboard/contacts`,
 			icon: Users,
-		},
-		// {
-		// 	title: "Import",
-		// 	url: "/dashboard/contacts/import",
-		// 	icon: UploadCloud,
-		// },
+		}
 	];
 
 	return (
@@ -63,6 +60,7 @@ export default function ContactsNav({
 						</SidebarMenuItem>
 					))}
 				</SidebarMenu>
+				<SidebarGroupLabel>Address Books</SidebarGroupLabel>
 			</SidebarGroup>
 		</>
 	);

@@ -1,6 +1,13 @@
 import client from "../../lib/get-typesense";
 import { messagesSearchSchema } from "@schema";
-import { db, mailboxThreads, messages } from "@db";
+import {
+	db,
+	identities,
+	mailboxes,
+	mailboxThreads,
+	messages,
+	workspaces,
+} from "@db";
 import { toSearchDoc } from "../../lib/search/search-common";
 import { getMessageAddress, getMessageName } from "@common/mail-client";
 import { and, eq, inArray } from "drizzle-orm";
@@ -19,6 +26,7 @@ async function ensureCollection() {
 
 type JoinedRow = {
 	m: typeof messages.$inferSelect;
+
 	mt_subject?: string | null;
 	mt_preview?: string | null;
 	mt_lastActivityAt?: Date | null;
@@ -27,16 +35,24 @@ type JoinedRow = {
 	mt_hasAttachments?: boolean | null;
 	mt_participants?: any | null;
 	mt_starred?: boolean | null;
+
+	identityPublicId: string;
+	workspacePublicId: string;
+	mailboxSlug: string | null;
 };
 
-/** Convert one joined row to a Typesense doc */
 function rowToDoc(row: JoinedRow) {
 	const m = row.m;
+
 	return toSearchDoc({
 		id: m.id,
 		ownerId: m.ownerId,
 		mailboxId: m.mailboxId,
 		threadId: m.threadId,
+
+		workspacePublicId: row.workspacePublicId,
+		identityPublicId: row.identityPublicId,
+		mailboxSlug: row.mailboxSlug ?? "inbox",
 
 		subject: m.subject ?? row.mt_subject ?? "",
 		text: m.text,
@@ -55,10 +71,8 @@ function rowToDoc(row: JoinedRow) {
 		sizeBytes: m.sizeBytes,
 
 		createdAt: m.date,
-		lastInThreadAt: m.date,
+		lastInThreadAt: row.mt_lastActivityAt ?? m.date,
 
-		threadPreview: row.mt_preview ?? null,
-		threadLastActivityAt: row.mt_lastActivityAt ?? null,
 		threadParticipants: row.mt_participants ?? null,
 		threadStarred: !!row.mt_starred,
 
@@ -66,13 +80,11 @@ function rowToDoc(row: JoinedRow) {
 	});
 }
 
-/** Load one message + its thread summary */
-async function fetchJoinedByMessageId(
-	messageId: string,
-): Promise<JoinedRow | null> {
+async function fetchJoinedByMessageId(messageId: string): Promise<JoinedRow | null> {
 	const rows = await db
 		.select({
 			m: messages,
+
 			mt_subject: mailboxThreads.subject,
 			mt_preview: mailboxThreads.previewText,
 			mt_lastActivityAt: mailboxThreads.lastActivityAt,
@@ -81,6 +93,10 @@ async function fetchJoinedByMessageId(
 			mt_hasAttachments: mailboxThreads.hasAttachments,
 			mt_participants: mailboxThreads.participants,
 			mt_starred: mailboxThreads.starred,
+
+			identityPublicId: identities.publicId,
+			workspacePublicId: workspaces.publicId,
+			mailboxSlug: mailboxes.slug,
 		})
 		.from(messages)
 		.leftJoin(
@@ -90,27 +106,31 @@ async function fetchJoinedByMessageId(
 				eq(messages.mailboxId, mailboxThreads.mailboxId),
 			),
 		)
+		.innerJoin(mailboxes, eq(messages.mailboxId, mailboxes.id))
+		.innerJoin(identities, eq(mailboxes.identityId, identities.id))
+		.innerJoin(workspaces, eq(identities.workspaceId, workspaces.id))
 		.where(eq(messages.id, messageId))
 		.limit(1);
 
 	return rows[0] ?? null;
 }
 
-/** Upsert a single message into Typesense */
 export async function indexMessage(messageId: string) {
 	const row = await fetchJoinedByMessageId(messageId);
 	if (!row) return;
+
 	const doc = rowToDoc(row);
 	await ensureCollection();
 	await client.collections("messages").documents().upsert(doc);
 }
 
 export async function indexManyMessages(messageIds: string[]) {
-	if (messageIds.length === 0) return;
+	if (!messageIds.length) return;
 
 	const rows = await db
 		.select({
 			m: messages,
+
 			mt_subject: mailboxThreads.subject,
 			mt_preview: mailboxThreads.previewText,
 			mt_lastActivityAt: mailboxThreads.lastActivityAt,
@@ -119,6 +139,10 @@ export async function indexManyMessages(messageIds: string[]) {
 			mt_hasAttachments: mailboxThreads.hasAttachments,
 			mt_participants: mailboxThreads.participants,
 			mt_starred: mailboxThreads.starred,
+
+			identityPublicId: identities.publicId,
+			workspacePublicId: workspaces.publicId,
+			mailboxSlug: mailboxes.slug,
 		})
 		.from(messages)
 		.leftJoin(
@@ -128,33 +152,30 @@ export async function indexManyMessages(messageIds: string[]) {
 				eq(messages.mailboxId, mailboxThreads.mailboxId),
 			),
 		)
+		.innerJoin(mailboxes, eq(messages.mailboxId, mailboxes.id))
+		.innerJoin(identities, eq(mailboxes.identityId, identities.id))
+		.innerJoin(workspaces, eq(identities.workspaceId, workspaces.id))
 		.where(inArray(messages.id, messageIds));
 
 	const docs = rows.map(rowToDoc);
-	if (docs.length === 0) return;
+	if (!docs.length) return;
 
 	await ensureCollection();
-	await client
-		.collections("messages")
-		.documents()
-		.import(docs, { action: "upsert" });
+	await client.collections("messages").documents().import(docs, { action: "upsert" });
 }
 
-/** Delete a single message from Typesense */
 export async function deleteMessage(messageId: string) {
 	await ensureCollection();
 	try {
 		await client.collections("messages").documents(messageId).delete();
-	} catch {
-		// ignore if not present
-	}
+	} catch {}
 }
 
-/** Re-index ALL messages in a thread (needed if thread-level fields changed) */
 export async function refreshThread(threadId: string) {
-	const threadRows = await db
+	const rows = await db
 		.select({
 			m: messages,
+
 			mt_subject: mailboxThreads.subject,
 			mt_preview: mailboxThreads.previewText,
 			mt_lastActivityAt: mailboxThreads.lastActivityAt,
@@ -163,6 +184,10 @@ export async function refreshThread(threadId: string) {
 			mt_hasAttachments: mailboxThreads.hasAttachments,
 			mt_participants: mailboxThreads.participants,
 			mt_starred: mailboxThreads.starred,
+
+			identityPublicId: identities.publicId,
+			workspacePublicId: workspaces.publicId,
+			mailboxSlug: mailboxes.slug,
 		})
 		.from(messages)
 		.leftJoin(
@@ -172,14 +197,15 @@ export async function refreshThread(threadId: string) {
 				eq(messages.mailboxId, mailboxThreads.mailboxId),
 			),
 		)
+		.innerJoin(mailboxes, eq(messages.mailboxId, mailboxes.id))
+		.innerJoin(identities, eq(mailboxes.identityId, identities.id))
+		.innerJoin(workspaces, eq(identities.workspaceId, workspaces.id))
 		.where(eq(messages.threadId, threadId));
 
-	if (threadRows.length === 0) return;
+	if (!rows.length) return;
 
-	const docs = threadRows.map(rowToDoc);
+	const docs = rows.map(rowToDoc);
+
 	await ensureCollection();
-	await client
-		.collections("messages")
-		.documents()
-		.import(docs, { action: "upsert" });
+	await client.collections("messages").documents().import(docs, { action: "upsert" });
 }

@@ -78,9 +78,10 @@ export default defineNitroPlugin(async (nitroApp) => {
 				return { success: true };
 			} else if (job.name === "imap:backfill-discover") {
 				const identityId = job.data.identityId;
+				const workspaceId = job.data.workspaceId;
 				const client = await initSmtpClient(identityId, imapInstances);
 				if (client?.authenticated && client?.usable) {
-					await discoverMailboxes(client, identityId);
+					await discoverMailboxes(client, identityId, workspaceId);
 				}
 			} else if (job.name === "mailbox:add-new") {
 				const identityId = job.data.identityId;
@@ -96,10 +97,8 @@ export default defineNitroPlugin(async (nitroApp) => {
 				}
 			} else if (job.name === "imap:start-idle") {
 				const identityId = job.data.identityId as string;
-				await startRealtimeForIdentity(
-					identityId,
-					idleImapInstances,
-					imapInstances,
+				void startRealtimeForIdentity(identityId, idleImapInstances, imapInstances).catch(
+					(err) => console.error(`startRealtimeForIdentity failed ${identityId}`, err),
 				);
 			} else if (job.name === "imap:stop-idle") {
 				const identityId = job.data.identityId as string;
@@ -114,7 +113,9 @@ export default defineNitroPlugin(async (nitroApp) => {
 		{ connection },
 	);
 
-	await imapIdleSync(idleImapInstances, imapInstances);
+	void imapIdleSync(idleImapInstances, imapInstances).catch((err) => {
+		console.error("imapIdleSync failed", err);
+	});
 
 	const scheduler = new JobScheduler("smtp-worker", { connection });
 
@@ -167,16 +168,16 @@ export default defineNitroPlugin(async (nitroApp) => {
 
 			await logoutAll("command", imapInstances);
 			await logoutAll("realtime", idleImapInstances);
-			console.info("Logged out from IMAP server");
-
+			console.info("Logged out from IMAP servers");
 			try {
-				await scheduler.removeJobScheduler("imap-backfill-scheduler");
+				await Promise.allSettled([
+					worker?.close(),
+					scheduler?.close(),
+				]);
 			} catch (err: any) {
-				console.error(
-					"Error removing imap-backfill-scheduler:",
-					err?.message ?? err,
-				);
+				console.error("Error closing BullMQ resources:", err?.message ?? err);
 			}
+
 		} catch (err) {
 			console.error("Failed to logout cleanly", err);
 		}

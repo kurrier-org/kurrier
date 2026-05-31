@@ -3,7 +3,7 @@ import { MessageEntity } from "@db";
 import EmailViewer from "@/components/mailbox/default/email-viewer";
 import EmailRenderer from "@/components/mailbox/default/email-renderer";
 import { Avatar } from "@mantine/core";
-import {fetchMessageAttachments, FetchThreadMailSubsResult} from "@/lib/actions/mailbox";
+import {fetchMessageAttachments, FetchThreadMailSubsResult, getSignedUrlsForMessage} from "@/lib/actions/mailbox";
 import { getPublicEnv } from "@schema";
 import { getMessageAddress, getMessageName } from "@common/mail-client";
 import { Container } from "@/components/common/containers";
@@ -29,7 +29,9 @@ export default async function ThreadItem({
     identityPublicId: string;
     mailSubscription: FetchThreadMailSubsResult["byMessageId"] | null;
 }) {
-	const { attachments } = await fetchMessageAttachments(message.id);
+	// const { attachments } = await fetchMessageAttachments(message.id);
+	const attachments = await getSignedUrlsForMessage(message.id)
+	// console.log("attachs", attachs)
 	const publicConfig = getPublicEnv();
     const preview = await fetchEventPreviewItems(attachments, identityPublicId)
 

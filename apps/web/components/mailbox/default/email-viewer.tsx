@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import DOMPurify from "dompurify";
 import type { MessageEntity } from "@db";
-import {ActionIcon, Button} from "@mantine/core";
+import { ActionIcon, Button } from "@mantine/core";
 import { Ellipsis } from "lucide-react";
 
 const BASE_CSS = `
@@ -221,6 +221,7 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 					</Button>
 				</div>
 			)}
+
 			<div ref={hostRef} style={{ display: "block", width: "100%" }} />
 			{hasQuotes && (
 				<ActionIcon

@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React from "react";
 import { MessageAttachmentEntity } from "@db";
 import { PublicConfig } from "@schema";
-import { createClient } from "@/lib/supabase/client";
 import { FileText, FileImage, FileVideo, FileAudio, CalendarDays, Paperclip } from "lucide-react";
 import mime from "mime-types";
+import {MessageAttachmentWithUrl} from "@/components/mailbox/default/email-renderer";
 
 function formatBytes(bytes?: number | null) {
     if (!bytes || bytes <= 0) return null;
@@ -43,28 +43,13 @@ export default function EditorAttachmentItem({
                                                  attachment,
                                                  publicConfig,
                                              }: {
-    attachment: MessageAttachmentEntity;
+    // attachment: MessageAttachmentEntity;
+    attachment: MessageAttachmentWithUrl;
     publicConfig: PublicConfig;
 }) {
-    const supabase = useMemo(() => createClient(publicConfig), [publicConfig]);
 
-    const [url, setUrl] = useState<string | null>(null);
 
-    useEffect(() => {
-        let cancelled = false;
-
-        (async () => {
-            const { data } = await supabase.storage
-                .from("attachments")
-                .createSignedUrl(String(attachment.path), 300);
-
-            if (!cancelled) setUrl(data?.signedUrl || null);
-        })();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [attachment.id, attachment.path, supabase]);
+    const url = attachment.signedUrl
 
     const kind = getKind(attachment);
     const sizeLabel = formatBytes(attachment.sizeBytes);

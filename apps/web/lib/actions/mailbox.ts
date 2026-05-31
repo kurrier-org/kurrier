@@ -1,18 +1,18 @@
 "use server";
 
 import { cache } from "react";
-import { rlsClient } from "@/lib/actions/clients";
+import {getWorkspaceId, rlsClient} from "@/lib/actions/clients";
 import {
-    db,
-    DraftMessageInsertSchema,
-    draftMessages,
-    identities,
-    mailboxes,
-    mailboxSync,
-    mailboxThreads, mailSubscriptions,
-    messageAttachments,
-    messages,
-    threads,
+	db,
+	DraftMessageInsertSchema,
+	draftMessages,
+	identities,
+	mailboxes,
+	mailboxSync, MailboxThreadEntity,
+	mailboxThreads, mailSubscriptions,
+	messageAttachments,
+	messages,
+	threads, workspaces,
 } from "@db";
 import {
 	and,
@@ -45,6 +45,11 @@ import { redirect } from "next/navigation";
 import { PAGE_SIZE } from "@common/mail-client";
 import { getRedis } from "@/lib/actions/get-redis";
 import dayjs from "dayjs";
+import {fetchWorkspace} from "@/lib/actions/workspace";
+
+import {GetObjectCommand, PutObjectCommand} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { s3 } from "@/lib/create-s3-client";
 
 let typeSenseClient: Client | null = null;
 function getTypeSenseClient(): Client {
@@ -71,56 +76,80 @@ function getTypeSenseClient(): Client {
 	return typeSenseClient;
 }
 
+
 export const fetchMailbox = cache(
 	async (identityPublicId: string, mailboxSlug = "inbox") => {
 		const rls = await rlsClient();
+
 		const [identity] = await rls((tx) =>
 			tx
 				.select()
 				.from(identities)
-				.where(eq(identities.publicId, identityPublicId)),
+				.where(eq(identities.publicId, identityPublicId))
+				.limit(1)
 		);
-		const [activeMailbox] = await rls((tx) =>
-			tx
-				.select()
-				.from(mailboxes)
-				.where(
-					and(
-						eq(mailboxes.identityId, identity.id),
-						eq(mailboxes.slug, mailboxSlug),
-					),
-				),
-		);
-		const mailboxList = await rls((tx) =>
-			tx.select().from(mailboxes).where(eq(mailboxes.identityId, identity.id)),
-		);
-		const [messagesCount] = activeMailbox?.id
-			? await rls((tx) =>
-					tx
-						.select({ count: count() })
-						.from(messages)
-						.where(eq(messages.mailboxId, activeMailbox.id)),
-				)
-			: [{ count: 0 }];
 
-		const [sync] = activeMailbox
-			? await rls((tx) => {
-					return tx
-						.select()
-						.from(mailboxSync)
-						.where(eq(mailboxSync.mailboxId, activeMailbox.id));
-				})
-			: [null];
+		if (!identity) throw new Error("Identity not found");
+
+		const [mailboxList, activeMailbox] = await Promise.all([
+			rls((tx) =>
+				tx
+					.select()
+					.from(mailboxes)
+					.where(eq(mailboxes.identityId, identity.id))
+			),
+
+			rls((tx) =>
+				tx
+					.select()
+					.from(mailboxes)
+					.where(
+						and(
+							eq(mailboxes.identityId, identity.id),
+							eq(mailboxes.slug, mailboxSlug)
+						)
+					)
+					.limit(1)
+			).then((rows) => rows[0]),
+		]);
+
+		if (!activeMailbox) throw new Error("Mailbox not found");
+
+		const [messagesCountRow, sync] = await Promise.all([
+			rls((tx) =>
+				tx
+					.select({ count: count() })
+					.from(messages)
+					.where(eq(messages.mailboxId, activeMailbox.id))
+			).then((rows) => rows[0]),
+
+			rls((tx) =>
+				tx
+					.select()
+					.from(mailboxSync)
+					.where(eq(mailboxSync.mailboxId, activeMailbox.id))
+					.limit(1)
+			).then((rows) => rows[0] ?? null),
+		]);
 
 		return {
 			activeMailbox,
 			mailboxList,
 			identity,
-			count: Number(messagesCount.count),
+			count: Number(messagesCountRow?.count ?? 0),
 			mailboxSync: sync,
 		};
-	},
+	}
 );
+
+
+
+
+export type FetchMailboxResult = Awaited<
+	ReturnType<typeof fetchMailbox>
+>;
+
+
 
 export const fetchIdentityMailboxList = cache(async () => {
 	const rls = await rlsClient();
@@ -140,17 +169,17 @@ export const fetchIdentityMailboxList = cache(async () => {
 			.orderBy(
 				asc(identities.id),
 				sql`
-                    CASE ${mailboxes.kind}
-                    WHEN 'inbox'   THEN 0
-                    WHEN 'drafts'  THEN 1
-                    WHEN 'sent'    THEN 2
-                    WHEN 'archive' THEN 3
-                    WHEN 'spam'    THEN 4
-                    WHEN 'trash'   THEN 5
-                    WHEN 'outbox'  THEN 6
-                    ELSE 7
-                    END
-                `,
+					CASE ${mailboxes.kind}
+					WHEN 'inbox'   THEN 0
+					WHEN 'drafts'  THEN 1
+					WHEN 'sent'    THEN 2
+					WHEN 'archive' THEN 3
+					WHEN 'spam'    THEN 4
+					WHEN 'trash'   THEN 5
+					WHEN 'outbox'  THEN 6
+					ELSE 7
+					END
+				`,
 				asc(mailboxes.parentId),
 				sql`lower(coalesce(${mailboxes.name}, ''))`,
 			),
@@ -159,11 +188,14 @@ export const fetchIdentityMailboxList = cache(async () => {
 	const byIdentity = rows.reduce(
 		(acc, r) => {
 			const id = r.identity.id;
-			if (!acc[id])
+
+			if (!acc[id]) {
 				acc[id] = {
 					identity: r.identity,
-					mailboxes: [] as (typeof mailboxes.$inferSelect)[],
+					mailboxes: [],
 				};
+			}
+
 			if (r.mailbox) acc[id].mailboxes.push(r.mailbox);
 			return acc;
 		},
@@ -176,74 +208,55 @@ export const fetchIdentityMailboxList = cache(async () => {
 		>,
 	);
 
-	const unreadAgg = await rls((tx) =>
-		tx
-			.select({
-				mailboxId: mailboxThreads.mailboxId,
-				unreadThreads: sql<number>`
-        count(*) FILTER (WHERE ${mailboxThreads.unreadCount} > 0)
-      `.as("unread_threads"),
-				unreadTotal: sql<number>`
-        coalesce(sum(${mailboxThreads.unreadCount}), 0)
-      `.as("unread_total"),
-			})
-			.from(mailboxThreads)
-			.groupBy(mailboxThreads.mailboxId),
-	);
-
-	const aggByMailbox = new Map<
-		string,
-		{ unreadThreads: number; unreadTotal: number }
-	>(
-		unreadAgg.map((a) => [
-			a.mailboxId,
-			{
-				unreadThreads: Number(a.unreadThreads ?? 0),
-				unreadTotal: Number(a.unreadTotal ?? 0),
-			},
-		]),
-	);
-
 	return Object.values(byIdentity);
 });
+
 
 export type FetchIdentityMailboxListResult = Awaited<
 	ReturnType<typeof fetchIdentityMailboxList>
 >;
 
-export const fetchMailboxUnreadCounts = cache(async () => {
-	const rls = await rlsClient();
+export const fetchMailboxUnreadCounts = cache(
+	async () => {
+		const rls = await rlsClient();
+		const now = new Date();
 
-	const unreadAgg = await rls((tx) =>
-		tx
-			.select({
-				mailboxId: mailboxThreads.mailboxId,
-				unreadThreads: sql<number>`
-        count(*) FILTER (WHERE ${mailboxThreads.unreadCount} > 0)
-      `.as("unread_threads"),
-				unreadTotal: sql<number>`
-        coalesce(sum(${mailboxThreads.unreadCount}), 0)
-      `.as("unread_total"),
-			})
-			.from(mailboxThreads)
-			.groupBy(mailboxThreads.mailboxId),
-	);
+		const unreadAgg = await rls((tx) =>
+			tx
+				.select({
+					mailboxId: mailboxThreads.mailboxId,
+					unreadThreads: sql<number>`
+						count(*) FILTER (WHERE ${mailboxThreads.unreadCount} > 0)
+					`,
+					unreadTotal: sql<number>`
+						coalesce(sum(${mailboxThreads.unreadCount}), 0)
+					`,
+				})
+				.from(mailboxThreads)
+				.where(
+					or(
+						isNull(mailboxThreads.snoozedUntil),
+						lte(mailboxThreads.snoozedUntil, now)
+					)
+				)
+				.groupBy(mailboxThreads.mailboxId)
+		);
 
-	const aggByMailbox = new Map<
-		string,
-		{ unreadThreads: number; unreadTotal: number }
-	>(
-		unreadAgg.map((a) => [
-			a.mailboxId,
-			{
-				unreadThreads: Number(a.unreadThreads ?? 0),
-				unreadTotal: Number(a.unreadTotal ?? 0),
-			},
-		]),
-	);
+		return new Map<
+			string,
+			{ unreadThreads: number; unreadTotal: number }
+		>(
+			unreadAgg.map((a) => [
+				a.mailboxId,
+				{
+					unreadThreads: Number(a.unreadThreads ?? 0),
+					unreadTotal: Number(a.unreadTotal ?? 0),
+				},
+			])
+		);
+	}
+);
 
-	return aggByMailbox;
-});
 
 export type FetchMailboxUnreadCountsResult = Awaited<
 	ReturnType<typeof fetchMailboxUnreadCounts>
@@ -261,6 +274,33 @@ export const fetchMessageAttachments = cache(async (messageId: string) => {
 	return { attachments: attachmentsList };
 });
 
+export async function getSignedUrlsForMessage(messageId: string) {
+	const { S3_BUCKET } = getServerEnv();
+	const rls = await rlsClient();
+	const attachments = await rls((tx) =>
+		tx
+			.select()
+			.from(messageAttachments)
+			.where(eq(messageAttachments.messageId, messageId)),
+	);
+	const results = await Promise.all(
+		attachments.map(async (attachment) => {
+			const command = new GetObjectCommand({
+				Bucket: S3_BUCKET!,
+				Key: attachment.path!,
+			});
+
+			const url = await getSignedUrl(s3, command, { expiresIn: 300 });
+
+			return {
+				...attachment,
+				signedUrl: url,
+			};
+		}),
+	);
+	return results;
+}
+
 export const revalidateMailbox = async (path: string) => {
 	revalidatePath(path);
 };
@@ -269,7 +309,15 @@ export async function sendMail(
 	_prev: FormState,
 	formData: FormData,
 ): Promise<FormState> {
+	const workspace = await fetchWorkspace()
+	if (workspace.isStorageOverLimit){
+		return {
+			success: false,
+			error: "Cannot send mail: Workspace storage limit exceeded.",
+		}
+	}
 	const decodedForm = decode(formData) as any;
+
 	const rls = await rlsClient();
 	const identity = await rls(async (tx) => {
 		const [identity] = await tx
@@ -397,34 +445,44 @@ export const deltaFetch = async ({ identityId }: { identityId: string }) => {
 	await job.waitUntilFinished(smtpEvents);
 };
 
+
 export const initSearch = async (
 	query: string,
-	ownerId: string,
+	workspacePublicId: string,
+	identityPublicId: string,
+	mailboxSlug: string,
 	hasAttachment: boolean,
 	onlyUnread: boolean,
 	starred: boolean,
 	page: number,
 ): Promise<SearchThreadsResponse> => {
+	const q = query.trim();
+	if (!q) {
+		return { items: [], totalThreads: 0, totalMessages: 0 };
+	}
+
 	const client = getTypeSenseClient();
 
-	const filters = [`ownerId:=${JSON.stringify(ownerId)}`];
+	const filters = [
+		`workspacePublicId:=${JSON.stringify(workspacePublicId)}`,
+		`identityPublicId:=${JSON.stringify(identityPublicId)}`,
+		`mailboxSlug:=${JSON.stringify(mailboxSlug)}`,
+	];
+
 	if (hasAttachment) filters.push("hasAttachment:=1");
 	if (onlyUnread) filters.push("unread:=1");
-	if (starred) filters.push("starred:=1"); // NEW
+	if (starred) filters.push("starred:=1");
 
-	const result = (await client
-		.collections("messages")
-		.documents()
-		.search({
-			q: query,
-			query_by: "subject,html,text,fromName,fromEmail,participants",
-			filter_by: filters.join(" && "),
-			sort_by: "createdAt:desc",
-			group_by: "threadId",
-			group_limit: 1,
-			per_page: PAGE_SIZE,
-			page,
-		})) as any;
+	const result = (await client.collections("messages").documents().search({
+		q,
+		query_by: "subject,html,text,snippet,fromName,fromEmail,participants",
+		filter_by: filters.join(" && "),
+		sort_by: "createdAt:desc",
+		group_by: "threadId",
+		group_limit: 1,
+		per_page: PAGE_SIZE,
+		page,
+	})) as any;
 
 	const groups = result?.grouped_hits as
 		| Array<{ group_key: string[]; hits: Array<{ document: any }> }>
@@ -446,7 +504,7 @@ export const initSearch = async (
 			labels: Array.isArray(d.labels) ? d.labels : [],
 			hasAttachment: Number(d.hasAttachment) === 1,
 			unread: Number(d.unread) === 1,
-			starred: Number(d.starred) === 1, // NEW (if you want to use it in UI)
+			starred: Number(d.starred) === 1,
 			createdAt: d.createdAt ?? 0,
 			lastInThreadAt: d.lastInThreadAt ?? d.createdAt ?? 0,
 		})),
@@ -455,11 +513,14 @@ export const initSearch = async (
 	};
 };
 
-export const backfillMailboxes = async (identityId: string) => {
+
+
+
+export const backfillMailboxes = async (identityId: string, workspaceId: string) => {
 	const { smtpQueue, smtpEvents } = await getRedis();
 	const job = await smtpQueue.add(
 		"imap:backfill-discover",
-		{ identityId },
+		{ identityId, workspaceId },
 		{
 			jobId: `imap-backfill-discover-${identityId}`,
 			attempts: 3,
@@ -470,10 +531,10 @@ export const backfillMailboxes = async (identityId: string) => {
 		},
 	);
 	await job.waitUntilFinished(smtpEvents);
-	backfillAccount(identityId);
+	backfillAccount(identityId, workspaceId);
 };
 
-export const backfillAccount = async (identityId: string) => {
+export const backfillAccount = async (identityId: string, workspaceId: string) => {
 	const { smtpQueue } = await getRedis();
 	await smtpQueue.add(
 		"imap:backfill-tick",
@@ -796,14 +857,14 @@ export const toggleStar = async (
 			const [agg] = await tx
 				.select({
 					unreadCount: sql<number>`count(*) filter (where
-                    ${messages.seen}
-                    =
-                    false
-                    )`,
+					${messages.seen}
+					=
+					false
+					)`,
 					anyFlagged: sql<boolean>`bool_or
-                    (
-                    ${messages.flagged}
-                    )`,
+					(
+					${messages.flagged}
+					)`,
 				})
 				.from(messages)
 				.where(
@@ -844,45 +905,22 @@ export const toggleStar = async (
 	revalidatePath("/mail");
 };
 
-export const fetchMailboxThreadsOld = async (
-	identityPublicId: string,
-	mailboxSlug: string,
-	page: number,
-) => {
-	page = page && page > 0 ? page : 1;
-	const rls = await rlsClient();
-	const threads = await rls((tx) => {
-		return tx
-			.select()
-			.from(mailboxThreads)
-			.where(
-				and(
-					eq(mailboxThreads.identityPublicId, identityPublicId),
-					eq(mailboxThreads.mailboxSlug, mailboxSlug),
-				),
-			)
-			.orderBy(desc(mailboxThreads.lastActivityAt))
-			.offset((page - 1) * PAGE_SIZE)
-			.limit(PAGE_SIZE);
-	});
-	return threads;
-};
-
 export const fetchMailboxThreads = async (
 	identityPublicId: string,
 	mailboxSlug: string,
 	page: number,
 ) => {
-	page = page && page > 0 ? page : 1;
-
 	const rls = await rlsClient();
-
 	const now = new Date();
-	const effectiveActivityAt = sql`COALESCE(${mailboxThreads.unsnoozedAt}, ${mailboxThreads.lastActivityAt})`;
+	const safePage = page && page > 0 ? page : 1;
 
-	const threads = await rls((tx) =>
+	const effectiveActivityAt = sql`
+		COALESCE(${mailboxThreads.unsnoozedAt}, ${mailboxThreads.lastActivityAt})
+	`;
+
+	const rows = await rls((tx) =>
 		tx
-			.select()
+			.select({ thread: mailboxThreads })
 			.from(mailboxThreads)
 			.where(
 				and(
@@ -899,11 +937,11 @@ export const fetchMailboxThreads = async (
 				desc(mailboxThreads.lastActivityAt),
 				desc(mailboxThreads.threadId),
 			)
-			.offset((page - 1) * PAGE_SIZE)
-			.limit(PAGE_SIZE),
+			.offset((safePage - 1) * PAGE_SIZE)
+			.limit(PAGE_SIZE)
 	);
 
-	return threads;
+	return rows.map((r) => r.thread);
 };
 
 export type FetchMailboxThreadsResult = Awaited<
@@ -1061,10 +1099,12 @@ export async function addNewMailboxFolder(
 			}
 		}
 
+		const workspaceId = await getWorkspaceId();
 		await db
 			.insert(mailboxes)
 			.values({
 				ownerId,
+				workspaceId,
 				identityId,
 				parentId,
 				kind: "custom",
@@ -1084,10 +1124,10 @@ export async function addNewMailboxFolder(
 }
 
 export async function deleteMailboxFolder({
-	imapOp,
-	identityId,
-	mailboxId,
-}: {
+											  imapOp,
+											  identityId,
+											  mailboxId,
+										  }: {
 	imapOp: boolean;
 	identityId: string;
 	mailboxId: string;
@@ -1224,16 +1264,22 @@ export const clearImapClients = async (identityId: string) => {
 	);
 };
 
+
 export const fetchScheduledDraftCounts = async () => {
 	const rls = await rlsClient();
+
 	const rows = await rls((tx) =>
 		tx
 			.select()
 			.from(draftMessages)
-			.where(eq(draftMessages.status, "scheduled")),
+			.where(
+				eq(draftMessages.status, "scheduled")
+			)
 	);
+
 	return rows;
 };
+
 
 export const fetchScheduledDrafts = async (identityPublicId: string) => {
 	const rls = await rlsClient();
@@ -1306,13 +1352,16 @@ export async function snoozeThread(input: {
 	});
 }
 
-export const fetchIdentitySnoozedThreads = async (identityPublicId: string) => {
+export const fetchIdentitySnoozedThreads = async (): Promise<{ threads: MailboxThreadEntity[] }> => {
 	const rls = await rlsClient();
 	const now = new Date();
 
-	const threads = await rls((tx) => {
-		return tx
-			.select()
+	const rows = await rls((tx) =>
+
+		tx
+			.select({
+				thread: mailboxThreads
+			})
 			.from(mailboxThreads)
 			.where(
 				and(
@@ -1323,125 +1372,128 @@ export const fetchIdentitySnoozedThreads = async (identityPublicId: string) => {
 			.orderBy(
 				desc(mailboxThreads.snoozedUntil),
 				desc(mailboxThreads.lastActivityAt),
-			);
-	});
+			)
+	)
 
-	return { threads };
+	return {
+		threads: rows.map((r) => r.thread),
+	};
 };
 
 
-
 function subscriptionKeyFromHeadersJson(headersJson: any) {
-    const list = headersJson?.list ?? null;
-    const rawListId = String(headersJson?.["list-id"] ?? "").trim() || null;
+	const list = headersJson?.list ?? null;
+	const rawListId = String(headersJson?.["list-id"] ?? "").trim() || null;
 
-    let unsubscribeHttpUrl: string | null = null;
+	let unsubscribeHttpUrl: string | null = null;
 
-    const fromList = list?.unsubscribe?.url || list?.unsubscribe?.href;
-    if (typeof fromList === "string" && fromList) unsubscribeHttpUrl = fromList;
+	const fromList = list?.unsubscribe?.url || list?.unsubscribe?.href;
+	if (typeof fromList === "string" && fromList) unsubscribeHttpUrl = fromList;
 
-    const fromHeader = headersJson?.["list-unsubscribe"];
-    if (!unsubscribeHttpUrl && typeof fromHeader === "string") {
-        const parts = fromHeader
-            .split(",")
-            .map((s: string) => s.trim().replace(/^<|>$/g, ""));
-        const http = parts.find((p: string) => /^https?:/i.test(p));
-        if (http) unsubscribeHttpUrl = http;
-    }
+	const fromHeader = headersJson?.["list-unsubscribe"];
+	if (!unsubscribeHttpUrl && typeof fromHeader === "string") {
+		const parts = fromHeader
+			.split(",")
+			.map((s: string) => s.trim().replace(/^<|>$/g, ""));
+		const http = parts.find((p: string) => /^https?:/i.test(p));
+		if (http) unsubscribeHttpUrl = http;
+	}
 
-    if (rawListId) {
-        const cleaned = rawListId
-            .replace(/^<|>$/g, "")
-            .replace(/\s+/g, "")
-            .toLowerCase();
-        return cleaned ? `list-id:${cleaned}` : null;
-    }
+	if (rawListId) {
+		const cleaned = rawListId
+			.replace(/^<|>$/g, "")
+			.replace(/\s+/g, "")
+			.toLowerCase();
+		return cleaned ? `list-id:${cleaned}` : null;
+	}
 
-    if (unsubscribeHttpUrl) {
-        try {
-            const u = new URL(unsubscribeHttpUrl);
-            const p = (u.pathname || "/").replace(/\/+$/, "") || "/";
-            return `${u.protocol}//${u.host.toLowerCase()}${p}`;
-        } catch {
-            return null;
-        }
-    }
+	if (unsubscribeHttpUrl) {
+		try {
+			const u = new URL(unsubscribeHttpUrl);
+			const p = (u.pathname || "/").replace(/\/+$/, "") || "/";
+			return `${u.protocol}//${u.host.toLowerCase()}${p}`;
+		} catch {
+			return null;
+		}
+	}
 
-    return null;
+	return null;
 }
 
 export async function fetchThreadMailSubscriptions(opts: {
-    ownerId: string;
-    messages: Array<{ id: string; headersJson: any }>;
+	ownerId: string;
+	messages: Array<{ id: string; headersJson: any }>;
 }) {
-    const keysByMessageId = new Map<string, string>();
+	const keysByMessageId = new Map<string, string>();
 
-    for (const m of opts.messages) {
-        const key = subscriptionKeyFromHeadersJson(m.headersJson);
-        if (key) keysByMessageId.set(m.id, key);
-    }
+	for (const m of opts.messages) {
+		const key = subscriptionKeyFromHeadersJson(m.headersJson);
+		if (key) keysByMessageId.set(m.id, key);
+	}
 
-    const uniqueKeys = Array.from(new Set(keysByMessageId.values()));
-    if (!uniqueKeys.length) {
-        return { byMessageId: new Map<string, any>(), keysByMessageId };
-    }
+	const uniqueKeys = Array.from(new Set(keysByMessageId.values()));
+	if (!uniqueKeys.length) {
+		return { byMessageId: new Map<string, any>(), keysByMessageId };
+	}
 
-    const rows = await db
-        .select()
-        .from(mailSubscriptions)
-        .where(
-            and(
-                eq(mailSubscriptions.ownerId, opts.ownerId),
-                inArray(mailSubscriptions.subscriptionKey, uniqueKeys),
-            ),
-        );
+	const rows = await db
+		.select()
+		.from(mailSubscriptions)
+		.where(
+			and(
+				eq(mailSubscriptions.ownerId, opts.ownerId),
+				inArray(mailSubscriptions.subscriptionKey, uniqueKeys),
+			),
+		);
 
-    const byKey = new Map(rows.map((r) => [r.subscriptionKey, r]));
-    const byMessageId = new Map<string, any>();
+	const byKey = new Map(rows.map((r) => [r.subscriptionKey, r]));
+	const byMessageId = new Map<string, any>();
 
-    for (const [messageId, key] of keysByMessageId.entries()) {
-        byMessageId.set(messageId, byKey.get(key) ?? null);
-    }
+	for (const [messageId, key] of keysByMessageId.entries()) {
+		byMessageId.set(messageId, byKey.get(key) ?? null);
+	}
 
-    return { byMessageId, keysByMessageId };
+	return { byMessageId, keysByMessageId };
 }
 
 export type FetchThreadMailSubsResult = Awaited<
-    ReturnType<typeof fetchThreadMailSubscriptions>
+	ReturnType<typeof fetchThreadMailSubscriptions>
 >;
 
 
 export async function oneClickUnsubscribe(
-    _prev: FormState,
-    formData: FormData,
+	_prev: FormState,
+	formData: FormData,
 ): Promise<FormState> {
-    return handleAction(async () => {
-        const decodedForm = decode(formData);
-        const id = String(decodedForm.mailSubscriptionId);
-        const [sub] = await db
-            .select()
-            .from(mailSubscriptions)
-            .where(and(eq(mailSubscriptions.id, id)))
-            .limit(1);
-        if (!sub?.unsubscribeHttpUrl) return { success: false, error: "Subscription not found" };
-        await fetch(sub.unsubscribeHttpUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: "List-Unsubscribe=One-Click",
-            redirect: "follow",
-        });
-        await db
-            .update(mailSubscriptions)
-            .set({
-                status: "unsubscribed",
-                unsubscribedAt: new Date(),
-                updatedAt: new Date(),
-            })
-            .where(eq(mailSubscriptions.id, id));
-        revalidatePath(String(decodedForm.pathname));
-        return { success: true };
-    });
+	return handleAction(async () => {
+		const decodedForm = decode(formData);
+		const id = String(decodedForm.mailSubscriptionId);
+		const [sub] = await db
+			.select()
+			.from(mailSubscriptions)
+			.where(and(eq(mailSubscriptions.id, id)))
+			.limit(1);
+		if (!sub?.unsubscribeHttpUrl) return { success: false, error: "Subscription not found" };
+		await fetch(sub.unsubscribeHttpUrl, {
+			method: "POST",
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+			body: "List-Unsubscribe=One-Click",
+			redirect: "follow",
+		});
+		await db
+			.update(mailSubscriptions)
+			.set({
+				status: "unsubscribed",
+				unsubscribedAt: new Date(),
+				updatedAt: new Date(),
+			})
+			.where(eq(mailSubscriptions.id, id));
+		revalidatePath(String(decodedForm.pathname));
+		return { success: true };
+	});
 
 
 
 }
+
+

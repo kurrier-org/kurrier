@@ -10,17 +10,7 @@ import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 
 import { simpleParser } from "mailparser";
 import { eq } from "drizzle-orm";
-import { getPublicEnv, getServerEnv } from "@schema";
-import { createClient } from "@supabase/supabase-js";
-
 import { parseAndStoreEmail } from "../../../../../../../lib/message-payload-parser";
-
-const publicConfig = getPublicEnv();
-const serverConfig = getServerEnv();
-const supabase = createClient(
-	publicConfig.API_URL,
-	serverConfig.SERVICE_ROLE_KEY,
-);
 
 export default defineEventHandler(async (event) => {
 	try {
@@ -46,9 +36,7 @@ export default defineEventHandler(async (event) => {
 
 			const bucket: string = rec.s3?.bucket?.name;
 			const key: string = decodeURIComponent(rec.s3?.object?.key || "");
-			const size: number = rec.s3?.object?.size ?? 0;
-
-			console.log("[S3] ObjectCreated:", { bucket, key, size });
+			// const size: number = rec.s3?.object?.size ?? 0;
 
 			const [, ownerId, providerId, identityId, emlId] = key.split("/");
 			const [secrets] = await decryptAdminSecrets({
@@ -75,14 +63,6 @@ export default defineEventHandler(async (event) => {
 				new GetObjectCommand({ Bucket: bucket, Key: key }),
 			);
 			const rawEmail = (await getObj?.Body?.transformToString("utf-8")) || "";
-			const encoder = new TextEncoder();
-			const emailBuffer = encoder.encode(rawEmail);
-
-			await supabase.storage
-				.from("attachments")
-				.upload(`eml/${ownerId}/${emlId}`, emailBuffer, {
-					contentType: "message/rfc822",
-				});
 
 			const parsed = await simpleParser(rawEmail);
 			const headers = parsed.headers as Map<string, any>;
@@ -103,9 +83,11 @@ export default defineEventHandler(async (event) => {
 				.where(eq(providers.id, providerId));
 
 			if (!inbox)
-				throw new Error("No inbox mailbox found for identity " + identityId);
+				// throw new Error("No inbox mailbox found for identity " + identityId);
+				return
 			if (!spamMb)
-				throw new Error("No spam mailbox found for identity " + identityId);
+				// throw new Error("No spam mailbox found for identity " + identityId);
+				return
 			if (!provider) throw new Error("No provider found for id " + providerId);
 
 			let providerSaysSpam = false;
@@ -138,25 +120,12 @@ export default defineEventHandler(async (event) => {
 
 			await parseAndStoreEmail(rawEmail, {
 				ownerId,
+				workspaceId: provider.workspaceId,
 				mailboxId: targetMailboxId,
 				rawStorageKey: key, // S3 key
 				emlKey: emlId,
 			});
 
-			const channel = await supabase.channel(`${ownerId}-mailbox`);
-
-			channel.subscribe((status) => {
-				if (status !== "SUBSCRIBED") {
-					return null;
-				}
-				channel.send({
-					type: "broadcast",
-					event: "mail-received",
-					payload: { reload: true },
-				});
-				channel.unsubscribe();
-				return;
-			});
 
 			// Optional: fetch the raw RFC822 now (you can move this to a worker if preferred)
 			// const obj = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));

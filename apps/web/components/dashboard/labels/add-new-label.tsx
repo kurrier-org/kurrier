@@ -9,6 +9,7 @@ import { addNewLabel, FetchLabelsResult } from "@/lib/actions/labels";
 import ReusableFormCustomWrapper from "@/components/common/reusable-form-custom-wrapper";
 import { DEFAULT_COLORS_SWATCH } from "@common/mail-client";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
+import {useParams} from "next/navigation";
 
 function useLabelOptions({ labels }: { labels: any[] }) {
 	const options = labels.map((l) => ({
@@ -28,6 +29,7 @@ export default function AddNewLabel({
 
 	const { options: labelOptions } = useLabelOptions({ labels: globalLabels });
 	const { state } = useDynamicContext();
+	const { identityPublicId } = useParams();
 
 	const fields = [
 		{
@@ -68,6 +70,15 @@ export default function AddNewLabel({
 			},
 		},
 	];
+
+	if (state.scope === "thread") {
+		fields.push({
+			name: "identityPublicId",
+			type: "hidden",
+			wrapperClasses: "hidden",
+			props: { hidden: true, defaultValue: identityPublicId },
+		});
+	}
 
 	return (
 		<>

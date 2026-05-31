@@ -3,7 +3,6 @@
 import * as React from "react";
 import { Calendar, Contact, HardDrive, Inbox, MailOpen } from "lucide-react";
 
-import { NavUser } from "@/components/ui/dashboards/workspace/nav-user";
 import {
 	Sidebar,
 	SidebarContent,
@@ -18,10 +17,7 @@ import {
 } from "@/components/ui/sidebar";
 import { usePathname, useRouter } from "next/navigation";
 import KurrierLogo from "@/components/common/kurrier-logo";
-import { PublicConfig } from "@schema";
-import { UserResponse } from "@supabase/supabase-js";
 import ThemeColorPicker from "@/components/common/theme-color-picker";
-import { FetchIdentityMailboxListResult } from "@/lib/actions/mailbox";
 import ThemeSwitch from "@/components/common/theme-switch";
 import Link from "next/link";
 import { useMediaQuery } from "@mantine/hooks";
@@ -29,95 +25,57 @@ import { Divider } from "@mantine/core";
 import { IconFrame } from "@tabler/icons-react";
 
 type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
-	publicConfig: PublicConfig;
-	user: UserResponse["data"]["user"];
-	identityMailboxes: FetchIdentityMailboxListResult;
+	navUserContent: React.ReactNode;
 	sidebarSectionContent?: React.ReactNode;
 	sidebarTopContent?: React.ReactNode;
+	workspacePublicId?: string
 };
 
 export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 	const {
-		publicConfig,
-		user,
-		identityMailboxes,
 		sidebarSectionContent,
 		sidebarTopContent,
+		workspacePublicId,
+		navUserContent,
 		...restProps
 	} = props;
 
-	const isMobile = useMediaQuery("(max-width: 768px)");
 
-	const allMailUrl =
-		identityMailboxes.length > 0
-			? `/dashboard/mail/${identityMailboxes[0].identity.publicId}/inbox`
-			: `/dashboard/mail`;
+	const isMobile = useMediaQuery("(max-width: 768px)");
 
 	const data = {
 		navMain: [
 			{
 				title: "All Mail",
-				url: allMailUrl,
+				url: `/w/${workspacePublicId}/dashboard/mail`,
 				icon: Inbox,
 				isActive: true,
 			},
 			{
 				title: "Contacts",
-				url: "/dashboard/contacts",
+				url: `/w/${workspacePublicId}/dashboard/contacts`,
 				icon: Contact,
 				isActive: true,
 			},
 			{
 				title: "Calendar",
-				url: "/dashboard/calendar",
+				url: `/w/${workspacePublicId}/dashboard/calendar`,
 				icon: Calendar,
 				isActive: true,
 			},
-			{
-				title: "Drive",
-				url: "/dashboard/drive",
-				icon: HardDrive,
-				isActive: true,
-			},
+			// {
+			// 	title: "Drive",
+			// 	url: "/dashboard/drive",
+			// 	icon: HardDrive,
+			// 	isActive: true,
+			// },
 			{
 				title: "Platform",
-				url: "/dashboard/platform/overview",
+				url: `/w/${workspacePublicId}/dashboard/platform/overview`,
 				icon: IconFrame,
 				isActive: false,
 			},
 		],
-		// navPlatform: [
-		// 	{
-		// 		title: "Overview",
-		// 		url: "/dashboard/platform/overview",
-		// 		icon: LayoutDashboard,
-		// 		items: [],
-		// 	},
-		// 	{
-		// 		title: "Providers",
-		// 		url: "/dashboard/platform/providers",
-		// 		icon: Plug,
-		// 		items: [],
-		// 	},
-		// 	{
-		// 		title: "Identities",
-		// 		url: "/dashboard/platform/identities",
-		// 		icon: Send,
-		// 		items: [],
-		// 	},
-		// 	{
-		// 		title: "Sync Services",
-		// 		url: "/dashboard/platform/sync-services",
-		// 		icon: FolderSync,
-		// 		items: [],
-		// 	},
-		// 	{
-		// 		title: "API Keys",
-		// 		url: "/dashboard/platform/api-keys",
-		// 		icon: Key,
-		// 		items: [],
-		// 	},
-		// ],
 	};
 
 	const pathName = usePathname();
@@ -210,7 +168,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 					<SidebarMenu>
 						<SidebarMenuItem>
 							<SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
-								<Link href={"/dashboard/platform/overview"}>
+								<Link href={`/w/${workspacePublicId}/dashboard/platform/overview`}>
 									<div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
 										<MailOpen className="size-4" />
 									</div>
@@ -291,7 +249,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 					</div>
 				</SidebarContent>
 				<SidebarFooter>
-					<NavUser user={user} />
+					{navUserContent}
 				</SidebarFooter>
 			</Sidebar>
 

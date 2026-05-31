@@ -1,67 +1,125 @@
 "use server";
 
 import { FormState, handleAction, LabelScope } from "@schema";
-import { rlsClient } from "@/lib/actions/clients";
+import {getWorkspaceId, rlsClient} from "@/lib/actions/clients";
 import {
-	contactLabels,
+	contactLabels, db, identities,
 	LabelCreate,
 	LabelEntity,
 	LabelInsertSchema,
 	labels,
 	MailboxThreadLabelEntity,
 	mailboxThreadLabels,
-	mailboxThreads,
+	mailboxThreads, workspaceIdentityMembers,
 } from "@db";
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import {and, asc, desc, eq, inArray, isNotNull, sql} from "drizzle-orm";
 import { decode } from "decode-formdata";
 import slugify from "@sindresorhus/slugify";
 import { revalidatePath } from "next/cache";
 import { PAGE_SIZE } from "@common/mail-client";
 import type { FetchMailboxThreadsResult } from "@/lib/actions/mailbox";
 
-export const fetchLabels = async (scope?: LabelScope) => {
-	const selectedScope = scope || "thread";
+
+
+export const fetchLabelsByIdentityPublicId = async ({
+														identityPublicId,
+														scope,
+													}: {
+	identityPublicId: string;
+	scope?: LabelScope;
+}): Promise<LabelEntity[]> => {
 	const rls = await rlsClient();
-	const globalLabels = await rls((tx) =>
+	const selectedScope = scope ?? "thread";
+
+	const rows = await rls((tx) =>
 		tx
-			.select()
+			.select({ label: labels })
 			.from(labels)
-			.where(sql`${labels.scope} = ${selectedScope}`)
-			.orderBy(asc(labels.name)),
+			.innerJoin(
+				identities,
+				eq(labels.identityId, identities.id)
+			)
+			.where(
+				and(
+					eq(identities.publicId, identityPublicId),
+					eq(labels.scope, selectedScope),
+				)
+			)
+			.orderBy(asc(labels.name))
 	);
+
+	return rows.map((r) => r.label);
+};
+
+
+export const fetchLabels = async (scope?: LabelScope) => {
+
+	const selectedScope = scope || "thread";
+	const workspaceId = await getWorkspaceId();
+
+	const globalLabels = await db
+		.select()
+		.from(labels)
+		.where(
+			and(
+				eq(labels.scope, selectedScope),
+				eq(labels.workspaceId, workspaceId),
+			),
+		)
+		.orderBy(asc(labels.name));
+
+
 	return globalLabels as LabelEntity[];
+};
+
+type LabelWithCount = typeof labels.$inferSelect & {
+	threadCount: number;
 };
 
 export const fetchLabelsWithCounts = async () => {
 	const rls = await rlsClient();
 
-	const allLabels = await rls((tx) =>
-		tx
-			.select()
-			.from(labels)
-			.where(sql`${labels.scope} = 'thread'`)
-			.orderBy(asc(labels.name)),
-	);
-
-	const counts = await rls((tx) =>
+	const rows = await rls((tx) =>
 		tx
 			.select({
-				labelId: mailboxThreadLabels.labelId,
-				threadCount: sql<number>`count(*)`,
+				label: labels,
+				identityPublicId: identities.publicId,
+				threadCount: sql<number>`
+          count(${mailboxThreadLabels.threadId})
+        `,
 			})
-			.from(mailboxThreadLabels)
-			.groupBy(mailboxThreadLabels.labelId),
+			.from(labels)
+			.innerJoin(
+				identities,
+				eq(labels.identityId, identities.id),
+			)
+			.leftJoin(
+				mailboxThreadLabels,
+				eq(mailboxThreadLabels.labelId, labels.id),
+			)
+			.where(
+				eq(labels.scope, "thread"),
+			)
+			.groupBy(labels.id, identities.publicId)
+			.orderBy(asc(labels.name))
 	);
 
-	const countsById = new Map<string, number>();
-	for (const row of counts) {
-		countsById.set(row.labelId, Number(row.threadCount));
+	const result = new Map<string, LabelWithCount[]>();
+
+	for (const row of rows) {
+		const key = row.identityPublicId;
+
+		if (!result.has(key)) {
+			result.set(key, []);
+		}
+
+		result.get(key)!.push({
+			...row.label,
+			threadCount: Number(row.threadCount),
+		});
 	}
 
-	return allLabels.map((l) => ({
-		...l,
-		threadCount: countsById.get(l.id) ?? 0,
-	}));
+	return result;
 };
 
 export type FetchLabelsWithCountResult = Awaited<
@@ -69,37 +127,29 @@ export type FetchLabelsWithCountResult = Awaited<
 >;
 export type FetchLabelsResult = Awaited<ReturnType<typeof fetchLabels>>;
 
+
 export const fetchContactLabelsWithCounts = async () => {
 	const rls = await rlsClient();
 
-	const allLabels = await rls((tx) =>
-		tx
-			.select()
-			.from(labels)
-			.where(sql`${labels.scope} = 'contact'`)
-			.orderBy(asc(labels.name)),
-	);
-
-	const counts = await rls((tx) =>
+	const rows = await rls((tx) =>
 		tx
 			.select({
-				labelId: contactLabels.labelId,
-				contactCount: sql<number>`count(*)`,
+				label: labels,
+				contactCount: sql<number>`count(${contactLabels.contactId})`,
 			})
-			.from(contactLabels)
-			.groupBy(contactLabels.labelId),
+			.from(labels)
+			.leftJoin(contactLabels, eq(contactLabels.labelId, labels.id))
+			.where(eq(labels.scope, "contact"))
+			.groupBy(labels.id)
+			.orderBy(asc(labels.name))
 	);
 
-	const countsById = new Map<string, number>();
-	for (const row of counts) {
-		countsById.set(row.labelId, Number(row.contactCount));
-	}
-
-	return allLabels.map((l) => ({
-		...l,
-		contactCount: countsById.get(l.id) ?? 0,
+	return rows.map((r) => ({
+		...r.label,
+		contactCount: Number(r.contactCount ?? 0),
 	}));
 };
+
 
 export type FetchContactLabelsWithCountResult = Awaited<
 	ReturnType<typeof fetchContactLabelsWithCounts>
@@ -111,14 +161,21 @@ export async function addNewLabel(
 ): Promise<FormState> {
 	return handleAction(async () => {
 		const decodedForm = decode(formData);
-
-		const payload = LabelInsertSchema.parse({
+		const payloadData = {
 			name: decodedForm.name,
 			colorBg: decodedForm.color,
 			scope: decodedForm.scope,
 			slug: slugify(String(decodedForm.name)),
 			parentId: decodedForm.parentId ? String(decodedForm.parentId) : undefined,
-		});
+		}
+		const payload = LabelInsertSchema.parse(payloadData);
+		if(decodedForm.scope === "thread") {
+			const [identity] = await db.select().from(identities).where(eq(identities.publicId, decodedForm.identityPublicId));
+			if(!identity) {
+				return { success: false, error: "Invalid identity" };
+			}
+			payload.identityId = identity.id;
+		}
 
 		const rls = await rlsClient();
 		const newLabelRows = await rls((tx) =>
@@ -141,10 +198,10 @@ export async function addNewLabel(
 }
 
 export async function addLabelToThread({
-	threadId,
-	mailboxId,
-	labelId,
-}: {
+										   threadId,
+										   mailboxId,
+										   labelId,
+									   }: {
 	threadId: string;
 	mailboxId: string;
 	labelId: string;
@@ -164,10 +221,10 @@ export async function addLabelToThread({
 }
 
 export async function removeLabelFromThread({
-	threadId,
-	mailboxId,
-	labelId,
-}: {
+												threadId,
+												mailboxId,
+												labelId,
+											}: {
 	threadId: string;
 	mailboxId: string;
 	labelId: string;
@@ -192,9 +249,9 @@ export async function removeLabelFromThread({
 }
 
 export async function addLabelToContact({
-	contactId,
-	labelId,
-}: {
+											contactId,
+											labelId,
+										}: {
 	contactId: string;
 	labelId: string;
 }): Promise<FormState> {
@@ -214,9 +271,9 @@ export async function addLabelToContact({
 }
 
 export async function removeLabelFromContact({
-	contactId,
-	labelId,
-}: {
+												 contactId,
+												 labelId,
+											 }: {
 	contactId: string;
 	labelId: string;
 }): Promise<FormState> {
@@ -239,12 +296,16 @@ export async function removeLabelFromContact({
 	});
 }
 
+
+
+
 export const fetchMailboxThreadLabels = async (
 	threads: FetchMailboxThreadsResult,
 ) => {
-	const threadIds = threads.map((t) => t.threadId);
-	if (threadIds.length === 0) return {};
 	const rls = await rlsClient();
+	const threadIds = threads.map((t) => t.threadId).filter(Boolean);
+	if (!threadIds.length) return {};
+
 	const rows = await rls((tx) =>
 		tx
 			.select({
@@ -253,29 +314,19 @@ export const fetchMailboxThreadLabels = async (
 			})
 			.from(mailboxThreadLabels)
 			.innerJoin(labels, eq(mailboxThreadLabels.labelId, labels.id))
-			.where(inArray(mailboxThreadLabels.threadId, threadIds)),
+			.where(inArray(mailboxThreadLabels.threadId, threadIds))
 	);
 
-	const byThreadId: Record<
-		string,
-		{ mt: MailboxThreadLabelEntity; label?: LabelEntity }[]
-	> = {};
+	const byThreadId: Record<string, any[]> = {};
 
 	for (const { mt, l } of rows) {
-		const threadId = mt.threadId;
-
-		if (!byThreadId[threadId]) {
-			byThreadId[threadId] = [];
-		}
-
-		byThreadId[threadId].push({
-			mt,
-			label: l,
-		});
+		if (!byThreadId[mt.threadId]) byThreadId[mt.threadId] = [];
+		byThreadId[mt.threadId].push({ mt, label: l });
 	}
 
 	return byThreadId;
 };
+
 
 export type FetchMailboxThreadLabelsResult = Awaited<
 	ReturnType<typeof fetchMailboxThreadLabels>
@@ -285,7 +336,7 @@ export const fetchContactLabelsByContactIds = async (contactIds: string[]) => {
 	if (!contactIds?.length) return {};
 
 	const rls = await rlsClient();
-
+	const workspaceId = await getWorkspaceId();
 	const rows = await rls((tx) =>
 		tx
 			.select({
@@ -294,7 +345,10 @@ export const fetchContactLabelsByContactIds = async (contactIds: string[]) => {
 			})
 			.from(contactLabels)
 			.innerJoin(labels, eq(contactLabels.labelId, labels.id))
-			.where(inArray(contactLabels.contactId, contactIds)),
+			.where(and(
+				inArray(contactLabels.contactId, contactIds),
+				eq(contactLabels.workspaceId, workspaceId),
+			))
 	);
 
 	const byContactId: Record<string, { label: LabelEntity }[]> = {};
@@ -316,6 +370,7 @@ export type FetchContactLabelsByIdResult = Awaited<
 	ReturnType<typeof fetchContactLabelsByContactIds>
 >;
 
+
 export const fetchMailboxThreadsByLabel = async (
 	identityPublicId: string,
 	mailboxSlug: string,
@@ -324,12 +379,11 @@ export const fetchMailboxThreadsByLabel = async (
 ) => {
 	const rls = await rlsClient();
 	const pageNum = page && page > 0 ? page : 1;
+	const offset = (pageNum - 1) * PAGE_SIZE;
 
 	const rows = await rls((tx) =>
 		tx
-			.select({
-				mt: mailboxThreads,
-			})
+			.select({ thread: mailboxThreads })
 			.from(mailboxThreads)
 			.innerJoin(
 				mailboxThreadLabels,
@@ -347,16 +401,16 @@ export const fetchMailboxThreadsByLabel = async (
 				),
 			)
 			.orderBy(desc(mailboxThreads.lastActivityAt))
-			.offset((pageNum - 1) * PAGE_SIZE)
-			.limit(PAGE_SIZE),
+			.offset(offset)
+			.limit(PAGE_SIZE)
 	);
 
 	const [{ total }] = await rls((tx) =>
 		tx
 			.select({ total: sql<number>`count(*)` })
-			.from(mailboxThreadLabels)
+			.from(mailboxThreads)
 			.innerJoin(
-				mailboxThreads,
+				mailboxThreadLabels,
 				and(
 					eq(mailboxThreadLabels.threadId, mailboxThreads.threadId),
 					eq(mailboxThreadLabels.mailboxId, mailboxThreads.mailboxId),
@@ -369,10 +423,13 @@ export const fetchMailboxThreadsByLabel = async (
 					eq(mailboxThreads.mailboxSlug, mailboxSlug),
 					eq(labels.slug, labelSlug),
 				),
-			),
+			)
 	);
-	const threads = rows.map((r) => r.mt);
-	return { threads, total };
+
+	return {
+		threads: rows.map((r) => r.thread),
+		total: Number(total ?? 0),
+	};
 };
 
 export type FetchMailboxThreadsByLabelResult = Awaited<
@@ -392,11 +449,11 @@ export const deleteLabel = async ({ id }: { id: string }) => {
 };
 
 export const updateLabel = async ({
-	id,
-	name,
-	parentId,
-	color,
-}: {
+									  id,
+									  name,
+									  parentId,
+									  color,
+								  }: {
 	id: string;
 	name: string;
 	parentId: string | null;
@@ -425,21 +482,25 @@ export const updateLabel = async ({
 };
 
 export async function getOrCreateSystemLabel({
-	name,
-	scope,
-	colorBg,
-}: {
+												 name,
+												 scope,
+												 colorBg,
+											 }: {
 	name: string;
 	scope: LabelScope;
 	colorBg?: string | null;
 }): Promise<LabelEntity> {
 	const rls = await rlsClient();
-
+	const workspaceId = await getWorkspaceId();
 	const [existing] = await rls((tx) =>
 		tx
 			.select()
 			.from(labels)
-			.where(and(eq(labels.slug, slugify(name)), eq(labels.scope, scope)))
+			.where(and(
+				eq(labels.slug, slugify(name)),
+				eq(labels.scope, scope),
+				eq(labels.workspaceId, workspaceId),
+			))
 			.limit(1),
 	);
 
@@ -453,6 +514,7 @@ export async function getOrCreateSystemLabel({
 		colorBg: colorBg ?? null,
 		parentId: undefined,
 	});
+
 
 	const [inserted] = await rls((tx) =>
 		tx
@@ -469,12 +531,16 @@ export async function toggleFavoriteContact(formData: FormData) {
 		const decodedForm = decode(formData);
 		const contactId = String(decodedForm.contactId);
 		const rls = await rlsClient();
-
+		const workspaceId = await getWorkspaceId();
 		let [favorite] = await rls((tx) =>
 			tx
 				.select()
 				.from(labels)
-				.where(and(eq(labels.slug, "favorite"), eq(labels.scope, "contact")))
+				.where(and(
+					eq(labels.slug, "favorite"),
+					eq(labels.scope, "contact"),
+					eq(labels.workspaceId, workspaceId),
+				))
 				.limit(1),
 		);
 

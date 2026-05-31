@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 type Props = {
 	total: number;
+	workspacePublicId: string | undefined;
 	pageSize: number;
 	page?: number;
 	identityPublicId: string;
@@ -19,6 +20,7 @@ type Props = {
 
 export default function SearchPagination({
 	total,
+	workspacePublicId,
 	pageSize,
 	page = 1,
 	identityPublicId,
@@ -42,7 +44,8 @@ export default function SearchPagination({
 			params.set("page", String(activePage));
 
 			router.push(
-				`${pathName.match("/dashboard/mail") ? "/dashboard" : ""}/mail/${identityPublicId}/${mailboxSlug}/search?${params.toString()}`,
+				// `${pathName.match("/dashboard/mail") ? "/dashboard" : ""}/mail/${identityPublicId}/${mailboxSlug}/search?${params.toString()}`,
+				`/w/${workspacePublicId}/dashboard/mail/${identityPublicId}/${mailboxSlug}/search?${params.toString()}`,
 			);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps

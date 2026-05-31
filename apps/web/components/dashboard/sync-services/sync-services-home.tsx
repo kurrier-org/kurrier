@@ -39,9 +39,9 @@ export default function SyncServicesHome({
 
 	const base = baseDavUrl?.replace(/\/+$/, "") || "";
 
-	const userRoot = `${base}/api/dav`;
-	const wellKnownCal = `${base}/.well-known/caldav`;
-	const wellKnownCard = `${base}/.well-known/carddav`;
+	const userRoot = `${base.replace("https://", "")}`;
+	// const wellKnownCal = `${base}/.well-known/caldav`;
+	// const wellKnownCard = `${base}/.well-known/carddav`;
 
 	const rows = [
 		{
@@ -52,14 +52,14 @@ export default function SyncServicesHome({
 			label: "CardDAV (contacts)",
 			url: userRoot,
 		},
-		{
-			label: ".well-known CalDAV",
-			url: wellKnownCal,
-		},
-		{
-			label: ".well-known CardDAV",
-			url: wellKnownCard,
-		},
+		// {
+		// 	label: ".well-known CalDAV",
+		// 	url: wellKnownCal,
+		// },
+		// {
+		// 	label: ".well-known CardDAV",
+		// 	url: wellKnownCard,
+		// },
 	];
 
 	return (

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { cn, setSidebarWidth } from "@/lib/utils";
 import {
 	Inbox,
 	Send,
@@ -17,6 +17,7 @@ import {
 	Clock4,
 } from "lucide-react";
 import * as React from "react";
+import { Suspense, use, useEffect } from "react";
 import {
 	FetchIdentityMailboxListResult,
 	FetchMailboxUnreadCountsResult,
@@ -29,7 +30,7 @@ import {
 	MailboxThreadEntity,
 } from "@db";
 import AddNewFolder from "@/components/mailbox/default/add-new-folder";
-import {Menu, Select} from "@mantine/core";
+import { Menu, Select } from "@mantine/core";
 import DeleteMailboxFolder from "@/components/mailbox/default/delete-folder";
 import { IconMailFast } from "@tabler/icons-react";
 
@@ -118,17 +119,80 @@ function buildTree(
 	return roots;
 }
 
+function IdentityExtraCounts({
+								 identity,
+								 scheduledDraftsPromise,
+								 snoozedThreadsPromise,
+								 workspacePublicId,
+								 currentSlug,
+							 }: {
+	identity: IdentityEntity;
+	scheduledDraftsPromise: Promise<DraftMessageEntity[]>;
+	snoozedThreadsPromise: Promise<{ threads: MailboxThreadEntity[] }>;
+	workspacePublicId: string | undefined;
+	currentSlug: string;
+}) {
+	const scheduledDrafts = use(scheduledDraftsPromise);
+	const { threads: snoozedThreads } = use(snoozedThreadsPromise);
+
+	const scheduledCount = scheduledDrafts.filter(
+		(d) => d.identityId === identity.id,
+	).length;
+
+	const snoozedCount = snoozedThreads.filter(
+		(s) => s.identityId === identity.id,
+	).length;
+
+	return (
+		<>
+			{scheduledCount > 0 && (
+				<Link
+					href={`/w/${workspacePublicId}/dashboard/mail/${identity.publicId}/scheduled`}
+					className={`my-2 rounded hover:dark:bg-neutral-800 ${
+						currentSlug === "scheduled"
+							? "dark:bg-neutral-800 dark:text-brand-foreground bg-brand-200 text-brand"
+							: ""
+					} flex justify-start gap-1 w-full p-1.5`}
+				>
+					<IconMailFast size={22} />
+					<span className="font-normal text-sm">
+						Scheduled ({scheduledCount})
+					</span>
+				</Link>
+			)}
+
+			{snoozedCount > 0 && (
+				<Link
+					href={`/w/${workspacePublicId}/dashboard/mail/${identity.publicId}/snoozed`}
+					className={`mx-1.5 my-2 rounded hover:dark:bg-neutral-800 ${
+						currentSlug === "snoozed"
+							? "dark:bg-neutral-800 dark:text-brand-foreground bg-brand-200 text-brand"
+							: ""
+					} flex justify-start gap-1 w-full p-1.5 items-center`}
+				>
+					<Clock4 size={16} />
+					<span className="font-normal text-sm">
+						Snoozed ({snoozedCount})
+					</span>
+				</Link>
+			)}
+		</>
+	);
+}
+
 export default function IdentityMailboxesList({
-	identityMailboxes,
-	unreadCounts,
-	scheduledDrafts,
-	snoozedThreads,
-	onComplete,
-}: {
+												  identityMailboxes,
+												  unreadCounts,
+												  scheduledDraftsPromise,
+												  snoozedThreadsPromise,
+												  workspacePublicId,
+												  onComplete,
+											  }: {
 	identityMailboxes: FetchIdentityMailboxListResult;
 	unreadCounts: FetchMailboxUnreadCountsResult;
-	scheduledDrafts: DraftMessageEntity[];
-	snoozedThreads: MailboxThreadEntity[];
+	scheduledDraftsPromise: Promise<DraftMessageEntity[]>;
+	snoozedThreadsPromise: Promise<{ threads: MailboxThreadEntity[] }>;
+	workspacePublicId: string | undefined;
 	onComplete?: () => void;
 }) {
 	const pathname = usePathname();
@@ -136,6 +200,12 @@ export default function IdentityMailboxesList({
 		identityPublicId?: string;
 		mailboxSlug?: string;
 	};
+
+	useEffect(() => {
+		setSidebarWidth("290px");
+		return () => setSidebarWidth("250px");
+	}, []);
+
 	const currentSlug = React.useMemo(() => {
 		const parts = pathname.split("/").filter(Boolean);
 		return parts.at(-1) ?? "inbox";
@@ -143,21 +213,21 @@ export default function IdentityMailboxesList({
 
 	const router = useRouter()
 
-
 	const Item = ({
-		m,
-		identityPublicId,
-		depth = 0,
-		identity,
-	}: {
+					  m,
+					  identityPublicId,
+					  identity,
+					  level = 0,
+				  }: {
 		m: TreeMailbox;
 		identityPublicId: string;
-		depth?: number;
 		identity: IdentityEntity;
+		level?: number;
 	}) => {
 		const Icon = ICON[m.kind] ?? Folder;
 		const slug = m.slug ?? "inbox";
-		const href = `/dashboard/mail/${identityPublicId}/${slug}`;
+		const href = `/w/${workspacePublicId}/dashboard/mail/${identityPublicId}/${slug}`;
+
 		const isActive =
 			pathname === href ||
 			(params.identityPublicId === identityPublicId && currentSlug === slug);
@@ -170,6 +240,7 @@ export default function IdentityMailboxesList({
 				<div className="flex items-center">
 					{hasChildren ? (
 						<button
+							type="button"
 							onClick={() => setOpen((v) => !v)}
 							className="mr-1 rounded p-0.5 hover:bg-sidebar-accent/60"
 							aria-label={open ? "Collapse" : "Expand"}
@@ -197,8 +268,9 @@ export default function IdentityMailboxesList({
 									? "text-brand dark:text-white bg-brand-100 dark:bg-neutral-800 hover:text-brand hover:bg-brand-100"
 									: "",
 								!m.selectable &&
-									"opacity-60 pointer-events-none cursor-default",
+								"opacity-60 pointer-events-none cursor-default",
 							)}
+							style={{ paddingLeft: 8 + level * 8 }}
 						>
 							<Icon className="h-4 w-4 shrink-0" />
 							<span className="truncate">
@@ -212,9 +284,7 @@ export default function IdentityMailboxesList({
 								<Menu.Target>
 									<button
 										type="button"
-										onClick={(e) => {
-											e.stopPropagation(); // don’t toggle parent handlers
-										}}
+										onClick={(e) => e.stopPropagation()}
 										className={cn(
 											"rounded p-1 mt-1.25 transition",
 											"hover:bg-sidebar-accent/60",
@@ -224,6 +294,7 @@ export default function IdentityMailboxesList({
 										<MoreVertical className="h-4 w-4" />
 									</button>
 								</Menu.Target>
+
 								<Menu.Dropdown onClick={(e) => e.stopPropagation()}>
 									<DeleteMailboxFolder
 										mailboxId={m.id}
@@ -244,7 +315,7 @@ export default function IdentityMailboxesList({
 								m={child}
 								identityPublicId={identityPublicId}
 								identity={identity}
-								depth={depth + 1}
+								level={level + 1}
 							/>
 						))}
 					</div>
@@ -258,8 +329,8 @@ export default function IdentityMailboxesList({
 			<div className={"my-2"}>
 				<Select placeholder="Pick value"
 				        size={"xs"}
-						onChange={(publicId) => {
-							router.push(`/dashboard/mail/${publicId}/inbox`)
+				        onChange={(publicId) => {
+							router.push(`/w/${workspacePublicId}/dashboard/mail/${publicId}/inbox`)
 						}}
 				        value={params.identityPublicId}
 				        data={identityMailboxes.map((id) => {
@@ -270,18 +341,13 @@ export default function IdentityMailboxesList({
 			{identityMailboxes.map(({ identity, mailboxes }) => {
 				const tree = buildTree(mailboxes as MailboxEntity[], unreadCounts);
 
-				const scheduledCounts = scheduledDrafts.filter(
-					(draft) => draft.identityId === identity.id,
-				).length;
-				const snoozedCounts = snoozedThreads.filter(
-					(snoozed) => snoozed.identityId === identity.id,
-				).length;
 				return (
 					<div key={identity.id}>
 						<div className="px-1 mb-1 mt-2 text-xs font-semibold text-sidebar-foreground/60 flex items-center gap-1">
 							<span>{identity.value}</span>
 							<AddNewFolder mailboxes={mailboxes} identity={identity} />
 						</div>
+
 						<div className="space-y-1">
 							{tree.map((m) => (
 								<Item
@@ -292,29 +358,16 @@ export default function IdentityMailboxesList({
 								/>
 							))}
 						</div>
-						{scheduledCounts > 0 && (
-							<Link
-								href={`/dashboard/mail/${params.identityPublicId}/scheduled`}
-								className={`my-2 rounded hover:dark:bg-neutral-800 ${currentSlug === "scheduled" ? "dark:bg-neutral-800 dark:text-brand-foreground bg-brand-200 text-brand" : ""} flex justify-start gap-1 w-full p-1.5`}
-							>
-								<IconMailFast size={22} />
-								<span className={"font-normal text-sm"}>
-									Scheduled ({scheduledCounts})
-								</span>
-							</Link>
-						)}
 
-						{snoozedCounts > 0 && (
-							<Link
-								href={`/dashboard/mail/${params.identityPublicId}/snoozed`}
-								className={`my-2 rounded hover:dark:bg-neutral-800 ${currentSlug === "snoozed" ? "dark:bg-neutral-800 dark:text-brand-foreground bg-brand-200 text-brand" : ""} flex justify-start gap-1 w-full p-1.5 items-center`}
-							>
-								<Clock4 size={16} />
-								<span className={"font-normal text-sm"}>
-									Snoozed ({snoozedThreads.length})
-								</span>
-							</Link>
-						)}
+						<Suspense fallback={null}>
+							<IdentityExtraCounts
+								identity={identity}
+								scheduledDraftsPromise={scheduledDraftsPromise}
+								snoozedThreadsPromise={snoozedThreadsPromise}
+								workspacePublicId={workspacePublicId}
+								currentSlug={currentSlug}
+							/>
+						</Suspense>
 					</div>
 				);
 			})}

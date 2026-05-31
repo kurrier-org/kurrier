@@ -18,9 +18,8 @@ import {
     calendarEventAttendees,
     driveVolumes,
     driveEntries,
-    draftMessages, mailSubscriptions,
+    draftMessages, mailSubscriptions, users, workspaces,
 } from "./schema";
-import { decryptedSecrets } from "./supabase-schema";
 import { z } from "zod";
 import {
 	createInsertSchema,
@@ -67,7 +66,7 @@ export type MailboxSyncCreate = typeof mailboxSync.$inferInsert;
 
 export type MailboxThreadEntity = typeof mailboxThreads.$inferSelect;
 
-export type DecryptedEntity = typeof decryptedSecrets.$inferSelect;
+// export type DecryptedEntity = typeof decryptedSecrets.$inferSelect;
 
 export const ProviderSchema = createSelectSchema(providers);
 export const SMTPAccountSchema = createSelectSchema(smtpAccounts);
@@ -116,3 +115,7 @@ export type DraftMessageEntity = typeof draftMessages.$inferSelect;
 export const DraftMessageInsertSchema = createInsertSchema(draftMessages);
 
 export type MailSubscriptionEntity = typeof mailSubscriptions.$inferSelect;
+export type UserEntity = typeof users.$inferSelect;
+export const WorkspaceRolesList = ["owner", "admin", "member"] as const;
+export type WorkspaceRolesListType = z.infer<typeof WorkspaceRolesList>;
+export type WorkspaceEntity = typeof workspaces.$inferSelect;

@@ -1,18 +1,15 @@
-import DigestFetch from "digest-fetch";
 import {
 	db,
-	davAccounts,
-	secretsMeta,
-	getSecretAdmin,
 	calendarEvents,
 	calendars,
-	calendarEventAttendees,
+	calendarEventAttendees, davAccounts, secretsMeta, getSecretAdmin,
 } from "@db";
-import { and, desc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getDayjsTz } from "@common";
-import { normalizeEtag } from "../sync/dav-sync-db";
 import { buildICalEvent } from "./dav-build-cal-event";
 import { getRedis } from "../../../lib/get-redis";
+import DigestFetch from "digest-fetch";
+import {normalizeEtag} from "../../../lib/dav/sync/dav-sync-db";
 
 async function createCalendarObjectViaHttp(opts: {
 	icalData: string;
@@ -55,7 +52,7 @@ async function createCalendarObjectViaHttp(opts: {
 export const createCalendarEvent = async (
 	eventId: string,
 	notifyAttendees: boolean,
-    uid?: string,
+	uid?: string,
 ) => {
 	const [event] = await db
 		.select()
@@ -67,52 +64,44 @@ export const createCalendarEvent = async (
 	const [calendar] = await db
 		.select()
 		.from(calendars)
-		.where(
-			and(eq(calendars.ownerId, event.ownerId), eq(calendars.isDefault, true)),
-		);
+		.where(eq(calendars.id, event.calendarId));
 
-	if (!calendar) return;
-
-	const parts = calendar.remotePath.split("/");
-	if (parts.length !== 3 || parts[0] !== "calendars") return;
-
-	const davUsername = parts[1];
+	if (!calendar || !calendar.davAccountId) return;
 
 	const [secretRow] = await db
 		.select({
-			account: davAccounts,
+			username: davAccounts.username,
 			metaId: secretsMeta.id,
 		})
 		.from(davAccounts)
 		.where(eq(davAccounts.id, calendar.davAccountId))
-		.leftJoin(secretsMeta, eq(davAccounts.secretId, secretsMeta.id))
-		.orderBy(desc(davAccounts.createdAt));
+		.leftJoin(secretsMeta, eq(davAccounts.secretId, secretsMeta.id));
 
-	const secret = await getSecretAdmin(String(secretRow?.metaId));
-	const passwordFromSecret = secret?.vault?.decrypted_secret;
+	if (!secretRow?.metaId) return;
 
-	if (!passwordFromSecret) {
-		console.error(
-			"No password found in secret for DAV account",
-			calendar.davAccountId,
-		);
-		return;
-	}
+
+
+	const secret = await getSecretAdmin(String(secretRow.metaId));
+	const password = secret?.vault?.decrypted_secret;
+	if (!password) return;
 
 	const guests = await db
 		.select()
 		.from(calendarEventAttendees)
 		.where(eq(calendarEventAttendees.eventId, event.id));
 
+
 	const dayjsTz = getDayjsTz(calendar.timezone || "UTC");
 	const icalData = buildICalEvent(event, dayjsTz, guests);
+
 	const davUri = `${event.id}.ics`;
+
 	const { etag } = await createCalendarObjectViaHttp({
 		icalData,
 		davBaseUrl: `${process.env.DAV_URL}/dav.php`,
-		username: davUsername,
-		password: passwordFromSecret,
-		collectionPath: calendar.remotePath,
+		username: secretRow.username,
+		password,
+		collectionPath: `calendars/${secretRow.username}/${calendar.identityId}`,
 		davUri,
 	});
 
@@ -122,7 +111,7 @@ export const createCalendarEvent = async (
 			davUri,
 			davEtag: normalizeEtag(etag),
 			rawIcs: icalData,
-            icalUid: uid ? uid : event.id,
+			icalUid: uid ? uid : event.id,
 			updatedAt: new Date(),
 		})
 		.where(eq(calendarEvents.id, event.id));

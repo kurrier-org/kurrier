@@ -1,16 +1,16 @@
 import { createError, defineEventHandler } from "h3";
-import { EmailSendSchema } from "@schema";
+import {EmailSendSchema, getServerEnv} from "@schema";
 import { db, mailboxes } from "@db";
 import { and, eq } from "drizzle-orm";
 import { getRedis } from "../../../../../lib/get-redis";
-import { createSupabaseServiceClient } from "../../../../../lib/create-client-ssr";
+import { s3 } from "../../../../../lib/create-s3-client";
 import {
 	apiSuccess,
 	validateApiKey, validateIdentityOwnership,
 	validateJSONBody,
 } from "../../../../../lib/api-helpers";
 import { extension } from "mime-types";
-import { base64ToBlob } from "@common";
+import {PutObjectCommand} from "@aws-sdk/client-s3";
 
 export default defineEventHandler(async (event) => {
 	const { ownerId } = await validateApiKey(event);
@@ -68,25 +68,33 @@ export default defineEventHandler(async (event) => {
 		mode: "compose"
 	} as any;
 
-	const supabase = await createSupabaseServiceClient();
+	const { S3_BUCKET } = getServerEnv();
+
 	const attachments = [];
+
 	for (const file of data?.attachments || []) {
-		const path = `private/${identity.ownerId}/${payload.newMessageId}/${crypto.randomUUID()}.${extension(file.contentType)}`;
-		const blob = base64ToBlob(file.content, file.contentType);
+		const ext = extension(file.contentType) || "dat";
+		const path = `private/${identity.ownerId}/${payload.newMessageId}/${crypto.randomUUID()}.${ext}`;
 
-		const { error: e } = await supabase.storage
-			.from("attachments")
-			.upload(path, blob);
+		const buffer = Buffer.from(file.content, "base64");
 
-		if (!e) {
-			attachments.push({
-				path,
-				messageId: payload.newMessageId,
-				bucketId: "attachments",
-				filenameOriginal: file.filename,
-				contentType: file.contentType,
-			});
-		}
+		await s3.send(
+			new PutObjectCommand({
+				Bucket: S3_BUCKET,
+				Key: path,
+				Body: buffer,
+				ContentType: file.contentType,
+			}),
+		);
+
+		attachments.push({
+			path,
+			messageId: payload.newMessageId,
+			bucketId: S3_BUCKET,
+			filenameOriginal: file.filename,
+			contentType: file.contentType,
+			sizeBytes: buffer.length,
+		});
 	}
 
 	payload.attachments = JSON.stringify(attachments);

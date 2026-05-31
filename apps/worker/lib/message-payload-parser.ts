@@ -1,30 +1,23 @@
 import { simpleParser, ParsedMail, Attachment } from "mailparser";
 import {
-    db,
-    messages,
-    messageAttachments,
-    threads,
-    MessageInsertSchema,
-    MessageCreate,
-    MessageAttachmentCreate,
-    MessageAttachmentInsertSchema,
-    contacts,
-    ContactCreate, mailSubscriptions,
+	db,
+	messages,
+	messageAttachments,
+	threads,
+	MessageInsertSchema,
+	MessageCreate,
+	MessageAttachmentCreate,
+	MessageAttachmentInsertSchema,
+	mailSubscriptions,
+	workspaces,
 } from "@db";
-import { createClient } from "@supabase/supabase-js";
-import { getPublicEnv, getServerEnv } from "@schema";
 import { generateSnippet, upsertMailboxThreadItem } from "@common";
 import { randomUUID } from "crypto";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { getRedis } from "../lib/get-redis";
-import slugify from "@sindresorhus/slugify";
-
-const publicConfig = getPublicEnv();
-const serverConfig = getServerEnv();
-const supabase = createClient(
-	publicConfig.API_URL,
-	serverConfig.SERVICE_ROLE_KEY,
-);
+import {s3} from "../lib/create-s3-client";
+import {PutObjectCommand} from "@aws-sdk/client-s3";
+import {upsertWorkspaceSharedContactFromMessage} from "../lib/message-parser-contacts";
 
 const SEARCH_BATCH_SIZE = 100;
 const WEBHOOK_BATCH_SIZE = 100;
@@ -44,7 +37,7 @@ type ICSJob = {
 	mailboxId: string;
 };
 type RulesJob = {
-    messageId: string;
+	messageId: string;
 };
 
 let searchBuffer: SearchJob[] = [];
@@ -76,6 +69,7 @@ async function flushBatches() {
 				{ contactIds: contactIds, ownerId },
 				{ removeOnComplete: true, removeOnFail: true },
 			);
+
 			searchBuffer = [];
 		}
 
@@ -111,16 +105,16 @@ async function flushBatches() {
 			webhookBuffer = [];
 		}
 
-        if (rulesBuffer.length) {
-            const jobs = rulesBuffer.map((job) => ({
-                name: "rules:processor",
-                data: {
-                    messageId: job.messageId
-                },
-            }));
-            await commonWorkerQueue.addBulk(jobs);
-            rulesBuffer = [];
-        }
+		if (rulesBuffer.length) {
+			const jobs = rulesBuffer.map((job) => ({
+				name: "rules:processor",
+				data: {
+					messageId: job.messageId
+				},
+			}));
+			await commonWorkerQueue.addBulk(jobs);
+			rulesBuffer = [];
+		}
 	} catch (err: any) {
 		console.error(
 			"[parseAndStoreEmail] Error flushing batches:",
@@ -146,9 +140,9 @@ function generateFileName(att: Attachment) {
 }
 
 export async function createOrInitializeThread(
-	parsed: ParsedMail & { ownerId: string },
+	parsed: ParsedMail & { ownerId: string, workspaceId: string },
 ) {
-	const { ownerId } = parsed;
+	const { ownerId, workspaceId } = parsed;
 	const inReplyTo = parsed.inReplyTo?.trim() || null;
 	const refs = Array.isArray(parsed.references)
 		? parsed.references
@@ -200,6 +194,7 @@ export async function createOrInitializeThread(
 			.insert(threads)
 			.values({
 				ownerId,
+				workspaceId,
 				lastMessageDate: parsed.date ?? new Date(),
 			})
 			.returning();
@@ -217,99 +212,6 @@ function getFromAddress(parsed: ParsedMail) {
 	};
 }
 
-export async function upsertContactsFromMessage(
-	ownerId: string,
-	parsed: ParsedMail,
-) {
-	const addr = getFromAddress(parsed);
-	if (!addr) return null;
-
-	let contactId: string | null = null;
-	const email = addr.email;
-	const displayName = addr.name;
-
-	const existing = await db
-		.select()
-		.from(contacts)
-		.where(
-			and(
-				eq(contacts.ownerId, ownerId),
-				sql`${contacts.emails}::jsonb @> ${JSON.stringify([
-					{ address: email },
-				])}::jsonb`,
-			),
-		)
-		.limit(1);
-
-	if (existing.length === 0) {
-		let firstName = "Unknown";
-		let lastName: string | null = null;
-
-		if (displayName) {
-			const parts = displayName.split(" ").filter(Boolean);
-			firstName = parts[0] || "Unknown";
-			lastName = parts.length > 1 ? parts.slice(1).join(" ") : null;
-		}
-
-		const newContact = {
-			ownerId,
-			firstName,
-			lastName,
-			emails: [{ address: email }],
-			slug: slugify(displayName || email),
-			profilePictureXs: null,
-		};
-
-		const inserted = await db
-			.insert(contacts)
-			.values(newContact as ContactCreate)
-			.onConflictDoNothing()
-			.returning();
-
-		if (inserted.length > 0) {
-			contactId = inserted[0].id;
-			return contactId;
-		}
-
-		const [existingAfter] = await db
-			.select()
-			.from(contacts)
-			.where(
-				and(
-					eq(contacts.ownerId, ownerId),
-					sql`${contacts.emails}::jsonb @> ${JSON.stringify([
-						{ address: email },
-					])}::jsonb`,
-				),
-			)
-			.limit(1);
-
-		contactId = existingAfter?.id ?? null;
-		return contactId;
-	}
-
-	const contact = existing[0];
-
-	const hasName = contact.firstName || contact.lastName;
-	if (hasName || !displayName) {
-		return contact.id;
-	}
-
-	const parts = displayName.split(" ").filter(Boolean);
-	const firstName = parts[0] || contact.firstName || "Unknown";
-	const lastName = parts.length > 1 ? parts.slice(1).join(" ") : null;
-
-	await db
-		.update(contacts)
-		.set({
-			firstName,
-			lastName,
-		})
-		.where(eq(contacts.id, contact.id));
-
-	contactId = contact.id;
-	return contactId;
-}
 
 function isIcsAttachment(att: Attachment) {
 	const ct = (att.contentType || "").toLowerCase();
@@ -329,6 +231,7 @@ export async function parseAndStoreEmail(
 	rawEmail: string,
 	opts: {
 		ownerId: string;
+		workspaceId: string;
 		mailboxId: string;
 		rawStorageKey: string;
 		emlKey: string;
@@ -339,7 +242,15 @@ export async function parseAndStoreEmail(
 		mode?: "live" | "backfill";
 	},
 ) {
-	const { ownerId, mailboxId, rawStorageKey } = opts;
+	const { ownerId, workspaceId, mailboxId, rawStorageKey } = opts;
+	const [workspace] = await db
+		.select()
+		.from(workspaces)
+		.where(eq(workspaces.id, workspaceId))
+	if (workspace?.isStorageOverLimit) {
+		return
+	}
+
 	const mode = opts.mode ?? "live";
 
 	const parsed = await simpleParser(rawEmail);
@@ -347,13 +258,14 @@ export async function parseAndStoreEmail(
 
 	const encoder = new TextEncoder();
 	const emailBuffer = encoder.encode(rawEmail);
+	const sizeBytes = emailBuffer.byteLength;
 
-	await supabase.storage
-		.from("attachments")
-		.upload(opts.rawStorageKey, emailBuffer, {
-			contentType: "message/rfc822",
-			upsert: true,
-		});
+	await s3.send(new PutObjectCommand({
+		Bucket: process.env.S3_BUCKET!,
+		Key: opts.rawStorageKey,
+		Body: emailBuffer,
+		ContentType: "message/rfc822",
+	}));
 
 	const messageId =
 		parsed.messageId || String(headers.get("message-id") || "").trim();
@@ -368,12 +280,14 @@ export async function parseAndStoreEmail(
 	const thread = await createOrInitializeThread({
 		...parsed,
 		ownerId,
+		workspaceId,
 		// mailboxId,
 	});
 
 	const decoratedParsed = {
 		...parsed,
 		mailboxId,
+		workspaceId,
 		threadId: thread.id,
 		ownerId,
 		headersJson: Object.fromEntries(parsed.headers as Map<string, any>),
@@ -389,6 +303,7 @@ export async function parseAndStoreEmail(
 		flagged: false,
 		draft: false,
 		html: parsed.html || "",
+		sizeBytes: sizeBytes,
 		snippet: generateSnippet(parsed.text || parsed.html || ""),
 	} as MessageCreate | ParsedMail;
 
@@ -416,13 +331,24 @@ export async function parseAndStoreEmail(
 		.returning();
 
 	if (!message) return null;
-    await ingestMailSubscriptionFromMessage({
-        ownerId,
-        parsed,
-        headersJson: (decoratedParsed as any).headersJson,
-    });
+	await db
+		.update(workspaces)
+		.set({
+			storageBytesUsed: sql`${workspaces.storageBytesUsed} + ${sizeBytes}`,
+		}).where(eq(workspaces.id, workspaceId));
+	await ingestMailSubscriptionFromMessage({
+		ownerId,
+		workspaceId,
+		parsed,
+		headersJson: (decoratedParsed as any).headersJson,
+	});
 
-	const contactId = await upsertContactsFromMessage(ownerId, parsed);
+	const contactRes = await upsertWorkspaceSharedContactFromMessage({
+		parsed,
+		mailboxId,
+		fallbackOwnerId: ownerId,
+	});
+	const contactId = contactRes?.contactIdForMessage ?? null;
 	await upsertMailboxThreadItem(message.id);
 
 	const msgDate = message.createdAt ?? new Date();
@@ -445,17 +371,24 @@ export async function parseAndStoreEmail(
 		const fileName = generateFileName(attachment);
 		const objectPath = `private/${ownerId}/${message.id}/${fileName}`;
 
-		const { data, error } = await supabase.storage
-			.from(bucket)
-			.upload(objectPath, attachment.content, {
-				contentType: attachment.contentType || "application/octet-stream",
-				upsert: false,
-				cacheControl: "31536000",
-			});
+		await s3.send(
+			new PutObjectCommand({
+				Bucket: process.env.S3_BUCKET!,
+				Key: objectPath,
+				Body: attachment.content,
+				ContentType:
+					attachment.contentType || "application/octet-stream",
+				CacheControl: "public, max-age=31536000",
+			}),
+		);
+
+		const data = { path: objectPath };
+		const error = data ? null : new Error("Failed to store attachment");
 		if (error) throw error;
 
 		const candidate: MessageAttachmentCreate = {
 			ownerId,
+			workspaceId,
 			messageId: message.id,
 			bucketId: bucket,
 			path: data?.path,
@@ -521,87 +454,92 @@ export async function parseAndStoreEmail(
 
 
 async function ingestMailSubscriptionFromMessage(opts: {
-    ownerId: string;
-    parsed: ParsedMail;
-    headersJson: Record<string, any>;
+	ownerId: string;
+	workspaceId: string;
+	parsed: ParsedMail;
+	headersJson: Record<string, any>;
 }) {
-    const { ownerId, parsed, headersJson } = opts;
+	const { ownerId, workspaceId, parsed, headersJson } = opts;
 
-    const headers = parsed.headers as Map<string, any>;
-    const list =
-        (headers.get("list") as any) ??
-        (headersJson as any)?.list ??
-        null;
+	const headers = parsed.headers as Map<string, any>;
+	const list =
+		(headers.get("list") as any) ??
+		(headersJson as any)?.list ??
+		null;
 
-    const rawListId =
-        String(headers.get("list-id") ?? (headersJson as any)?.["list-id"] ?? "")
-            .trim() || null;
+	const rawListId =
+		String(headers.get("list-id") ?? (headersJson as any)?.["list-id"] ?? "")
+			.trim() || null;
 
-    const unsubscribeUrl =
-        (list?.unsubscribe?.url as string | undefined) ||
-        (list?.unsubscribe?.href as string | undefined) ||
-        null;
+	const unsubscribeUrl =
+		(list?.unsubscribe?.url as string | undefined) ||
+		(list?.unsubscribe?.href as string | undefined) ||
+		null;
 
-    const unsubscribePost =
-        String(list?.["unsubscribe-post"]?.name ?? "").toLowerCase() || null;
+	const unsubscribePost =
+		String(list?.["unsubscribe-post"]?.name ?? "").toLowerCase() || null;
 
-    let unsubscribeMailto: string | null = null;
-    const rawListUnsub = headers.get("list-unsubscribe") ?? (headersJson as any)?.["list-unsubscribe"];
-    if (typeof rawListUnsub === "string" && rawListUnsub.toLowerCase().includes("mailto:")) {
-        const m = rawListUnsub.match(/mailto:([^>\s,]+)/i);
-        unsubscribeMailto = (m?.[1] ?? "").trim().toLowerCase() || null;
-    }
+	let unsubscribeMailto: string | null = null;
+	const rawListUnsub = headers.get("list-unsubscribe") ?? (headersJson as any)?.["list-unsubscribe"];
+	if (typeof rawListUnsub === "string" && rawListUnsub.toLowerCase().includes("mailto:")) {
+		const m = rawListUnsub.match(/mailto:([^>\s,]+)/i);
+		unsubscribeMailto = (m?.[1] ?? "").trim().toLowerCase() || null;
+	}
 
-    if (!rawListId && !unsubscribeUrl && !unsubscribeMailto) return;
+	if (!rawListId && !unsubscribeUrl && !unsubscribeMailto) return;
 
-    let subscriptionKey: string | null = null;
+	let subscriptionKey: string | null = null;
 
-    if (rawListId) {
-        const cleaned = rawListId
-            .replace(/^<|>$/g, "")
-            .replace(/\s+/g, "")
-            .toLowerCase();
-        subscriptionKey = cleaned ? `list-id:${cleaned}` : null;
-    } else if (unsubscribeUrl) {
-        try {
-            const u = new URL(unsubscribeUrl);
-            const p = (u.pathname || "/").replace(/\/+$/, "") || "/";
-            subscriptionKey = `${u.protocol}//${u.host}${p}`;
-        } catch {
-            subscriptionKey = null;
-        }
-    } else if (unsubscribeMailto) {
-        subscriptionKey = `mailto:${unsubscribeMailto}`;
-    } else {
-        const from = getFromAddress(parsed);
-        if (from?.email?.includes("@")) {
-            subscriptionKey = `from-domain:${from.email.split("@")[1]}`;
-        }
-    }
+	if (rawListId) {
+		const cleaned = rawListId
+			.replace(/^<|>$/g, "")
+			.replace(/\s+/g, "")
+			.toLowerCase();
+		subscriptionKey = cleaned ? `list-id:${cleaned}` : null;
+	} else if (unsubscribeUrl) {
+		try {
+			const u = new URL(unsubscribeUrl);
+			const p = (u.pathname || "/").replace(/\/+$/, "") || "/";
+			subscriptionKey = `${u.protocol}//${u.host}${p}`;
+		} catch {
+			subscriptionKey = null;
+		}
+	} else if (unsubscribeMailto) {
+		subscriptionKey = `mailto:${unsubscribeMailto}`;
+	} else {
+		const from = getFromAddress(parsed);
+		if (from?.email?.includes("@")) {
+			subscriptionKey = `from-domain:${from.email.split("@")[1]}`;
+		}
+	}
 
-    if (!subscriptionKey) return;
+	if (!subscriptionKey) return;
 
-    const oneClick = unsubscribePost?.includes("one-click") ?? false;
+	const oneClick = unsubscribePost?.includes("one-click") ?? false;
+	await db
+		.insert(mailSubscriptions)
+		.values({
+			ownerId,
+			workspaceId,
+			subscriptionKey,
+			listId: rawListId,
+			unsubscribeHttpUrl: unsubscribeUrl,
+			unsubscribeMailto,
+			oneClick,
+			lastSeenAt: new Date(),
+		} as any)
+		.onConflictDoUpdate({
+			target: [
+				mailSubscriptions.workspaceId,
+				mailSubscriptions.subscriptionKey,
+			],
+			set: {
+				listId: rawListId,
+				unsubscribeHttpUrl: unsubscribeUrl,
+				unsubscribeMailto,
+				oneClick,
+				lastSeenAt: new Date(),
+			},
+		});
 
-    await db
-        .insert(mailSubscriptions)
-        .values({
-            ownerId,
-            subscriptionKey,
-            listId: rawListId,
-            unsubscribeHttpUrl: unsubscribeUrl,
-            unsubscribeMailto,
-            oneClick,
-            lastSeenAt: new Date(),
-        } as any)
-        .onConflictDoUpdate({
-            target: [mailSubscriptions.ownerId, mailSubscriptions.subscriptionKey],
-            set: {
-                listId: rawListId,
-                unsubscribeHttpUrl: unsubscribeUrl,
-                unsubscribeMailto,
-                oneClick,
-                lastSeenAt: new Date(),
-            } as any,
-        });
 }

@@ -18,13 +18,11 @@ import { useActionState } from "react";
 import Form from "next/form";
 import { Loader2Icon } from "lucide-react";
 import { FormState } from "@schema";
-import { useConfigContext } from "@/components/providers/config-provider";
 
 export function LoginForm({
 	className,
 	...props
 }: React.ComponentProps<"div">) {
-	const config = useConfigContext();
 	const [formState, formAction, isPending] = useActionState<
 		FormState,
 		FormData
@@ -34,7 +32,7 @@ export function LoginForm({
 		<div className={cn("flex flex-col gap-6", className)} {...props}>
 			<Card>
 				<CardHeader className="text-center">
-					<CardTitle className="text-xl">Welcome back</CardTitle>
+					<CardTitle className="text-xl">Welcome</CardTitle>
 					{/*<CardDescription>Login with your Google account</CardDescription>*/}
 				</CardHeader>
 
@@ -116,17 +114,15 @@ export function LoginForm({
 								</Button>
 							</div>
 
-							{!config.DISABLE_SIGNUP && (
-								<div className="text-center text-sm">
-									Don&apos;t have an account?{" "}
-									<Link
-										href="/auth/signup"
-										className="underline underline-offset-4"
-									>
-										Sign up
-									</Link>
-								</div>
-							)}
+							<div className="text-center text-sm">
+								Don&apos;t have an account?{" "}
+								<Link
+									href="/auth/signup"
+									className="underline underline-offset-4"
+								>
+									Sign up
+								</Link>
+							</div>
 						</div>
 					</Form>
 				</CardContent>

@@ -4,6 +4,7 @@ import { Dayjs } from "dayjs";
 import CalendarBoxIndicatorLayer from "@/components/dashboard/calendars/calendar-box-indicator-layer";
 import CalendarAddEventPopover from "@/components/dashboard/calendars/calendar-add-event-popover";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
+import type {CalendarState} from "@schema";
 
 export default function CalendarDayHourBox({
 	day,
@@ -14,7 +15,7 @@ export default function CalendarDayHourBox({
 }) {
 	const start = day.hour(hour).minute(0).second(0).millisecond(0);
 	const end = start.add(1, "hour");
-	const { state, setState } = useDynamicContext();
+	const { state, setState } = useDynamicContext<CalendarState>();
 
 	const id = React.useMemo(
 		() => `${start.toISOString()}-${end.toISOString()}`,

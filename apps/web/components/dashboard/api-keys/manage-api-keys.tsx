@@ -108,7 +108,7 @@ export default function ManageApiKeys({
 										<Table.Th>Key ID</Table.Th>
 										<Table.Th>Scopes</Table.Th>
 										<Table.Th>Created</Table.Th>
-										<Table.Th className="w-16 text-right">Actions</Table.Th>
+										{/*<Table.Th className="w-16 text-right">Actions</Table.Th>*/}
 									</Table.Tr>
 								</Table.Thead>
 								<Table.Tbody>
@@ -126,7 +126,8 @@ export default function ManageApiKeys({
 												</Group>
 											</Table.Td>
 											<Table.Td>{fmtTemporal(k.createdAt)}</Table.Td>
-											<Table.Td className="text-right">
+											<Table.Td className="text-right flex items-center gap-2 justify-end">
+												<span>Copy API Key{" "}</span>
 												<ActionIcon
 													variant="subtle"
 													title={"Copy API key"}

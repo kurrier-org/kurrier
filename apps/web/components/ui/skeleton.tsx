@@ -1,10 +1,7 @@
-import { type HTMLAttributes } from "react";
-
+// @ts-nocheck
 import { cn } from "@/lib/utils";
 
-type SkeletonProps = Omit<HTMLAttributes<HTMLDivElement>, "ref">;
-
-function Skeleton({ className, ...props }: SkeletonProps) {
+function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
 	return (
 		<div
 			data-slot="skeleton"

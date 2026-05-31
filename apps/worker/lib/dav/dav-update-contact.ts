@@ -74,7 +74,9 @@ export async function updateContactViaHttp(opts: {
 	return { etag: normalizeEtag(newEtag) };
 }
 
-export const updateContact = async (contactId: string, ownerId: string) => {
+
+// export const updateContact = async (contactId: string, ownerId: string) => {
+export const pushUpdateContact = async (contactId: string, ownerId: string) => {
 	const rows = await db
 		.select({
 			contact: contacts,
@@ -87,33 +89,25 @@ export const updateContact = async (contactId: string, ownerId: string) => {
 		.where(and(eq(contacts.id, contactId), eq(contacts.ownerId, ownerId)));
 
 	if (!rows.length) return null;
+
 	const contact = rows[0].contact;
+	if (!contact) return null;
 
 	const labelItems = rows
 		.filter((r) => r.labelName)
-		.map((r) => ({
-			id: r.labelId,
-			name: r.labelName,
-		}))
-		.map((item) => item.name);
-
-	if (!contact) return;
+		.map((r) => String(r.labelName));
 
 	const [book] = await db
 		.select()
 		.from(addressBooks)
 		.where(
-			and(eq(addressBooks.ownerId, ownerId), eq(addressBooks.isDefault, true)),
-		);
+			and(eq(addressBooks.ownerId, ownerId)),
+		)
+		.limit(1);
 
-	if (!book) return;
+	if (!book) return null;
 
-	const parts = book.remotePath.split("/");
-	if (parts.length !== 3 || parts[0] !== "addressbooks") return;
-
-	const davUsername = parts[1];
-	const davUri = contact.davUri ?? `${contact.id}.vcf`;
-
+	// 🔹 NEW: derive username from davAccountId (no remotePath anymore)
 	const [secretRow] = await db
 		.select({
 			account: davAccounts,
@@ -122,17 +116,19 @@ export const updateContact = async (contactId: string, ownerId: string) => {
 		.from(davAccounts)
 		.where(eq(davAccounts.id, book.davAccountId))
 		.leftJoin(secretsMeta, eq(davAccounts.secretId, secretsMeta.id))
-		.orderBy(desc(davAccounts.createdAt));
+		.orderBy(desc(davAccounts.createdAt))
+		.limit(1);
 
-	const secret = await getSecretAdmin(String(secretRow?.metaId));
+	if (!secretRow?.account) return null;
+
+	const secret = await getSecretAdmin(String(secretRow.metaId));
 	const passwordFromSecret = secret?.vault?.decrypted_secret;
-	if (!passwordFromSecret) {
-		console.error(
-			"No password found in secret for DAV account",
-			book.davAccountId,
-		);
-		return;
-	}
+	if (!passwordFromSecret) return null;
+
+	const davUsername = secretRow.account.username;
+	const collectionPath = `addressbooks/${davUsername}/${book.slug}`;
+
+	const davUri = contact.davUri ?? `${contact.id}.vcf`;
 
 	const carddata = await buildVCard(contact, labelItems);
 
@@ -141,7 +137,7 @@ export const updateContact = async (contactId: string, ownerId: string) => {
 		davBaseUrl: `${process.env.DAV_URL}/dav.php`,
 		username: davUsername,
 		password: passwordFromSecret,
-		collectionPath: book.remotePath,
+		collectionPath,
 		davUri,
 		etag: contact.davEtag,
 	});

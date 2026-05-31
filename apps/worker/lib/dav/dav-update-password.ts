@@ -1,24 +1,38 @@
 import { davAccounts, db, updateSecretAdmin } from "@db";
-import { eq } from "drizzle-orm";
+import {and, eq} from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { md5, davDb, davUsers } from "../../lib/dav/dav-schema";
 
-export const updatePassword = async (userId: string) => {
+export const updatePassword = async (
+	userId: string,
+	workspaceId: string,
+) => {
 	const [davAccount] = await db
 		.select()
 		.from(davAccounts)
-		.where(eq(davAccounts.ownerId, userId));
+		.where(
+			and(
+				eq(davAccounts.ownerId, userId),
+				eq(davAccounts.workspaceId, workspaceId),
+				eq(davAccounts.type, "user"),
+			),
+		)
+		.limit(1);
 
-	if (!davAccount) return;
+	if (!davAccount) return null;
 
 	const davUsername = davAccount.username;
 	const newPassword = randomUUID();
 
-	const secretId = davAccount.secretId;
-	await updateSecretAdmin(secretId, {
+
+	await updateSecretAdmin(davAccount.secretId, {
 		value: newPassword,
 	});
+
 	const newDigest = md5(`${davUsername}:BaikalDAV:${newPassword}`);
+
+	console.log("secret updated");
+
 	await davDb
 		.update(davUsers)
 		.set({ digesta1: newDigest })

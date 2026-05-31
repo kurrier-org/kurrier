@@ -63,7 +63,7 @@ export function ReusableFormItems({
 }: ReusableFormItemsProps) {
 	return (
 		<div className={formWrapperClasses}>
-			{fields.map((f, idx) => {
+			{fields.map((f: FieldConfig, idx) => {
 				const {
 					kind = "input",
 					name,

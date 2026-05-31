@@ -13,8 +13,10 @@ import NewCalendarEventForm from "@/components/dashboard/calendars/new-calendar-
 
 export default function NewEventButton({
 	hideOnMobile,
+	workspacePublicId
 }: {
 	hideOnMobile?: boolean;
+	workspacePublicId: string;
 }) {
 	const isMobile = useIsMobile();
 	const { state } = useDynamicContext<CalendarState>();
@@ -44,7 +46,7 @@ export default function NewEventButton({
 
 			{isMobile ? (
 				<ActionIcon>
-					<Link href={"/dashboard/contacts/new"}>
+					<Link href={`/w/${workspacePublicId}/dashboard/contacts/new`}>
 						<Plus className="h-4 w-4" />
 					</Link>
 				</ActionIcon>

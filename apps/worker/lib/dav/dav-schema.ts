@@ -1,12 +1,26 @@
-import { sqliteTable, integer, text, blob } from "drizzle-orm/sqlite-core";
-import path from "node:path";
-import { createClient } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
-import crypto from "node:crypto";
-import fs from "node:fs";
+import { pgTable, serial, integer, text } from "drizzle-orm/pg-core";
+import postgres from "postgres";
+import { drizzle } from 'drizzle-orm/postgres-js';
 
-export const davAddressbooks = sqliteTable("addressbooks", {
-	id: integer("id").primaryKey(),
+import { customType } from "drizzle-orm/pg-core";
+
+export const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+	dataType() {
+		return "bytea";
+	},
+	toDriver(value) {
+		return value;
+	},
+	fromDriver(value) {
+		return Buffer.isBuffer(value) ? value : Buffer.from(value as any);
+	},
+});
+
+import crypto from "node:crypto";
+
+
+export const davAddressbooks = pgTable("addressbooks", {
+	id: serial("id").primaryKey(),
 	principaluri: text("principaluri").notNull(),
 	displayname: text("displayname"),
 	uri: text("uri").notNull(),
@@ -14,27 +28,27 @@ export const davAddressbooks = sqliteTable("addressbooks", {
 	synctoken: integer("synctoken").notNull().default(1),
 });
 
-export const davCards = sqliteTable("cards", {
-	id: integer("id").primaryKey(),
+export const davCards = pgTable("cards", {
+	id: serial("id").primaryKey(),
 	addressbookid: integer("addressbookid").notNull(),
-	carddata: blob("carddata"),
+	carddata: bytea("carddata"),
 	uri: text("uri").notNull(),
 	lastmodified: integer("lastmodified"),
 	etag: text("etag"),
 	size: integer("size"),
 });
 
-export const davAddressbookChanges = sqliteTable("addressbookchanges", {
-	id: integer("id").primaryKey(),
+export const davAddressbookChanges = pgTable("addressbookchanges", {
+	id: serial("id").primaryKey(),
 	uri: text("uri"),
 	synctoken: integer("synctoken").notNull(),
 	addressbookid: integer("addressbookid").notNull(),
 	operation: integer("operation").notNull(),
 });
 
-export const davCalendarObjects = sqliteTable("calendarobjects", {
-	id: integer("id").primaryKey(),
-	calendardata: blob("calendardata").notNull(),
+export const davCalendarObjects = pgTable("calendarobjects", {
+	id: serial("id").primaryKey(),
+	calendardata: bytea("calendardata").notNull(),
 	uri: text("uri").notNull(),
 	calendarid: integer("calendarid").notNull(),
 	lastmodified: integer("lastmodified").notNull(),
@@ -46,14 +60,14 @@ export const davCalendarObjects = sqliteTable("calendarobjects", {
 	uid: text("uid"),
 });
 
-export const davCalendars = sqliteTable("calendars", {
-	id: integer("id").primaryKey(),
+export const davCalendars = pgTable("calendars", {
+	id: serial("id").primaryKey(),
 	synctoken: integer("synctoken").notNull().default(1),
 	components: text("components").notNull(),
 });
 
-export const davCalendarInstances = sqliteTable("calendarinstances", {
-	id: integer("id").primaryKey(),
+export const davCalendarInstances = pgTable("calendarinstances", {
+	id: serial("id").primaryKey(),
 	calendarid: integer("calendarid"),
 	principaluri: text("principaluri"),
 	access: integer("access"),
@@ -69,16 +83,16 @@ export const davCalendarInstances = sqliteTable("calendarinstances", {
 	share_invitestatus: integer("share_invitestatus").default(2),
 });
 
-export const davCalendarChanges = sqliteTable("calendarchanges", {
-	id: integer("id").primaryKey(),
+export const davCalendarChanges = pgTable("calendarchanges", {
+	id: serial("id").primaryKey(),
 	uri: text("uri"),
 	synctoken: integer("synctoken").notNull(),
 	calendarid: integer("calendarid").notNull(),
 	operation: integer("operation").notNull(),
 });
 
-export const davCalendarSubscriptions = sqliteTable("calendarsubscriptions", {
-	id: integer("id").primaryKey(),
+export const davCalendarSubscriptions = pgTable("calendarsubscriptions", {
+	id: serial("id").primaryKey(),
 	uri: text("uri").notNull(),
 	principaluri: text("principaluri").notNull(),
 	source: text("source").notNull(),
@@ -92,18 +106,18 @@ export const davCalendarSubscriptions = sqliteTable("calendarsubscriptions", {
 	lastmodified: integer("lastmodified"),
 });
 
-export const davSchedulingObjects = sqliteTable("schedulingobjects", {
-	id: integer("id").primaryKey(),
+export const davSchedulingObjects = pgTable("schedulingobjects", {
+	id: serial("id").primaryKey(),
 	principaluri: text("principaluri").notNull(),
-	calendardata: blob("calendardata"),
+	calendardata: bytea("calendardata"),
 	uri: text("uri").notNull(),
 	lastmodified: integer("lastmodified"),
 	etag: text("etag").notNull(),
 	size: integer("size").notNull(),
 });
 
-export const davLocks = sqliteTable("locks", {
-	id: integer("id").primaryKey(),
+export const davLocks = pgTable("locks", {
+	id: serial("id").primaryKey(),
 	owner: text("owner"),
 	timeout: integer("timeout"),
 	created: integer("created"),
@@ -113,45 +127,35 @@ export const davLocks = sqliteTable("locks", {
 	uri: text("uri"),
 });
 
-export const davPrincipals = sqliteTable("principals", {
-	id: integer("id").primaryKey(),
+export const davPrincipals = pgTable("principals", {
+	id: serial("id").primaryKey(),
 	uri: text("uri").notNull(),
 	email: text("email"),
 	displayname: text("displayname"),
 });
 
-export const davGroupMembers = sqliteTable("groupmembers", {
-	id: integer("id").primaryKey(),
+export const davGroupMembers = pgTable("groupmembers", {
+	id: serial("id").primaryKey(),
 	principal_id: integer("principal_id").notNull(),
 	member_id: integer("member_id").notNull(),
 });
 
-export const davPropertyStorage = sqliteTable("propertystorage", {
-	id: integer("id").primaryKey(),
+export const davPropertyStorage = pgTable("propertystorage", {
+	id: serial("id").primaryKey(),
 	path: text("path").notNull(),
 	name: text("name").notNull(),
 	valuetype: integer("valuetype").notNull(),
 	value: text("value"),
 });
 
-export const davUsers = sqliteTable("users", {
-	id: integer("id").primaryKey(),
+export const davUsers = pgTable("users", {
+	id: serial("id").primaryKey(),
 	username: text("username").notNull(),
 	digesta1: text("digesta1").notNull(),
 });
 
-const isProd = process.env.NODE_ENV === "production";
-
-const dbPath = isProd
-	? "/dav-data/db/db.sqlite"
-	: path.resolve(process.cwd(), "../../db/dav_data/db/db.sqlite");
-
-if (!fs.existsSync(dbPath)) {
-	console.error("DAV sqlite not found at", dbPath);
-}
-
-const client = createClient({ url: `file:${dbPath}` });
-export const davDb = drizzle(client);
+const sql = postgres(process.env.DAV_DATABASE_URL!, { prepare: false });
+export const davDb = drizzle(sql);
 
 export const md5 = (input: string) =>
 	crypto.createHash("md5").update(input).digest("hex");

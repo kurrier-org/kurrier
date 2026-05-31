@@ -4,22 +4,28 @@ import {
 	FetchUserIdentitiesResult,
 } from "@/lib/actions/dashboard";
 import { ReusableForm } from "@/components/common/reusable-form";
-import React from "react";
+import React, {useEffect} from "react";
 import { parseSecret } from "@/lib/utils";
 import { imapQuotaList } from "@schema";
+import {Checkbox, MultiSelect, Select} from "@mantine/core";
+import {FetchWorkspaceMembersResult} from "@/lib/actions/workspace";
 
 function AddEmailIdentityForm({
 	onCompleted,
 	providerOptions,
 	smtpAccounts,
 	providerAccounts,
+	workspaceMembers,
 	userDomainIdentities,
+	userEmailIdentities
 }: {
 	onCompleted?: () => void;
 	providerOptions: { label: string; value: string }[];
 	smtpAccounts: FetchDecryptedSecretsResult;
 	providerAccounts: FetchDecryptedSecretsResult;
+	workspaceMembers: FetchWorkspaceMembersResult;
 	userDomainIdentities: FetchUserIdentitiesResult;
+	userEmailIdentities: FetchUserIdentitiesResult;
 }) {
 	const [provider, setProvider] = React.useState<
 		FetchDecryptedSecretsResult[number] | null
@@ -44,6 +50,12 @@ function AddEmailIdentityForm({
 		const domain = chosenDomain.identities.value;
 		return `${localPart}@${domain}`;
 	}, [localPart, chosenDomain]);
+
+	const mustBeShared = userEmailIdentities.length === 0;
+	const [sharedWithWorkspace, setSharedWithWorkspace] = React.useState<boolean>(mustBeShared);
+	useEffect(() => {
+		setSharedWithWorkspace(mustBeShared)
+	}, [mustBeShared]);
 
 	function getSmtpFields() {
 		const parsedVaultValues = parseSecret(smtpAccount);
@@ -228,6 +240,55 @@ function AddEmailIdentityForm({
 			},
 		},
 		...extraFields,
+		{
+			el: <>
+				{composedEmail && provider?.linkRow.providerId === activeId && (
+					<div className="mt-3 p-3 border rounded-md bg-muted text-sm text-muted-foreground text-center">
+						Preview:
+						<span className="mx-2 font-medium text-foreground">
+						{composedEmail}{" "}
+					</span>
+					</div>
+				)}
+			</>
+
+		},
+		{
+			name: "shared",
+			label: <div className={"flex flex-col"}>Share this identity with workspace members <span className={"text-xxs"}>(All members in this workspace will be able to access this identity. A workspace needs to have a default identity.)</span></div>,
+			kind: "custom" as const,
+			component: Checkbox,
+			wrapperClasses: provider || smtpAccount ? "flex col-span-12 flex-row-reverse gap-2 justify-end" : "hidden",
+			props: {
+				checked: sharedWithWorkspace,
+				onChange: (e: any) => {
+					if (!mustBeShared){
+						setSharedWithWorkspace(e.currentTarget.checked);
+					}
+				}
+			}
+		},
+		...(sharedWithWorkspace
+				? []
+				: [{
+					name: "workspaceMembers",
+					label: "Assign to workspace members",
+					kind: "custom" as const,
+					component: MultiSelect,
+					wrapperClasses: provider || smtpAccount ? "col-span-12" : "hidden",
+					required: true,
+					props: {
+						data: workspaceMembers?.map((member) => ({
+							label: member?.users?.email,
+							value: String(member?.workspace_members?.userId),
+						})),
+						minLength: 1,
+						required: true,
+						placeholder: "Select members",
+						className: "w-full",
+					},
+				}]
+		)
 	];
 
 	const finalizeEmail = async () => {
@@ -242,15 +303,6 @@ function AddEmailIdentityForm({
 				fields={fields}
 				formKey={String(activeId)}
 			/>
-
-			{composedEmail && provider?.linkRow.providerId === activeId && (
-				<div className="mt-3 p-3 border rounded-md bg-muted text-sm text-muted-foreground text-center">
-					Preview:
-					<span className="mx-2 font-medium text-foreground">
-						{composedEmail}{" "}
-					</span>
-				</div>
-			)}
 		</div>
 	);
 }

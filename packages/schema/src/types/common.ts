@@ -17,3 +17,10 @@ export const apiScopeOptions = apiScopeList.map((scope) => ({
 export const webHookList = ["message.received"] as const;
 export const labelScopesList = ["thread", "contact", "all"] as const;
 export type LabelScope = (typeof labelScopesList)[number];
+export const webHookListOptions = webHookList.map((scope) => ({
+	value: scope,
+	label:
+		{
+			"message.received": "message.received",
+		}[scope] ?? scope,
+}))
