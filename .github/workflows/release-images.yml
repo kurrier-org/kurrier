@@ -82,6 +82,14 @@ jobs:
             docker.io/${{ secrets.DOCKERHUB_USERNAME }}/kurrier-${{ matrix.service }}:latest
           build-args: |
             NODE_ENV=production
+            JWT_SECRET=build_dummy_jwt_secret
+            APP_SECRET_ENCRYPTION_KEY=build_dummy_app_secret_encryption_key
+            S3_REGION=garage
+            S3_BUCKET=build-bucket
+            S3_ENDPOINT=http://localhost:3900
+            S3_ACCESS_KEY=build_access_key
+            S3_SECRET_KEY=build_secret_key
+            S3_FORCE_PATH_STYLE=true
           provenance: true
           sbom: true
 
