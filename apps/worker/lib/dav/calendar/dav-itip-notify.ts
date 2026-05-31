@@ -10,13 +10,25 @@ import {
 import { and, eq } from "drizzle-orm";
 import ICAL from "ical.js";
 import { EmailSendSchema, ItipAction } from "@schema";
-import { createSupabaseServiceClient } from "../../../lib/create-client-ssr";
 import { extension } from "mime-types";
-import { base64ToBlob } from "@common";
 import { getDayjsTz } from "@common";
 import { getRedis } from "../../../lib/get-redis";
 import { customAlphabet } from "nanoid";
+import {s3} from "../../../lib/create-s3-client";
+import {PutObjectCommand} from "@aws-sdk/client-s3";
 const cleanId = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 6);
+
+export async function ensureIcalUid(event: CalendarEventEntity): Promise<string> {
+	if (event.icalUid && event.icalUid.trim()) return event.icalUid.trim();
+
+	const uid = `${event.id}@kurrier`;
+	await db
+		.update(calendarEvents)
+		.set({ icalUid: uid })
+		.where(eq(calendarEvents.id, event.id));
+
+	return uid;
+}
 
 export const roleToIcs = (role: string | null) => {
 	switch (role) {
@@ -148,7 +160,7 @@ export const davItipNotify = async (opts: {
 	}
 
 	if (!icalEvent.uid) {
-		icalEvent.uid = event.davUri || event.id;
+		icalEvent.uid = await ensureIcalUid(event);
 	}
 
 	if (action === "cancel") {
@@ -334,33 +346,37 @@ const enqueEmail = async ({
 	const emailData = parsed.data;
 	const newMessageId = crypto.randomUUID();
 
-	const supabase = await createSupabaseServiceClient();
 	const storedAttachments: any[] = [];
 
 	for (const file of emailData.attachments || []) {
 		const ext = extension(file.contentType) || "dat";
 		const path = `private/${identity.ownerId}/${newMessageId}/invite-${cleanId(4)}.${ext}`;
-		const blob = base64ToBlob(file.content, file.contentType);
 
-		const { error: e } = await supabase.storage
-			.from("attachments")
-			.upload(path, blob);
+		const buffer = Buffer.from(file.content, "base64");
 
-		if (!e) {
+		try {
+			await s3.send(
+				new PutObjectCommand({
+					Bucket: process.env.S3_BUCKET!,
+					Key: path,
+					Body: buffer,
+					ContentType: file.contentType,
+				})
+			);
+
 			storedAttachments.push({
 				path,
 				messageId: newMessageId,
-				bucketId: "attachments",
+				bucketId: process.env.S3_BUCKET!,
 				filenameOriginal: file.filename,
 				contentType: file.contentType,
+				sizeBytes: buffer.length,
 			});
-		} else {
-			console.error("enqueEmail: failed to upload attachment", {
-				eventId: event.id,
-				error: e,
-			});
+		} catch (e) {
+			console.error("S3 upload failed", e);
 		}
 	}
+
 
 	const payload: any = {
 		newMessageId,

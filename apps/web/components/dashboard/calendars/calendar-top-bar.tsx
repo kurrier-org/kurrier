@@ -8,7 +8,7 @@ import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { CalendarState, calendarViewsList, CalendarViewType } from "@schema";
 import { getDayjsTz } from "@common/day-js-extended";
 
-function CalendarTopBar() {
+function CalendarTopBar({workspacePublicId}: {workspacePublicId: string}) {
 	const { theme } = useAppearance();
 	const router = useRouter();
 	const { state, setState } = useDynamicContext<CalendarState>();
@@ -52,7 +52,7 @@ function CalendarTopBar() {
 		const year = day.year();
 		const month = day.month() + 1;
 		const date = day.date();
-		return `/dashboard/calendar/${calendarPublicId}/${view}/${year}/${month}/${date}`;
+		return `/w/${workspacePublicId}/dashboard/calendar/${calendarPublicId}/${view}/${year}/${month}/${date}`;
 	};
 
 	const switchView = (value: CalendarViewType) => {

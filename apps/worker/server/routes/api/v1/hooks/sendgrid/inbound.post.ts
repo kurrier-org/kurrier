@@ -1,19 +1,9 @@
 import { defineEventHandler, readMultipartFormData } from "h3";
 import { db, identities, mailboxes } from "@db";
-
 import { ParsedMail, simpleParser } from "mailparser";
 import { eq } from "drizzle-orm";
-import { getPublicEnv, getServerEnv } from "@schema";
-import { createClient } from "@supabase/supabase-js";
 import { v4 as uuidv4 } from "uuid";
 import { parseAndStoreEmail } from "../../../../../../lib/message-payload-parser";
-
-const publicConfig = getPublicEnv();
-const serverConfig = getServerEnv();
-const supabase = createClient(
-	publicConfig.API_URL,
-	serverConfig.SERVICE_ROLE_KEY,
-);
 
 export function getToEmails(parsed: ParsedMail): string[] {
 	if (!parsed.to) return [];
@@ -42,15 +32,13 @@ export default defineEventHandler(async (event) => {
 			.from(identities)
 			.where(eq(identities.value, toAddress));
 
-		const encoder = new TextEncoder();
-		const emailBuffer = encoder.encode(rawMime);
+		if (!identity) {
+			console.log("No identity found for toAddress", toAddress);
+			return { ok: false, error: "No identity found for toAddress" };
+		}
 
 		const emlId = uuidv4();
-		const supaRes = await supabase.storage
-			.from("attachments")
-			.upload(`eml/${identity.ownerId}/${emlId}`, emailBuffer, {
-				contentType: "message/rfc822",
-			});
+		const rawStorageKey = `eml/${identity.ownerId}/${emlId}`;
 
 		const headers = parsed.headers as Map<string, any>;
 
@@ -70,8 +58,9 @@ export default defineEventHandler(async (event) => {
 
 		await parseAndStoreEmail(rawMime, {
 			ownerId: identity.ownerId,
+			workspaceId: identity.workspaceId,
 			mailboxId: authSaysJunk ? String(spamMb?.id) : String(inbox?.id),
-			rawStorageKey: String(supaRes?.data?.path),
+			rawStorageKey,
 			emlKey: emlId,
 		});
 

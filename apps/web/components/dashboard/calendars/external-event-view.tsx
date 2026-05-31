@@ -31,14 +31,6 @@ function ExternalEventView() {
 
 	const dayjsTz = getDayjsTz(state.defaultCalendar.timezone);
 
-	const contactsById = useMemo(() => {
-		const map = new Map<string, any>();
-		attendeeContacts.forEach((c: any) => {
-			if (c.id) map.set(c.id, c);
-		});
-		return map;
-	}, [attendeeContacts]);
-
 	const contactsByEmail = useMemo(() => {
 		const map = new Map<string, any>();
 		attendeeContacts.forEach((c: any) => {
@@ -56,24 +48,20 @@ function ExternalEventView() {
 				const email = String(a.email ?? "")
 					.trim()
 					.toLowerCase();
-				const contactId = a.contactId ?? null;
 
-				const contactFromId = contactId ? contactsById.get(contactId) : null;
-				const contactFromEmail = email ? contactsByEmail.get(email) : null;
-				const contact = contactFromId || contactFromEmail || null;
+				const contact = email ? contactsByEmail.get(email) : null;
 
 				return {
 					email,
 					name: contact?.name ?? a.name ?? null,
 					avatar: contact?.avatar ?? a.avatar ?? null,
-					contactId: contact?.id ?? contactId ?? null,
 					isOrganizer: a.isOrganizer ?? false,
 					isPersisted: true,
 					attendeeId: a.id,
 					partstat: (a.partstat as UiGuestStatus) ?? "needs_action",
 				};
 			}),
-		[attendeesRaw, contactsById, contactsByEmail],
+		[attendeesRaw, contactsByEmail],
 	);
 
 	const myEmails = useMemo(() => {

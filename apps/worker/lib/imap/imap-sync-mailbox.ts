@@ -6,6 +6,7 @@ export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export async function syncMailbox(opts: {
 	client: ImapFlow;
 	identityId: string;
+	workspaceId: string
 	mailboxId: string;
 	path: string;
 	window?: number;
@@ -14,12 +15,14 @@ export async function syncMailbox(opts: {
 		msg: FetchMessageObject,
 		path: string,
 		identityId: string,
+		workspaceId: string,
 		mailboxId: string,
 	) => Promise<void>;
 }) {
 	const {
 		client,
 		identityId,
+		workspaceId,
 		mailboxId,
 		path,
 		window = 500,
@@ -65,7 +68,7 @@ export async function syncMailbox(opts: {
 					source: true,
 				},
 			)) {
-				await onMessage(msg, path, identityId, mailboxId);
+				await onMessage(msg, path, identityId, workspaceId, mailboxId);
 				if (msg.uid && msg.uid > maxUid) maxUid = msg.uid;
 			}
 

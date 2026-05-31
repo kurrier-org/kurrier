@@ -164,6 +164,7 @@ export async function upsertMailboxThreadItem(
 		mailboxId: mbx.id,
 
 		ownerId: mbx.ownerId,
+		workspaceId: mbx.workspaceId,
 		identityId: mbx.identityId,
 
 		identityPublicId: ident.publicId,

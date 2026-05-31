@@ -1,4 +1,4 @@
-import { db, messages, mailboxThreads } from "@db";
+import { db, messages, mailboxThreads, mailboxes, identities, workspaces } from "@db";
 import { messagesSearchSchema } from "@schema";
 import { getMessageAddress, getMessageName } from "@common/mail-client";
 import { and, eq } from "drizzle-orm";
@@ -13,6 +13,7 @@ export const rebuild = async () => {
 	try {
 		await client.collections("messages").delete();
 	} catch {}
+
 	await client.collections().create(messagesSearchSchema);
 	console.log("[typesense] created collection messages");
 
@@ -23,6 +24,7 @@ export const rebuild = async () => {
 		const batch = await db
 			.select({
 				m: messages,
+
 				mt_subject: mailboxThreads.subject,
 				mt_preview: mailboxThreads.previewText,
 				mt_lastActivityAt: mailboxThreads.lastActivityAt,
@@ -31,6 +33,10 @@ export const rebuild = async () => {
 				mt_hasAttachments: mailboxThreads.hasAttachments,
 				mt_participants: mailboxThreads.participants,
 				mt_starred: mailboxThreads.starred,
+
+				identityPublicId: identities.publicId,
+				mailboxSlug: mailboxes.slug,
+				workspacePublicId: workspaces.publicId,
 			})
 			.from(messages)
 			.leftJoin(
@@ -40,6 +46,9 @@ export const rebuild = async () => {
 					eq(messages.mailboxId, mailboxThreads.mailboxId),
 				),
 			)
+			.innerJoin(mailboxes, eq(messages.mailboxId, mailboxes.id))
+			.innerJoin(identities, eq(mailboxes.identityId, identities.id))
+			.innerJoin(workspaces, eq(identities.workspaceId, workspaces.id))
 			.limit(BATCH_SIZE)
 			.offset(offset);
 
@@ -47,44 +56,51 @@ export const rebuild = async () => {
 
 		const docs = batch.map((row) => {
 			const m = row.m;
+
 			return toSearchDoc({
 				id: m.id,
 				ownerId: m.ownerId,
 				mailboxId: m.mailboxId,
 				threadId: m.threadId,
+
+				workspacePublicId: row.workspacePublicId,
+				identityPublicId: row.identityPublicId,
+				mailboxSlug: row.mailboxSlug ?? "inbox",
+
 				subject: m.subject ?? row.mt_subject ?? "",
 				text: m.text,
 				html: m.html,
+
 				fromName: getMessageName(m, "from"),
 				fromEmail: getMessageAddress(m, "from"),
+
 				from: m.from,
 				to: m.to,
 				cc: m.cc,
 				bcc: m.bcc,
+
 				hasAttachments: m.hasAttachments || !!row.mt_hasAttachments,
 				seen: m.seen,
 				sizeBytes: m.sizeBytes,
+
 				createdAt: m.date,
-				lastInThreadAt: m.date,
-				threadPreview: row.mt_preview ?? null,
-				threadLastActivityAt: row.mt_lastActivityAt ?? null,
-				threadParticipants: (row.mt_participants as any) ?? null,
+				lastInThreadAt: row.mt_lastActivityAt ?? m.date,
+
+				threadParticipants: row.mt_participants ?? null,
 				threadStarred: !!row.mt_starred,
+
 				labels: [],
 			});
 		});
 
-		const result = await client
-			.collections("messages")
-			.documents()
-			.import(docs, { action: "upsert" });
+		const result = await client.collections("messages").documents().import(docs, { action: "upsert" });
 
 		const failed = result.filter((r: any) => r.success !== true);
-		if (failed.length)
-			console.warn("[typesense] some docs failed", failed.slice(0, 5));
+		if (failed.length) console.warn("[typesense] some docs failed", failed.slice(0, 5));
 
 		imported += docs.length;
 		offset += BATCH_SIZE;
+
 		console.log(`[typesense] upserted ${imported}`);
 	}
 

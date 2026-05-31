@@ -3,7 +3,9 @@ import { eq } from "drizzle-orm";
 import { ImapFlow } from "imapflow";
 
 const retryCounts = new Map<string, number>();
-const MAX_RETRIES = 3;
+const reconnectTimers = new Map<string, NodeJS.Timeout>();
+const MAX_RETRIES = 5;
+const BASE_DELAY = 5000;
 
 function safeReconnect(
 	identityId: string,
@@ -12,34 +14,50 @@ function safeReconnect(
 	const currentRetries = retryCounts.get(identityId) ?? 0;
 
 	if (currentRetries >= MAX_RETRIES) {
-		console.error(`[IMAP:${identityId}] Max retries reached. Giving up.`);
+		console.error(`[IMAP:${identityId}] Max retries reached. Cooling down.`);
 		return;
 	}
 
+	const delay = BASE_DELAY * (currentRetries + 1);
 	retryCounts.set(identityId, currentRetries + 1);
 
 	const existing = imapInstances.get(identityId);
 	if (existing) {
 		try {
-			existing.logout();
+			existing.removeAllListeners();
+			existing.logout().catch(() => {});
 		} catch {}
 		imapInstances.delete(identityId);
 	}
 
-	setTimeout(() => {
+	if (reconnectTimers.has(identityId)) {
+		clearTimeout(reconnectTimers.get(identityId)!);
+	}
+
+	const timer = setTimeout(() => {
+		reconnectTimers.delete(identityId);
 		initSmtpClient(identityId, imapInstances).catch(console.error);
-	}, 5000);
+	}, delay);
+
+	reconnectTimers.set(identityId, timer);
 }
 
 export const initSmtpClient = async (
 	identityId: string,
 	imapInstances: Map<string, ImapFlow>,
 ) => {
-	// If we already have a working connection, reuse it
 	try {
 		const existing = imapInstances.get(identityId);
 		if (existing && existing.authenticated && existing.usable) {
 			return existing;
+		}
+
+		if (existing) {
+			try {
+				existing.removeAllListeners();
+				existing.logout().catch(() => {});
+			} catch {}
+			imapInstances.delete(identityId);
 		}
 	} catch (err) {
 		console.error(`[IMAP:${identityId}] Existing instance check failed`, err);
@@ -78,6 +96,7 @@ export const initSmtpClient = async (
 				user: credentials.IMAP_USERNAME,
 				pass: credentials.IMAP_PASSWORD,
 			},
+			socketTimeout: 60_000,
 			logger: {
 				error(data: any) {
 					console.error(`[IMAP:${identityId}]`, data.msg ?? data);
@@ -91,6 +110,7 @@ export const initSmtpClient = async (
 
 		try {
 			await client.connect();
+			retryCounts.set(identityId, 0);
 		} catch (err) {
 			console.error(`[IMAP:${identityId}] connect() failed:`, err);
 			safeReconnect(identityId, imapInstances);
@@ -99,26 +119,28 @@ export const initSmtpClient = async (
 
 		imapInstances.set(identityId, client);
 
-		const noopInterval = setInterval(
-			async () => {
-				try {
-					if (client.usable) {
-						await client.noop();
-					}
-				} catch (err) {
-					console.error(`[IMAP:${identityId}] NOOP failed:`, err);
+		const noopInterval = setInterval(async () => {
+			try {
+				if (client.usable) {
+					await client.noop();
+				} else {
+					throw new Error("Client not usable");
 				}
-			},
-			5 * 60 * 1000,
-		);
+			} catch (err) {
+				console.error(`[IMAP:${identityId}] NOOP failed:`, err);
+				clearInterval(noopInterval);
+				safeReconnect(identityId, imapInstances);
+			}
+		}, 5 * 60 * 1000);
 
 		const cleanup = (reason: string) => {
 			clearInterval(noopInterval);
+			try {
+				client.removeAllListeners();
+				client.logout().catch(() => {});
+			} catch {}
 			imapInstances.delete(identityId);
-
-			console.warn(
-				`[IMAP:${identityId}] Disconnected (${reason}), reconnecting...`,
-			);
+			console.warn(`[IMAP:${identityId}] Disconnected (${reason})`);
 			safeReconnect(identityId, imapInstances);
 		};
 

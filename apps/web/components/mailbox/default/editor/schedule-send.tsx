@@ -67,7 +67,6 @@ function ScheduleSend() {
 
 	useEffect(() => {
 		if (!scheduledAt) return;
-		console.log("scheduledAt", scheduledAt.toISOString());
 		closePicker();
 	}, [scheduledAt, closePicker]);
 

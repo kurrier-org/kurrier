@@ -9,6 +9,7 @@ import {
 } from "@mantine/core";
 import ContactSuggestionItem from "@/components/mailbox/default/editor/contact-suggestion-item";
 import { searchContactsForCompose } from "@/lib/actions/calendar";
+import {ComposeContact} from "@schema";
 
 export default function EmailHeaderContacts({
 	name,
@@ -24,10 +25,21 @@ export default function EmailHeaderContacts({
 	const [searchValue, setSearchValue] = useState("");
 	const [options, setOptions] = useState<ComboboxItem[]>([]);
 
+	const uniqueByEmail = (arr: ComposeContact[]) => {
+		const seen = new Set();
+		return arr.filter((item) => {
+			if (seen.has(item.email)) return false;
+			seen.add(item.email);
+			return true;
+		});
+	};
+
 	const searchContacts = async (val: string) => {
 		setSearchValue(val);
 
-		const rows = await searchContactsForCompose(val);
+		const rowsContacts = await searchContactsForCompose(val);
+		const rows = uniqueByEmail(rowsContacts);
+
 
 		const mapped: ComboboxItem[] = rows.map((row) => ({
 			value: row.email,

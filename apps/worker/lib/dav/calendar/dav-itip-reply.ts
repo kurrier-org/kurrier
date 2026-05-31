@@ -9,12 +9,12 @@ import {
 import { and, eq, sql } from "drizzle-orm";
 import ICAL from "ical.js";
 import { EmailSendSchema } from "@schema";
-import { createSupabaseServiceClient } from "../../../lib/create-client-ssr";
 import { extension } from "mime-types";
-import { base64ToBlob } from "@common";
 import { getRedis } from "../../../lib/get-redis";
 import { customAlphabet } from "nanoid";
-import { partstatToIcs } from "./dav-itip-notify";
+import {ensureIcalUid, partstatToIcs} from "./dav-itip-notify";
+import {s3} from "../../../lib/create-s3-client";
+import {PutObjectCommand} from "@aws-sdk/client-s3";
 
 const cleanId = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 6);
 
@@ -144,7 +144,7 @@ export const davItipReply = async (opts: {
 	}
 
 	if (!icalEvent.uid) {
-		icalEvent.uid = event.davUri || event.id;
+		icalEvent.uid = await ensureIcalUid(event);
 	}
 
 	let organizerProp = vevent.getFirstProperty("organizer");
@@ -277,30 +277,34 @@ const enqueueItipReplyEmail = async ({
 	const emailData = parsed.data;
 	const newMessageId = crypto.randomUUID();
 
-	const supabase = await createSupabaseServiceClient();
 	const storedAttachments: any[] = [];
 
 	for (const file of emailData.attachments || []) {
 		const ext = extension(file.contentType) || "dat";
-		const path = `private/${identity.ownerId}/${newMessageId}/reply-${cleanId(
-			4,
-		)}.${ext}`;
-		const blob = base64ToBlob(file.content, file.contentType);
+		const path = `private/${identity.ownerId}/${newMessageId}/reply-${cleanId(4)}.${ext}`;
 
-		const { error: e } = await supabase.storage
-			.from("attachments")
-			.upload(path, blob);
+		const buffer = Buffer.from(file.content, "base64");
 
-		if (!e) {
+		try {
+			await s3.send(
+				new PutObjectCommand({
+					Bucket: process.env.S3_BUCKET!,
+					Key: path,
+					Body: buffer,
+					ContentType: file.contentType,
+				})
+			);
+
 			storedAttachments.push({
 				path,
 				messageId: newMessageId,
-				bucketId: "attachments",
+				bucketId: process.env.S3_BUCKET!,
 				filenameOriginal: file.filename,
 				contentType: file.contentType,
+				sizeBytes: buffer.length,
 			});
-		} else {
-			console.error("enqueueItipReplyEmail: failed to upload attachment", {
+		} catch (e) {
+			console.error("enqueueItipReplyEmail: S3 upload failed", {
 				eventId: event.id,
 				error: e,
 			});

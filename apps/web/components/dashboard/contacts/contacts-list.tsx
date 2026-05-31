@@ -5,6 +5,7 @@ import { ContactEntity } from "@db";
 import { useParams } from "next/navigation";
 import { Star } from "lucide-react";
 import ContactListAvatar from "@/components/dashboard/contacts/contact-list-avatar";
+import {ProfileImage} from "@/components/dashboard/contacts/contacts-shell";
 
 export type ContactWithFavorite = ContactEntity & {
 	isFavorite: boolean;
@@ -14,15 +15,14 @@ export type ContactWithFavorite = ContactEntity & {
 function ContactsList({
 	userContacts,
 	profileImages,
+	workspacePublicId,
+	selectedAddressBook
 }: {
+	selectedAddressBook: string
+	onAddressBookChange: (value: string) => void
 	userContacts?: ContactWithFavorite[];
-	profileImages:
-		| {
-				error: string | null;
-				path: string | null;
-				signedUrl: string;
-		  }[]
-		| null;
+	profileImages: (ProfileImage | null)[];
+	workspacePublicId: string
 }) {
 	const params = useParams() as {
 		contactsPublicId?: string;
@@ -36,13 +36,16 @@ function ContactsList({
 				)
 			: (userContacts ?? []);
 
+	const finalFilteredUserContacts = selectedAddressBook === 'all'
+		? filteredUserContacts
+		: filteredUserContacts.filter((c) => c.addressBookId === selectedAddressBook);
 	return (
 		<div className="overflow-y-auto flex-col h-[calc(100vh-10rem)]">
-			{filteredUserContacts.map((c) => {
+			{finalFilteredUserContacts.map((c) => {
 				const imagePath =
 					c.profilePictureXs && profileImages
 						? (profileImages.find((img) =>
-								img.path?.includes(c.profilePictureXs as string),
+								img?.path?.includes(c.profilePictureXs as string),
 							)?.signedUrl ?? null)
 						: null;
 
@@ -52,13 +55,13 @@ function ContactsList({
 						className={[
 							"flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-background",
 							c.publicId === params.contactsPublicId
-								? "text-brand dark:text-white bg-brand-100 dark:bg-neutral-800 hover:text-brand hover:bg-brand-100"
+									? "text-brand dark:text-white bg-brand-100 dark:bg-neutral-800 hover:text-brand hover:bg-brand-100"
 								: "",
 						].join(" ")}
 						href={
 							params.labelSlug
-								? `/dashboard/contacts/label/${params.labelSlug}/contact/${c.publicId}`
-								: `/dashboard/contacts/${c.publicId}`
+								? `/w/${workspacePublicId}/dashboard/contacts/label/${params.labelSlug}/contact/${c.publicId}`
+								: `/w/${workspacePublicId}/dashboard/contacts/${c.publicId}`
 						}
 					>
 

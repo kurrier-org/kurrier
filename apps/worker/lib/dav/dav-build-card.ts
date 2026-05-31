@@ -1,8 +1,9 @@
 import { Buffer } from "node:buffer";
 import { lookup } from "mime-types";
 import { ContactEntity } from "@db";
-import { createSupabaseServiceClient } from "../create-client-ssr";
 import { getCountryDataList } from "countries-list";
+import {GetObjectCommand} from "@aws-sdk/client-s3";
+import {s3} from "../../lib/create-s3-client";
 
 function escapeVCardValue(value: string) {
 	return value
@@ -17,31 +18,27 @@ const phoneByCountry = new Map<string, string>(
 	countryData.map((c) => [c.iso2, String(c.phone).split(",")[0].trim()]),
 );
 
+
 async function addPhotoToVCard(lines: string[], contact: ContactEntity) {
 	if (!contact.profilePicture) return;
-	const path = String(contact.profilePicture);
-	const supabase = await createSupabaseServiceClient();
-	const { data, error } = await supabase.storage
-		.from("attachments")
-		.download(path);
-	if (error || !data) {
-		console.error("Failed to download profile picture", error);
-		return;
-	}
-	let buffer: Buffer;
 
-	if (typeof (data as any).arrayBuffer === "function") {
-		const ab = await (data as any).arrayBuffer();
-		buffer = Buffer.from(ab);
-	} else {
-		const chunks: Buffer[] = [];
-		for await (const chunk of data as any) {
-			chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-		}
-		buffer = Buffer.concat(chunks);
+	const command = new GetObjectCommand({
+		Bucket: process.env.S3_BUCKET!,
+		Key: contact.profilePicture,
+	});
+
+	const response = await s3.send(command);
+	if (!response.Body) return;
+
+	const chunks: Buffer[] = [];
+	for await (const chunk of response.Body as any) {
+		chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
 	}
+
+	const buffer = Buffer.concat(chunks);
 	const base64 = buffer.toString("base64");
-	const mime = lookup(contact.profilePicture);
+	const mime = lookup(contact.profilePicture) || "image/jpeg";
+
 	lines.push(`PHOTO;ENCODING=b;TYPE=${mime}:${base64}`);
 }
 

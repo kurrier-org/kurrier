@@ -29,11 +29,15 @@ export const getRedis = async () => {
 	const davQueue = new Queue("dav-worker", redisConnection);
 	const davEvents = new QueueEvents("dav-worker", redisConnection);
 
+	const commonWorkerQueue = new Queue("common-worker", redisConnection);
+	const commonWorkerEvents = new QueueEvents("common-worker", redisConnection);
+
 	await smtpEvents.waitUntilReady();
 	await sendMailEvents.waitUntilReady();
 	await searchIngestEvents.waitUntilReady();
 	await davEvents.waitUntilReady();
 	await migrationWorkerEvents.waitUntilReady();
+	await commonWorkerEvents.waitUntilReady();
 
 	return {
 		smtpQueue,
@@ -46,5 +50,7 @@ export const getRedis = async () => {
 		davEvents,
 		migrationWorkerQueue,
 		migrationWorkerEvents,
+		commonWorkerQueue,
+		commonWorkerEvents,
 	};
 };

@@ -36,7 +36,8 @@ export const deltaFetch = async (
 		.from(identities)
 		.where(eq(identities.id, identityId));
 	const ownerId = identity?.ownerId;
-	if (!ownerId) return;
+	const workspaceId = identity?.workspaceId;
+	if (!ownerId || !workspaceId) return;
 
 	const mailboxRows = await db
 		.select()
@@ -62,6 +63,7 @@ export const deltaFetch = async (
 		await syncMailbox({
 			client,
 			identityId,
+			workspaceId,
 			mailboxId: row.id,
 			path: String((row?.metaData as any)?.imap?.path ?? row.name),
 			window: 500,
@@ -81,6 +83,7 @@ export const deltaFetch = async (
 					);
 					return await parseAndStoreEmail(raw, {
 						ownerId,
+						workspaceId,
 						mailboxId: row.id,
 						rawStorageKey: `eml/${ownerId}/${row.id}/${uid}.eml`,
 						emlKey: String(msg.id),
@@ -212,6 +215,7 @@ export const deltaFetch = async (
 
 				await parseAndStoreEmail(raw, {
 					ownerId,
+					workspaceId,
 					mailboxId: row.id,
 					rawStorageKey: `eml/${ownerId}/${row.id}/${uid}.eml`,
 					emlKey: String(msg.id),

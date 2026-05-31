@@ -1,21 +1,35 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, {use, useEffect, useState} from "react";
 import { DatePicker, type DatePickerProps } from "@mantine/dates";
 import dayjs, { Dayjs } from "dayjs";
 import { setSidebarWidth } from "@/lib/utils";
-import { useParams, useRouter } from "next/navigation";
+import {useParams, usePathname, useRouter} from "next/navigation";
 import { CalendarEntity } from "@db";
 import CalendarSettings from "@/components/dashboard/calendars/calendar-settings";
 import type { CalendarViewType } from "@schema";
+import {Calendar1} from "lucide-react";
+import {
+	SidebarGroup,
+	SidebarGroupLabel,
+	SidebarMenu,
+	SidebarMenuButton,
+	SidebarMenuItem
+} from "@/components/ui/sidebar";
+import Link from "next/link";
 
 function CalendarSideBar({
 	defaultCalendar,
+	workspacePublicId,
+	userCalendarsPromise
 }: {
 	defaultCalendar: CalendarEntity;
+	workspacePublicId: string;
+	userCalendarsPromise: Promise<CalendarEntity[]>;
 }) {
 	const today = dayjs();
 	const params = useParams();
+	const userCalendars = use(userCalendarsPromise);
 
 	const router = useRouter();
 
@@ -57,11 +71,13 @@ function CalendarSideBar({
 		}
 	}, [params.year, params.month, params.day, today]);
 
-	const buildPath = (view: CalendarViewType, d: Dayjs) => {
+	const buildPath = (view: CalendarViewType, d: Dayjs, pathPublicId?: string) => {
+		const id = pathPublicId || publicId;
+
 		const year = d.year();
 		const month = d.month() + 1;
 		const day = d.date();
-		return `/dashboard/calendar/${publicId}/${view}/${year}/${month}/${day}`;
+		return `/w/${workspacePublicId}/dashboard/calendar/${id}/${view}/${year}/${month}/${day}`;
 	};
 
 	const dayRenderer: DatePickerProps["renderDay"] = (date) => {
@@ -98,7 +114,7 @@ function CalendarSideBar({
 		if (newDay.isSame(dayjs(), "day")) {
 			setSelected(today);
 			setCalendarDate(today.toDate());
-			router.push("/dashboard/calendar");
+			router.push(`/w/${workspacePublicId}/dashboard/calendar`);
 			return;
 		}
 		setSelected(newDay);
@@ -107,7 +123,7 @@ function CalendarSideBar({
 		const month = newDay.month() + 1;
 		const day = newDay.date();
 		router.push(
-			`/dashboard/calendar/${publicId}/${activeView}/${year}/${month}/${day}`,
+			`/w/${workspacePublicId}/dashboard/calendar/${publicId}/${activeView}/${year}/${month}/${day}`,
 		);
 	};
 
@@ -117,7 +133,28 @@ function CalendarSideBar({
 		router.push(buildPath(activeView, today));
 	};
 
-	return (
+	const pathName = usePathname();
+
+	const getCalendarUrl = (calendar: CalendarEntity) => {
+		const baseDay = selected ?? today;
+
+		if (calendar.publicId === defaultCalendar?.publicId) {
+			return `/w/${workspacePublicId}/dashboard/calendar`;
+		}
+
+		return buildPath(activeView, baseDay, calendar.publicId);
+	};
+
+	const mainItems = userCalendars.map((calendar) => ({
+		title: calendar.name,
+		url: getCalendarUrl(calendar),
+		icon: Calendar1,
+		calendarPublicId: calendar.publicId,
+	}));
+
+
+
+	return <div className={"flex flex-col gap-6"}>
 		<div className="-my-2 pb-4 flex justify-center items-center bg-white dark:bg-neutral-800 p-2 border-b border-neutral-200 dark:border-neutral-700">
 			<div className="flex justify-center w-full">
 				<div className="w-full rounded-xl bg-white dark:bg-neutral-800">
@@ -155,7 +192,35 @@ function CalendarSideBar({
 				</div>
 			</div>
 		</div>
-	);
+
+
+		<SidebarGroup>
+			<SidebarGroupLabel>My Calendars</SidebarGroupLabel>
+			<SidebarMenu>
+				{mainItems.map((item, index) => (
+					<SidebarMenuItem key={index}>
+						<SidebarMenuButton
+							asChild
+							tooltip={item.title}
+							className={
+								"dark:hover:bg-neutral-800 hover:bg-neutral-100 px-2.5 md:px-2 " +
+								(((pathName === item.url) || (pathName.includes(item.calendarPublicId)))
+									? "text-brand dark:text-white bg-brand-100 dark:bg-neutral-800 hover:text-brand hover:bg-brand-100"
+									: "")
+							}
+						>
+							<Link href={item.url}>
+								<item.icon />
+								<span>{item.title}</span>
+							</Link>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+				))}
+			</SidebarMenu>
+		</SidebarGroup>
+
+
+	</div>
 }
 
 export default CalendarSideBar;

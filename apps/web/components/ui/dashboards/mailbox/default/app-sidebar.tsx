@@ -3,7 +3,6 @@
 import * as React from "react";
 import { Command } from "lucide-react";
 
-import { NavUser } from "@/components/ui/dashboards/workspace/nav-user";
 import {
 	Sidebar,
 	SidebarContent,
@@ -21,13 +20,13 @@ import { MailboxNav } from "@/components/mailbox/default/mailbox-nav";
 import ComposeMail from "@/components/mailbox/default/compose-mail";
 import { PublicConfig } from "@schema";
 import KurrierLogo from "@/components/common/kurrier-logo";
-import { UserResponse } from "@supabase/supabase-js";
 import Link from "next/link";
 import { IconMoonStars, IconSun } from "@tabler/icons-react";
 import { useAppearance } from "@/components/providers/appearance-provider";
 import { useEffect, useMemo } from "react";
 import { Switch } from "@mantine/core";
 import ThemeColorPicker from "@/components/common/theme-color-picker";
+import {FetchIsSignedInResult} from "@/lib/actions/auth";
 
 const data = {
 	navMain: [],
@@ -47,7 +46,7 @@ export function AppSidebar({
 	mailboxList: MailboxEntity[];
 	identity: IdentityEntity;
 	publicConfig: PublicConfig;
-	user: UserResponse["data"]["user"];
+	user: FetchIsSignedInResult;
 	avatar: string;
 }) {
 	// Note: I'm using state to show active item.
@@ -125,7 +124,7 @@ export function AppSidebar({
 					</div>
 				</SidebarContent>
 				<SidebarFooter>
-					<NavUser user={user} />
+					{/*<NavUser user={user} />*/}
 				</SidebarFooter>
 			</Sidebar>
 
@@ -138,7 +137,7 @@ export function AppSidebar({
 						<span className="text-lg font-semibold">kurrier</span>
 					</div>
 					<div className={"-mt-1"}>
-						{/*<ComposeMail publicConfig={publicConfig} />*/}
+						{/*<ComposeMail publicConfig={publicConfig} identityMailboxes={identityMailboxes} />*/}
 					</div>
 				</SidebarHeader>
 				<SidebarContent>

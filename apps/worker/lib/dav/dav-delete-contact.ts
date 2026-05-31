@@ -27,9 +27,8 @@ export async function deleteContactViaHttp(opts: {
 	const url = `${base}/${collection}/${encodeURIComponent(davUri)}`;
 
 	const headers: Record<string, string> = {};
-	const ifMatch = `"${etag}"`;
 	if (etag) {
-		headers["If-Match"] = ifMatch;
+		headers["If-Match"] = `"${etag}"`;
 	}
 
 	let res = await digestFetch(url, {
@@ -75,17 +74,17 @@ export const deleteContact = async (payload: {
 	const [book] = await db
 		.select()
 		.from(addressBooks)
-		.where(
-			and(eq(addressBooks.ownerId, ownerId), eq(addressBooks.isDefault, true)),
-		);
+		.where(eq(addressBooks.ownerId, ownerId));
 
-	if (!book) return;
+	if (!book || !book.davAccountId) {
+		await db.delete(contacts).where(eq(contacts.id, contact.id));
+		return { success: true };
+	}
 
-	const parts = book.remotePath.split("/");
-	if (parts.length !== 3 || parts[0] !== "addressbooks") return;
-
-	const davUsername = parts[1];
-	const davUri = contact.davUri ?? `${contact.id}.vcf`;
+	if (!contact.davUri) {
+		await db.delete(contacts).where(eq(contacts.id, contact.id));
+		return { success: true };
+	}
 
 	const [secretRow] = await db
 		.select({
@@ -95,24 +94,35 @@ export const deleteContact = async (payload: {
 		.from(davAccounts)
 		.where(eq(davAccounts.id, book.davAccountId))
 		.leftJoin(secretsMeta, eq(davAccounts.secretId, secretsMeta.id))
-		.orderBy(desc(davAccounts.createdAt));
+		.orderBy(desc(davAccounts.createdAt))
+		.limit(1);
 
-	const secret = await getSecretAdmin(String(secretRow?.metaId));
+	if (!secretRow?.account) {
+		await db.delete(contacts).where(eq(contacts.id, contact.id));
+		return { success: true };
+	}
+
+	const secret = await getSecretAdmin(String(secretRow.metaId));
 	const passwordFromSecret = secret?.vault?.decrypted_secret;
+
 	if (!passwordFromSecret) {
 		console.error(
 			"No password found in secret for DAV account",
 			book.davAccountId,
 		);
-		return;
+		await db.delete(contacts).where(eq(contacts.id, contact.id));
+		return { success: true };
 	}
+
+	const davUsername = secretRow.account.username;
+	const collectionPath = `addressbooks/${davUsername}/${book.slug}`;
 
 	await deleteContactViaHttp({
 		davBaseUrl: `${process.env.DAV_URL}/dav.php`,
 		username: davUsername,
 		password: passwordFromSecret,
-		collectionPath: book.remotePath,
-		davUri,
+		collectionPath,
+		davUri: contact.davUri,
 		etag: contact.davEtag,
 	});
 

@@ -6,6 +6,7 @@ import { Pagination } from "@mantine/core";
 import { usePathname, useRouter } from "next/navigation";
 
 type LabelPaginationProps = {
+	workspacePublicId: string;
 	total: number;
 	pageSize: number;
 	page?: number;
@@ -15,6 +16,7 @@ type LabelPaginationProps = {
 };
 
 export default function LabelPagination({
+	workspacePublicId,
 	total,
 	pageSize,
 	page = 1,
@@ -30,7 +32,8 @@ export default function LabelPagination({
 
 	useEffect(() => {
 		if (activePage !== page && activePage) {
-			const base = pathname.match("/dashboard/mail") ? "/dashboard" : "";
+			// const base = pathname.match("/dashboard/mail") ? "/dashboard" : "";
+			const base = `/w/${workspacePublicId}/dashboard`;
 			const url = `${base}/mail/${identityPublicId}/${mailboxSlug}/label/${labelSlug}?page=${activePage}`;
 			router.push(url);
 		}

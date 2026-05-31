@@ -11,13 +11,13 @@ system:
     invite_from: noreply@_
 database:
     sqlite_file: /var/www/baikal/Specific/db/db.sqlite
-    backend: sqlite
+    backend: pgsql
     mysql_host: ''
     mysql_dbname: ''
     mysql_username: ''
     mysql_password: ''
-    encryption_key: d91aa22860b46307805b82e74cf3372d
-    pgsql_host: ''
-    pgsql_dbname: ''
-    pgsql_username: ''
-    pgsql_password: ''
+    encryption_key: 28a9c7577eab326f6d9e4ba356a3c10e
+    pgsql_host: baikal-postgres
+    pgsql_dbname: baikal
+    pgsql_username: baikal
+    pgsql_password: strong_baikal_password

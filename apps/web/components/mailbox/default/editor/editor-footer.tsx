@@ -1,30 +1,26 @@
+"use client";
+
 import React, { useRef, useState } from "react";
 import { ActionIcon, Button, Popover, Progress } from "@mantine/core";
 import { Baseline, Paperclip, X as IconX } from "lucide-react";
 import { RichTextEditor } from "@mantine/tiptap";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
-import { createClient } from "@/lib/supabase/client";
-import type { PublicConfig } from "@schema";
 import { v4 as uuidv4 } from "uuid";
-import { extension } from "mime-types";
 import { MessageEntity } from "@db";
 import ScheduleSend from "@/components/mailbox/default/editor/schedule-send";
+import {createAttachmentDownloadUrl, createAttachmentUploadUrl} from "@/lib/actions/uploads-actions";
 
 type UploadItem = {
 	name: string;
-	path: string;
 	size: number;
 	progress: number;
 	status: "uploading" | "done" | "error";
 	error?: string;
 };
 
-const SLOW_MODE = false;
-const SLOW_MS_PER_PERCENT = 20;
-
 const formatBytes = (n: number) => {
 	if (!Number.isFinite(n)) return "";
-	const units = ["B", "K", "MB", "GB"];
+	const units = ["B", "KB", "MB", "GB"];
 	let i = 0;
 	while (n >= 1024 && i < units.length - 1) {
 		n /= 1024;
@@ -35,121 +31,78 @@ const formatBytes = (n: number) => {
 
 export default function EditorFooter() {
 	const { state } = useDynamicContext<{
-		publicConfig: PublicConfig;
 		isPending: boolean;
 		message: MessageEntity;
 	}>();
+
 	const inputRef = useRef<HTMLInputElement | null>(null);
 	const [uploads, setUploads] = useState<UploadItem[]>([]);
-	const [attachments, setAttachments] = useState<Record<any, any>[]>([]);
+	const [attachments, setAttachments] = useState<any[]>([]);
 
 	const newMessageId = useRef(uuidv4());
 
 	const triggerUpload = () => inputRef.current?.click();
 
-	/**
-	 * Upload with XHR (so we get native progress events).
-	 * We animate progress updates to look smooth (and optionally slow).
-	 */
-	const uploadFile = async (
-		bucket: string,
-		path: string,
-		file: File,
-		token: string,
-	): Promise<void> => {
-		const url = `${state.publicConfig.API_PUBLIC_URL}/storage/v1/object/${bucket}/${path}`;
+	const uploadFile = async (file: File): Promise<void> => {
+		const { uploadUrl, key } = await createAttachmentUploadUrl({
+			fileName: file.name,
+			contentType: file.type,
+			messageId: newMessageId.current,
+		});
 
 		await new Promise<void>((resolve, reject) => {
 			const xhr = new XMLHttpRequest();
-			xhr.open("POST", url);
-			xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-			xhr.setRequestHeader("x-upsert", "true");
-
-			let lastPct = 0;
-
-			const animateTo = (target: number) => {
-				if (!SLOW_MODE) {
-					lastPct = target;
-					setUploads((prev) =>
-						prev.map((u) =>
-							u.path === path ? { ...u, progress: lastPct } : u,
-						),
-					);
-					return;
-				}
-				const step = () => {
-					if (lastPct < target) {
-						lastPct += 1;
-						setUploads((prev) =>
-							prev.map((u) =>
-								u.path === path ? { ...u, progress: lastPct } : u,
-							),
-						);
-						setTimeout(step, SLOW_MS_PER_PERCENT);
-					}
-				};
-				step();
-			};
+			xhr.open("PUT", uploadUrl);
+			xhr.setRequestHeader(
+				"Content-Type",
+				file.type || "application/octet-stream"
+			);
 
 			xhr.upload.onprogress = (evt) => {
 				if (!evt.lengthComputable) return;
-				const pct = Math.max(
-					0,
-					Math.min(100, Math.round((evt.loaded / evt.total) * 100)),
+				const pct = Math.round((evt.loaded / evt.total) * 100);
+
+				setUploads((prev) =>
+					prev.map((u) =>
+						u.name === file.name ? { ...u, progress: pct } : u
+					)
 				);
-				if (pct > lastPct) animateTo(pct);
 			};
 
 			xhr.onload = () => {
-				if (xhr.status >= 200 && xhr.status < 300) {
-					animateTo(100);
-					setAttachments((prev) => [
-						...prev,
-						{
-							path,
-							sizeBytes: file.size,
-							messageId: newMessageId.current,
-							bucketId: bucket,
-							filenameOriginal: file.name,
-							contentType: file.type,
-						},
-					]);
-
-					resolve();
-				} else {
-					reject(xhr.responseText || `HTTP ${xhr.status}`);
-				}
+				if (xhr.status >= 200 && xhr.status < 300) resolve();
+				else reject(`Upload failed: ${xhr.status}`);
 			};
 
 			xhr.onerror = () => reject("Network error");
+
 			xhr.send(file);
 		});
+
+		setAttachments((prev) => [
+			...prev,
+			{
+				path: key,
+				sizeBytes: file.size,
+				messageId: newMessageId.current,
+				// bucketId: process.env.NEXT_PUBLIC_S3_BUCKET,
+				filenameOriginal: file.name,
+				contentType: file.type,
+			},
+		]);
 	};
 
-	const onFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+	const onFileSelect = async (
+		event: React.ChangeEvent<HTMLInputElement>
+	) => {
 		const files = event.target.files;
 		if (!files?.length) return;
 
-		const supabase = createClient(state.publicConfig);
-		const { data } = await supabase.auth.getSession();
-		const token = data.session?.access_token;
-		const userId = data.session?.user?.id;
-		if (!token || !userId) {
-			alert("No auth session found");
-			event.target.value = "";
-			return;
-		}
-
-		const bucket = "attachments";
-
 		for (const file of Array.from(files)) {
-			const path = `private/${userId}/${newMessageId.current}/${uuidv4()}.${extension(file.type)}`;
-
 			setUploads((prev) => [
 				...prev,
 				{
 					name: file.name,
-					path,
 					size: file.size,
 					progress: 0,
 					status: "uploading",
@@ -157,19 +110,27 @@ export default function EditorFooter() {
 			]);
 
 			try {
-				await uploadFile(bucket, path, file, token);
+				await uploadFile(file);
+
 				setUploads((prev) =>
 					prev.map((u) =>
-						u.path === path ? { ...u, progress: 100, status: "done" } : u,
-					),
+						u.name === file.name
+							? { ...u, progress: 100, status: "done" }
+							: u
+					)
 				);
 			} catch (err) {
 				setUploads((prev) =>
 					prev.map((u) =>
-						u.path === path
-							? { ...u, progress: 100, status: "error", error: String(err) }
-							: u,
-					),
+						u.name === file.name
+							? {
+								...u,
+								progress: 100,
+								status: "error",
+								error: String(err),
+							}
+							: u
+					)
 				);
 			}
 		}
@@ -177,59 +138,75 @@ export default function EditorFooter() {
 		event.target.value = "";
 	};
 
-	const removeUpload = (path: string) => {
-		setUploads((prev) => prev.filter((u) => u.path !== path));
+	const removeUpload = (name: string) => {
+		setUploads((prev) => prev.filter((u) => u.name !== name));
 	};
+	console.log("isPending", state)
 
 	return (
 		<>
 			{uploads.length > 0 && (
 				<div className="w-full rounded-md p-2 flex flex-col gap-2">
 					{uploads.map((u) => {
-						const showProgress = u.status === "uploading" && u.progress < 100;
+						const showProgress =
+							u.status === "uploading" && u.progress < 100;
+
 						return (
 							<div
-								key={u.path}
-								className="flex justify-between items-center w-full max-w-xl bg-zinc-100 rounded px-4 py-2"
+								key={u.name}
+								className="flex justify-between items-center w-full max-w-xl bg-zinc-100 dark:bg-neutral-900 rounded-xl px-4 py-3"
 							>
-								<div className="flex items-center gap-2 min-w-0">
-									<a
-										href="#"
-										className="text-brand font-semibold truncate max-w-[18rem]"
-										title={u.name}
-										onClick={(e) => e.preventDefault()}
-									>
-										{u.name}
-									</a>
-									<span className="text-sm text-zinc-700">
-										({formatBytes(u.size)})
-									</span>
+								<div className="flex items-center gap-3 min-w-0 flex-1">
+									<Paperclip size={16} className="text-neutral-500 shrink-0" />
+
+									<div className="min-w-0 flex-1">
+										{u.status === "done" ? (
+											<button
+												type="button"
+												className="truncate font-semibold text-sm text-base-600 hover:underline text-left w-full underline"
+												onClick={async () => {
+													const attachment = attachments.find(
+														(a) => a.filenameOriginal === u.name
+													);
+													if (!attachment) return;
+
+													const { url } = await createAttachmentDownloadUrl(
+														attachment.path
+													);
+
+													window.open(url, "_blank");
+												}}
+											>
+												{u.name}
+											</button>
+										) : (
+											<div className="truncate font-semibold text-sm text-neutral-900 dark:text-neutral-100">
+												{u.name}
+											</div>
+										)}
+
+										<div className="text-xs text-neutral-500">
+											{formatBytes(u.size)}
+										</div>
+									</div>
 								</div>
 
-								<div className="flex items-center gap-2">
+								<div className="flex items-center gap-3">
 									{showProgress && (
-										<div className="w-40">
+										<div className="w-32">
 											<Progress
 												value={u.progress}
 												size="sm"
 												radius="xl"
-												color="blue"
 											/>
 										</div>
 									)}
-									{u.status === "error" && (
-										<span
-											className="text-xs text-red-600 truncate max-w-[14rem]"
-											title={u.error}
-										>
-											{u.error}
-										</span>
-									)}
+
+
 									<ActionIcon
 										variant="subtle"
 										color="gray"
-										onClick={() => removeUpload(u.path)}
-										title="Remove"
+										onClick={() => removeUpload(u.name)}
 									>
 										<IconX size={16} />
 									</ActionIcon>
@@ -246,7 +223,7 @@ export default function EditorFooter() {
 						loading={!!state.isPending}
 						size="sm"
 						type="submit"
-						className={"!rounded-l-4xl !rounded-r-xs"}
+						className="!rounded-l-4xl !rounded-r-xs"
 					>
 						Send
 					</Button>
@@ -255,7 +232,7 @@ export default function EditorFooter() {
 
 				<Popover position="top-start" withArrow shadow="md">
 					<Popover.Target>
-						<ActionIcon variant="transparent" aria-label="Formatting">
+						<ActionIcon variant="transparent">
 							<Baseline />
 						</ActionIcon>
 					</Popover.Target>
@@ -290,28 +267,30 @@ export default function EditorFooter() {
 					onClick={triggerUpload}
 					variant="transparent"
 					className="mx-2"
-					aria-label="Attach files"
 				>
 					<Paperclip size={18} />
 				</ActionIcon>
 
 				{state?.message && (
 					<input
-						type={"hidden"}
-						name={"originalMessageId"}
-						value={state.message?.id}
+						type="hidden"
+						name="originalMessageId"
+						value={state.message.id}
 					/>
 				)}
+
 				<input
-					type={"hidden"}
-					name={"newMessageId"}
+					type="hidden"
+					name="newMessageId"
 					value={newMessageId.current}
 				/>
+
 				<input
 					type="hidden"
 					name="attachments"
 					value={JSON.stringify(attachments)}
 				/>
+
 				<input
 					ref={inputRef}
 					type="file"

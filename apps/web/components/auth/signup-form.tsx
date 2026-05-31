@@ -127,6 +127,16 @@ export function SignupForm({
 									</p>
 								</div>
 
+								<div className="grid gap-3">
+									<Label htmlFor="email">Workspace Name</Label>
+									<Input
+										id="workspaceName"
+										name="workspaceName"
+										placeholder="Default Workspace"
+										required
+									/>
+								</div>
+
 								{formState.error && (
 									<div className={"text-center"}>
 										<span className="text-sm text-red-600">

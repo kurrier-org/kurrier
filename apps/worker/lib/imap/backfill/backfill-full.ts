@@ -5,6 +5,9 @@ import { parseAndStoreEmail } from "../../message-payload-parser";
 import { initSmtpClient } from "../../../lib/imap/imap-client";
 import { defaultImapQuota } from "@schema";
 import dayjs from "dayjs";
+import {
+	davCreateCalendarForIdentity
+} from "../../../lib/dav/calendar/dav-create-addressbook-calendar-for-identity";
 
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
@@ -56,6 +59,7 @@ type BackfillMailboxOpts = {
 	client: ImapFlow;
 	identityId: string;
 	ownerId: string;
+	workspaceId: string;
 	mailboxId: string;
 	path: string;
 	window?: number;
@@ -75,6 +79,7 @@ async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 		window = DEFAULT_WINDOW,
 		politeWaitMs = 0,
 		quota,
+		workspaceId
 	} = opts;
 
 	if (quota.limit <= 0) return;
@@ -119,6 +124,7 @@ async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 
 	let cursor = Number(sync.backfillCursorUid ?? 0);
 
+	// Nothing left to backfill for this mailbox
 	if (cursor <= 0) {
 		if (top <= 0) {
 			await db
@@ -190,6 +196,7 @@ async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 		await parseAndStoreEmail(raw, {
 			ownerId,
 			mailboxId,
+			workspaceId,
 			rawStorageKey: `eml/${ownerId}/${mailboxId}/${m.id}.eml`,
 			emlKey: String(m.id),
 			metaData: {
@@ -248,6 +255,12 @@ export const startFullBackfill = async (
 	});
 
 	for (const identity of filteredRows) {
+		// await davCreateCalendarForIdentity(identity.id)
+		await davCreateCalendarForIdentity({
+			identityId: identity.id,
+			userId: identity.ownerId,
+			workspaceId: identity.workspaceId,
+		})
 		const dailyQuotaBytes = getDailyQuota(identity as IdentityEntity);
 		const quota = getOrInitQuota(identity.id, dailyQuotaBytes);
 
@@ -322,6 +335,7 @@ export const startFullBackfillForIdentity = async (
 			if (!path) continue;
 			await backfillMailboxFull({
 				client,
+				workspaceId: identity.workspaceId,
 				identityId,
 				ownerId,
 				mailboxId: row.id,

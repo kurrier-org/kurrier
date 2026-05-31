@@ -1,4 +1,4 @@
-import { db, identities, mailboxes, mailboxSync } from "@db";
+import {db, identities, mailboxes, mailboxSync} from "@db";
 import { eq, inArray, sql } from "drizzle-orm";
 import { ImapFlow } from "imapflow";
 import slugify from "@sindresorhus/slugify";
@@ -19,6 +19,7 @@ import { ensureTrashFolder } from "./discover-trash";
 export const discoverMailboxes = async (
 	client: ImapFlow,
 	identityId: string,
+	workspaceId: string,
 ) => {
 	const [identity] = await db
 		.select()
@@ -88,6 +89,7 @@ export const discoverMailboxes = async (
 
 		const valuesBase = {
 			ownerId: identity.ownerId,
+			workspaceId,
 			identityId: identity.id,
 			parentId,
 			name,

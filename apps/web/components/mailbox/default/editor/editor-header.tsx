@@ -6,7 +6,7 @@ import {
 	Group,
 	Text,
 	Input,
-	FocusTrap,
+	FocusTrap
 } from "@mantine/core";
 import { Forward, Reply } from "lucide-react";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
@@ -351,26 +351,26 @@ function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 			</div>
 			<div className={"border-b flex justify-start items-center px-2 gap-2"}>
 				<span className="text-sm text-muted-foreground">From</span>
-					<div className={"my-2"}>
-						<Select
-							placeholder="Pick value"
-							size="sm"
-							variant="unstyled"
-							w={260}
-							name={"identityPublicId"}
-							onChange={(publicId) => {
-								if (publicId) setIdentityPublicId(publicId);
-							}}
-							value={identityPublicId || null}
-							data={fromOptions}
-							comboboxProps={{
-								withinPortal: true,
-								position: "bottom-start",
-								offset: 8,
-								zIndex: 3000,
-							}}
-						/>
-					</div>
+				<div className={"my-2"}>
+					<Select
+						placeholder="Pick value"
+						size="sm"
+						variant="unstyled"
+						w={260}
+						name={"identityPublicId"}
+						onChange={(publicId) => {
+							if (publicId) setIdentityPublicId(publicId);
+						}}
+						value={identityPublicId || null}
+						data={fromOptions}
+						comboboxProps={{
+							withinPortal: true,
+							position: "bottom-start",
+							offset: 8,
+							zIndex: 3000,
+						}}
+					/>
+				</div>
 			</div>
 		</>
 	);

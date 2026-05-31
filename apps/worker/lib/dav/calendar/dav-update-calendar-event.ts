@@ -1,52 +1,42 @@
-import DigestFetch from "digest-fetch";
 import {
 	db,
 	calendarEvents,
 	calendars,
-	davAccounts,
-	secretsMeta,
-	getSecretAdmin,
-	calendarEventAttendees,
+	calendarEventAttendees, davAccounts, secretsMeta, getSecretAdmin,
 } from "@db";
-import { desc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getDayjsTz } from "@common";
-import { normalizeEtag } from "../sync/dav-sync-db";
 import { buildICalEvent } from "./dav-build-cal-event";
 import { getRedis } from "../../../lib/get-redis";
+import DigestFetch from "digest-fetch";
+import {normalizeEtag} from "../../../lib/dav/sync/dav-sync-db";
 
-export async function updateCalendarObjectViaHttp(opts: {
+async function updateCalendarObjectViaHttp(opts: {
 	icalData: string;
 	davBaseUrl: string;
 	username: string;
 	password: string;
-	collectionPath: string;
+	calendarSlug: string;
 	davUri: string;
 	etag?: string | null;
 }) {
-	const {
-		icalData,
-		davBaseUrl,
-		username,
-		password,
-		collectionPath,
-		davUri,
-		etag,
-	} = opts;
+	const { icalData, davBaseUrl, username, password, calendarSlug, davUri, etag } =
+		opts;
 
 	const client = new DigestFetch(username, password);
 	const digestFetch = client.fetch.bind(client);
 
 	const base = davBaseUrl.replace(/\/$/, "");
-	const collection = collectionPath.replace(/^\//, "");
-	const url = `${base}/${collection}/${encodeURIComponent(davUri)}`;
+	const url = `${base}/calendars/${username}/${calendarSlug}/${encodeURIComponent(
+		davUri,
+	)}`;
 
 	const headers: Record<string, string> = {
 		"Content-Type": "text/calendar; charset=utf-8",
 	};
 
-	const ifMatch = etag ? `"${etag}"` : null;
-	if (ifMatch) {
-		headers["If-Match"] = ifMatch;
+	if (etag) {
+		headers["If-Match"] = `"${etag}"`;
 	}
 
 	let res = await digestFetch(url, {
@@ -66,7 +56,7 @@ export async function updateCalendarObjectViaHttp(opts: {
 
 	if (!(res.status === 200 || res.status === 204)) {
 		const text = await res.text().catch(() => "");
-		console.error(
+		throw new Error(
 			`CalDAV PUT (update) failed (${res.status} ${res.statusText}): ${text}`,
 		);
 	}
@@ -74,6 +64,9 @@ export async function updateCalendarObjectViaHttp(opts: {
 	const newEtag = res.headers.get("etag") ?? null;
 	return { etag: normalizeEtag(newEtag) };
 }
+
+
+
 
 export const updateCalendarEvent = async (
 	eventId: string,
@@ -92,33 +85,24 @@ export const updateCalendarEvent = async (
 		.from(calendars)
 		.where(eq(calendars.id, event.calendarId));
 
-	if (!calendar) return null;
-
-	const parts = calendar.remotePath.split("/");
-	if (parts.length !== 3 || parts[0] !== "calendars") return null;
-
-	const davUsername = parts[1];
-	const davUri = event.davUri ?? `${event.id}.ics`;
+	if (!calendar || !calendar.davAccountId) return null;
 
 	const [secretRow] = await db
 		.select({
-			account: davAccounts,
+			username: davAccounts.username,
 			metaId: secretsMeta.id,
 		})
 		.from(davAccounts)
 		.where(eq(davAccounts.id, calendar.davAccountId))
-		.leftJoin(secretsMeta, eq(davAccounts.secretId, secretsMeta.id))
-		.orderBy(desc(davAccounts.createdAt));
+		.leftJoin(secretsMeta, eq(davAccounts.secretId, secretsMeta.id));
 
-	const secret = await getSecretAdmin(String(secretRow?.metaId));
-	const passwordFromSecret = secret?.vault?.decrypted_secret;
-	if (!passwordFromSecret) {
-		console.error(
-			"No password found in secret for DAV account",
-			calendar.davAccountId,
-		);
-		return null;
-	}
+	if (!secretRow?.metaId) return null;
+
+	const secret = await getSecretAdmin(String(secretRow.metaId));
+	const password = secret?.vault?.decrypted_secret;
+	if (!password) return null;
+
+
 
 	const guests = await db
 		.select()
@@ -128,22 +112,25 @@ export const updateCalendarEvent = async (
 	const dayjsTz = getDayjsTz(calendar.timezone || "UTC");
 	const icalData = buildICalEvent(event, dayjsTz, guests);
 
+	const davUri = event.davUri ?? `${event.id}.ics`;
+
 	const { etag: newEtag } = await updateCalendarObjectViaHttp({
 		icalData,
 		davBaseUrl: `${process.env.DAV_URL}/dav.php`,
-		username: davUsername,
-		password: passwordFromSecret,
-		collectionPath: calendar.remotePath,
+		username: secretRow.username,
+		password,
+		calendarSlug: calendar.slug,
 		davUri,
 		etag: event.davEtag,
 	});
+
 
 	await db
 		.update(calendarEvents)
 		.set({
 			davUri,
-			rawIcs: icalData,
 			davEtag: newEtag ?? event.davEtag,
+			rawIcs: icalData,
 			updatedAt: new Date(),
 		})
 		.where(eq(calendarEvents.id, event.id));

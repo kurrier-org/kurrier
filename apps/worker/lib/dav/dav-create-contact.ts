@@ -49,6 +49,7 @@ export async function createContactViaHttp(opts: {
 	return { etag };
 }
 
+
 export const createContact = async (contactId: string, ownerId: string) => {
 	const [contact] = await db
 		.select()
@@ -60,17 +61,9 @@ export const createContact = async (contactId: string, ownerId: string) => {
 	const [book] = await db
 		.select()
 		.from(addressBooks)
-		.where(
-			and(eq(addressBooks.ownerId, ownerId), eq(addressBooks.isDefault, true)),
-		);
+		.where(eq(addressBooks.ownerId, ownerId),);
 
 	if (!book) return;
-	const parts = book.remotePath.split("/");
-	if (parts.length !== 3 || parts[0] !== "addressbooks") return;
-
-	const davUsername = parts[1];
-
-	const carddata = await buildVCard(contact);
 
 	const [secretRow] = await db
 		.select({
@@ -82,8 +75,14 @@ export const createContact = async (contactId: string, ownerId: string) => {
 		.leftJoin(secretsMeta, eq(davAccounts.secretId, secretsMeta.id))
 		.orderBy(desc(davAccounts.createdAt));
 
-	const secret = await getSecretAdmin(String(secretRow?.metaId));
+	if (!secretRow?.account) return;
+
+	const davUsername = secretRow.account.username;
+	const collectionPath = `addressbooks/${davUsername}/${book.slug}`;
+
+	const secret = await getSecretAdmin(String(secretRow.metaId));
 	const passwordFromSecret = secret?.vault?.decrypted_secret;
+
 	if (!passwordFromSecret) {
 		console.error(
 			"No password found in secret for DAV account",
@@ -92,13 +91,15 @@ export const createContact = async (contactId: string, ownerId: string) => {
 		return;
 	}
 
+	const carddata = await buildVCard(contact);
 	const davUri = `${contact.id}.vcf`;
+
 	const { etag } = await createContactViaHttp({
 		carddata,
 		davBaseUrl: `${process.env.DAV_URL}/dav.php`,
 		username: davUsername,
 		password: passwordFromSecret,
-		collectionPath: book.remotePath,
+		collectionPath,
 		davUri,
 	});
 

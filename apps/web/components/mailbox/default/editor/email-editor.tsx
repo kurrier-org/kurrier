@@ -79,11 +79,13 @@ const EmailEditor = forwardRef<EmailEditorHandle, Props>(
 			}
 		}, [formState]);
 
+
 		return (
 			<>
-				<div className="mt-4" tabIndex={-1}>
+				<div className={"mt-4"} tabIndex={-1}>
 					<DynamicContextProvider
-						initialState={{ isPending, message, publicConfig, showEditorMode, identityMailboxes }}
+						initialState={{ isPending, message, publicConfig, showEditorMode, identityMailboxes}}
+						syncOnChange
 					>
 						<Form action={formAction}>
 							<input

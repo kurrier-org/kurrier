@@ -18,6 +18,7 @@ type MonthGridProps = {
 	byDayMap: Map<string, EventSlotFragment[]>;
 	attendeeContacts: Promise<ComposeContact[]>;
 	allDayByDay: Map<string, AllDayFragment[]>;
+	workspacePublicId: string
 };
 
 const MAX_ITEMS_PER_DAY = 4;
@@ -27,6 +28,7 @@ export default function MonthGrid({
 	attendees,
 	byDayMap,
 	attendeeContacts,
+	workspacePublicId
 }: MonthGridProps) {
 	const { state, setState } = useDynamicContext<CalendarState>();
 	const params = useParams();
@@ -85,7 +87,7 @@ export default function MonthGrid({
 		const month = d.month() + 1;
 		const day = d.date();
 		router.push(
-			`/dashboard/calendar/${state.defaultCalendar.publicId}/day/${year}/${month}/${day}`,
+			`/w/${workspacePublicId}/dashboard/calendar/${state.defaultCalendar.publicId}/day/${year}/${month}/${day}`,
 		);
 	};
 

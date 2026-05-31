@@ -92,7 +92,7 @@ export default function ComposeMail({
 					<PencilLine size={16} />
 				</ActionIcon>
 			) : (
-				<Button size="lg" onClick={handleOpen}>
+				<Button size="lg" onClick={handleOpen} disabled={!params.identityPublicId}>
 					<MailPlus className="h-5 w-5" />
 					Compose
 				</Button>
@@ -167,6 +167,7 @@ export default function ComposeMail({
 							onClick={(e) => e.stopPropagation()}
 						>
 							<div className="flex items-center justify-between border-b px-4 py-2">
+								{/*<div className="text-sm font-medium">New Message</div>*/}
 								<div className="flex items-center gap-2">
 									<IconBtn
 										label={minimized ? "Restore" : "Minimize"}

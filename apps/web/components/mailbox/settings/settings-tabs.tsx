@@ -28,14 +28,14 @@ function SidebarItem({ icon, label, href }: {
     );
 }
 
-function SettingsTabs() {
+function SettingsTabs({workspacePublicId}: {workspacePublicId: string}) {
 
     const params = useParams()
 
     const tabs = useMemo(
         () => [
-            { key: "general" as const, label: "General", icon: <Cog size={16} />, href: `/dashboard/mail/${params.identityPublicId}/settings` },
-            { key: "rules" as const, label: "Rules", icon: <Filter size={16} />, href: `/dashboard/mail/${params.identityPublicId}/settings/rules` },
+            { key: "general" as const, label: "General", icon: <Cog size={16} />, href: `/w/${workspacePublicId}/dashboard/mail/${params.identityPublicId}/settings` },
+            { key: "rules" as const, label: "Rules", icon: <Filter size={16} />, href: `/w/${workspacePublicId}/dashboard/mail/${params.identityPublicId}/settings/rules` },
             // { key: "subscriptions" as const, label: "Subscriptions", icon: <Bell size={16} />, href: `/dashboard/mail/${params.identityPublicId}/settings/subscriptions` },
             // { key: "danger" as const, label: "Danger zone", icon: <Trash2 size={16} />, href: `/dashboard/mail/${params.identityPublicId}/settings/danger` },
         ],

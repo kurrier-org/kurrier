@@ -13,9 +13,11 @@ import type { BaseFormProps, FormState } from "@schema";
 import { Button as MantineButton, Alert } from "@mantine/core";
 import { IconLoader2 } from "@tabler/icons-react";
 import { ReusableFormItems } from "@/components/common/reusable-form-items";
+import {toast} from "sonner";
 
 export type ReusableFormProps = BaseFormProps & {
 	submitButtonProps?: SubmitButtonProps;
+	notify?: NotifyProps;
 };
 
 type SubmitButtonProps = {
@@ -26,11 +28,19 @@ type SubmitButtonProps = {
 	buttonProps?: ComponentProps<typeof MantineButton>;
 };
 
+export type NotifyProps = {
+	kind?: "toast" | "alert";
+	successMessage?: string;
+	errorMessage?: string;
+	toastProps?: Parameters<typeof toast>[1];
+};
+
 export function ReusableForm({
 	fields,
 	action,
 	onChange,
 	onSuccess,
+	notify = { kind: "alert" },
 	submitButtonProps = {
 		submitLabel: "Submit",
 		wrapperClasses: "mt-8",
@@ -45,6 +55,7 @@ export function ReusableForm({
 		FormData
 	>(action, {});
 	const formRef = useRef<HTMLFormElement>(null);
+	const hasSubmittedRef = useRef(false);
 
 	const errors = useMemo(() => formState?.errors || {}, [formState]);
 	const error = useMemo(() => formState?.error || null, [formState]);
@@ -75,11 +86,34 @@ export function ReusableForm({
 		</MantineButton>
 	);
 
+	const notifyKind = notify?.kind ?? "alert";
+
+	useEffect(() => {
+		if (notifyKind !== "toast") return;
+		if (!hasSubmittedRef.current) return;
+		if (isPending) return;
+		if (!formState) return;
+
+		if (formState.success) {
+			const msg = notify?.successMessage ?? formState.message;
+			if (msg) toast.success(msg, notify?.toastProps);
+			return;
+		}
+
+		// const err = notify?.errorMessage ?? formState.error;
+		const err = formState.error ?? notify?.errorMessage;
+		if (err) toast.error(err, notify?.toastProps);
+	}, [notifyKind, isPending, formState, notify, formKey]);
+
 	return (
 		<Form
 			key={formKey}
 			ref={formRef}
-			action={formAction}
+			// action={formAction}
+			action={(fd) => {
+				hasSubmittedRef.current = true;
+				return formAction(fd);
+			}}
 			onChange={onChange ?? undefined}
 		>
 			<ReusableFormItems
@@ -89,13 +123,13 @@ export function ReusableForm({
 				errorClasses={errorClasses}
 			/>
 
-			{error && (
+			{notifyKind === "alert" && error && (
 				<Alert color="red" variant="light" className="mt-3 -mb-4">
 					<span className={`${errorClasses} text-sm`}>Error: {error}</span>
 				</Alert>
 			)}
 
-			{message && (
+			{notifyKind === "alert" && message && (
 				<Alert
 					color="green"
 					variant="light"

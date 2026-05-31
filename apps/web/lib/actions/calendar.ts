@@ -1,14 +1,15 @@
 "use server";
-import { rlsClient } from "@/lib/actions/clients";
+import {getWorkspaceId, rlsClient} from "@/lib/actions/clients";
 import {
-    CalendarEventAttendeeEntity,
-    CalendarEventEntity,
-    CalendarEventInsertSchema,
-    calendarEvents,
-    CalendarEventUpdateSchema,
-    calendars,
-    contacts,
-    identities, MessageAttachmentEntity,
+	addressBooks,
+	CalendarEventAttendeeEntity,
+	CalendarEventEntity,
+	CalendarEventInsertSchema,
+	calendarEvents,
+	CalendarEventUpdateSchema,
+	calendars,
+	contacts,
+	identities, MessageAttachmentEntity,
 } from "@db";
 import {
 	and,
@@ -20,7 +21,7 @@ import {
 	ilike,
 	sql,
 	isNull,
-	not,
+	not, desc, isNotNull
 } from "drizzle-orm";
 import {
 	AllDayFragment,
@@ -28,7 +29,7 @@ import {
 	CalendarViewType,
 	ComposeContact,
 	EventSlotFragment,
-	FormState,
+	FormState, getServerEnv,
 	handleAction,
 	SlotKey,
 	ViewParams,
@@ -36,54 +37,46 @@ import {
 import { decode } from "decode-formdata";
 import { revalidatePath } from "next/cache";
 import { Dayjs } from "dayjs";
-import { cache } from "react";
 import { getRedis } from "@/lib/actions/get-redis";
 import { dayjsExtended, getDayjsTz } from "@common/day-js-extended";
 import { calendarEventAttendees } from "@db";
 import { PgTransaction } from "drizzle-orm/pg-core";
-import { createClient } from "@/lib/supabase/server";
 import { RRule } from "rrule";
+import {GetObjectCommand} from "@aws-sdk/client-s3";
+import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
+import {s3} from "@/lib/create-s3-client";
+const { S3_BUCKET } = getServerEnv();
 
-export const fetchDefaultCalendar = cache(async () => {
+
+export const fetchDefaultCalendar = async (calendarPublicId?: string) => {
 	const rls = await rlsClient();
-	const [defaultCalendar] = await rls((tx) =>
-		tx.select().from(calendars).where(eq(calendars.isDefault, true)),
-	);
-	return defaultCalendar;
-});
 
-export const fetchCalendarEventsForView = async (
-	calendarId: string,
-	tz: string,
-	view: CalendarViewType,
-	params?: ViewParams,
-) => {
-	const { from, to } = await getRangeForCalendarView(tz, view, params);
-	return fetchCalendarEvents(calendarId, from.toDate(), to.toDate());
-};
+	if (calendarPublicId) {
+		const [cal] = await rls((tx) =>
+			tx
+				.select()
+				.from(calendars)
+				.where(and(
+					eq(calendars.publicId, calendarPublicId),
+					isNotNull(calendars.identityId)
+				))
+				.limit(1)
+		);
 
-export const fetchCalendarEvents = async (
-	calendarId: string,
-	from?: Date | string,
-	to?: Date | string,
-) => {
-	const rls = await rlsClient();
-	const fromDate = from ? new Date(from) : undefined;
-	const toDate = to ? new Date(to) : undefined;
-	const events = await rls((tx) =>
+		return cal ?? null;
+	}
+
+	const visibleCalendars = await rls((tx) =>
 		tx
 			.select()
-			.from(calendarEvents)
-			.where(
-				and(
-					eq(calendarEvents.calendarId, calendarId),
-					fromDate ? gte(calendarEvents.endsAt, fromDate) : undefined,
-					toDate ? lte(calendarEvents.startsAt, toDate) : undefined,
-				),
-			),
+			.from(calendars)
+			.where(isNotNull(calendars.identityId))
+			.orderBy(desc(calendars.createdAt))
 	);
-	return events;
+
+	return visibleCalendars[0] ?? null;
 };
+
 
 export async function fetchEventAttendees(
 	eventIds: string[],
@@ -94,7 +87,9 @@ export async function fetchEventAttendees(
 		tx
 			.select()
 			.from(calendarEventAttendees)
-			.where(inArray(calendarEventAttendees.eventId, eventIds)),
+			.where(and(
+				inArray(calendarEventAttendees.eventId, eventIds)
+			)),
 	);
 	const result: Record<string, CalendarEventAttendeeEntity[]> = {};
 
@@ -112,20 +107,23 @@ export type FetchEventAttendeesResult = Awaited<
 	ReturnType<typeof fetchEventAttendees>
 >;
 
+
 export const fetchOrganizers = async () => {
 	const rls = await rlsClient();
-	const allIdentities = await rls((tx) => tx.select().from(identities));
 
-	return allIdentities.map((identity) => {
-		return {
-			value: identity.id,
-			displayName: identity.displayName,
-			label: identity.displayName
-				? `${identity.displayName} <${identity.value}>`
-				: identity.value,
-		};
-	});
+	const allIdentities = await rls((tx) =>
+		tx.select().from(identities)
+	);
+
+	return allIdentities.map((identity) => ({
+		value: identity.id,
+		displayName: identity.displayName,
+		label: identity.displayName
+			? `${identity.displayName} <${identity.value}>`
+			: identity.value,
+	}));
 };
+
 
 type UiGuest = {
 	email: string;
@@ -149,13 +147,15 @@ type SyncEventAttendeesArgs = {
 	attendeePayload: AttendeePayload | null;
 };
 
+
+
 export async function syncEventAttendees({
-	tx,
-	eventId,
-	organizerEmail,
-	organizerName,
-	attendeePayload,
-}: SyncEventAttendeesArgs) {
+											 tx,
+											 eventId,
+											 organizerEmail,
+											 organizerName,
+											 attendeePayload,
+										 }: SyncEventAttendeesArgs) {
 	if (!attendeePayload) return;
 
 	const allGuests: UiGuest[] = [
@@ -194,19 +194,12 @@ export async function syncEventAttendees({
 		normalizedOrganizer = existingOrganizer.email.toLowerCase();
 	}
 
-	if (!normalizedOrganizer) {
-		return;
-	}
+	if (!normalizedOrganizer) return;
 
 	const desiredOrganizerName =
 		organizerName ??
 		organizerGuestFromPayload?.name ??
 		existingOrganizer?.name ??
-		null;
-
-	const desiredOrganizerContactId =
-		organizerGuestFromPayload?.contactId ??
-		existingOrganizer?.contactId ??
 		null;
 
 	const organizerMatch = existingByEmail.get(normalizedOrganizer) ?? null;
@@ -235,7 +228,6 @@ export async function syncEventAttendees({
 			eventId,
 			email: normalizedOrganizer,
 			name: desiredOrganizerName,
-			contactId: desiredOrganizerContactId,
 			isOrganizer: true,
 			role: "chair",
 			partstat: "accepted",
@@ -247,7 +239,6 @@ export async function syncEventAttendees({
 			.set({
 				isOrganizer: true,
 				name: desiredOrganizerName,
-				contactId: desiredOrganizerContactId,
 				role: "chair",
 			})
 			.where(eq(calendarEventAttendees.id, organizerMatch.id));
@@ -279,7 +270,6 @@ export async function syncEventAttendees({
 				eventId,
 				email: g.email,
 				name: g.name,
-				contactId: g.contactId,
 				isOrganizer: false,
 				role: "req_participant",
 				partstat: "needs_action",
@@ -423,9 +413,9 @@ export async function getRangeForCalendarView(
 	const base: Dayjs =
 		params?.year && params?.month && params?.day
 			? dayjsTz()
-					.year(params.year)
-					.month(params.month - 1)
-					.date(params.day)
+				.year(params.year)
+				.month(params.month - 1)
+				.date(params.day)
 			: dayjsTz();
 
 	let from: Dayjs;
@@ -569,13 +559,6 @@ export async function eventsByDay(
 
 export const deleteCalendarEvent = async (id: string): Promise<FormState> => {
 	return handleAction(async () => {
-		const { davQueue, davEvents } = await getRedis();
-		const job = await davQueue.add("dav:calendar:delete-event", {
-			eventId: id,
-			notifyAttendees: true,
-		});
-		await job.waitUntilFinished(davEvents);
-
 		const rls = await rlsClient();
 		await rls((tx) =>
 			tx.delete(calendarEvents).where(eq(calendarEvents.id, id)),
@@ -588,14 +571,16 @@ export const deleteCalendarEvent = async (id: string): Promise<FormState> => {
 	});
 };
 
-export const searchContactsForCompose = async (searchValue: string) => {
+export const searchContactsForCompose = async (
+	searchValue: string,
+) => {
 	const q = searchValue.trim();
 	if (!q) return [];
 
+	const rls = await rlsClient();
+
 	const prefix = `${q}%`;
 	const emailLike = `%${q}%`;
-
-	const rls = await rlsClient();
 
 	const rows = await rls((tx) =>
 		tx
@@ -607,22 +592,22 @@ export const searchContactsForCompose = async (searchValue: string) => {
 				profilePictureXs: contacts.profilePictureXs,
 			})
 			.from(contacts)
+			.innerJoin(
+				addressBooks,
+				eq(contacts.addressBookId, addressBooks.id),
+			)
 			.where(
-				and(
-					or(
-						ilike(contacts.firstName, prefix),
-						ilike(contacts.lastName, prefix),
-						sql`${contacts.emails}::text ILIKE ${emailLike}`,
-					),
+				or(
+					ilike(contacts.firstName, prefix),
+					ilike(contacts.lastName, prefix),
+					sql`${contacts.emails}::text ILIKE ${emailLike}`,
 				),
 			)
 			.orderBy(contacts.lastName, contacts.firstName)
-			.limit(5),
+			.limit(10),
 	);
 
 	const suggestions: ComposeContact[] = [];
-
-	const supabase = await createClient();
 	for (const row of rows) {
 		const fullName = [row.firstName, row.lastName].filter(Boolean).join(" ");
 		const emails = (row.emails ?? []) as { address: string }[];
@@ -630,13 +615,16 @@ export const searchContactsForCompose = async (searchValue: string) => {
 		for (const e of emails) {
 			if (!e.address) continue;
 			let avatarUrl: string | null = null;
-			if (row.profilePictureXs) {
-				const { data } = await supabase.storage
-					.from("attachments")
-					.createSignedUrl(String(row.profilePictureXs), 60000);
-				avatarUrl = data?.signedUrl || null;
-			}
 
+			if (row.profilePictureXs) {
+				const command = new GetObjectCommand({
+					Bucket: S3_BUCKET,
+					Key: String(row.profilePictureXs),
+				});
+				avatarUrl = await getSignedUrl(s3, command, {
+					expiresIn: 60
+				});
+			}
 			suggestions.push({
 				id: row.id,
 				name: fullName || e.address,
@@ -649,14 +637,19 @@ export const searchContactsForCompose = async (searchValue: string) => {
 	return suggestions.slice(0, 20);
 };
 
-export const getContactsForAttendeeIds = async (attendeeIds: string[]) => {
+
+
+export const getContactsForAttendeeIds = async (
+	attendeeIds: string[],
+) => {
 	if (!attendeeIds?.length) return [];
+
 	const rls = await rlsClient();
+
 	const attendeesRows = await rls((tx) =>
 		tx
 			.select({
 				attendeeId: calendarEventAttendees.id,
-				contactId: calendarEventAttendees.contactId,
 				email: calendarEventAttendees.email,
 			})
 			.from(calendarEventAttendees)
@@ -664,60 +657,77 @@ export const getContactsForAttendeeIds = async (attendeeIds: string[]) => {
 	);
 
 	if (!attendeesRows.length) return [];
-	const contactIds = attendeesRows
-		.map((a) => a.contactId)
-		.filter(Boolean) as string[];
-	let contactsMap = new Map<
-		string,
-		{
-			firstName: string | null;
-			lastName: string | null;
-			emails: any[];
-			profilePictureXs: string | null;
-		}
-	>();
-	if (contactIds.length) {
-		const contactRows = await rls((tx) =>
-			tx
-				.select({
-					id: contacts.id,
-					firstName: contacts.firstName,
-					lastName: contacts.lastName,
-					emails: contacts.emails,
-					profilePictureXs: contacts.profilePictureXs,
-				})
-				.from(contacts)
-				.where(inArray(contacts.id, contactIds)),
-		);
 
-		for (const c of contactRows) contactsMap.set(c.id, c);
+	const emails = attendeesRows
+		.map((a) => a.email?.trim().toLowerCase())
+		.filter(Boolean) as string[];
+
+	if (!emails.length) return [];
+
+	const contactRows = await rls((tx) =>
+		tx
+			.select({
+				id: contacts.id,
+				firstName: contacts.firstName,
+				lastName: contacts.lastName,
+				emails: contacts.emails,
+				profilePictureXs: contacts.profilePictureXs,
+			})
+			.from(contacts)
+			.where(
+				sql`EXISTS (
+		SELECT 1
+		FROM jsonb_array_elements(${contacts.emails}) AS e
+				WHERE lower(e->>'address') IN (${sql.join(
+					emails.map((e) => sql`${e}`),
+					sql`,`
+				)})
+				)`
+			),
+	);
+
+	const contactsByEmail = new Map<string, any>();
+
+	for (const c of contactRows) {
+		for (const e of c.emails || []) {
+			const addr = String(e?.address ?? "")
+				.trim()
+				.toLowerCase();
+			if (addr) {
+				contactsByEmail.set(addr, c);
+			}
+		}
 	}
 
-	const supabase = await createClient();
 	const results: ComposeContact[] = [];
 
 	for (const attendee of attendeesRows) {
 		const email = attendee.email?.trim().toLowerCase();
 		if (!email) continue;
 
-		const relatedContact = attendee.contactId
-			? contactsMap.get(attendee.contactId)
-			: null;
+		const relatedContact = contactsByEmail.get(email) ?? null;
+
 		const fullName = relatedContact
 			? [relatedContact.firstName, relatedContact.lastName]
-					.filter(Boolean)
-					.join(" ")
+				.filter(Boolean)
+				.join(" ")
 			: null;
+
 		let avatarUrl: string | null = null;
+
 		if (relatedContact?.profilePictureXs) {
-			const { data } = await supabase.storage
-				.from("attachments")
-				.createSignedUrl(String(relatedContact.profilePictureXs), 60000);
-			avatarUrl = data?.signedUrl || null;
+			const command = new GetObjectCommand({
+				Bucket: S3_BUCKET,
+				Key: String(relatedContact.profilePictureXs),
+			});
+
+			avatarUrl = await getSignedUrl(s3, command, {
+				expiresIn: 60,
+			});
 		}
 
 		results.push({
-			id: attendee.contactId ?? attendee.attendeeId,
+			id: attendee.attendeeId, // now attendeeId is canonical
 			name: fullName || email,
 			email,
 			avatar: avatarUrl,
@@ -726,6 +736,8 @@ export const getContactsForAttendeeIds = async (attendeeIds: string[]) => {
 
 	return results;
 };
+
+
 
 export type FetchContactsForAttendeesResult = Awaited<
 	ReturnType<typeof getContactsForAttendeeIds>
@@ -999,66 +1011,71 @@ export async function fetchCalendarEventsForRange(
 }
 
 const isCalendar = (a: MessageAttachmentEntity) => {
-    const ct = (a.contentType || "").toLowerCase();
-    const fn = (a.filenameOriginal || "").toLowerCase();
-    return (
-        ct.includes("text/calendar") ||
-        ct.includes("application/ics") ||
-        ct.includes("application/octet-stream") && fn.endsWith(".ics") ||
-        fn.endsWith(".ics") ||
-        fn.endsWith(".calendar")
-    );
+	const ct = (a.contentType || "").toLowerCase();
+	const fn = (a.filenameOriginal || "").toLowerCase();
+	return (
+		ct.includes("text/calendar") ||
+		ct.includes("application/ics") ||
+		ct.includes("application/octet-stream") && fn.endsWith(".ics") ||
+		fn.endsWith(".ics") ||
+		fn.endsWith(".calendar")
+	);
 };
 function extractIcalUid(icsText: string): string | null {
-    const unfolded = icsText.replace(/\r?\n[ \t]/g, "");
-    const match = unfolded.match(/^UID:(.+)$/m);
-    return match ? match[1].trim() : null;
+	const unfolded = icsText.replace(/\r?\n[ \t]/g, "");
+	const match = unfolded.match(/^UID:(.+)$/m);
+	return match ? match[1].trim() : null;
 }
 export async function fetchEventPreviewItems(
-    attachments: MessageAttachmentEntity[],
-    identityPublicId: string,
+	attachments: MessageAttachmentEntity[],
+	identityPublicId: string,
 ) {
-    const messageAttachment = attachments?.find(isCalendar);
-    if (!messageAttachment) {
-        return { calendarEvent: null, attendees: null, identity: null };
-    }
-    const supabase = await createClient();
-    const { data } = await supabase.storage
-        .from("attachments")
-        .download(String(messageAttachment.path));
-    const rawICS = await data?.text();
-    const uid = rawICS ? extractIcalUid(rawICS) : null;
-    const rls = await rlsClient();
+	const messageAttachment = attachments?.find(isCalendar);
+	if (!messageAttachment) {
+		return { calendarEvent: null, attendees: null, identity: null };
+	}
 
-    const [calendarEvent] = await rls((tx) =>
-        tx
-            .select()
-            .from(calendarEvents)
-            .where(eq(calendarEvents.icalUid, String(uid)))
-    );
+	const command = new GetObjectCommand({
+		Bucket: S3_BUCKET,
+		Key: String(messageAttachment.path),
+	});
+	const response = await s3.send(command);
+	const rawICS = response.Body
+		? await response.Body.transformToString()
+		: null;
 
-    if (!calendarEvent) {
-        return { calendarEvent: null, attendees: null, identity: null };
-    }
+	const uid = rawICS ? extractIcalUid(rawICS) : null;
+	const rls = await rlsClient();
 
-    const attendees = await rls((tx) =>
-        tx
-            .select()
-            .from(calendarEventAttendees)
-            .where(eq(calendarEventAttendees.eventId, calendarEvent.id))
-    );
+	const [calendarEvent] = await rls((tx) =>
+		tx
+			.select()
+			.from(calendarEvents)
+			.where(eq(calendarEvents.icalUid, String(uid)),)
+	);
 
-    const [identity] = await rls((tx) =>
-        tx
-            .select()
-            .from(identities)
-            .where(eq(identities.publicId, identityPublicId))
-    );
+	if (!calendarEvent) {
+		return { calendarEvent: null, attendees: null, identity: null };
+	}
 
-    return { calendarEvent, attendees, identity }
+	const attendees = await rls((tx) =>
+		tx
+			.select()
+			.from(calendarEventAttendees)
+			.where(eq(calendarEventAttendees.eventId, calendarEvent.id))
+	);
+
+	const [identity] = await rls((tx) =>
+		tx
+			.select()
+			.from(identities)
+			.where(eq(identities.publicId, identityPublicId))
+	);
+
+	return { calendarEvent, attendees, identity }
 
 }
 
 export type FetchEventPreviewItemsResult = Awaited<
-    ReturnType<typeof fetchEventPreviewItems>
+	ReturnType<typeof fetchEventPreviewItems>
 >;

@@ -1,0 +1,135 @@
+---
+title: Why Kurrier Moved Away from Supabase
+description: The Short Version
+---
+
+#
+
+##
+
+Early versions of Kurrier used Supabase as a convenient operational layer around PostgreSQL.
+
+As Kurrier evolved, the project gradually moved toward a simpler architecture centered around:
+
+- Standard PostgreSQL
+- Native SQL migrations
+- Lightweight container orchestration
+- Direct database access
+- Explicit service boundaries
+
+This reduced overall system complexity, lowered operational overhead, improved startup times, and made the platform easier to self-host and reason about.
+
+---
+
+## Why the Change Happened
+
+Supabase is excellent for rapidly building applications and prototypes. It provides a large amount of functionality out of the box:
+
+- Authentication
+- Storage
+- Realtime
+- Dashboard tooling
+- Migrations
+- API generation
+
+Kurrier originally benefited from this convenience during early development.
+
+Over time, however, Kurrier became increasingly infrastructure-oriented and performance-sensitive. Many parts of the Supabase stack were either unused, duplicated elsewhere, or unnecessary for Kurrier’s long-term direction.
+
+The result was additional operational complexity without proportional benefit.
+
+---
+
+## What Changed
+
+Kurrier now uses:
+
+- Plain PostgreSQL
+- Native SQL migrations
+- Direct RLS-aware database connections
+- Lightweight bootstrap scripts
+- Explicit service containers
+
+instead of relying on a larger abstraction layer.
+
+This significantly reduced the amount of infrastructure required to run Kurrier.
+
+---
+
+## Benefits
+
+### Faster Startup
+
+Fewer services need to initialize before the application becomes usable.
+
+### Lower Resource Usage
+
+Kurrier now consumes substantially less memory and CPU overhead compared to earlier deployments.
+
+This is especially important for:
+
+- VPS deployments
+- Raspberry Pi / ARM deployments
+- Self-hosted environments
+- Smaller cloud instances
+
+### Easier to Understand
+
+The stack is now much closer to “what is actually running”:
+
+- PostgreSQL
+- Redis
+- Typesense
+- Object storage
+- Application containers
+
+instead of multiple orchestration layers on top.
+
+### Easier to Maintain
+
+Database migrations and bootstrap logic are now explicit and version-controlled directly inside Kurrier.
+
+### More Portable
+
+Kurrier no longer depends on a larger ecosystem distribution to function correctly.
+
+---
+
+## Performance Direction
+
+This transition also opens the door for additional performance improvements over time.
+
+Because the architecture is now significantly leaner:
+
+- Cold starts are smaller
+- Migrations are simpler
+- Fewer internal proxies exist
+- Less cross-service orchestration is required
+- Deployment environments are easier to optimize
+
+The expectation is that Kurrier will continue getting faster and simpler as the platform matures.
+
+---
+
+## Was Supabase Bad?
+
+Not at all.
+
+Supabase was extremely useful during the earlier stages of Kurrier and remains an excellent platform for many applications.
+
+The move away from Supabase was primarily about:
+
+- Reducing infrastructure surface area
+- Simplifying deployments
+- Improving operational clarity
+- Optimizing specifically for Kurrier’s architecture
+
+rather than dissatisfaction with Supabase itself.
+
+## Migration Notes
+
+For most users, a fresh install of the newer Kurrier architecture is the recommended approach.
+
+However, if there is sufficient demand, tooling and migration paths from older Supabase-based Kurrier deployments may be provided in the future to help migrate existing data and configurations.
+
+The underlying data model remains PostgreSQL-based, which makes future migration tooling feasible without requiring major architectural translation layers.

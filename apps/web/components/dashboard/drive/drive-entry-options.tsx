@@ -13,7 +13,6 @@ function DriveEntryOptions({ entry }: { entry: DriveEntryEntity }) {
 						action={fetchDownloadLink}
 						actionIcon={true}
 						onSuccess={(data: { downloadUrl: string }) => {
-							console.log("download data", data);
 							if (data?.downloadUrl) {
 								window.open(data.downloadUrl);
 							}

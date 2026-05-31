@@ -1,10 +1,16 @@
-import React, { useMemo } from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import { IconMoonStars, IconSun } from "@tabler/icons-react";
 import { Switch } from "@mantine/core";
 import { useAppearance } from "@/components/providers/appearance-provider";
 
 function ThemeSwitch({ onComplete }: { onComplete?: () => void }) {
 	const { mode, setMode } = useAppearance();
+
+	const [mounted, setMounted] = useState(false);
+
+	useEffect(() => {
+		setMounted(true);
+	}, []);
 
 	const prefersDark = useMemo(() => {
 		if (typeof window === "undefined") return false;
@@ -16,6 +22,8 @@ function ThemeSwitch({ onComplete }: { onComplete?: () => void }) {
 		if (mode === "light") return false;
 		return prefersDark; // mode === "system"
 	}, [mode, prefersDark]);
+
+	if (!mounted) return null;
 
 	return (
 		<Switch
@@ -32,4 +40,4 @@ function ThemeSwitch({ onComplete }: { onComplete?: () => void }) {
 	);
 }
 
-export default ThemeSwitch;
+export default ThemeSwitch

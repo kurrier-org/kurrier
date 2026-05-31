@@ -29,20 +29,39 @@ function AddGuests({
 	const editEvent = state.activePopoverEditEvent;
 	const editEventId = editEvent?.id || "";
 
+	const attendeeContacts = state.attendeeContacts ?? [];
+
+	const contactsByEmail = useMemo(() => {
+		const map = new Map<string, any>();
+		attendeeContacts.forEach((c: any) => {
+			if (c.email) {
+				map.set(String(c.email).trim().toLowerCase(), c);
+			}
+		});
+		return map;
+	}, [attendeeContacts]);
+
+
+
 	const persistedAttendees = state.calendarEventAttendees?.[editEventId] || [];
+
 
 	const initialGuests = useMemo<UiGuest[]>(
 		() =>
-			persistedAttendees.map((a) => ({
-				email: a.email,
-				name: a.name ?? null,
-				avatar: (a as any).avatar ?? null,
-				contactId: (a as any).contactId ?? null,
-				isOrganizer: a.isOrganizer ?? false,
-				isPersisted: true,
-				partstat: ((a as any).partstat ?? "needs_action") as UiGuestStatus,
-			})),
-		[persistedAttendees],
+			persistedAttendees.map((a) => {
+				const email = a.email?.toLowerCase() ?? "";
+				const contact = contactsByEmail.get(email);
+
+				return {
+					email: a.email,
+					name: contact?.name ?? a.name ?? null,
+					avatar: contact?.avatar ?? null,
+					isOrganizer: a.isOrganizer ?? false,
+					isPersisted: true,
+					partstat: (a.partstat ?? "needs_action") as UiGuestStatus,
+				};
+			}),
+		[persistedAttendees, contactsByEmail],
 	);
 
 	const [newGuests, setNewGuests] = useState<UiGuest[]>([]);
