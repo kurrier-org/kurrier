@@ -1,5 +1,15 @@
 # @kurrier/repo
 
+## 3.0.0
+
+### Major Changes
+
+- [#449](https://github.com/kurrier-org/kurrier/pull/449) [`d039e87`](https://github.com/kurrier-org/kurrier/commit/d039e87a0e79fef4398875d0873231be897aa397) Thanks [@krokhale](https://github.com/krokhale)! - refactor: simplify platform architecture, routing, storage, and db setup
+
+### Patch Changes
+
+- [`b5ae3c9`](https://github.com/kurrier-org/kurrier/commit/b5ae3c96f87214ef182107448cca5af3738091d3) Thanks [@krokhale](https://github.com/krokhale)! - env var for build
+
 ## 2.0.0
 
 ### Major Changes
