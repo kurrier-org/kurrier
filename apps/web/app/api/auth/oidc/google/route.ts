@@ -6,7 +6,7 @@ export async function GET() {
     const config = await client.discovery(
         new URL("https://accounts.google.com"),
         process.env.OIDC_GOOGLE_CLIENT_ID!,
-        process.env.OIDC_GOOGLE_CLIENT_SECRET!,
+        process.env.OIDC_GOOGLE_CLIENT_SECRET!
     );
 
     const codeVerifier = client.randomPKCECodeVerifier();
