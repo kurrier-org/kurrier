@@ -81,3 +81,12 @@ export function setSidebarWidth(width: string) {
 
 	el.style.setProperty("--sidebar-width", width);
 }
+
+export function withLocale(locale: string, path: string,) {
+
+	if (path.startsWith("/")) {
+		return `/${locale}${path}`;
+	}
+	return `/${locale}/${path}`;
+
+}

@@ -1,0 +1,21 @@
+{
+  "locale": "en",
+  "auth": {
+    "welcomeBack": "Welcome Back",
+    "welcome": "Welcome Back",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "matchExact": "Password must match exactly.",
+    "noAccount": "Don't have an account?",
+    "retype": "Retype Password",
+    "accountPresent": "Already have an account?",
+    "submit": "Submit",
+    "continueWith": "Continue with",
+    "workspaceName": "Workspace Name"
+  },
+  "dashboard": {
+    "overview": "Overview"
+  }
+}

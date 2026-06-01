@@ -13,6 +13,7 @@ import { redirect } from "next/navigation";
 import * as crypto from "node:crypto";
 import { getRedis } from "@/lib/actions/get-redis";
 import { updateWorkSpaceContext } from "@/lib/actions/workspace";
+import {withLocale} from "@/lib/utils";
 
 const initProviders = async (userId: string, workspaceId: string) => {
 	const { REDIS_PASSWORD, REDIS_HOST, REDIS_PORT } = getServerEnv();
@@ -130,18 +131,19 @@ export async function createUserWithWorkspace(opts: {
 	return user;
 }
 
-export async function signInUserAndRedirect(user: typeof users.$inferSelect) {
+export async function signInUserAndRedirect(user: typeof users.$inferSelect, locale?: string) {
 	await createSessionForUser(user.id);
-	redirect(await getWorkspaceRedirectUrl(user));
+	redirect(await getWorkspaceRedirectUrl(user, locale));
 }
 
 export async function login(
 	_prev: FormState,
 	formData: FormData,
 ): Promise<FormState> {
-	const { email, password } = decode(formData) as {
+	const { email, password, locale } = decode(formData) as {
 		email: string;
 		password: string;
+		locale?: string;
 	};
 
 	if (!email || !password) {
@@ -160,7 +162,7 @@ export async function login(
 		return { error: "Invalid credentials" };
 	}
 
-	await signInUserAndRedirect(user);
+	await signInUserAndRedirect(user, locale);
 
 	return { success: true, message: "Logged in!" };
 }
@@ -283,7 +285,7 @@ export async function createSessionForUser(userId: string) {
 	await setAuthToken(token);
 }
 
-export async function getWorkspaceRedirectUrl(user: typeof users.$inferSelect) {
+export async function getWorkspaceRedirectUrl(user: typeof users.$inferSelect, locale?: string) {
 	const [workspace] = await db
 		.select()
 		.from(workspaces)
@@ -302,6 +304,9 @@ export async function getWorkspaceRedirectUrl(user: typeof users.$inferSelect) {
 			.where(eq(identities.id, workspace.defaultIdentityId));
 
 		if (defaultIdentity) {
+			if (locale) {
+				redirect(withLocale(locale,`/w/${workspace.publicId}/dashboard/platform/overview`));
+			}
 			return `/w/${workspace.publicId}/dashboard/mail/${defaultIdentity.publicId}/inbox`;
 		}
 	}

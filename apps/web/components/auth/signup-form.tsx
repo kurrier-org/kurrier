@@ -16,15 +16,16 @@ import Form from "next/form";
 import { Loader2Icon } from "lucide-react";
 import { Button } from "@mantine/core";
 import { IconBrandGoogle } from "@tabler/icons-react";
+import {Dictionary} from "@/lib/dictionaries";
 
 export function SignupForm({
 	className,
-	oidc,
+	oidc, dict,
 	...props
 }: React.ComponentProps<"div"> &
 	{oidc?: {
 		googleEnabled?: boolean;
-	} }
+	} } & {dict: Dictionary}
 ) {
 	const passwordRef = React.useRef<HTMLInputElement>(null);
 	const retypeRef = React.useRef<HTMLInputElement>(null);
@@ -52,7 +53,7 @@ export function SignupForm({
 		<div className={cn("flex flex-col gap-6", className)} {...props}>
 			<Card>
 				<CardHeader className="text-center">
-					<CardTitle className="text-xl">Welcome</CardTitle>
+					<CardTitle className="text-xl">{dict.auth.welcome}</CardTitle>
 					{/*<CardDescription>Signup with your Google account</CardDescription>*/}
 				</CardHeader>
 				<CardContent>
@@ -62,6 +63,7 @@ export function SignupForm({
 						</Button>
 					) : <div className={'text-sm text-center'}>No third-party authentication methods are currently enabled.</div>}
 					<Form action={formAction}>
+						<input type="hidden" name="locale" value={dict.locale} />
 						<div className="grid gap-6">
 							<div className="flex flex-col gap-4">
 								{/*<Button variant="outline" className="w-full">*/}
@@ -85,12 +87,12 @@ export function SignupForm({
 							</div>
 							<div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
 								<span className="bg-card text-muted-foreground relative z-10 px-2">
-									Or continue with
+									{dict.auth.continueWith}
 								</span>
 							</div>
 							<div className="grid gap-6">
 								<div className="grid gap-3">
-									<Label htmlFor="email">Email</Label>
+									<Label htmlFor="email">{dict.auth.email}</Label>
 									<Input
 										id="email"
 										type="email"
@@ -102,7 +104,7 @@ export function SignupForm({
 								</div>
 								<div className="grid gap-3">
 									<div className="flex items-center">
-										<Label htmlFor="password">Password</Label>
+										<Label htmlFor="password">{dict.auth.password}</Label>
 									</div>
 									<Input
 										id="password"
@@ -117,7 +119,7 @@ export function SignupForm({
 								</div>
 								<div className="grid gap-3">
 									<div className="flex items-center">
-										<Label htmlFor="password">Retype Password</Label>
+										<Label htmlFor="password">{dict.auth.retype}</Label>
 									</div>
 
 									<Input
@@ -133,12 +135,12 @@ export function SignupForm({
 										className="text-xs text-muted-foreground"
 										aria-live="polite"
 									>
-										Password must match exactly.
+										{dict.auth.matchExact}
 									</p>
 								</div>
 
 								<div className="grid gap-3">
-									<Label htmlFor="email">Workspace Name</Label>
+									<Label htmlFor="email">{dict.auth.workspaceName}</Label>
 									<Input
 										id="workspaceName"
 										name="workspaceName"
@@ -156,16 +158,16 @@ export function SignupForm({
 								)}
 								<Button type="submit" className="w-full" disabled={isPending}>
 									{isPending && <Loader2Icon className="animate-spin" />}
-									Submit
+									{dict.auth.submit}
 								</Button>
 							</div>
 							<div className="text-center text-sm">
-								Already have an account?{" "}
+								{dict.auth.accountPresent}{" "}
 								<Link
 									href={"/auth/login"}
 									className="underline underline-offset-4"
 								>
-									Login
+									{dict.auth.signIn}
 								</Link>
 							</div>
 						</div>
