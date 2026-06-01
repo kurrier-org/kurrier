@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
 
     const config = await client.discovery(
         new URL("https://accounts.google.com"),
-        process.env.GOOGLE_CLIENT_ID!,
-        process.env.GOOGLE_CLIENT_SECRET!,
+        process.env.OIDC_GOOGLE_CLIENT_ID!,
+        process.env.OIDC_GOOGLE_CLIENT_SECRET!,
     );
 
     const tokens = await client.authorizationCodeGrant(
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
                 name: "google",
                 type: "oidc",
                 issuerUrl: "https://accounts.google.com",
-                clientId: process.env.GOOGLE_CLIENT_ID!,
+                clientId: process.env.OIDC_GOOGLE_CLIENT_ID!,
                 enabled: true,
                 metaData: {
                     scopes: "openid email profile",

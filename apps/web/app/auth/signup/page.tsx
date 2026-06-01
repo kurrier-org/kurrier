@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 
 export default function SignupPage() {
 	const { DISABLE_SIGNUP } = getPublicEnv();
-	const googleEnabled = process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET;
+	const googleEnabled = process.env.OIDC_GOOGLE_CLIENT_ID && process.env.OIDC_GOOGLE_CLIENT_SECRET;
 
 	if (DISABLE_SIGNUP) {
 		redirect("/auth/login?message=signup_disabled");

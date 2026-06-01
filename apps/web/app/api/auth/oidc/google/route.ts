@@ -3,11 +3,10 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-    console.log("Initiating Google OIDC flow", process.env.GOOGLE_CLIENT_ID);
     const config = await client.discovery(
         new URL("https://accounts.google.com"),
-        process.env.GOOGLE_CLIENT_ID!,
-        process.env.GOOGLE_CLIENT_SECRET!,
+        process.env.OIDC_GOOGLE_CLIENT_ID!,
+        process.env.OIDC_GOOGLE_CLIENT_SECRET!,
     );
 
     const codeVerifier = client.randomPKCECodeVerifier();
