@@ -1,5 +1,11 @@
 # web
 
+## 2.0.1
+
+### Patch Changes
+
+- [#452](https://github.com/kurrier-org/kurrier/pull/452) [`6faea6d`](https://github.com/kurrier-org/kurrier/commit/6faea6d6fe553ab1108700a348b462460a01f22a) Thanks [@krokhale](https://github.com/krokhale)! - Add Google OIDC authentication
+
 ## 2.0.0
 
 ### Major Changes
