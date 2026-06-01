@@ -8,6 +8,7 @@ export default async function LoginPage({ searchParams }: {
 	}) {
 	const params = await searchParams;
 	const showSignupDisabledMessage = params.message === "signup_disabled";
+	const googleEnabled = process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET;
 
 	return (
 		<div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
@@ -27,7 +28,9 @@ export default async function LoginPage({ searchParams }: {
 						</p>
 					</div>
 				)}
-				<LoginForm />
+				<LoginForm oidc={{
+					googleEnabled: !!googleEnabled,
+				}} />
 			</div>
 		</div>
 	);

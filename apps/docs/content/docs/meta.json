@@ -2,6 +2,7 @@
 	"pages": [
 		"index",
 		"installation",
+		"oidc",
 		"contacts",
 		"calendars",
 		"getting-started",

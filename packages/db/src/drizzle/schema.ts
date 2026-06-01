@@ -1736,3 +1736,103 @@ export const mailRuleActions = pgTable(
 		...workspaceCrudPolicies(t, "mail_rule_actions"),
     ],
 ).enableRLS();
+
+export const authProviders = pgTable(
+	"auth_providers",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+
+		ownerId: uuid("owner_id")
+			.references(() => users.id)
+			.notNull()
+			.default(authUid),
+
+		workspaceId: uuid("workspace_id")
+			.references(() => workspaces.id)
+			.notNull()
+			.default(authWorkspaceId),
+
+		type: text("type").notNull().default("oidc"),
+
+		name: text("name").notNull(),
+
+		issuerUrl: text("issuer_url").notNull(),
+		clientId: text("client_id").notNull(),
+
+		clientSecretId: uuid("client_secret_id")
+			.references(() => secretsMeta.id, { onDelete: "set null" }),
+
+		scopes: text("scopes").notNull().default("openid email profile"),
+
+		enabled: boolean("enabled").notNull().default(true),
+
+		metaData: jsonb("meta").$type<Record<string, any> | null>().default(null),
+
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		index("ix_auth_providers_workspace").on(t.workspaceId),
+		uniqueIndex("ux_auth_provider_workspace_name").on(t.workspaceId, t.name),
+		...workspaceCrudPolicies(t, "auth_providers"),
+	],
+).enableRLS();
+
+export const authAccounts = pgTable(
+	"auth_accounts",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+
+		userId: uuid("user_id")
+			.references(() => users.id, { onDelete: "cascade" })
+			.notNull(),
+
+		providerId: uuid("provider_id")
+			.references(() => authProviders.id, { onDelete: "cascade" })
+			.notNull(),
+
+		providerUserId: text("provider_user_id").notNull(),
+
+		email: text("email").notNull(),
+
+		emailVerified: boolean("email_verified").notNull().default(false),
+
+		rawProfile: jsonb("raw_profile").$type<Record<string, any> | null>().default(null),
+
+		workspaceId: uuid("workspace_id")
+			.references(() => workspaces.id)
+			.notNull()
+			.default(authWorkspaceId),
+
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		index("ix_auth_accounts_workspace").on(t.workspaceId),
+		index("ix_auth_accounts_user").on(t.userId),
+		index("ix_auth_accounts_provider").on(t.providerId),
+
+		uniqueIndex("ux_auth_account_provider_subject").on(
+			t.providerId,
+			t.providerUserId,
+		),
+
+		uniqueIndex("ux_auth_account_workspace_email_provider").on(
+			t.workspaceId,
+			t.email,
+			t.providerId,
+		),
+
+		...workspaceCrudPolicies(t, "auth_accounts"),
+	],
+).enableRLS();

@@ -68,6 +68,43 @@ CREATE TABLE "app_migrations" (
                                   "created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "auth_accounts" (
+                                 "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+                                 "user_id" uuid NOT NULL,
+                                 "provider_id" uuid NOT NULL,
+                                 "provider_user_id" text NOT NULL,
+                                 "email" text NOT NULL,
+                                 "email_verified" boolean DEFAULT false NOT NULL,
+                                 "raw_profile" jsonb DEFAULT 'null'::jsonb,
+                                 "workspace_id" uuid DEFAULT
+                                                           nullif(current_setting('request.jwt.claim.workspace_id', true), '')::uuid
+ NOT NULL,
+                                 "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+                                 "updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "auth_accounts" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE TABLE "auth_providers" (
+                                  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+                                  "owner_id" uuid DEFAULT
+                                                            nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
+ NOT NULL,
+                                  "workspace_id" uuid DEFAULT
+                                                            nullif(current_setting('request.jwt.claim.workspace_id', true), '')::uuid
+ NOT NULL,
+                                  "type" text DEFAULT 'oidc' NOT NULL,
+                                  "name" text NOT NULL,
+                                  "issuer_url" text NOT NULL,
+                                  "client_id" text NOT NULL,
+                                  "client_secret_id" uuid,
+                                  "scopes" text DEFAULT 'openid email profile' NOT NULL,
+                                  "enabled" boolean DEFAULT true NOT NULL,
+                                  "meta" jsonb DEFAULT 'null'::jsonb,
+                                  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+                                  "updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "auth_providers" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "calendar_event_attendees" (
                                             "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
                                             "owner_id" uuid DEFAULT
@@ -692,6 +729,12 @@ ALTER TABLE "address_books" ADD CONSTRAINT "address_books_workspace_id_workspace
 ALTER TABLE "api_keys" ADD CONSTRAINT "api_keys_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "auth"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "api_keys" ADD CONSTRAINT "api_keys_secret_id_secrets_meta_id_fk" FOREIGN KEY ("secret_id") REFERENCES "public"."secrets_meta"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "api_keys" ADD CONSTRAINT "api_keys_workspace_id_workspaces_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "auth_accounts" ADD CONSTRAINT "auth_accounts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "auth_accounts" ADD CONSTRAINT "auth_accounts_provider_id_auth_providers_id_fk" FOREIGN KEY ("provider_id") REFERENCES "public"."auth_providers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "auth_accounts" ADD CONSTRAINT "auth_accounts_workspace_id_workspaces_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "auth_providers" ADD CONSTRAINT "auth_providers_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "auth"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "auth_providers" ADD CONSTRAINT "auth_providers_workspace_id_workspaces_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "auth_providers" ADD CONSTRAINT "auth_providers_client_secret_id_secrets_meta_id_fk" FOREIGN KEY ("client_secret_id") REFERENCES "public"."secrets_meta"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "calendar_event_attendees" ADD CONSTRAINT "calendar_event_attendees_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "auth"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "calendar_event_attendees" ADD CONSTRAINT "calendar_event_attendees_event_id_calendar_events_id_fk" FOREIGN KEY ("event_id") REFERENCES "public"."calendar_events"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "calendar_event_attendees" ADD CONSTRAINT "calendar_event_attendees_workspace_id_workspaces_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -802,6 +845,13 @@ CREATE INDEX "ix_api_keys_workspace_owner" ON "api_keys" USING btree ("workspace
 CREATE INDEX "ix_api_keys_expires" ON "api_keys" USING btree ("expires_at");--> statement-breakpoint
 CREATE INDEX "ix_api_keys_revoked" ON "api_keys" USING btree ("revoked_at");--> statement-breakpoint
 CREATE UNIQUE INDEX "ux_app_migrations_scope_version" ON "app_migrations" USING btree ("scope","version");--> statement-breakpoint
+CREATE INDEX "ix_auth_accounts_workspace" ON "auth_accounts" USING btree ("workspace_id");--> statement-breakpoint
+CREATE INDEX "ix_auth_accounts_user" ON "auth_accounts" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "ix_auth_accounts_provider" ON "auth_accounts" USING btree ("provider_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "ux_auth_account_provider_subject" ON "auth_accounts" USING btree ("provider_id","provider_user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "ux_auth_account_workspace_email_provider" ON "auth_accounts" USING btree ("workspace_id","email","provider_id");--> statement-breakpoint
+CREATE INDEX "ix_auth_providers_workspace" ON "auth_providers" USING btree ("workspace_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "ux_auth_provider_workspace_name" ON "auth_providers" USING btree ("workspace_id","name");--> statement-breakpoint
 CREATE INDEX "ix_event_attendees_owner" ON "calendar_event_attendees" USING btree ("owner_id");--> statement-breakpoint
 CREATE INDEX "ix_event_attendees_event" ON "calendar_event_attendees" USING btree ("event_id");--> statement-breakpoint
 CREATE INDEX "ix_event_attendees_email" ON "calendar_event_attendees" USING btree ("email");--> statement-breakpoint
@@ -938,9 +988,37 @@ CREATE POLICY "api_keys_update_workspace" ON "api_keys" AS PERMISSIVE FOR UPDATE
 CREATE POLICY "api_keys_delete_workspace" ON "api_keys" AS PERMISSIVE FOR DELETE TO "kurrier" USING ("api_keys"."workspace_id" =
   nullif(current_setting('request.jwt.claim.workspace_id', true), '')::uuid
 );--> statement-breakpoint
+CREATE POLICY "auth_accounts_select_workspace" ON "auth_accounts" AS PERMISSIVE FOR SELECT TO "kurrier" USING ("auth_accounts"."workspace_id" =
+                                                                                                                                                                         nullif(current_setting('request.jwt.claim.workspace_id', true), '')::uuid
+                                                                                                                                                                         );--> statement-breakpoint
+CREATE POLICY "auth_accounts_insert_workspace" ON "auth_accounts" AS PERMISSIVE FOR INSERT TO "kurrier" WITH CHECK ("auth_accounts"."workspace_id" =
+  nullif(current_setting('request.jwt.claim.workspace_id', true), '')::uuid
+);--> statement-breakpoint
+CREATE POLICY "auth_accounts_update_workspace" ON "auth_accounts" AS PERMISSIVE FOR UPDATE TO "kurrier" USING ("auth_accounts"."workspace_id" =
+                                                                                               nullif(current_setting('request.jwt.claim.workspace_id', true), '')::uuid
+                                                                                               ) WITH CHECK ("auth_accounts"."workspace_id" =
+                                                                                               nullif(current_setting('request.jwt.claim.workspace_id', true), '')::uuid
+                                                                                               );--> statement-breakpoint
+CREATE POLICY "auth_accounts_delete_workspace" ON "auth_accounts" AS PERMISSIVE FOR DELETE TO "kurrier" USING ("auth_accounts"."workspace_id" =
+  nullif(current_setting('request.jwt.claim.workspace_id', true), '')::uuid
+);--> statement-breakpoint
+CREATE POLICY "auth_providers_select_workspace" ON "auth_providers" AS PERMISSIVE FOR SELECT TO "kurrier" USING ("auth_providers"."workspace_id" =
+                                                                                                                                                                                     nullif(current_setting('request.jwt.claim.workspace_id', true), '')::uuid
+                                                                                                                                                                                     );--> statement-breakpoint
+CREATE POLICY "auth_providers_insert_workspace" ON "auth_providers" AS PERMISSIVE FOR INSERT TO "kurrier" WITH CHECK ("auth_providers"."workspace_id" =
+  nullif(current_setting('request.jwt.claim.workspace_id', true), '')::uuid
+);--> statement-breakpoint
+CREATE POLICY "auth_providers_update_workspace" ON "auth_providers" AS PERMISSIVE FOR UPDATE TO "kurrier" USING ("auth_providers"."workspace_id" =
+                                                                                                 nullif(current_setting('request.jwt.claim.workspace_id', true), '')::uuid
+                                                                                                 ) WITH CHECK ("auth_providers"."workspace_id" =
+                                                                                                 nullif(current_setting('request.jwt.claim.workspace_id', true), '')::uuid
+                                                                                                 );--> statement-breakpoint
+CREATE POLICY "auth_providers_delete_workspace" ON "auth_providers" AS PERMISSIVE FOR DELETE TO "kurrier" USING ("auth_providers"."workspace_id" =
+  nullif(current_setting('request.jwt.claim.workspace_id', true), '')::uuid
+);--> statement-breakpoint
 CREATE POLICY "calendar_event_attendees_select_workspace" ON "calendar_event_attendees" AS PERMISSIVE FOR SELECT TO "kurrier" USING ("calendar_event_attendees"."workspace_id" =
-                                                                                                                                                                                               nullif(current_setting('request.jwt.claim.workspace_id', true), '')::uuid
-                                                                                                                                                                                               );--> statement-breakpoint
+                                                                                                                                                                                                           nullif(current_setting('request.jwt.claim.workspace_id', true), '')::uuid
+                                                                                                                                                                                                           );--> statement-breakpoint
 CREATE POLICY "calendar_event_attendees_insert_workspace" ON "calendar_event_attendees" AS PERMISSIVE FOR INSERT TO "kurrier" WITH CHECK ("calendar_event_attendees"."workspace_id" =
   nullif(current_setting('request.jwt.claim.workspace_id', true), '')::uuid
 );--> statement-breakpoint

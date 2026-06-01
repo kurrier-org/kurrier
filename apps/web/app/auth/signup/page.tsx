@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 
 export default function SignupPage() {
 	const { DISABLE_SIGNUP } = getPublicEnv();
+	const googleEnabled = process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET;
 
 	if (DISABLE_SIGNUP) {
 		redirect("/auth/login?message=signup_disabled");
@@ -22,7 +23,9 @@ export default function SignupPage() {
 					<KurrierLogo size={56} />
 					<span className="truncate font-medium text-4xl">Kurrier</span>
 				</Link>
-				<SignupForm />
+				<SignupForm oidc={{
+					googleEnabled: !!googleEnabled,
+				}} />
 			</div>
 		</div>
 	);
