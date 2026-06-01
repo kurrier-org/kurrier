@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -18,11 +17,16 @@ import { useActionState } from "react";
 import Form from "next/form";
 import { Loader2Icon } from "lucide-react";
 import { FormState } from "@schema";
+import { IconBrandGoogle } from "@tabler/icons-react";
+import { Button } from "@mantine/core";
 
 export function LoginForm({
 	className,
+	oidc,
 	...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & {oidc?: {
+		googleEnabled?: boolean;
+	} }) {
 	const [formState, formAction, isPending] = useActionState<
 		FormState,
 		FormData
@@ -33,7 +37,12 @@ export function LoginForm({
 			<Card>
 				<CardHeader className="text-center">
 					<CardTitle className="text-xl">Welcome</CardTitle>
-					{/*<CardDescription>Login with your Google account</CardDescription>*/}
+					<CardDescription>Login with your Google account</CardDescription>
+					{oidc?.googleEnabled ? (
+						<Button fullWidth variant="default" className="w-full" href={"/api/auth/oidc/google"} component="a" leftSection={<IconBrandGoogle/>}>
+							Login with Google
+						</Button>
+					) : <div className={'text-sm text-center'}>No third-party authentication methods are currently enabled.</div>}
 				</CardHeader>
 
 				<CardContent>

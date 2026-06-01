@@ -1,0 +1,205 @@
+---
+title: OpenID Connect (OIDC)
+description: Authentication using penID Connect (OIDC) providers.
+---
+
+## 🔐 OpenID Connect (OIDC) Login
+
+Kurrier supports authentication using **OpenID Connect (OIDC)** providers.
+
+Currently, **Google** login is available out of the box, but the architecture is provider-agnostic and additional providers such as GitHub, Microsoft, Auth0, Okta, Keycloak, Zitadel, and others can be added easily.
+
+---
+
+## ✨ Currently Supported
+
+- Google OIDC Login
+
+Additional providers can be implemented by adding another OIDC route and provider configuration.
+
+---
+
+## 🧠 How It Works
+
+Kurrier uses the standard:
+
+- OAuth 2.0 Authorization Code Flow
+- PKCE (Proof Key for Code Exchange)
+- OpenID Connect identity claims
+
+The authentication flow is:
+
+1. User clicks “Continue with Google”
+2. Kurrier redirects the user to Google
+3. Google authenticates the user
+4. Google redirects back to Kurrier callback route
+5. Kurrier verifies the response
+6. User account + workspace are created automatically if they do not exist
+7. Session cookie is issued
+8. User is redirected into the workspace dashboard
+
+---
+
+## 📦 Environment Variables
+
+Add the following to your `.env`:
+
+```
+env
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+```
+
+---
+
+## 🛠 Creating Google OAuth Credentials
+
+1. Open Google Cloud Console
+2. Navigate to:
+- APIs & Services → Credentials
+3. Click:
+- Create Credentials → OAuth Client ID
+4. Choose:
+- Web Application
+
+### Authorized Redirect URI
+
+Add:
+
+```txt
+http://localhost:3000/api/auth/oidc/google/callback
+```
+
+For production:
+
+```txt
+https://your-domain.com/api/auth/oidc/google/callback
+```
+
+---
+
+## 📁 Route Structure
+
+Google OIDC flow is implemented using App Router route handlers.
+
+```txt
+app/
+└── api/
+    └── auth/
+        └── oidc/
+            └── google/
+                ├── route.ts
+                └── callback/
+                    └── route.ts
+```
+
+---
+
+## 🚀 Start Route
+
+The start route:
+
+```txt
+/api/auth/oidc/google
+```
+
+Responsibilities:
+
+- Discover Google OIDC configuration
+- Generate PKCE verifier/challenge
+- Generate state token
+- Store temporary cookies
+- Redirect user to Google authorization endpoint
+
+---
+
+## ↩ Callback Route
+
+The callback route:
+
+```txt
+/api/auth/oidc/google/callback
+```
+
+Responsibilities:
+
+- Validate PKCE verifier
+- Validate state
+- Exchange authorization code for tokens
+- Read user claims
+- Create or locate user
+- Create auth provider/account records
+- Create session cookie
+- Redirect into workspace
+
+---
+
+## 🗄 Database Records
+
+Successful OIDC login creates:
+
+### `users`
+
+Primary application user.
+
+### `workspaces`
+
+Default workspace for the user.
+
+### `workspace_members`
+
+Workspace ownership membership.
+
+### `auth_providers`
+
+OIDC provider metadata for the workspace.
+
+### `auth_accounts`
+
+Provider-linked external identity record.
+
+---
+
+## 🔒 Security Notes
+
+Kurrier uses:
+
+- PKCE
+- State validation
+- HttpOnly session cookies
+- Verified Google email requirement
+- Signed JWT session tokens
+
+Sensitive provider tokens are never logged in production.
+
+---
+
+## ➕ Adding More Providers
+
+Additional providers can be added by implementing another OIDC route pair.
+
+Examples:
+
+```txt
+/api/auth/oidc/github
+/api/auth/oidc/microsoft
+/api/auth/oidc/keycloak
+```
+
+Most providers only require:
+
+- Discovery URL
+- Client ID
+- Client Secret
+- Redirect URI
+- Scope configuration
+
+The rest of the flow remains identical.
+
+---
+
+## 📚 References
+
+- OpenID Connect: https://openid.net/connect/
+- OAuth 2.0 PKCE: https://oauth.net/2/pkce/
+- openid-client: https://github.com/panva/openid-client
