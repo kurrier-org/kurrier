@@ -1,5 +1,13 @@
 # @kurrier/db
 
+## 3.0.2
+
+### Patch Changes
+
+- [#452](https://github.com/kurrier-org/kurrier/pull/452) [`b374c4e`](https://github.com/kurrier-org/kurrier/commit/b374c4e4effcbcee9ad36a57ef59c3d25ac6f699) Thanks [@krokhale](https://github.com/krokhale)! - Add Google OIDC authentication
+
+- [`f510001`](https://github.com/kurrier-org/kurrier/commit/f510001c38de35ba047cf6319b0df6eb80fa295e) Thanks [@krokhale](https://github.com/krokhale)! - updated env vars
+
 ## 3.0.1
 
 ### Patch Changes

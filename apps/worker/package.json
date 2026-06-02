@@ -1,6 +1,6 @@
 {
 	"name": "@kurrier/worker",
-	"version": "2.0.1",
+	"version": "2.0.2",
 	"private": true,
 	"scripts": {
 		"dev": "dotenvx run -f ../../db/local/.env -- nitro dev --port 3001",
