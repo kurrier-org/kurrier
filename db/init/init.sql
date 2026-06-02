@@ -1,7 +1,7 @@
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'kurrier') THEN
-CREATE ROLE kurrier LOGIN PASSWORD '${RLS_CLIENT_PASSWORD}';
+CREATE ROLE kurrier LOGIN PASSWORD 'replace_with_your_password';
 END IF;
 END
 $$;
