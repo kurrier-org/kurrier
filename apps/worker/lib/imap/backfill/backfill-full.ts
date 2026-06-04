@@ -30,7 +30,7 @@ export function getOrInitQuota(
 
 	const quota: IdentityQuota = {
 		limit: dailyLimitBytes,
-		expiresAt: now.add(2, "minute").toString(),
+		expiresAt: now.add(1, "day").toISOString()
 	};
 
 	identityQuotaMap.set(identityId, quota);
@@ -347,3 +347,36 @@ export const startFullBackfillForIdentity = async (
 		console.error("[imap:backfill-full] error", err);
 	}
 };
+
+
+
+export async function startBackfillForIdentity(
+	identityId: string,
+	imapInstances: Map<string, ImapFlow>,
+) {
+	const [identity] = await db
+		.select()
+		.from(identities)
+		.where(eq(identities.id, identityId));
+
+	if (!identity) return;
+
+	const quota = getOrInitQuota(
+		identity.id,
+		getDailyQuota(identity as IdentityEntity),
+	);
+
+	if (quota.limit <= 0) return;
+
+	const client = await initSmtpClient(identity.id, imapInstances);
+
+	if (!client?.authenticated || !client?.usable) return;
+
+	await davCreateCalendarForIdentity({
+		identityId: identity.id,
+		userId: identity.ownerId,
+		workspaceId: identity.workspaceId,
+	});
+
+	await startFullBackfillForIdentity(client, identity.id, quota);
+}

@@ -17,14 +17,16 @@ import {
 	stopRealtimeForIdentity,
 } from "../../lib/imap/imap-idle-sync";
 import { discoverMailboxes } from "../../lib/imap/backfill/discover/discover-mailboxes";
-import { startFullBackfill } from "../../lib/imap/backfill/backfill-full";
+import {startBackfillForIdentity} from "../../lib/imap/backfill/backfill-full";
+import {db, mailboxSync} from "@db";
+import {eq} from "drizzle-orm";
 
 export default defineNitroPlugin(async (nitroApp) => {
 	console.info("**********************SMTP-WORKER***************************");
 
 	const imapInstances = new Map<string, ImapFlow>();
 	const idleImapInstances = new Map<string, ImapFlow>();
-	const { connection, searchIngestQueue } = await getRedis();
+	const { connection, searchIngestQueue, smtpQueue } = await getRedis();
 
 	const worker = new Worker(
 		"smtp-worker",
@@ -69,12 +71,30 @@ export default defineNitroPlugin(async (nitroApp) => {
 			} else if (job.name === "mail:delete-permanent") {
 				await deleteMail(job.data, imapInstances);
 			} else if (job.name === "smtp:append:sent") {
-			} else if (job.name === "imap:backfill-tick") {
-				console.info(`IMAP Backfill Tick triggered`);
-				await startFullBackfill(imapInstances).catch((err) => {
-					console.error(`imap:backfill-tick job failed:`, err);
-				});
-				console.info("IMAP Backfill Tick completed");
+			} else if (job.name === "imap:backfill-account") {
+
+				const { identityId } = job.data as { identityId: string };
+				await startBackfillForIdentity(identityId, imapInstances);
+				return { success: true };
+			} else if (job.name === "imap:resume-backfills") {
+
+				const rows = await db
+					.selectDistinct({
+						identityId: mailboxSync.identityId,
+					})
+					.from(mailboxSync)
+					.where(eq(mailboxSync.phase, "BACKFILL"));
+				for (const row of rows) {
+					await smtpQueue.add(
+						"imap:backfill-account",
+						{ identityId: row.identityId },
+						{
+							removeOnComplete: true,
+							removeOnFail: true,
+							jobId: `imap-backfill-account-${row.identityId}`,
+						},
+					);
+				}
 				return { success: true };
 			} else if (job.name === "imap:backfill-discover") {
 				const identityId = job.data.identityId;
@@ -120,17 +140,17 @@ export default defineNitroPlugin(async (nitroApp) => {
 	const scheduler = new JobScheduler("smtp-worker", { connection });
 
 	await scheduler.upsertJobScheduler(
-		"imap-backfill-scheduler",
-		{ every: 120000 },
-		"imap:backfill-tick",
+		"imap-resume-backfills-scheduler",
+		{ every: 24 * 60 * 60 * 1000 },
+		"imap:resume-backfills",
 		{},
 		{
 			removeOnComplete: true,
 			removeOnFail: true,
 			attempts: 1,
-			backoff: { type: "fixed", delay: 5000 },
 		},
 		{ override: true },
+
 	);
 
 	worker.on("completed", async (job) => {

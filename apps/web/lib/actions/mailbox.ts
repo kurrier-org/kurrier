@@ -537,12 +537,12 @@ export const backfillMailboxes = async (identityId: string, workspaceId: string)
 export const backfillAccount = async (identityId: string, workspaceId: string) => {
 	const { smtpQueue } = await getRedis();
 	await smtpQueue.add(
-		"imap:backfill-tick",
-		{},
+		"imap:backfill-account",
+		{identityId},
 		{
 			removeOnComplete: true,
-			removeOnFail: true,
-			jobId: "imap-backfill-tick-on-demand",
+			removeOnFail: false,
+			jobId: `imap-backfill-account-${identityId}`,
 		},
 	);
 	await smtpQueue.add(
