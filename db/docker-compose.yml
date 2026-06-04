@@ -131,7 +131,6 @@ services:
       PGUSER: ${POSTGRES_USER}
       PGPASSWORD: ${POSTGRES_PASSWORD}
       PGDATABASE: ${POSTGRES_DB}
-      RLS_CLIENT_PASSWORD: ${RLS_CLIENT_PASSWORD}
     volumes:
       - ./init:/scripts
     entrypoint: [ "/bin/bash", "/scripts/db-bootstrap.sh" ]
