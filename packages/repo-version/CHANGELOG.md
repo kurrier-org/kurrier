@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 3.0.3
+
+### Patch Changes
+
+- [#457](https://github.com/kurrier-org/kurrier/pull/457) [`95f7cc5`](https://github.com/kurrier-org/kurrier/commit/95f7cc56de52c1c91651ea96298302c5412fbb56) Thanks [@krokhale](https://github.com/krokhale)! - performance-enhancement-and-refactor-for-smtp-pipeline
+
 ## 3.0.2
 
 ### Patch Changes
