@@ -1,5 +1,11 @@
 # @kurrier/db
 
+## 3.0.3
+
+### Patch Changes
+
+- [#461](https://github.com/kurrier-org/kurrier/pull/461) [`c818d78`](https://github.com/kurrier-org/kurrier/commit/c818d786ee15723a6bfd94ed46c9c4a4de437f8f) Thanks [@krokhale](https://github.com/krokhale)! - Improve identity deletion cleanup flow
+
 ## 3.0.2
 
 ### Patch Changes
