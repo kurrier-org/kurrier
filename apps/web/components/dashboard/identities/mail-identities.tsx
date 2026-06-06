@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Container } from "@/components/common/containers";
 import { Card, CardContent } from "@/components/ui/card";
-import { ActionIcon, Button, CopyButton, Tooltip } from "@mantine/core";
+import {ActionIcon, Button, CopyButton, Tooltip} from "@mantine/core";
 import {
 	ArrowDownFromLine,
 	ArrowUpFromLine,
@@ -11,12 +11,12 @@ import {
 	CheckCircle,
 	Clock,
 	Eye,
-	Globe,
+	Globe, LoaderCircle,
 	Mail,
 	Plus,
 	RefreshCw,
 	Trash2,
-	Verified,
+	Verified, XCircle,
 } from "lucide-react";
 import { parseSecret } from "@/lib/utils";
 import { modals } from "@mantine/modals";
@@ -201,29 +201,83 @@ export default function MailIdentities({
 		});
 	};
 
+
 	const confirmDeleteIdentity = async (
 		userIdentity: FetchUserIdentitiesResult[number],
 	) => {
 		modals.openConfirmModal({
-			title: (
-				<div className={"font-semibold text-brand-foreground"}>
-					Delete Identity
-				</div>
-			),
+			title: <div className="font-semibold text-brand-foreground">Delete Identity</div>,
 			centered: true,
 			children: (
-				<div className="text-sm ">
-					Are you sure you want to delete <b>{userIdentity.identities.value}</b>
-					? This will remove the identity permanently and unlink any associated
-					secrets.
+				<div className="text-sm">
+					Are you sure you want to delete <b>{userIdentity.identities.value}</b>? This will remove the identity permanently and unlink any associated secrets.
 				</div>
 			),
 			labels: { confirm: "Delete", cancel: "Cancel" },
 			confirmProps: { color: "red" },
 			onConfirm: async () => {
-				const { success, message } = await deleteEmailIdentity(userIdentity);
-				if (success) {
-					toast.success(message);
+				const modalId = modals.open({
+					title: <div className="font-semibold text-brand-foreground">Deleting identity</div>,
+					centered: true,
+					closeOnEscape: false,
+					closeOnClickOutside: false,
+					withCloseButton: false,
+					children: (
+						<div className={"my-4"}>
+							<div className={"my-4"}>
+								Deleting <b>{userIdentity.identities.value}</b>. This may take a moment.
+							</div>
+							<div className="flex justify-center py-4">
+								<LoaderCircle className="h-8 w-8 animate-spin text-brand dark:text-brand-foreground" />
+							</div>
+						</div>
+					),
+				});
+
+				const res = await deleteEmailIdentity(userIdentity);
+
+				if (res.success) {
+					toast.success(res.message);
+
+					modals.updateModal({
+						modalId,
+						title: <div className="font-semibold text-brand-foreground">Identity deleted</div>,
+						closeOnEscape: true,
+						closeOnClickOutside: true,
+						withCloseButton: true,
+						children: (
+							<div className={"my-4"}>
+								<div className={"my-4"}>{res.message}</div>
+								<div className={"my-4 flex justify-center"}>
+									<CheckCircle className="h-8 w-8 text-teal-600" />
+								</div>
+								<Button fullWidth onClick={() => modals.close(modalId)}>
+									Close
+								</Button>
+							</div>
+						),
+					});
+				} else {
+					toast.error("Failed to delete identity");
+
+					modals.updateModal({
+						modalId,
+						title: <div className="font-semibold text-brand-foreground">Delete failed</div>,
+						closeOnEscape: true,
+						closeOnClickOutside: true,
+						withCloseButton: true,
+						children: (
+							<div className={"my-4"}>
+								<div className={"my-4"}>{res.message || "Failed to delete identity."}</div>
+								<div className={"my-4 flex justify-center"}>
+									<XCircle className="h-8 w-8 text-red-600" />
+								</div>
+								<Button fullWidth onClick={() => modals.close(modalId)}>
+									Close
+								</Button>
+							</div>
+						),
+					});
 				}
 			},
 		});
@@ -234,13 +288,13 @@ export default function MailIdentities({
 	) => {
 		modals.openConfirmModal({
 			title: (
-				<div className={"font-semibold text-brand-foreground"}>
+				<div className="font-semibold text-brand-foreground">
 					Delete Identity
 				</div>
 			),
 			centered: true,
 			children: (
-				<div className="text-sm ">
+				<div className="text-sm">
 					Are you sure you want to delete{" "}
 					<b>{userDomainIdentity.identities.value}</b>? This will remove the
 					identity permanently and unlink any associated secrets.
@@ -249,21 +303,100 @@ export default function MailIdentities({
 			labels: { confirm: "Delete", cancel: "Cancel" },
 			confirmProps: { color: "red" },
 			onConfirm: async () => {
-				const providerAccount = providerAccounts.find((acc) => {
-					return (
-						acc.linkRow.providerId === userDomainIdentity.identities.providerId
-					);
+				const modalId = modals.open({
+					title: (
+						<div className="font-semibold text-brand-foreground">
+							Deleting domain identity...
+						</div>
+					),
+					centered: true,
+					closeOnEscape: false,
+					closeOnClickOutside: false,
+					withCloseButton: false,
+					children: (
+						<div className="space-y-4">
+							<p className="text-sm text-muted-foreground">
+								Deleting{" "}
+								<span className="font-semibold text-foreground">
+								{userDomainIdentity.identities.value}
+							</span>
+								. This may take a moment.
+							</p>
+
+							<div className="flex justify-center py-4">
+								<div className="h-8 w-8 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-brand-foreground" />
+							</div>
+						</div>
+					),
 				});
-				const { error } = await deleteDomainIdentity(
-					userDomainIdentity,
-					providerAccount,
-				);
-				if (error) {
-					toast.error("Failed to delete domain identity", {
-						description: error,
+
+				const providerAccount = providerAccounts.find((acc) => {
+					return acc.linkRow.providerId === userDomainIdentity.identities.providerId;
+				});
+
+				const res = await deleteDomainIdentity(userDomainIdentity, providerAccount);
+
+				if (res.success) {
+					toast.success("Domain identity deleted");
+
+					modals.updateModal({
+						modalId,
+						title: (
+							<div className="font-semibold text-brand-foreground">
+								Domain identity deleted
+							</div>
+						),
+						closeOnEscape: true,
+						closeOnClickOutside: true,
+						withCloseButton: true,
+						children: (
+							<div className="space-y-4">
+								<p className="text-sm text-muted-foreground">
+								<span className="font-semibold text-foreground">
+									{userDomainIdentity.identities.value}
+								</span>{" "}
+									was deleted successfully.
+								</p>
+
+								<div className="flex justify-center py-4">
+									<CheckCircle className="h-8 w-8 text-teal-600" />
+								</div>
+
+								<Button fullWidth onClick={() => modals.close(modalId)}>
+									Close
+								</Button>
+							</div>
+						),
 					});
 				} else {
-					toast.success("Domain identity deleted");
+					toast.error("Failed to delete domain identity");
+
+					modals.updateModal({
+						modalId,
+						title: (
+							<div className="font-semibold text-brand-foreground">
+								Delete failed
+							</div>
+						),
+						closeOnEscape: true,
+						closeOnClickOutside: true,
+						withCloseButton: true,
+						children: (
+							<div className="space-y-4">
+								<p className="text-sm text-red-600">
+									{"Failed to delete domain identity."}
+								</p>
+
+								<div className="flex justify-center py-4">
+									<BadgeMinus className="h-8 w-8 text-red-600" />
+								</div>
+
+								<Button fullWidth onClick={() => modals.close(modalId)}>
+									Close
+								</Button>
+							</div>
+						),
+					});
 				}
 			},
 		});

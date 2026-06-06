@@ -58,7 +58,7 @@ import {
 } from "@/lib/actions/workspace";
 import {workspaceIdentityMembers} from "@db";
 
-const DASHBOARD_PATH = "/dashboard/providers";
+const DASHBOARD_PATH = "/w/[workspaceId]/dashboard/providers";
 const CURRENT_API_VERSION = 1;
 
 export const syncProviders = async () => {
@@ -741,41 +741,16 @@ export const deleteDomainIdentity = async (
 };
 
 const cleanupIdentity = async (identityId: string, workspaceId: string) => {
-	const identityCalendars = await db
-		.select({ id: calendars.id })
-		.from(calendars)
-		.where(and(eq(calendars.workspaceId, workspaceId), eq(calendars.identityId, identityId)));
 
-	// const identityBooks = await db
-	// 	.select({ id: addressBooks.id })
-	// 	.from(addressBooks)
-	// 	.where(and(eq(addressBooks.workspaceId, workspaceId), eq(addressBooks.identityId, identityId)));
-
-	const calendarIds = identityCalendars.map((x: {id: string}) => x.id);
-	// const addressBookIds = identityBooks.map((x: {id: string}) => x.id);
-
-	const { davQueue } = await getRedis();
-	await davQueue.add("dav:delete:identity", { identityId , workspaceId }, { jobId: `identity-dav-cleanup-${identityId}` });
-
-	// if (addressBookIds.length) {
-	// 	await db
-	// 		.delete(grants)
-	// 		.where(
-	// 			and(
-	// 				eq(grants.scopeType, "workspace"),
-	// 				eq(grants.scopeId, workspaceId),
-	// 				eq(grants.resourceType, "addressbook"),
-	// 				inArray(grants.resourceId, addressBookIds),
-	// 			),
-	// 		);
-	// }
+	const { davQueue, davEvents } = await getRedis();
+	const job = await davQueue.add("dav:delete:identity", { identityId , workspaceId }, { jobId: `identity-dav-cleanup-${identityId}` });
+	await job.waitUntilFinished(davEvents);
 };
 
 export const deleteEmailIdentity = async (
 	userIdentity: FetchUserIdentitiesResult[number],
 ) => {
 	return handleAction(async () => {
-		// const rls = await rlsClient();
 		if (!userIdentity.smtp_accounts) {
 			const [secret] = await fetchDecryptedSecrets({
 				linkTable: providerSecrets,
