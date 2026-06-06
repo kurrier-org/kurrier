@@ -28,8 +28,6 @@ export default async function ContactsLayout({
 			.leftJoin(labels, eq(labels.id, contactLabels.labelId))
 	);
 
-	console.log("rows",rows)
-
 	const grouped = new Map<string, ContactWithFavorite & { labels: string[] }>();
 
 	for (const row of rows) {

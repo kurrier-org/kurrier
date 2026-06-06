@@ -152,6 +152,7 @@ export const workspaces = pgTable(
 	(t) => [
 		uniqueIndex("uniq_workspace_public_id").on(t.publicId),
 		index("idx_workspace_owner").on(t.ownerId),
+		index("ix_workspaces_default_identity").on(t.defaultIdentityId),
 
 		...workspaceTablePolicies(t)
 	],
@@ -471,6 +472,9 @@ export const identities = pgTable(
 		index("ix_identities_workspace").on(t.workspaceId),
 		uniqueIndex("uniq_identity_per_workspace").on(t.workspaceId, t.kind, t.value),
 		uniqueIndex("uniq_identity_public_id").on(t.publicId),
+		index("ix_identities_domain_identity").on(t.domainIdentityId),
+		index("ix_identities_provider").on(t.providerId),
+		index("ix_identities_smtp_account").on(t.smtpAccountId),
 		pgPolicy("identities_select", {
 			for: "select",
 			to: "kurrier",
@@ -695,6 +699,7 @@ export const messages = pgTable(
 
 		index("idx_messages_mailbox_date").on(t.mailboxId, t.date),
 		index("idx_messages_mailbox_seen_date").on(t.mailboxId, t.seen, t.date),
+		index("ix_messages_thread").on(t.threadId),
 		...workspaceCrudPolicies(t, "messages"),
 	],
 ).enableRLS();
@@ -800,6 +805,7 @@ export const mailboxThreads = pgTable(
 
 	(t) => [
 		index("ix_mailbox_threads_workspace").on(t.workspaceId),
+		index("ix_mailbox_threads_identity").on(t.identityId),
 		primaryKey({
 			name: "pk_mailbox_threads",
 			columns: [t.threadId, t.mailboxId],
@@ -977,6 +983,8 @@ export const labels = pgTable(
 	},
 	(t) => [
 		uniqueIndex("uniq_label_workspace_scope_slug").on(t.workspaceId, t.scope, t.slug),
+		index("ix_labels_identity").on(t.identityId),
+		index("ix_labels_workspace_identity").on(t.workspaceId, t.identityId),
 		pgPolicy("labels_select", {
 			for: "select",
 			to: "kurrier",
@@ -1312,6 +1320,8 @@ export const calendars = pgTable(
 		uniqueIndex("ux_calendar_workspace_identity").on(t.workspaceId, t.identityId),
 		index("ix_calendars_owner").on(t.ownerId),
 		index("ix_calendars_dav_account").on(t.davAccountId),
+		index("ix_calendars_identity").on(t.identityId),
+		index("ix_calendars_workspace_identity").on(t.workspaceId, t.identityId),
 		pgPolicy("calendars_select", {
 			for: "select",
 			to: "kurrier",
@@ -1385,6 +1395,7 @@ export const calendarEvents = pgTable(
 		index("ix_calendar_events_calendar").on(t.calendarId),
 		index("ix_calendar_events_calendar_start").on(t.calendarId, t.startsAt),
 		index("ix_calendar_events_calendar_dav_uri").on(t.calendarId, t.davUri),
+		index("ix_calendar_events_organizer_identity").on(t.organizerIdentityId),
 		uniqueIndex("ux_calendar_events_calendar_ical_uid")
 			.on(t.calendarId, t.icalUid)
 			.where(sql`${t.icalUid} IS NOT NULL`),
@@ -1698,6 +1709,7 @@ export const mailRules = pgTable(
     },
     (t) => [
 		index("idx_mail_rules_owner_identity").on(t.ownerId, t.identityId),
+		index("ix_mail_rules_identity").on(t.identityId),
 		index("idx_mail_rules_owner_enabled_priority").on(
 			t.ownerId,
 			t.enabled,
