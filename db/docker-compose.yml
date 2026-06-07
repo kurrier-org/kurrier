@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   web:
-    image: ghcr.io/kurrier-org/kurrier-web:v3.0.4
+    image: ghcr.io/kurrier-org/kurrier-web:v3.0.6
     restart: unless-stopped
     env_file:
       - .env
@@ -12,7 +12,7 @@ services:
       postgres:
         condition: service_healthy
   worker:
-    image: ghcr.io/kurrier-org/kurrier-worker:v3.0.4
+    image: ghcr.io/kurrier-org/kurrier-worker:v3.0.6
     restart: unless-stopped
     env_file:
       - .env
