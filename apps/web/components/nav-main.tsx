@@ -71,6 +71,12 @@ export function NavMain({workspacePublicId, workspaceRole}: {workspacePublicId?:
 					items: [],
 				},
 				{
+					title: "Storage",
+					url: `/w/${workspacePublicId}/dashboard/platform/storage`,
+					icon: HardDrive,
+					items: [],
+				},
+				{
 					title: "API Keys",
 					url: `/w/${workspacePublicId}/dashboard/platform/api-keys`,
 					icon: Key,
@@ -90,19 +96,6 @@ export function NavMain({workspacePublicId, workspaceRole}: {workspacePublicId?:
 				},
 			]
 			: []),
-		// {
-		// 	title: "Storage",
-		// 	// url: "/dashboard/platform/storage",
-		// 	url: `/w/${workspacePublicId}/dashboard/platform/storage`,
-		// 	icon: HardDrive,
-		// 	items: [],
-		// },
-		// {
-		// 	title: "Sync Services",
-		// 	url: `/w/${workspacePublicId}/dashboard/platform/sync-services`,
-		// 	icon: FolderSync,
-		// 	items: [],
-		// },
 
 	];
 
