@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 3.0.5
+
+### Patch Changes
+
+- [#465](https://github.com/kurrier-org/kurrier/pull/465) [`6a7fa3b`](https://github.com/kurrier-org/kurrier/commit/6a7fa3bb7938f4a927e293b8b4e5864a98b90faa) Thanks [@krokhale](https://github.com/krokhale)! - implement S3-backed cloud storage volumes
+
 ## 3.0.4
 
 ### Patch Changes
