@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import DriveTopBar from "@/components/dashboard/drive/drive-top-bar";
 import { normalizeWithinPath } from "@/lib/actions/drive";
 import { isSignedIn } from "@/lib/actions/auth";
+import {getWorkspacePublicId} from "@/lib/actions/clients";
 
 export default async function DriveSegmentsLayout({
                                                       children,
@@ -15,6 +16,7 @@ export default async function DriveSegmentsLayout({
     const { segments } = await params;
     const ctx = await normalizeWithinPath(segments ?? []);
     const user = await isSignedIn();
+    const workspacePublicId = await getWorkspacePublicId()
 
     return (
         <>
@@ -24,7 +26,7 @@ export default async function DriveSegmentsLayout({
                     orientation="vertical"
                     className="data-[orientation=vertical]:h-4"
                 />
-                <DriveTopBar ctx={ctx} userId={String(user?.id)} />
+                <DriveTopBar ctx={ctx} userId={String(user?.id)} workspacePublicId={workspacePublicId} />
             </header>
 
             <main>

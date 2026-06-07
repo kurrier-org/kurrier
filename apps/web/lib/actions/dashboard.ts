@@ -1088,26 +1088,38 @@ export async function addNewVolume(_prev: FormState, formData: FormData) {
 	return handleAction(async () => {
 		const rls = await rlsClient();
 		const data = decode(formData);
-
-		const bucketName = String(data.bucketName).toLowerCase();
-
-		await s3.send(
-			new CreateBucketCommand({
-				Bucket: bucketName,
-			}),
-		);
-
 		const user = await isSignedIn();
+
+		const label = String(data.bucketName || "").trim();
+
+		if (!label) {
+			return { success: false, error: "Volume name is required" };
+		}
+
+		const code = label
+			.toLowerCase()
+			.replace(/[^a-z0-9-]+/g, "-")
+			.replace(/^-+|-+$/g, "");
+
+		if (!code) {
+			return { success: false, error: "Invalid volume name" };
+		}
+
+		const bucket = process.env.S3_BUCKET;
+
+		if (!bucket) {
+			return { success: false, error: "S3_BUCKET is not configured" };
+		}
 
 		await rls((tx) =>
 			tx.insert(driveVolumes).values({
 				ownerId: String(user?.id),
-				label: bucketName,
+				label,
 				kind: "cloud",
-				code: bucketName,
+				code,
 				providerId: null,
 				metaData: {
-					bucket: bucketName,
+					bucket,
 				},
 			}),
 		);
