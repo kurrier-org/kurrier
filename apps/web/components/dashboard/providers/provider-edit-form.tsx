@@ -24,12 +24,6 @@ function ProviderEditForm({
 
 	const fields = [
 		{
-			type: "el",
-			el:	<div className="mb-2 block text-sm font-medium leading-6 text-brand-foreground">
-				You can use any S3 compatible storage provider that supports the S3 API. Just fill in the required fields and we will take care of the rest.
-			</div>
-		},
-		{
 			name: "ulid",
 			wrapperClasses: "hidden",
 			props: { hidden: true, defaultValue: ulid() },

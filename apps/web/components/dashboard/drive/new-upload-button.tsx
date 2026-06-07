@@ -65,7 +65,7 @@ export default function NewUploadButton({
 				</Menu.Dropdown>
 			</Menu>
 
-			<DriveUploader ref={uploaderRef} uploadStrategy={"proxy"} />
+			<DriveUploader ref={uploaderRef} />
 
 			<Modal
 				opened={folderOpened}

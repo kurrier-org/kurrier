@@ -1,8 +1,8 @@
 "use client";
-
 import React, {
 	forwardRef,
 	useImperativeHandle,
+	useMemo,
 	useRef,
 	useState,
 } from "react";
@@ -11,6 +11,7 @@ import { X } from "lucide-react";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { DriveState } from "@schema";
 import {
+	generateUploadToken,
 	getCloudUploadUrl,
 	refreshViewAfterUpload,
 } from "@/lib/actions/drive";
@@ -26,27 +27,45 @@ type UploadItem = {
 	file: File;
 	progress: number;
 	state: UploadState;
+	abort?: AbortController;
 	error?: string;
 	xhr?: XMLHttpRequest;
 };
 
-type UploadStrategy = "proxy" | "direct";
-type DriveUploaderProps = {
-	uploadStrategy?: UploadStrategy;
-};
+function joinPaths(base: string, leaf: string) {
+	const b = (base || "/").replace(/\/+$/g, "");
+	const l = (leaf || "").replace(/^\/+/g, "");
+	const out = `${b}/${l}`;
+	return out === "" ? "/" : out;
+}
 
-const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
-	function DriveUploader({ uploadStrategy = "proxy" }, ref) {
+function encodePathForRoute(path: string) {
+	const parts = path.split("/").filter(Boolean).map(encodeURIComponent);
+	return "/" + parts.join("/");
+}
+
+const DriveUploader = forwardRef<DriveUploaderHandle>(
+	function DriveUploader(_props, ref) {
 		const { state } = useDynamicContext<DriveState>();
 		const ctx = state?.driveRouteContext;
 
 		const inputRef = useRef<HTMLInputElement | null>(null);
 		const [items, setItems] = useState<UploadItem[]>([]);
 
-		const canUpload = !!ctx?.driveVolume && ctx.scope === "cloud";
+		const canUpload = !!ctx;
+
+		const uploadBase = useMemo(() => {
+			if (!ctx) return null;
+			return { withinPath: ctx.withinPath ?? "/" };
+		}, [ctx]);
 
 		const inFlightRef = useRef(0);
 		const refreshTimerRef = useRef<number | null>(null);
+
+		const bumpInFlight = (delta: number) => {
+			inFlightRef.current = Math.max(0, inFlightRef.current + delta);
+			if (inFlightRef.current === 0) scheduleRefresh();
+		};
 
 		const scheduleRefresh = () => {
 			if (refreshTimerRef.current) window.clearTimeout(refreshTimerRef.current);
@@ -54,11 +73,6 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 				refreshTimerRef.current = null;
 				refreshViewAfterUpload();
 			}, 600);
-		};
-
-		const bumpInFlight = (delta: number) => {
-			inFlightRef.current = Math.max(0, inFlightRef.current + delta);
-			if (inFlightRef.current === 0) scheduleRefresh();
 		};
 
 		useImperativeHandle(
@@ -72,18 +86,18 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 			[canUpload],
 		);
 
-		async function startUpload(itemId: string, file: File) {
-			if (!ctx?.driveVolume || ctx.scope !== "cloud") {
-				throw new Error("Missing cloud volume");
-			}
-
-			const presign = await getCloudUploadUrl(ctx, {
-				filename: file.name,
-				sizeBytes: file.size,
-				contentType: file.type || null,
-			});
-
+		async function startUpload(
+			itemId: string,
+			file: File,
+			targetFullPath: string,
+		) {
 			const xhr = new XMLHttpRequest();
+			const urlPath = encodePathForRoute(targetFullPath);
+
+			const intentRow = await generateUploadToken({ targetPath: urlPath });
+			const url = `/webdav/entries?token=${intentRow.token}`;
+
+			xhr.open("POST", url, true);
 
 			bumpInFlight(1);
 
@@ -95,26 +109,14 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 				bumpInFlight(-1);
 			};
 
-			setItems((prev) =>
-				prev.map((it) =>
-					it.id === itemId
-						? { ...it, xhr, state: "uploading", progress: 0 }
-						: it,
-				),
-			);
-
 			xhr.upload.onprogress = (e) => {
 				if (!e.lengthComputable) return;
-
-				const progress = Math.max(
+				const p = Math.max(
 					0,
 					Math.min(100, Math.round((e.loaded / e.total) * 100)),
 				);
-
 				setItems((prev) =>
-					prev.map((it) =>
-						it.id === itemId ? { ...it, progress } : it,
-					),
+					prev.map((it) => (it.id === itemId ? { ...it, progress: p } : it)),
 				);
 			};
 
@@ -123,9 +125,7 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 					if (xhr.status >= 200 && xhr.status < 300) {
 						setItems((prev) =>
 							prev.map((it) =>
-								it.id === itemId
-									? { ...it, progress: 100, state: "done" }
-									: it,
+								it.id === itemId ? { ...it, progress: 100, state: "done" } : it,
 							),
 						);
 					} else {
@@ -162,89 +162,158 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 				});
 			};
 
-			if ( uploadStrategy === "direct" ) {
-				xhr.open("PUT", presign.url, true);
+			setItems((prev) =>
+				prev.map((it) =>
+					it.id === itemId
+						? { ...it, xhr, state: "uploading", progress: 0 }
+						: it,
+				),
+			);
 
-				const headers = presign.headers || {};
-				for (const [key, value] of Object.entries(headers)) {
-					xhr.setRequestHeader(key, String(value));
-				}
+			xhr.send(file);
+		}
 
-				const hasContentType = Object.keys(headers).some(
-					(key) => key.toLowerCase() === "content-type",
+		async function startCloudUpload(itemId: string, file: File) {
+			if (!ctx?.driveVolume || ctx.driveVolume.kind !== "cloud")
+				throw new Error("Missing cloud volume");
+
+			const presign = await getCloudUploadUrl(ctx, {
+				filename: file.name,
+				sizeBytes: file.size,
+				contentType: file.type || null,
+			});
+
+			const xhr = new XMLHttpRequest();
+
+			bumpInFlight(1);
+
+			let finalized = false;
+			const finalizeOnce = (fn: () => void) => {
+				if (finalized) return;
+				finalized = true;
+				fn();
+				bumpInFlight(-1);
+			};
+
+			setItems((prev) =>
+				prev.map((it) =>
+					it.id === itemId
+						? { ...it, xhr, state: "uploading", progress: 0 }
+						: it,
+				),
+			);
+
+			xhr.upload.onprogress = (e) => {
+				if (!e.lengthComputable) return;
+				const p = Math.max(
+					0,
+					Math.min(100, Math.round((e.loaded / e.total) * 100)),
+				);
+				setItems((prev) =>
+					prev.map((it) => (it.id === itemId ? { ...it, progress: p } : it)),
+				);
+			};
+
+			xhr.onload = () => {
+				finalizeOnce(() => {
+					if (xhr.status >= 200 && xhr.status < 300) {
+						setItems((prev) =>
+							prev.map((it) =>
+								it.id === itemId ? { ...it, progress: 100, state: "done" } : it,
+							),
+						);
+					} else {
+						setItems((prev) =>
+							prev.map((it) =>
+								it.id === itemId
+									? { ...it, state: "error", error: `HTTP ${xhr.status}` }
+									: it,
+							),
+						);
+					}
+				});
+			};
+
+			xhr.onerror = () => {
+				finalizeOnce(() => {
+					setItems((prev) =>
+						prev.map((it) =>
+							it.id === itemId
+								? { ...it, state: "error", error: "Network error" }
+								: it,
+						),
+					);
+				});
+			};
+
+			xhr.onabort = () => {
+				finalizeOnce(() => {
+					setItems((prev) =>
+						prev.map((it) =>
+							it.id === itemId ? { ...it, state: "canceled" } : it,
+						),
+					);
+				});
+			};
+
+			xhr.open("PUT", presign.url, true);
+
+			const headers = presign.headers || {};
+			for (const [k, v] of Object.entries(headers)) xhr.setRequestHeader(k, v);
+
+			const lower = Object.keys(headers).reduce(
+				(a, k) => ((a[k.toLowerCase()] = true), a),
+				{} as Record<string, boolean>,
+			);
+			if (!lower["content-type"])
+				xhr.setRequestHeader(
+					"Content-Type",
+					file.type || "application/octet-stream",
 				);
 
-				if (!hasContentType) {
-					xhr.setRequestHeader(
-						"Content-Type",
-						file.type || "application/octet-stream",
-					);
-				}
-
-				xhr.send(file);
-			} else if (uploadStrategy === "proxy") {
-				xhr.open("POST", "/api/drive/upload", true);
-
-				const formData = new FormData();
-				formData.append("file", file);
-				formData.append("bucket", presign.bucket);
-				formData.append("key", presign.key);
-
-				xhr.send(formData);
-			}
-
-
+			xhr.send(file);
 		}
 
 		async function enqueueFiles(files: File[]) {
-			if (!canUpload) return;
+			if (!uploadBase || !ctx) return;
+
+			const isCloud = ctx.scope === "cloud";
+			if (isCloud && !ctx.driveVolume) return;
 
 			const now = Date.now();
-			const newItems: UploadItem[] = files.map((file, index) => ({
-				id: `${now}-${index}-${crypto.randomUUID()}`,
-				file,
+			const newItems: UploadItem[] = files.map((f, idx) => ({
+				id: `${now}-${idx}-${crypto.randomUUID()}`,
+				file: f,
 				progress: 0,
 				state: "queued",
 			}));
 
 			setItems((prev) => [...newItems, ...prev]);
 
-			for (const item of newItems) {
-				startUpload(item.id, item.file).catch((error) => {
-					setItems((prev) =>
-						prev.map((it) =>
-							it.id === item.id
-								? {
-									...it,
-									state: "error",
-									error:
-										error instanceof Error
-											? error.message
-											: "Upload failed",
-								}
-								: it,
-						),
-					);
-				});
+			for (const it of newItems) {
+				const fullPath = joinPaths(uploadBase.withinPath, it.file.name);
+				if (isCloud) {
+					startCloudUpload(it.id, it.file);
+				} else {
+					startUpload(it.id, it.file, fullPath);
+				}
 			}
 		}
 
 		function cancel(id: string) {
 			setItems((prev) => {
-				const item = prev.find((x) => x.id === id);
-				if (item?.xhr && item.state === "uploading") item.xhr.abort();
-
-				return prev.map((x) =>
-					x.id === id ? { ...x, state: "canceled" } : x,
-				);
+				const it = prev.find((x) => x.id === id);
+				if (it?.xhr && it.state === "uploading") it.xhr.abort();
+				if (it?.abort && it.state === "uploading") it.abort.abort();
+				return prev.map((x) => (x.id === id ? { ...x, state: "canceled" } : x));
 			});
 		}
 
 		const visible = items.filter(
-			(item) =>
-				item.state === "uploading" ||
-				item.state === "queued" ||
-				item.state === "error",
+			(it) =>
+				it.state === "uploading" ||
+				it.state === "queued" ||
+				it.state === "error",
 		);
 
 		return (
@@ -262,26 +331,26 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 					}}
 				/>
 
-				{canUpload && visible.length > 0 ? (
+				{!canUpload ? null : visible.length === 0 ? (
+					<div className="text-center text-xs text-neutral-500"> </div>
+				) : (
 					<div className="space-y-2">
-						{visible.slice(0, 5).map((item) => (
+						{visible.slice(0, 5).map((it) => (
 							<div
-								key={item.id}
+								key={it.id}
 								className="rounded-xl border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-800 dark:bg-neutral-950"
 							>
 								<div className="flex items-center gap-2">
 									<div className="min-w-0 flex-1">
 										<div className="truncate text-xs font-medium text-neutral-900 dark:text-neutral-100">
-											{item.file.name}
+											{it.file.name}
 										</div>
-
 										<div className="mt-1">
-											<Progress value={item.progress} size="sm" />
+											<Progress value={it.progress} size="sm" />
 										</div>
-
-										{item.state === "error" ? (
+										{it.state === "error" ? (
 											<div className="mt-1 text-[11px] text-red-600">
-												{item.error ?? "Upload failed"}
+												{it.error ?? "Upload failed"}
 											</div>
 										) : null}
 									</div>
@@ -289,7 +358,7 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 									<ActionIcon
 										size="sm"
 										variant="subtle"
-										onClick={() => cancel(item.id)}
+										onClick={() => cancel(it.id)}
 									>
 										<X size={14} />
 									</ActionIcon>
@@ -297,7 +366,7 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 							</div>
 						))}
 					</div>
-				) : null}
+				)}
 			</div>
 		);
 	},
