@@ -63,12 +63,12 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				icon: Calendar,
 				isActive: true,
 			},
-			// {
-			// 	title: "Drive",
-			// 	url: "/dashboard/drive",
-			// 	icon: HardDrive,
-			// 	isActive: true,
-			// },
+			{
+				title: "Drive",
+				url: `/w/${workspacePublicId}/dashboard/drive`,
+				icon: HardDrive,
+				isActive: true,
+			},
 			{
 				title: "Platform",
 				url: `/w/${workspacePublicId}/dashboard/platform/overview`,

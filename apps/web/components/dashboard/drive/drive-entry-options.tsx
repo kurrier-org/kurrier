@@ -1,48 +1,62 @@
-import React from "react";
-import { DriveEntryEntity } from "@db";
-import { Download, Trash } from "lucide-react";
-import { deletePath, fetchDownloadLink } from "@/lib/actions/drive";
-import { ReusableFormButton } from "@/components/common/reusable-form-button";
+"use client";
 
-function DriveEntryOptions({ entry }: { entry: DriveEntryEntity }) {
+import { ActionIcon, Menu } from "@mantine/core";
+import { Download, MoreVertical, Trash2 } from "lucide-react";
+import type { DriveEntryEntity } from "@db";
+import { deleteDriveEntry, getDriveDownloadUrl } from "@/lib/actions/drive";
+import { toast } from "sonner";
+
+export default function DriveEntryOptions({
+											  entry,
+										  }: {
+	entry: DriveEntryEntity;
+}) {
+	const download = async () => {
+		const url = await getDriveDownloadUrl(entry.id);
+		window.location.href = url;
+	};
+
+	const remove = async () => {
+		if (
+			!window.confirm(
+				`Delete "${entry.name}"?\n\nThis action cannot be undone.`,
+			)
+		) {
+			return;
+		}
+		const res = await deleteDriveEntry(entry.id);
+		if (res.success) {
+			toast.success("Deleted");
+		} else {
+			toast.error("Delete failed");
+		}
+	};
+
 	return (
-		<>
-			<div className={"flex gap-2 absolute right-3 top-3 z-50"}>
-				{entry.type === "file" && (
-					<ReusableFormButton
-						action={fetchDownloadLink}
-						actionIcon={true}
-						onSuccess={(data: { downloadUrl: string }) => {
-							if (data?.downloadUrl) {
-								window.open(data.downloadUrl);
-							}
-						}}
-						actionIconProps={{
-							size: "xs",
-							variant: "subtle",
-							children: <Download size={12} />,
-							title: "Download",
-						}}
-					>
-						<input type="hidden" name="entryId" value={entry.id} />
-					</ReusableFormButton>
-				)}
+		<div className="absolute right-3 top-3 z-10">
+			<Menu shadow="md" width={160} position="bottom-end">
+				<Menu.Target>
+					<ActionIcon variant="subtle" color="gray">
+						<MoreVertical size={16} />
+					</ActionIcon>
+				</Menu.Target>
 
-				<ReusableFormButton
-					action={deletePath}
-					actionIcon={true}
-					actionIconProps={{
-						size: "xs",
-						variant: "subtle",
-						children: <Trash size={12} />,
-						title: "Delete",
-					}}
-				>
-					<input type="hidden" name="entryId" value={entry.id} />
-				</ReusableFormButton>
-			</div>
-		</>
+				<Menu.Dropdown>
+					{entry.type !== "folder" ? (
+						<Menu.Item leftSection={<Download size={14} />} onClick={download}>
+							Download
+						</Menu.Item>
+					) : null}
+
+					<Menu.Item
+						color="red"
+						leftSection={<Trash2 size={14} />}
+						onClick={remove}
+					>
+						Delete
+					</Menu.Item>
+				</Menu.Dropdown>
+			</Menu>
+		</div>
 	);
 }
-
-export default DriveEntryOptions;
