@@ -18,7 +18,7 @@ export const ProviderLabels: Record<Providers, string> = {
 	mailgun: "Mailgun",
 	postmark: "Postmark",
 	sendgrid: "SendGrid",
-	s3: "AWS S3",
+	s3: "S3 Compatible Storage",
 };
 
 /** Minimal spec used by the Providers page */

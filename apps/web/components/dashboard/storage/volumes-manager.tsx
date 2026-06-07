@@ -54,7 +54,15 @@ function EmptyState() {
 	);
 }
 
-function VolumeStatusPill({ verified }: { verified: boolean }) {
+function VolumeStatusPill({ verified, provisioned }: { verified: boolean; provisioned: boolean }) {
+
+	if (provisioned) {
+		return <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+			<CheckCircle className="size-3.5" />
+			Provider verified
+		</span>
+	}
+
 	return (
 		<span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
 			{verified ? (
@@ -70,10 +78,12 @@ function VolumeStatusPill({ verified }: { verified: boolean }) {
 export default function VolumesManager({
 	userProviders,
 	volumes,
+   	provisioned,
 	providerSelectOptions,
 }: {
 	userProviders: SyncProvidersRow[];
 	volumes: DriveVolumeEntity[];
+	provisioned: boolean
 	providerSelectOptions: { label: string; value: string }[];
 }) {
 	const openAddVolumeForm = async () => {
@@ -159,6 +169,7 @@ export default function VolumesManager({
 														<div className="mt-2 flex flex-wrap items-center gap-2">
 															<VolumeStatusPill
 																verified={isLocal ? true : verification?.store}
+																provisioned={provisioned}
 															/>
 															{v.createdAt ? (
 																<span className="text-xs text-muted-foreground">
