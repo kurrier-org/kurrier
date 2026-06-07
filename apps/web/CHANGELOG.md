@@ -1,5 +1,11 @@
 # web
 
+## 2.0.6
+
+### Patch Changes
+
+- [#469](https://github.com/kurrier-org/kurrier/pull/469) [`260951a`](https://github.com/kurrier-org/kurrier/commit/260951a2148e52ef10f9f258f3f7e7af2ceed735) Thanks [@krokhale](https://github.com/krokhale)! - Refactor drive storage to use volume-scoped S3 prefixes
+
 ## 2.0.5
 
 ### Patch Changes
