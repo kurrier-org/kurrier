@@ -2,16 +2,22 @@
 
 import { isSignedIn } from "@/lib/actions/auth";
 import {
-	driveEntries,
+	driveEntries, DriveVolumeEntity,
 	driveVolumes
 } from "@db";
 import { rlsClient } from "@/lib/actions/clients";
 import { DriveRouteContext, FormState, handleAction } from "@schema";
 import { decode } from "decode-formdata";
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import {and, eq, sql} from "drizzle-orm";
 
-import {DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand} from "@aws-sdk/client-s3";
+import {
+	DeleteObjectCommand,
+	DeleteObjectsCommand,
+	GetObjectCommand,
+	ListObjectsV2Command,
+	PutObjectCommand
+} from "@aws-sdk/client-s3";
 import {s3} from "@/lib/create-s3-client";
 import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
 
@@ -83,6 +89,7 @@ const joinUiFolderPath = (withinPath: string, name: string) => {
 	return ensureTrailingSlash(out.startsWith("/") ? out : `/${out}`);
 };
 
+
 export async function addNewFolder(
 	_prev: FormState,
 	formData: FormData,
@@ -128,14 +135,16 @@ export async function addNewFolder(
 			return { success: false, error: "Invalid volume type" };
 		}
 
-		const bucket = String(volume.metaData?.bucket || volume.code || "").trim();
+		const bucket = String(volume.metaData?.bucket || "").trim();
 
 		if (!bucket) {
 			return { success: false, error: "Cloud volume missing bucket" };
 		}
 
+		const volumePrefix = getVolumePrefix(volume);
 		const uiFolderPath = joinUiFolderPath(withinPath, name);
-		const key = trimSlashes(uiFolderPath) + "/";
+		const relativeKey = trimSlashes(uiFolderPath);
+		const key = `${volumePrefix}${relativeKey}/`;
 
 		await s3.send(
 			new PutObjectCommand({
@@ -171,7 +180,8 @@ export async function addNewFolder(
 			metaData: {
 				kind: "cloud",
 				bucket,
-				key: trimSlashes(uiFolderPath),
+				key,
+				relativeKey,
 				prefix: key,
 				lastModified: now.toISOString(),
 			},
@@ -208,32 +218,38 @@ export async function addNewFolder(
 	});
 }
 
+
+
 export const refreshViewAfterUpload = async () => {
 	return revalidatePath("/w/[workspaceId]/dashboard/drive");
 };
 
-
+function getVolumePrefix(volume: DriveVolumeEntity) {
+	return `drive/workspaces/${volume.workspaceId}/${volume.code}/`;
+}
 
 export async function fetchCloudListPath(ctx: DriveRouteContext) {
 	const volume = ctx.driveVolume;
 	if (!volume) return [];
 
 	const volumeId = volume.id;
-	const bucket = String(volume.metaData?.bucket || volume.code || "");
+	const bucket = String(volume.metaData?.bucket || "");
 
-	if (!bucket) {
-		throw new Error("Missing bucket in volume metaData");
-	}
+	if (!bucket) throw new Error("Missing bucket in volume metaData");
 
-	const prefix =
+	const volumePrefix = getVolumePrefix(volume);
+
+	const withinPrefix =
 		ctx.withinPath && ctx.withinPath !== "/"
 			? ctx.withinPath.replace(/^\/+/, "").replace(/\/?$/, "/")
 			: "";
 
+	const s3Prefix = `${volumePrefix}${withinPrefix}`;
+
 	const res = await s3.send(
 		new ListObjectsV2Command({
 			Bucket: bucket,
-			Prefix: prefix,
+			Prefix: s3Prefix,
 			Delimiter: "/",
 			MaxKeys: 200,
 		}),
@@ -244,36 +260,37 @@ export async function fetchCloudListPath(ctx: DriveRouteContext) {
 	const rows = [
 		...(res.CommonPrefixes ?? []).map((p) => {
 			const key = String(p.Prefix || "").replace(/\/$/, "");
-			const name = key.split("/").pop() || key;
+			const relativeKey = key.replace(volumePrefix, "");
+			const name = relativeKey.split("/").filter(Boolean).pop() || relativeKey;
 
 			return {
 				ownerId: volume.ownerId,
 				workspaceId: volume.workspaceId,
 				volumeId,
 				type: "folder" as const,
-				path: `/${key}`,
+				path: `/${relativeKey}`,
 				name,
 				sizeBytes: 0,
 				mimeType: null,
 				lastSyncedAt: now,
-				metaData: { bucket, key, prefix: p.Prefix },
+				metaData: { bucket, key, relativeKey, prefix: p.Prefix },
 				updatedAt: now,
 			};
 		}),
 
 		...(res.Contents ?? [])
-			// .filter((o) => o.Key && o.Key !== prefix)
-			.filter((o) => o.Key && o.Key !== prefix && !String(o.Key).endsWith("/"))
+			.filter((o) => o.Key && o.Key !== s3Prefix && !String(o.Key).endsWith("/"))
 			.map((o) => {
 				const key = String(o.Key);
-				const name = key.split("/").pop() || key;
+				const relativeKey = key.replace(volumePrefix, "");
+				const name = relativeKey.split("/").filter(Boolean).pop() || relativeKey;
 
 				return {
 					ownerId: volume.ownerId,
 					workspaceId: volume.workspaceId,
 					volumeId,
 					type: "file" as const,
-					path: `/${key}`,
+					path: `/${relativeKey}`,
 					name,
 					sizeBytes: Number(o.Size || 0),
 					mimeType: null,
@@ -281,6 +298,7 @@ export async function fetchCloudListPath(ctx: DriveRouteContext) {
 					metaData: {
 						bucket,
 						key,
+						relativeKey,
 						etag: o.ETag,
 						lastModified: o.LastModified?.toISOString(),
 					},
@@ -340,15 +358,17 @@ export async function getCloudUploadUrl(
 	const ownerId = String(user?.id || "");
 	if (!ownerId) throw new Error("Not signed in");
 
-	const bucket = String(volume.metaData?.bucket || volume.code || "");
+	const bucket = String(volume.metaData?.bucket || "");
 	if (!bucket) throw new Error("Missing bucket in volume metaData");
 
 	const withinPath = String(ctx.withinPath || "/");
 	const filename = String(input.filename || "").trim();
 	if (!filename) throw new Error("Missing filename");
 
+	const volumePrefix = getVolumePrefix(volume);
 	const fullPath = joinPaths(withinPath, filename);
-	const key = fullPath.replace(/^\/+/, "");
+	const relativeKey = fullPath.replace(/^\/+/, "");
+	const key = `${volumePrefix}${relativeKey}`;
 
 	const url = await getSignedUrl(
 		s3,
@@ -369,6 +389,7 @@ export async function getCloudUploadUrl(
 		bucket,
 		path: fullPath,
 		key,
+		relativeKey,
 		method: "PUT",
 		url,
 		headers: {
@@ -402,23 +423,81 @@ export async function getDriveDownloadUrl(entryId: string) {
 }
 
 export async function deleteDriveEntry(entryId: string) {
-
 	return handleAction(async () => {
 		const rls = await rlsClient();
+
 		const [entry] = await rls((tx) =>
 			tx.select().from(driveEntries).where(eq(driveEntries.id, entryId)).limit(1),
 		);
+
 		if (!entry) throw new Error("Missing drive entry");
+
 		const meta = entry.metaData as any;
 		const bucket = String(meta?.bucket || "");
 		const key = String(meta?.key || entry.path?.replace(/^\/+/, "") || "");
+
 		if (!bucket || !key) throw new Error("Missing bucket or key");
+
+		if (entry.type === "folder") {
+			const prefix = key.endsWith("/") ? key : `${key}/`;
+
+			let continuationToken: string | undefined;
+
+			do {
+				const listed = await s3.send(
+					new ListObjectsV2Command({
+						Bucket: bucket,
+						Prefix: prefix,
+						ContinuationToken: continuationToken,
+					}),
+				);
+
+				const objects = (listed.Contents ?? [])
+					.map((item) => item.Key)
+					.filter(Boolean)
+					.map((Key) => ({ Key: String(Key) }));
+
+				if (objects.length) {
+					await s3.send(
+						new DeleteObjectsCommand({
+							Bucket: bucket,
+							Delete: {
+								Objects: objects,
+								Quiet: true,
+							},
+						}),
+					);
+				}
+
+				continuationToken = listed.NextContinuationToken;
+			} while (continuationToken);
+
+			await rls((tx) =>
+				tx
+					.delete(driveEntries)
+					.where(
+						and(
+							eq(driveEntries.volumeId, entry.volumeId),
+							sql`${driveEntries.path} = ${entry.path} OR ${driveEntries.path} LIKE ${entry.path.replace(/\/$/, "") + "/%"}`,
+						),
+					),
+			);
+
+			revalidatePath("/w/[workspaceId]/dashboard/drive");
+
+			return {
+				success: true,
+				message: "Deleted folder",
+			};
+		}
+
 		await s3.send(
 			new DeleteObjectCommand({
 				Bucket: bucket,
 				Key: key,
 			}),
 		);
+
 		await rls((tx) =>
 			tx
 				.delete(driveEntries)
@@ -429,11 +508,12 @@ export async function deleteDriveEntry(entryId: string) {
 					),
 				),
 		);
+
 		revalidatePath("/w/[workspaceId]/dashboard/drive");
+
 		return {
 			success: true,
 			message: "Deleted file",
 		};
 	});
-
 }
