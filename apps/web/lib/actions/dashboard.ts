@@ -1,7 +1,9 @@
 "use server";
 
 import {
-	apiKeys, createSecret, davAccounts,
+	addressBooks,
+	apiKeys, calendars,
+	createSecret, davAccounts,
 	db, deleteSecretAdmin,
 	driveVolumes,
 	getSecret,
@@ -55,8 +57,6 @@ import {
 	checkDefaultWorkspaceIdentity, fetchWorkspace
 } from "@/lib/actions/workspace";
 import {workspaceIdentityMembers} from "@db";
-import {s3} from "@/lib/create-s3-client";
-import {CreateBucketCommand} from "@aws-sdk/client-s3";
 
 const DASHBOARD_PATH = "/w/[workspaceId]/dashboard/providers";
 const CURRENT_API_VERSION = 1;
@@ -692,6 +692,14 @@ export const fetchUserIdentities = async () => {
 		.where(and(
 			eq(identities.workspaceId, workspaceId)
 		))
+	// const rls = await rlsClient();
+	// return await rls((tx) =>
+	// 	tx
+	// 		.select()
+	// 		.from(identities)
+	// 		.leftJoin(smtpAccounts, eq(identities.smtpAccountId, smtpAccounts.id))
+	// 		.leftJoin(providers, eq(identities.providerId, providers.id))
+	// );
 };
 
 export const deleteDomainIdentity = async (
@@ -1079,41 +1087,45 @@ export const regenerateDavPassword = async () => {
 	const workspaceId = await getWorkspaceId();
 	const job = await davQueue.add("dav:update-password", { userId: user?.id, workspaceId });
 	await job.waitUntilFinished(davEvents);
-	revalidatePath("/w/[workspaceId]/dashboard/platform/sync-services");
+	revalidatePath("/dashboard/platform/sync-services");
 	return job.returnvalue;
 };
-
 
 export async function addNewVolume(_prev: FormState, formData: FormData) {
 	return handleAction(async () => {
 		const rls = await rlsClient();
 		const data = decode(formData);
+		const [secret] = await fetchDecryptedSecrets({
+			linkTable: providerSecrets,
+			foreignCol: providerSecrets.providerId,
+			secretIdCol: providerSecrets.secretId,
+			parentId: String(data.provider),
+		});
 
-		const bucketName = String(data.bucketName).toLowerCase();
+		// We assume S3 for now since we only have S3 volumes
+		const providerType = "s3" as Providers;
+		const store = createStore(providerType, secret.parsedSecret);
+		const bucket = await store.addBucket(String(data.provider), {
+			bucket: String(data.bucketName),
+		});
 
-		await s3.send(
-			new CreateBucketCommand({
-				Bucket: bucketName,
-			}),
-		);
+		if (bucket.ok) {
+			const user = await isSignedIn();
+			await rls((tx) =>
+				tx.insert(driveVolumes).values({
+					ownerId: String(user?.id),
+					label: String(data.bucketName),
+					kind: "cloud",
+					code: String(data.bucketName)?.toLowerCase(),
+					providerId: String(data.provider),
+					metaData: bucket.meta,
+				}),
+			);
+		} else {
+			throw new Error("Failed to create volume: " + bucket.message);
+		}
 
-		const user = await isSignedIn();
-
-		await rls((tx) =>
-			tx.insert(driveVolumes).values({
-				ownerId: String(user?.id),
-				label: bucketName,
-				kind: "cloud",
-				code: bucketName,
-				providerId: null,
-				metaData: {
-					bucket: bucketName,
-				},
-			}),
-		);
-
-		revalidatePath("/w/[workspaceId]/dashboard/platform/storage");
-
+		revalidatePath("/dashboard/platform/storage");
 		return {
 			success: true,
 			message: "Added new volume",

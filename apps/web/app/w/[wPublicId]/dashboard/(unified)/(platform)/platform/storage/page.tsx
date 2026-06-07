@@ -6,13 +6,13 @@ import {
 	getProviderById,
 	syncProviders,
 } from "@/lib/actions/dashboard";
+import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import VolumesManager from "@/components/dashboard/storage/volumes-manager";
 import { rlsClient } from "@/lib/actions/clients";
 import { driveVolumes, providerSecrets, smtpAccountSecrets } from "@db";
 import { parseSecret } from "@/lib/utils";
-import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
 
 export default async function ProvidersPage() {
 	const userProviders = await syncProviders();
@@ -77,7 +77,6 @@ export default async function ProvidersPage() {
 						{STORAGE_PROVIDERS.map((p) => (
 							<ProviderCardShell
 								key={p.key}
-								provisioned={true}
 								spec={p}
 								userProviders={userProviders}
 							/>
@@ -88,7 +87,6 @@ export default async function ProvidersPage() {
 					<VolumesManager
 						userProviders={userProviders}
 						volumes={vols}
-						provisioned={true}
 						providerSelectOptions={options}
 					/>
 				</div>
