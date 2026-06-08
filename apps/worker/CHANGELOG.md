@@ -1,5 +1,11 @@
 # @kurrier/worker
 
+## 2.0.4
+
+### Patch Changes
+
+- [#471](https://github.com/kurrier-org/kurrier/pull/471) [`50f0a99`](https://github.com/kurrier-org/kurrier/commit/50f0a99136826a2e7d65414a88d32d20d27601b0) Thanks [@krokhale](https://github.com/krokhale)! - Add storage and mailflow stats to platform overview
+
 ## 2.0.3
 
 ### Patch Changes
