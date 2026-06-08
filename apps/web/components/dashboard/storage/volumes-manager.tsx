@@ -78,11 +78,13 @@ function VolumeStatusPill({ verified, provisioned }: { verified: boolean; provis
 export default function VolumesManager({
 	userProviders,
 	volumes,
+   	workspacePublicId,
    	provisioned,
 	providerSelectOptions,
 }: {
 	userProviders: SyncProvidersRow[];
 	volumes: DriveVolumeEntity[];
+	workspacePublicId: string;
 	provisioned: boolean
 	providerSelectOptions: { label: string; value: string }[];
 }) {
@@ -187,11 +189,7 @@ export default function VolumesManager({
 													leftSection={<IconDatabaseShare className="size-4" />}
 													size="xs"
 													className="flex-1 sm:flex-none"
-													href={
-														v.code === "home"
-															? "/dashboard/drive"
-															: `/dashboard/drive/volumes/${v.publicId}`
-													}
+													href={`/w/${workspacePublicId}/dashboard/drive/volumes/${v.publicId}`}
 													component={Link}
 												>
 													View

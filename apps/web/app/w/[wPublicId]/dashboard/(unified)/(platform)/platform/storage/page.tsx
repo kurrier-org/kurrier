@@ -9,7 +9,7 @@ import {
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import VolumesManager from "@/components/dashboard/storage/volumes-manager";
-import { rlsClient } from "@/lib/actions/clients";
+import {getWorkspacePublicId, rlsClient} from "@/lib/actions/clients";
 import { driveVolumes, providerSecrets, smtpAccountSecrets } from "@db";
 import { parseSecret } from "@/lib/utils";
 import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
@@ -17,6 +17,7 @@ import ProviderCardShell from "@/components/dashboard/providers/provider-card-sh
 export default async function ProvidersPage() {
 	const userProviders = await syncProviders();
 	const rls = await rlsClient();
+	const workspacePublicId = await getWorkspacePublicId()
 	const vols = await rls((tx) => tx.select().from(driveVolumes));
 	const [, userProviderAccounts] = await Promise.all([
 		fetchDecryptedSecrets({
@@ -87,6 +88,7 @@ export default async function ProvidersPage() {
 				<div className={"mx-1"}>
 					<VolumesManager
 						userProviders={userProviders}
+						workspacePublicId={workspacePublicId}
 						volumes={vols}
 						provisioned={true}
 						providerSelectOptions={options}

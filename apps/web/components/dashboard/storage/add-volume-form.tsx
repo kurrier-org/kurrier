@@ -13,20 +13,20 @@ function AddVolumeForm({
 	onCompleted?: () => void;
 }) {
 	const fields: FieldConfig[] = [
-		{
-			name: "provider",
-			label: "Choose a verified provider",
-			kind: "custom",
-			component: Select,
-			wrapperClasses: "col-span-12",
-			props: {
-				defaultValue: providerSelectOptions[0]?.value || null,
-				className: "w-full",
-				required: true,
-				data: providerSelectOptions,
-				allowDeselect: false,
-			},
-		},
+		// {
+		// 	name: "provider",
+		// 	label: "Choose a verified provider",
+		// 	kind: "custom",
+		// 	component: Select,
+		// 	wrapperClasses: "col-span-12",
+		// 	props: {
+		// 		defaultValue: providerSelectOptions[0]?.value || null,
+		// 		className: "w-full",
+		// 		required: true,
+		// 		data: providerSelectOptions,
+		// 		allowDeselect: false,
+		// 	},
+		// },
 		{
 			name: "bucketName",
 			label: "Bucket Name",

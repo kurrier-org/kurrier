@@ -2,20 +2,20 @@
 
 import {
 	apiKeys, createSecret, davAccounts,
-	db, deleteSecretAdmin,
+	db, deleteSecretAdmin, draftMessages, driveEntries,
 	driveVolumes,
 	getSecret,
 	identities,
 	IdentityCreate,
 	IdentityEntity,
 	IdentityInsertSchema,
-	mailboxes,
+	mailboxes, messageAttachments,
 	messages,
 	providers,
 	providerSecrets,
 	secretsMeta,
 	smtpAccounts,
-	smtpAccountSecrets,
+	smtpAccountSecrets, threads,
 	updateSecret, WebhookInsertEntity, webhooks, workspaceMembers,
 } from "@db";
 import {
@@ -32,7 +32,7 @@ import {
 	SYSTEM_MAILBOXES,
 } from "@schema";
 import { currentSession, isSignedIn } from "@/lib/actions/auth";
-import {and, count, eq, sql, gte, desc, inArray} from "drizzle-orm";
+import {and, count, eq, sql, gte, desc, inArray, sum} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { decode } from "decode-formdata";
 import { PgColumn, PgTable } from "drizzle-orm/pg-core";
@@ -45,7 +45,7 @@ import {
 import { parseSecret } from "@/lib/utils";
 import { z } from "zod";
 import slugify from "@sindresorhus/slugify";
-import {getWorkspaceId, rlsClient} from "@/lib/actions/clients";
+import {getWorkspaceId, getWorkspaceRole, rlsClient} from "@/lib/actions/clients";
 import { v4 as uuidv4 } from "uuid";
 import { backfillMailboxes, clearImapClients } from "@/lib/actions/mailbox";
 import { kvGet } from "@common";
@@ -933,41 +933,121 @@ export type FetchUserIdentitiesResult = Awaited<
 export const getDashboardStats = async () => {
 	return handleAction(async () => {
 		const rls = await rlsClient();
+		const workspaceRole = await getWorkspaceRole();
+		const isOwner = workspaceRole === "owners";
+
 		const data = await rls(async (tx) => {
-			const [[mp], [sa], [vd], [ai], [epTotal], [ep24h]] = await Promise.all([
-				tx.select({ count: count() }).from(providers),
-				tx.select({ count: count() }).from(smtpAccounts),
-				tx
-					.select({ count: count() })
-					.from(identities)
-					.where(
-						and(
-							eq(identities.kind, "domain"),
-							eq(identities.status, "verified")
-						),
-					),
-				tx
-					.select({ count: count() })
-					.from(identities)
-					.where(and(
-						eq(identities.kind, "email")
-					)),
+			const [
+				[messageCount],
+				[messageCount24h],
+				[threadCount],
+				[draftCount],
+				[scheduledDraftCount],
+				[attachmentCount],
+				[rawMessageStorage],
+				[attachmentStorage],
+			] = await Promise.all([
 				tx.select({ count: count() }).from(messages),
+
 				tx
 					.select({ count: count() })
 					.from(messages)
-					.where(and(
-						gte(messages.createdAt, sql`now() - interval '24 hours'`)
-					)),
+					.where(gte(messages.createdAt, sql`now() - interval '24 hours'`)),
+
+				tx.select({ count: count() }).from(threads),
+
+				tx.select({ count: count() }).from(draftMessages),
+
+				tx
+					.select({ count: count() })
+					.from(draftMessages)
+					.where(eq(draftMessages.status, "scheduled")),
+
+				tx.select({ count: count() }).from(messageAttachments),
+
+				tx.select({ bytes: sum(messages.sizeBytes) }).from(messages),
+
+				tx.select({ bytes: sum(messageAttachments.sizeBytes) }).from(messageAttachments),
 			]);
 
+			let connectedProviders = null as number | null;
+			let verifiedDomains = null as number | null;
+			let activeIdentities = null as number | null;
+			let volumeCount = null as number | null;
+			let driveEntryCount = null as number | null;
+			let driveStorageBytes = 0;
+
+			if (isOwner) {
+				const [
+					[providerCount],
+					[smtpCount],
+					[verifiedDomainCount],
+					[identityCount],
+					[driveVolumeCount],
+					[driveEntriesCount],
+					[driveStorage],
+				] = await Promise.all([
+					tx.select({ count: count() }).from(providers),
+
+					tx.select({ count: count() }).from(smtpAccounts),
+
+					tx
+						.select({ count: count() })
+						.from(identities)
+						.where(
+							and(
+								eq(identities.kind, "domain"),
+								eq(identities.status, "verified"),
+							),
+						),
+
+					tx
+						.select({ count: count() })
+						.from(identities)
+						.where(eq(identities.kind, "email")),
+
+					tx.select({ count: count() }).from(driveVolumes),
+
+					tx.select({ count: count() }).from(driveEntries),
+
+					tx.select({ bytes: sum(driveEntries.sizeBytes) }).from(driveEntries),
+				]);
+
+				connectedProviders =
+					Number(providerCount?.count ?? 0) + Number(smtpCount?.count ?? 0);
+				verifiedDomains = Number(verifiedDomainCount?.count ?? 0);
+				activeIdentities = Number(identityCount?.count ?? 0);
+				volumeCount = Number(driveVolumeCount?.count ?? 0);
+				driveEntryCount = Number(driveEntriesCount?.count ?? 0);
+				driveStorageBytes = Number(driveStorage?.bytes ?? 0);
+			}
+
+			const rawMessageBytes = Number(rawMessageStorage?.bytes ?? 0);
+			const attachmentBytes = Number(attachmentStorage?.bytes ?? 0);
+			const totalStorageBytes = rawMessageBytes + driveStorageBytes;
 
 			return {
-				connectedProviders: (mp?.count ?? 0) + (sa?.count ?? 0),
-				verifiedDomains: vd?.count ?? 0,
-				activeIdentities: ai?.count ?? 0,
-				emailsProcessedTotal: epTotal?.count ?? 0,
-				emailsProcessed24h: ep24h?.count ?? 0,
+				isOwner,
+
+				connectedProviders,
+				verifiedDomains,
+				activeIdentities,
+				volumeCount,
+				driveEntryCount,
+
+				emailsProcessedTotal: Number(messageCount?.count ?? 0),
+				emailsProcessed24h: Number(messageCount24h?.count ?? 0),
+				threadCount: Number(threadCount?.count ?? 0),
+				draftCount: Number(draftCount?.count ?? 0),
+				scheduledDraftCount: Number(scheduledDraftCount?.count ?? 0),
+				attachmentCount: Number(attachmentCount?.count ?? 0),
+
+				rawMessageBytes,
+				attachmentBytes,
+				driveStorageBytes,
+				totalStorageBytes,
+				storageBytesUsed: totalStorageBytes,
+				isStorageOverLimit: false,
 			};
 		});
 
