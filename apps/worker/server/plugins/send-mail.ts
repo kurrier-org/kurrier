@@ -33,8 +33,9 @@ import { and, eq } from "drizzle-orm";
 import addressparser from "addressparser";
 import { PgTransaction } from "drizzle-orm/pg-core";
 import { getRedis } from "../../lib/get-redis";
-import {GetObjectCommand} from "@aws-sdk/client-s3";
+import {GetObjectCommand, PutObjectCommand} from "@aws-sdk/client-s3";
 import {s3} from "../../lib/create-s3-client";
+import MailComposer from "nodemailer/lib/mail-composer";
 const connection = new IORedis({
 	maxRetriesPerRequest: null,
 	password: serverConfig.REDIS_PASSWORD,
@@ -329,6 +330,40 @@ export default defineNitroPlugin(async (nitroApp) => {
 					.values(parsedMessage as MessageCreate)
 					.returning();
 
+
+				const emlBuffer = await buildEmlBuffer({
+					messageId: String(mailerResponse.MessageId) || `msg-${Date.now()}`,
+					from: mailbox.identity.value,
+					to: data.to || [],
+					cc: data.cc || [],
+					bcc: data.bcc || [],
+					subject: String(newMessage.subject || "(no subject)"),
+					text: newMessage.text,
+					html: newMessage.html,
+					inReplyTo,
+					references,
+					attachments: attachmentBlobs,
+				});
+				const rawStorageKey = `eml/${newMessage.ownerId}/${newMessage.mailboxId}/${newMessage.id}.eml`;
+				await s3.send(
+					new PutObjectCommand({
+						Bucket: serverConfig.S3_BUCKET,
+						Key: rawStorageKey,
+						Body: emlBuffer,
+						ContentType: "message/rfc822",
+					}),
+				);
+				await tx
+					.update(messages)
+					.set({
+						rawStorageKey,
+						sizeBytes: emlBuffer.length,
+					})
+					.where(eq(messages.id, newMessage.id));
+
+
+
+
 				for (const attachmentBlob of attachmentBlobs) {
 					await tx.insert(messageAttachments).values({
 						...attachmentBlob.item,
@@ -503,6 +538,52 @@ export default defineNitroPlugin(async (nitroApp) => {
 			console.error("fetchAttachmentBlobs error:", e);
 			return [];
 		}
+	}
+
+
+	async function blobToBuffer(blob: Blob) {
+		return Buffer.from(await blob.arrayBuffer());
+	}
+
+	async function buildEmlBuffer(opts: {
+		messageId: string;
+		from: string;
+		to: string[];
+		cc?: string[];
+		bcc?: string[];
+		subject: string;
+		text?: string | null;
+		html?: string | null;
+		inReplyTo?: string | null;
+		references?: string[];
+		attachments: AttachmentDownload[];
+	}) {
+		const composer = new MailComposer({
+			messageId: opts.messageId,
+			from: opts.from,
+			to: opts.to,
+			cc: opts.cc,
+			bcc: opts.bcc,
+			subject: opts.subject,
+			text: opts.text || "",
+			html: opts.html || "",
+			inReplyTo: opts.inReplyTo || undefined,
+			references: opts.references?.length ? opts.references : undefined,
+			attachments: await Promise.all(
+				opts.attachments.map(async (att) => ({
+					filename: att.name,
+					content: await blobToBuffer(att.blob),
+					contentType: String(att.item.contentType || "application/octet-stream"),
+				})),
+			),
+		});
+
+		return await new Promise<Buffer>((resolve, reject) => {
+			composer.compile().build((err, message) => {
+				if (err) reject(err);
+				else resolve(message);
+			});
+		});
 	}
 
 	nitroApp.hooks.hookOnce("close", async () => {
