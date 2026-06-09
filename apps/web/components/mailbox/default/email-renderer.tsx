@@ -91,6 +91,7 @@ function EmailRenderer({
 	markSmtp,
 	activeMailboxId,
     mailSubscription,
+	identityMailboxes,
 	children,
 }: {
 	threadIndex: number;
@@ -103,6 +104,7 @@ function EmailRenderer({
 	markSmtp: boolean;
 	activeMailboxId: string;
     mailSubscription: FetchThreadMailSubsResult["byMessageId"] | null;
+	identityMailboxes: FetchIdentityMailboxListResult;
 	children?: React.ReactNode;
 }) {
 	const formatted = Temporal.Instant.from(message.createdAt.toISOString())
@@ -439,6 +441,7 @@ function EmailRenderer({
 						ref={editorRef}
 						publicConfig={publicConfig}
 						message={message}
+						identityMailboxes={identityMailboxes}
 						onReady={(el) => {
 							scrollToEditor(el, { offsetTop: 96, minBottomGap: 64 });
 							requestAnimationFrame(() => editorRef.current?.focus());
