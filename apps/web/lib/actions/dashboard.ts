@@ -32,7 +32,7 @@ import {
 	SYSTEM_MAILBOXES,
 } from "@schema";
 import { currentSession, isSignedIn } from "@/lib/actions/auth";
-import {and, count, eq, sql, gte, desc, inArray, sum} from "drizzle-orm";
+import {and, count, eq, sql, gte, desc, inArray, sum, countDistinct} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { decode } from "decode-formdata";
 import { PgColumn, PgTable } from "drizzle-orm/pg-core";
@@ -954,7 +954,7 @@ export const getDashboardStats = async () => {
 					.from(messages)
 					.where(gte(messages.createdAt, sql`now() - interval '24 hours'`)),
 
-				tx.select({ count: count() }).from(threads),
+				tx.select({ count: countDistinct(messages.threadId) }).from(messages),
 
 				tx.select({ count: count() }).from(draftMessages),
 
