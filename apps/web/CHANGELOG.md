@@ -1,5 +1,11 @@
 # web
 
+## 2.0.8
+
+### Patch Changes
+
+- [#474](https://github.com/kurrier-org/kurrier/pull/474) [`36d2fd7`](https://github.com/kurrier-org/kurrier/commit/36d2fd761b129892a2e52fb34b5d5a568b27d3c8) Thanks [@krokhale](https://github.com/krokhale)! - fix unable to reply to bug
+
 ## 2.0.7
 
 ### Patch Changes
