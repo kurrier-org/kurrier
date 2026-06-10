@@ -35,7 +35,8 @@ import { PgTransaction } from "drizzle-orm/pg-core";
 import { getRedis } from "../../lib/get-redis";
 import {GetObjectCommand, PutObjectCommand} from "@aws-sdk/client-s3";
 import {s3} from "../../lib/create-s3-client";
-import MailComposer from "nodemailer/lib/mail-composer";
+import MailComposer from "nodemailer/lib/mail-composer/index.js";
+// import MailComposer from "nodemailer/lib/mail-composer";
 const connection = new IORedis({
 	maxRetriesPerRequest: null,
 	password: serverConfig.REDIS_PASSWORD,
