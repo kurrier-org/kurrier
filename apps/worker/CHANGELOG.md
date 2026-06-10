@@ -1,5 +1,11 @@
 # @kurrier/worker
 
+## 2.0.5
+
+### Patch Changes
+
+- [#477](https://github.com/kurrier-org/kurrier/pull/477) [`4ec878e`](https://github.com/kurrier-org/kurrier/commit/4ec878ed0e4b479999d612ccc9a77e0664e6bbff) Thanks [@krokhale](https://github.com/krokhale)! - changed nodemail imports
+
 ## 2.0.4
 
 ### Patch Changes
