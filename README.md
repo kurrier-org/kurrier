@@ -6,7 +6,7 @@ The self-hosted open-source workspace for **email, calendars, contacts and stora
 ### ☁️ Looking for the managed version?
 
 Try **Kurrier Cloud** with shared inboxes, assignments, priorities, team collaboration, and more:
-https://kurrier.io
+https://www.kurrier.io
 
 ## ✨ What's New
 
