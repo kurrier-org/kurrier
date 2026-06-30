@@ -3,10 +3,16 @@ The self-hosted open-source workspace for **email, calendars, contacts and stora
 
 > If Kurrier is useful to you, please consider ⭐ starring the repository and sharing it with others who care about open, self-hosted infrastructure. Word of mouth and GitHub stars help the project grow, attract contributors, and accelerate development.
 
-### ☁️ Looking for the managed version?
+### ☁️ Looking for a hosted version?
 
-Try **Kurrier Cloud** with shared inboxes, assignments, priorities, team collaboration, and more:
-https://www.kurrier.io
+Choose the hosted experience that fits your needs:
+
+- **Kurrier Cloud** — For teams with shared inboxes assignments, priorities, team collaboration, and more.    
+  https://www.kurrier.io
+
+- **Kurrier Mail** — For individuals or teams wanting hosted workspaces for email, calendars, contacts, and storage using your existing email provider, including Gmail, Google Workspace, and any SMTP-compatible provider
+  https://www.kurriermail.com   
+  
 
 ## ✨ What's New
 
