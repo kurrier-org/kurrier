@@ -4,14 +4,18 @@ import Link from "next/link";
 import * as React from "react";
 import { getPublicEnv } from "@schema";
 import { redirect } from "next/navigation";
+import {getDictionary, Locale} from "@/lib/dictionaries";
 
-export default function SignupPage() {
+export default async function SignupPage({ params }: { params: Promise<{ locale: Locale }>; }) {
 	const { DISABLE_SIGNUP } = getPublicEnv();
 	const googleEnabled = process.env.OIDC_GOOGLE_CLIENT_ID && process.env.OIDC_GOOGLE_CLIENT_SECRET;
 
 	if (DISABLE_SIGNUP) {
 		redirect("/auth/login?message=signup_disabled");
 	}
+
+	const nParams = await params;
+	const dict = await getDictionary(nParams.locale);
 
 	return (
 		<div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
@@ -25,7 +29,7 @@ export default function SignupPage() {
 				</Link>
 				<SignupForm oidc={{
 					googleEnabled: !!googleEnabled,
-				}} />
+				}} dict={dict}  />
 			</div>
 		</div>
 	);

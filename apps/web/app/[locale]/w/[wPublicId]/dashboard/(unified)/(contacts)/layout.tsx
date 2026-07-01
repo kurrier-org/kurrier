@@ -13,7 +13,7 @@ import NavUserWrapper from "@/components/ui/dashboards/workspace/nav-user-wrappe
 import RenderContactsLabelHomeSidebar from "@/components/dashboard/labels/render-contacts-label-home-sidebar";
 
 export default async function DashboardLayout({
-	children,
+	children
 }: {
 	children: React.ReactNode;
 }) {

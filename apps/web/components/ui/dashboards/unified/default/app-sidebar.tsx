@@ -40,7 +40,6 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 		...restProps
 	} = props;
 
-
 	const isMobile = useMediaQuery("(max-width: 768px)");
 
 	const data = {

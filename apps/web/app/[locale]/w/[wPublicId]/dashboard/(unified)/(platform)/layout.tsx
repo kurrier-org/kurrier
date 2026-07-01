@@ -14,7 +14,6 @@ export default async function DashboardLayout({
 }) {
 	const workspacePublicId = await getWorkspacePublicId()
 
-
 	return (
 		<>
 			<AppSidebar
