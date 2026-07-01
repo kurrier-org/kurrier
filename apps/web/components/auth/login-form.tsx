@@ -19,14 +19,16 @@ import { Loader2Icon } from "lucide-react";
 import { FormState } from "@schema";
 import { IconBrandGoogle } from "@tabler/icons-react";
 import { Button } from "@mantine/core";
+import type {Dictionary} from "@/lib/dictionaries";
 
 export function LoginForm({
 	className,
 	oidc,
+	dict,
 	...props
 }: React.ComponentProps<"div"> & {oidc?: {
 		googleEnabled?: boolean;
-	} }) {
+	} }  & {dict: Dictionary}) {
 	const [formState, formAction, isPending] = useActionState<
 		FormState,
 		FormData
@@ -36,7 +38,7 @@ export function LoginForm({
 		<div className={cn("flex flex-col gap-6", className)} {...props}>
 			<Card>
 				<CardHeader className="text-center">
-					<CardTitle className="text-xl">Welcome</CardTitle>
+					<CardTitle className="text-xl">{dict.auth.welcomeBack}</CardTitle>
 					<CardDescription>Login with your Google account</CardDescription>
 					{oidc?.googleEnabled ? (
 						<Button fullWidth variant="default" className="w-full" href={"/api/auth/oidc/google"} component="a" leftSection={<IconBrandGoogle/>}>
@@ -47,6 +49,7 @@ export function LoginForm({
 
 				<CardContent>
 					<Form action={formAction}>
+						<input type="hidden" name="locale" value={dict.locale} />
 						<div className="grid gap-6">
 							{/*TODO Google Login*/}
 							{/*<div className="flex flex-col gap-4">*/}
@@ -69,7 +72,7 @@ export function LoginForm({
 
 							<div className="grid gap-6">
 								<div className="grid gap-3">
-									<Label htmlFor="email">Email</Label>
+									<Label htmlFor="email">{dict.auth.email}</Label>
 									<Input
 										id="email"
 										type="email"
@@ -82,7 +85,7 @@ export function LoginForm({
 
 								<div className="grid gap-3">
 									<div className="flex items-center">
-										<Label htmlFor="password">Password</Label>
+										<Label htmlFor="password">{dict.auth.password}</Label>
 										{/*<a*/}
 										{/*	href="#"*/}
 										{/*	className="ml-auto text-sm underline-offset-4 hover:underline"*/}
@@ -124,12 +127,12 @@ export function LoginForm({
 							</div>
 
 							<div className="text-center text-sm">
-								Don&apos;t have an account?{" "}
+								{dict.auth.noAccount}{" "}
 								<Link
 									href="/auth/signup"
 									className="underline underline-offset-4"
 								>
-									Sign up
+									{dict.auth.signUp}
 								</Link>
 							</div>
 						</div>

@@ -2,13 +2,19 @@ import { LoginForm } from "@/components/auth/login-form";
 import Link from "next/link";
 import KurrierLogo from "@/components/common/kurrier-logo";
 import * as React from "react";
+import {getDictionary, Locale} from "@/lib/dictionaries";
 
-export default async function LoginPage({ searchParams }: {
-		searchParams: Promise<{ message?: string }>;
-	}) {
-	const params = await searchParams;
-	const showSignupDisabledMessage = params.message === "signup_disabled";
+export default async function LoginPage({ params, searchParams }: {
+	params: Promise<{ locale: Locale }>;
+	searchParams: Promise<{ message?: string }>;
+}) {
+
+	const sParams = await searchParams;
+	const nParams = await params;
+	const dict = await getDictionary(nParams.locale);
+	const showSignupDisabledMessage = sParams.message === "signup_disabled";
 	const googleEnabled = process.env.OIDC_GOOGLE_CLIENT_ID && process.env.OIDC_GOOGLE_CLIENT_SECRET;
+
 
 	return (
 		<div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
@@ -28,7 +34,7 @@ export default async function LoginPage({ searchParams }: {
 						</p>
 					</div>
 				)}
-				<LoginForm oidc={{
+				<LoginForm dict={dict} oidc={{
 					googleEnabled: !!googleEnabled,
 				}} />
 			</div>

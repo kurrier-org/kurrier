@@ -1,0 +1,21 @@
+{
+  "locale": "ko",
+  "auth": {
+    "welcomeBack": "다시 오신 것을 환영합니다",
+    "welcome": "다시 오신 것을 환영합니다",
+    "email": "이메일",
+    "password": "비밀번호",
+    "signIn": "로그인",
+    "signUp": "회원가입",
+    "matchExact": "비밀번호가 정확히 일치해야 합니다.",
+    "noAccount": "계정이 없으신가요?",
+    "retype": "비밀번호 다시 입력",
+    "accountPresent": "이미 계정이 있으신가요?",
+    "submit": "제출",
+    "continueWith": "계속하기",
+    "workspaceName": "워크스페이스 이름"
+  },
+  "dashboard": {
+    "overview": "개요"
+  }
+}
