@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 3.0.11
+
+### Patch Changes
+
+- [#480](https://github.com/kurrier-org/kurrier/pull/480) [`163600f`](https://github.com/kurrier-org/kurrier/commit/163600fae73ee7261049012ebbb5ff64786ae7ac) Thanks [@krokhale](https://github.com/krokhale)! - translations support
+
 ## 3.0.10
 
 ### Patch Changes
