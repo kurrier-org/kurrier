@@ -1,7 +1,7 @@
 import React from "react";
 import MailIdentities from "@/components/dashboard/identities/mail-identities";
 import {
-	fetchDecryptedSecrets,
+	fetchDecryptedSecrets, fetchGoogleAccounts,
 	fetchUserIdentities,
 	getProviderById,
 } from "@/lib/actions/dashboard";
@@ -29,6 +29,7 @@ async function Page() {
 		}),
 	]);
 	const userIdentities = await fetchUserIdentities();
+	const googleAccounts = await fetchGoogleAccounts();
 
 	const options = [];
 	for (const providerAccount of userProviderAccounts) {
@@ -53,6 +54,23 @@ async function Page() {
 			options.push({
 				label: `SMTP Account (${secret.label})`,
 				value: `smtp-${String(smtpAccount.linkRow.id)}`,
+			});
+		}
+	}
+	for (const googleAccount of googleAccounts) {
+		const canSend = googleAccount.scopes?.includes(
+			"https://www.googleapis.com/auth/gmail.send",
+		);
+
+		const verified =
+			googleAccount.status === "connected" &&
+			canSend &&
+			!googleAccount.lastError;
+
+		if (verified) {
+			options.push({
+				label: `Google (${googleAccount.email})`,
+				value: `google-${googleAccount.id}`,
 			});
 		}
 	}
@@ -81,6 +99,7 @@ async function Page() {
 					workspace={workspace}
 					workspaceMembers={workspaceMembers}
 					workspaceUserIdentities={workspaceUserIdentities}
+					googleAccounts={googleAccounts}
 				/>
 			</div>
 		</>

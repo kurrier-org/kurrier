@@ -4,7 +4,7 @@ import {
 	apiKeys, createSecret, davAccounts,
 	db, deleteSecretAdmin, draftMessages, driveEntries,
 	driveVolumes,
-	getSecret,
+	getSecret, googleAccounts,
 	identities,
 	IdentityCreate,
 	IdentityEntity,
@@ -39,7 +39,7 @@ import { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import {
 	createMailer,
 	createStore,
-	DomainIdentity,
+	DomainIdentity, gmailClientForGoogleAccount,
 	VerifyResult,
 } from "@providers";
 import { parseSecret } from "@/lib/utils";
@@ -47,7 +47,7 @@ import { z } from "zod";
 import slugify from "@sindresorhus/slugify";
 import {getWorkspaceId, getWorkspaceRole, rlsClient} from "@/lib/actions/clients";
 import { v4 as uuidv4 } from "uuid";
-import { backfillMailboxes, clearImapClients } from "@/lib/actions/mailbox";
+import {backfillGoogleMailboxes, backfillMailboxes, clearImapClients} from "@/lib/actions/mailbox";
 import { kvGet } from "@common";
 import { nanoid } from "nanoid";
 import { getRedis } from "@/lib/actions/get-redis";
@@ -495,6 +495,14 @@ const initializeEmailIdentity = async (
 export const initializeMailboxes = async (emailIdentity: IdentityEntity, userId: string, workspaceId: string) => {
 	if (emailIdentity.kind !== "email") return;
 
+	if ((emailIdentity.metaData as any)?.provider === "google") {
+		await backfillGoogleMailboxes(
+			emailIdentity.id,
+			emailIdentity.workspaceId,
+		);
+		return;
+	}
+
 	if (emailIdentity.smtpAccountId) {
 		await backfillMailboxes(emailIdentity.id, emailIdentity.workspaceId);
 		return;
@@ -515,7 +523,6 @@ export const initializeMailboxes = async (emailIdentity: IdentityEntity, userId:
 		await tx.insert(mailboxes).values(rows).onConflictDoNothing().returning();
 		const { davQueue } = await getRedis();
 		await davQueue.add("dav:create-identity", { identityId: emailIdentity.id, userId, workspaceId }, { jobId: `identity-dav-bootstrap-${emailIdentity.id}` });
-		// await addIdentityOwnerGrant(emailIdentity)
 		return
 	});
 	return rows;
@@ -567,39 +574,150 @@ export async function addNewEmailIdentity(
 ) {
 	return handleAction(async () => {
 		const rls = await rlsClient();
-		const data = decode(formData);
+		const data = decode(formData) as Record<string, any>;
+
 		const sharedWithWorkspace = data.shared === "on";
+
 		if (!sharedWithWorkspace) {
 			const workspaceMembers = data?.workspaceMembers as string[] | undefined;
+
 			if (!workspaceMembers?.length) {
 				return {
 					success: false,
 					error: "Must assign at least one member",
-				}
+				};
 			}
 		}
 
 		const workspaceId = await getWorkspaceId();
 		const userId = String((await isSignedIn())?.id);
 
+		if (!userId) {
+			return {
+				success: false,
+				error: "Not signed in",
+			};
+		}
+
+		if (data.googleAccountId) {
+			console.log("[GOOGLE BRANCH]", {
+
+				googleAccountId: data.googleAccountId,
+				workspaceId,
+			});
+
+			const [googleAccount] = await db
+				.select()
+				.from(googleAccounts)
+				.where(
+					and(
+						eq(googleAccounts.id, String(data.googleAccountId)),
+						eq(googleAccounts.workspaceId, workspaceId),
+					),
+				)
+				.limit(1);
+
+			if (!googleAccount) {
+				return {
+					success: false,
+					error: "Google account not found",
+				};
+			}
+
+			if (googleAccount.status !== "connected") {
+				return {
+					success: false,
+					error: "Google account is not connected",
+				};
+			}
+
+			const identityData = IdentityInsertSchema.parse({
+				workspaceId,
+				ownerId: userId,
+				value: googleAccount.email,
+				displayName: data.displayName || googleAccount.name || googleAccount.email,
+				kind: "email",
+				sharedWithWorkspace,
+				metaData: {
+					provider: "google",
+					dailyQuota: Number(data.dailyQuota) || defaultImapQuota,
+					sharedWithWorkspace,
+					gmail: {
+						googleAccountId: googleAccount.id,
+					},
+				},
+			});
+
+			const [identity] = await db
+				.insert(identities)
+				.values(identityData as IdentityCreate)
+				.returning();
+
+			console.log("[GOOGLE IDENTITY INSERTED]", identity.id);
+
+			await db
+				.update(googleAccounts)
+				.set({
+					identityId: identity.id,
+					updatedAt: new Date(),
+				})
+				.where(eq(googleAccounts.id, googleAccount.id));
+
+			await checkDefaultWorkspaceIdentity();
+
+			if (sharedWithWorkspace) {
+				await assignIdentityToAllWorkspaceMembers(identity);
+			} else {
+				await assignWorkspaceMembersToIdentity(
+					identity,
+					data.workspaceMembers as string,
+				);
+			}
+
+			console.log("[GOOGLE BEFORE INIT MAILBOXES]", identity.id);
+			try {
+				await initializeMailboxes(identity, userId, workspaceId);
+			} catch (err) {
+				console.error("[GOOGLE MAILBOX INIT FAILED]", err);
+			}
+
+			revalidatePath(DASHBOARD_PATH);
+
+			return {
+				success: true,
+				message: "Added Google email identity",
+			};
+		}
+
 		if (data.smtpAccountId) {
 			const identityData = IdentityInsertSchema.parse({
 				workspaceId,
 				ownerId: userId,
-				...data
+				...data,
 			});
-			identityData.sharedWithWorkspace = Boolean(sharedWithWorkspace)
+
+			identityData.sharedWithWorkspace = sharedWithWorkspace;
 			identityData.metaData = {
 				dailyQuota: Number(data.dailyQuota) || defaultImapQuota,
-				sharedWithWorkspace: Boolean(sharedWithWorkspace),
+				sharedWithWorkspace,
 			};
-			const [identity] = await db.insert(identities).values(identityData as IdentityCreate).returning()
-			await checkDefaultWorkspaceIdentity()
+
+			const [identity] = await db
+				.insert(identities)
+				.values(identityData as IdentityCreate)
+				.returning();
+
+			await checkDefaultWorkspaceIdentity();
+
 			if (sharedWithWorkspace) {
 				await assignIdentityToAllWorkspaceMembers(identity);
 			} else {
-				await assignWorkspaceMembersToIdentity(identity, data.workspaceMembers as string);
+				await assignWorkspaceMembersToIdentity(
+					identity,
+					data.workspaceMembers as string,
+				);
 			}
+
 			await initializeMailboxes(identity, userId, workspaceId);
 		} else {
 			data.domainIdentityId = data.domain;
@@ -613,40 +731,55 @@ export async function addNewEmailIdentity(
 
 			const id = uuidv4();
 			const initRes = await initializeEmailIdentity(data, id);
+
 			if (!initRes.success || !initRes.data) {
 				throw new Error("Failed to initialize email identity");
 			}
+
 			const { response, parsedVaultValues, secret } = initRes.data;
 
 			data.metaData = response;
 			data.id = id;
-			data.sharedWithWorkspace = Boolean(sharedWithWorkspace);
+			data.sharedWithWorkspace = sharedWithWorkspace;
+
 			const identityData = IdentityInsertSchema.parse({
 				workspaceId,
 				ownerId: userId,
-				...data
+				...data,
 			});
-			const [emailIdentity] = await db.insert(identities).values(identityData as IdentityCreate).returning()
 
-			await checkDefaultWorkspaceIdentity()
+			const [emailIdentity] = await db
+				.insert(identities)
+				.values(identityData as IdentityCreate)
+				.returning();
+
+			await checkDefaultWorkspaceIdentity();
+
 			if (sharedWithWorkspace) {
 				await assignIdentityToAllWorkspaceMembers(emailIdentity);
 			} else {
-				await assignWorkspaceMembersToIdentity(emailIdentity, data.workspaceMembers as string);
+				await assignWorkspaceMembersToIdentity(
+					emailIdentity,
+					data.workspaceMembers as string,
+				);
 			}
 
 			const session = await currentSession();
+
 			parsedVaultValues.sendVerified = true;
 			parsedVaultValues.receiveVerified = domainIdentity.incomingDomain;
+
 			if (domainIdentity.incomingDomain) {
 				await initializeMailboxes(emailIdentity, userId, workspaceId);
 			}
+
 			await updateSecret(session, workspaceId, secret.metaId, {
 				value: JSON.stringify(parsedVaultValues),
 			});
 		}
 
 		revalidatePath(DASHBOARD_PATH);
+
 		return {
 			success: true,
 			message: "Added new identity",
@@ -661,22 +794,48 @@ export const testSendingEmail = async (
 	return handleAction(async () => {
 		if (userIdentity?.smtp_accounts) {
 			const mailer = createMailer("smtp", decryptedSecrets);
-			await mailer.sendTestEmail(userIdentity.identities.value, {
+
+			const ok = await mailer.sendTestEmail(userIdentity.identities.value, {
 				subject: "Test email from Kurrier",
 				body: "This is a test email from your configured SMTP account in Kurrier.",
 			});
-			return { success: true, message: "Test email sent successfully." };
-		} else if (userIdentity?.providers) {
+
+			return ok
+				? { success: true, message: "Test email sent successfully." }
+				: { success: false, error: "Failed to send test email." };
+		}
+
+		if (userIdentity?.providers) {
 			const mailer = createMailer(
-				userIdentity?.providers.type as Providers,
+				userIdentity.providers.type as Providers,
 				decryptedSecrets,
 			);
-			await mailer.sendTestEmail(userIdentity.identities.value, {
+
+			const ok = await mailer.sendTestEmail(userIdentity.identities.value, {
 				subject: "Test email from Kurrier",
 				from: userIdentity.identities.value,
 				body: "This is a test email from your configured account in Kurrier.",
 			});
-			return { success: true, message: "Test email sent successfully." };
+
+			return ok
+				? { success: true, message: "Test email sent successfully." }
+				: { success: false, error: "Failed to send test email." };
+		}
+
+		if (userIdentity?.identities?.metaData?.provider === "google") {
+			const mailer = createMailer("google" as Providers, {
+				identityId: userIdentity.identities.id,
+			});
+
+			const ok = await mailer.sendTestEmail(userIdentity.identities.value, {
+				subject: "Test email from Kurrier",
+				from: userIdentity.identities.value,
+				body: "This is a test email from your connected Gmail account in Kurrier.",
+			});
+
+			return ok
+				? { success: true, message: "Test email sent successfully." }
+				: { success: false, error: "Failed to send test email." };
 		}
 
 		return { success: false, error: "Provider not supported yet." };
@@ -739,35 +898,81 @@ const cleanupIdentity = async (identityId: string, workspaceId: string) => {
 	await job.waitUntilFinished(davEvents);
 };
 
+const enqueueIdentityCleanup = async (identityId: string, workspaceId: string) => {
+	const { davQueue } = await getRedis();
+
+	await davQueue.add(
+		"dav:delete:identity",
+		{ identityId, workspaceId },
+		{
+			jobId: `identity-dav-cleanup-${identityId}`,
+			removeOnComplete: true,
+			removeOnFail: false,
+			attempts: 3,
+			backoff: {
+				type: "exponential",
+				delay: 5000,
+			},
+		},
+	);
+};
+
 export const deleteEmailIdentity = async (
 	userIdentity: FetchUserIdentitiesResult[number],
 ) => {
 	return handleAction(async () => {
-		if (!userIdentity.smtp_accounts) {
+		const identity = userIdentity.identities;
+		const isGoogle = identity?.metaData?.provider === "google";
+
+		if (isGoogle) {
+			const mailer = createMailer("google" as Providers, {
+				identityId: identity.id,
+			});
+
+			await mailer.removeEmail(identity.value, {
+				revoke: true,
+			});
+
+			await db
+				.update(googleAccounts)
+				.set({
+					identityId: null,
+					updatedAt: new Date(),
+				})
+				.where(eq(googleAccounts.identityId, identity.id));
+		} else if (!userIdentity.smtp_accounts) {
 			const [secret] = await fetchDecryptedSecrets({
 				linkTable: providerSecrets,
 				foreignCol: providerSecrets.providerId,
 				secretIdCol: providerSecrets.secretId,
-				parentId: String(userIdentity?.identities.providerId),
+				parentId: String(identity.providerId),
 			});
-			const providerType = userIdentity?.providers?.type as Providers;
+
+			const providerType = userIdentity.providers?.type as Providers;
 			const mailer = createMailer(providerType, secret.parsedSecret);
-			if (userIdentity?.providers?.type === "ses") {
-				await mailer.removeEmail(userIdentity?.identities?.value, {
-					ruleSetName: userIdentity?.identities?.metaData?.ruleSetName,
-					ruleName: userIdentity?.identities?.metaData?.ruleName,
+
+			if (providerType === "ses") {
+				await mailer.removeEmail(identity.value, {
+					ruleSetName: identity.metaData?.ruleSetName,
+					ruleName: identity.metaData?.ruleName,
 				});
 			}
 		} else {
-			await clearImapClients(userIdentity.identities.id);
+			await clearImapClients(identity.id);
 		}
 
-		const identityId = userIdentity.identities.id;
-		const workspaceId = userIdentity.identities.workspaceId;
-		await cleanupIdentity(identityId, workspaceId)
+		await enqueueIdentityCleanup(identity.id, identity.workspaceId);
+
+		await db
+			.delete(identities)
+			.where(eq(identities.id, identity.id));
 
 		revalidatePath(DASHBOARD_PATH);
-		return { success: true, message: "Deleted email identity" };
+
+		return {
+			success: true,
+			message: "Deleted email identity",
+		};
 	});
 };
 
@@ -1312,4 +1517,66 @@ export const fetchUserDavAccountForWorkspace = async () => {
 		...row.account,
 		password: vault?.decrypted_secret || null,
 	};
+};
+
+
+
+export async function fetchGoogleAccounts() {
+	const rls = await rlsClient();
+	return rls((tx) =>
+		tx
+			.select()
+			.from(googleAccounts)
+			.orderBy(desc(googleAccounts.createdAt)),
+	);
+}
+export type FetchGoogleAccountsResult = Awaited<
+	ReturnType<typeof fetchGoogleAccounts>
+>;
+export type FetchGoogleAccountsResultRow = FetchGoogleAccountsResult[number];
+
+
+export const verifyGoogleAccount = async (googleAccountId: string) => {
+	return handleAction(async () => {
+		try {
+			const { gmail, googleAccount, markConnected } =
+				await gmailClientForGoogleAccount(googleAccountId);
+
+			const profile = await gmail.users.getProfile({ userId: "me" });
+
+			await markConnected();
+
+			return {
+				success: true,
+				message: "Google account connected",
+				data: {
+					ok: true,
+					status: "connected",
+					message: "Google account connected",
+					meta: {
+						email: profile.data.emailAddress ?? googleAccount.email,
+						historyId: profile.data.historyId ?? null,
+						messagesTotal: profile.data.messagesTotal ?? null,
+						threadsTotal: profile.data.threadsTotal ?? null,
+					},
+				} as VerifyResult & { status: "connected" },
+			};
+		} catch (err: any) {
+			const message = err?.message ?? "Google verification failed";
+
+			return {
+				success: false,
+				error: message,
+				data: {
+					ok: false,
+					status: "revoked",
+					message,
+					meta: {
+						code: err?.code,
+						status: err?.status,
+					},
+				} as VerifyResult & { status: "revoked" },
+			};
+		}
+	});
 };

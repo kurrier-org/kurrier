@@ -268,3 +268,24 @@ export interface StorageProvider {
 		input: { bucket: string; path: string },
 	): Promise<AddFolderResult>;
 }
+
+export const RawGoogleConfigSchema = z
+	.union([
+		z.string(),
+		z.object({
+			GOOGLE_IDENTITY_ID: z.string().optional(),
+			identityId: z.string().optional(),
+		}),
+	])
+	.transform((r) => {
+		if (typeof r === "string") return { identityId: r };
+
+		return {
+			identityId: r.identityId ?? r.GOOGLE_IDENTITY_ID ?? "",
+		};
+	})
+	.refine((r) => r.identityId.length > 0, {
+		message: "Google identityId is required",
+	});
+
+export type GoogleConfig = z.infer<typeof RawGoogleConfigSchema>;

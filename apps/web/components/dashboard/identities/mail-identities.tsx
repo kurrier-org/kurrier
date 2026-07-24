@@ -24,7 +24,7 @@ import AddEmailIdentityForm from "@/components/dashboard/identities/add-email-id
 import {
 	deleteDomainIdentity,
 	deleteEmailIdentity,
-	FetchDecryptedSecretsResult,
+	FetchDecryptedSecretsResult, FetchGoogleAccountsResult,
 	FetchUserIdentitiesResult,
 	testSendingEmail,
 	verifyDomainIdentity,
@@ -81,6 +81,7 @@ export default function MailIdentities({
 	userIdentities,
 	smtpAccounts,
 	providerAccounts,
+	googleAccounts,
 	providerOptions,
 	workspace,
 	workspaceMembers,
@@ -89,6 +90,7 @@ export default function MailIdentities({
 	userIdentities: FetchUserIdentitiesResult;
 	smtpAccounts: FetchDecryptedSecretsResult;
 	providerAccounts: FetchDecryptedSecretsResult;
+	googleAccounts: FetchGoogleAccountsResult;
 	providerOptions: { label: string; value: string }[];
 	workspace: WorkspaceEntity;
 	workspaceMembers: FetchWorkspaceMembersResult;
@@ -141,6 +143,7 @@ export default function MailIdentities({
 						smtpAccounts={smtpAccounts}
 						providerOptions={providerOptions}
 						providerAccounts={providerAccounts}
+						googleAccounts={googleAccounts}
 						userDomainIdentities={userDomainIdentities}
 						workspaceMembers={workspaceMembers}
 						userEmailIdentities={userEmailIdentities}

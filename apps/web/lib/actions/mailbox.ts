@@ -12,7 +12,7 @@ import {
 	mailboxThreads, mailSubscriptions,
 	messageAttachments,
 	messages,
-	threads, workspaces,
+	threads,
 } from "@db";
 import {
 	and,
@@ -47,9 +47,10 @@ import { getRedis } from "@/lib/actions/get-redis";
 import dayjs from "dayjs";
 import {fetchWorkspace} from "@/lib/actions/workspace";
 
-import {GetObjectCommand, PutObjectCommand} from "@aws-sdk/client-s3";
+import {GetObjectCommand} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { s3 } from "@/lib/create-s3-client";
+import { isGmailIdentity } from "@common";
 
 let typeSenseClient: Client | null = null;
 function getTypeSenseClient(): Client {
@@ -431,20 +432,57 @@ export async function sendMail(
 	return await job.waitUntilFinished(sendMailEvents);
 }
 
-export const deltaFetch = async ({ identityId }: { identityId: string }) => {
-	const { smtpQueue, smtpEvents } = await getRedis();
-	const job = await smtpQueue.add(
-		"delta-fetch",
-		{ identityId },
-		{
-			jobId: `delta-fetch-${identityId}`,
-			removeOnComplete: true,
-			removeOnFail: true,
-		},
-	);
-	await job.waitUntilFinished(smtpEvents);
-};
+export const deltaFetch = async ({
+									 identityId,
+								 }: {
+	identityId: string;
+}) => {
+	const [identity] = await db
+		.select()
+		.from(identities)
+		.where(eq(identities.id, identityId))
+		.limit(1);
 
+	const isGmail = await isGmailIdentity(identityId);
+
+	const isSmtp = Boolean(identity?.smtpAccountId);
+
+	if (isGmail) {
+		const { gmailQueue, gmailEvents } = await getRedis();
+
+		const job = await gmailQueue.add(
+			"gmail:delta-sync",
+			{
+				identityId,
+				workspaceId: identity.workspaceId,
+			},
+			{
+				jobId: `gmail-delta-sync-${identityId}`,
+				removeOnComplete: true,
+				removeOnFail: true,
+			},
+		);
+
+		await job.waitUntilFinished(gmailEvents);
+		return;
+	}
+
+	if (isSmtp){
+		const { smtpQueue, smtpEvents } = await getRedis();
+		const job = await smtpQueue.add(
+			"delta-fetch",
+			{ identityId },
+			{
+				jobId: `delta-fetch-${identityId}`,
+				removeOnComplete: true,
+				removeOnFail: true,
+			},
+		);
+
+		await job.waitUntilFinished(smtpEvents);
+	}
+
+};
 
 export const initSearch = async (
 	query: string,
@@ -531,8 +569,43 @@ export const backfillMailboxes = async (identityId: string, workspaceId: string)
 		},
 	);
 	await job.waitUntilFinished(smtpEvents);
-	backfillAccount(identityId, workspaceId);
+	await backfillAccount(identityId, workspaceId);
 };
+
+export const backfillGoogleMailboxes = async (
+	identityId: string,
+	workspaceId: string,
+) => {
+	const { gmailQueue, gmailEvents } = await getRedis();
+
+	const job = await gmailQueue.add(
+		"gmail:backfill-discover",
+		{ identityId, workspaceId },
+		{
+			jobId: `gmail-backfill-discover-${identityId}`,
+			attempts: 3,
+			backoff: {
+				type: "exponential",
+				delay: 1000,
+			},
+			removeOnComplete: true,
+			removeOnFail: true,
+		},
+	);
+
+	await job.waitUntilFinished(gmailEvents);
+
+	await gmailQueue.add(
+		"gmail:backfill-account",
+		{ identityId, workspaceId },
+		{
+			jobId: `gmail-backfill-account-${identityId}`,
+			removeOnComplete: true,
+			removeOnFail: false,
+		},
+	);
+};
+
 
 export const backfillAccount = async (identityId: string, workspaceId: string) => {
 	const { smtpQueue } = await getRedis();
@@ -541,7 +614,7 @@ export const backfillAccount = async (identityId: string, workspaceId: string) =
 		{identityId},
 		{
 			removeOnComplete: true,
-			removeOnFail: false,
+			removeOnFail: true,
 			jobId: `imap-backfill-account-${identityId}`,
 		},
 	);
@@ -584,84 +657,79 @@ export const fetchWebMailThreadDetail = cache(async (threadId: string) => {
 	return result;
 });
 
-export const markAsRead = cache(
-	async (
-		threadIds: string | string[],
-		mailboxId: string,
-		markSmtp: boolean,
-		refresh = true,
-	) => {
-		const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
-			.map(String)
-			.filter(Boolean);
+export const markAsRead = async (
+	threadIds: string | string[],
+	mailboxId: string,
+	markSmtp: boolean,
+	refresh = true,
+) => {
+	const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
+		.map(String)
+		.filter(Boolean);
 
-		if (!ids.length || !mailboxId) return;
+	if (!ids.length || !mailboxId) return;
 
-		const now = new Date();
-		const rls = await rlsClient();
+	const [mailbox] = await db
+		.select({ identityId: mailboxes.identityId })
+		.from(mailboxes)
+		.where(eq(mailboxes.id, mailboxId))
+		.limit(1);
 
-		await rls(async (tx) => {
-			await tx
-				.update(messages)
-				.set({ seen: true, updatedAt: now })
-				.where(
-					and(
-						inArray(messages.threadId, ids),
-						eq(messages.mailboxId, mailboxId),
-					),
+	if (!mailbox) return;
+
+	const isGmail = await isGmailIdentity(mailbox.identityId);
+
+	if (markSmtp || isGmail) {
+		const { smtpQueue, smtpEvents } = await getRedis();
+
+		await Promise.all(
+			ids.map(async (threadId) => {
+				const job = await smtpQueue.add(
+					"mail:set-flags",
+					{ threadId, mailboxId, op: "read" },
+					{
+						attempts: 3,
+						backoff: { type: "exponential", delay: 1500 },
+						removeOnComplete: true,
+						removeOnFail: false,
+					},
 				);
 
-			await tx
-				.update(mailboxThreads)
-				.set({ unreadCount: 0, updatedAt: now })
-				.where(
-					and(
-						inArray(mailboxThreads.threadId, ids),
-						eq(mailboxThreads.mailboxId, mailboxId),
-					),
-				);
-		});
+				await job.waitUntilFinished(smtpEvents);
+			}),
+		);
 
-		if (refresh) {
-			revalidatePath("/dashboard/mail");
-		}
+		if (refresh) revalidatePath("/");
+		return;
+	}
 
-		if (markSmtp) {
-			const { smtpQueue, searchIngestQueue } = await getRedis();
+	const now = new Date();
+	const rls = await rlsClient();
 
-			await Promise.all(
-				ids.map((threadId) =>
-					smtpQueue.add(
-						"mail:set-flags",
-						{ threadId, mailboxId, op: "read" },
-						{
-							attempts: 3,
-							backoff: { type: "exponential", delay: 1500 },
-							removeOnComplete: true,
-							removeOnFail: false,
-						},
-					),
+	await rls(async (tx) => {
+		await tx
+			.update(messages)
+			.set({ seen: true, updatedAt: now })
+			.where(
+				and(
+					inArray(messages.threadId, ids),
+					eq(messages.mailboxId, mailboxId),
 				),
 			);
 
-			await Promise.all(
-				ids.map((threadId) =>
-					searchIngestQueue.add(
-						"refresh-thread",
-						{ threadId },
-						{
-							jobId: `refresh-${threadId}`,
-							removeOnComplete: true,
-							removeOnFail: false,
-							attempts: 3,
-							backoff: { type: "exponential", delay: 1500 },
-						},
-					),
+		await tx
+			.update(mailboxThreads)
+			.set({ unreadCount: 0, updatedAt: now })
+			.where(
+				and(
+					inArray(mailboxThreads.threadId, ids),
+					eq(mailboxThreads.mailboxId, mailboxId),
 				),
 			);
-		}
-	},
-);
+	});
+
+	if (refresh) revalidatePath("/");
+};
 
 export const markAsUnread = async (
 	threadIds: string | string[],
@@ -675,6 +743,40 @@ export const markAsUnread = async (
 
 	if (!ids.length || !mailboxId) return;
 
+	const [mailbox] = await db
+		.select({ identityId: mailboxes.identityId })
+		.from(mailboxes)
+		.where(eq(mailboxes.id, mailboxId))
+		.limit(1);
+
+	if (!mailbox) return;
+
+	const isGmail = await isGmailIdentity(mailbox.identityId);
+
+	if (markSmtp || isGmail) {
+		const { smtpQueue, smtpEvents } = await getRedis();
+
+		await Promise.all(
+			ids.map(async (threadId) => {
+				const job = await smtpQueue.add(
+					"mail:set-flags",
+					{ threadId, mailboxId, op: "unread" },
+					{
+						attempts: 3,
+						backoff: { type: "exponential", delay: 1500 },
+						removeOnComplete: true,
+						removeOnFail: false,
+					},
+				);
+
+				await job.waitUntilFinished(smtpEvents);
+			}),
+		);
+
+		if (refresh) revalidatePath("/");
+		return;
+	}
+
 	const now = new Date();
 	const rls = await rlsClient();
 
@@ -683,7 +785,10 @@ export const markAsUnread = async (
 			.update(messages)
 			.set({ seen: false, updatedAt: now })
 			.where(
-				and(inArray(messages.threadId, ids), eq(messages.mailboxId, mailboxId)),
+				and(
+					inArray(messages.threadId, ids),
+					eq(messages.mailboxId, mailboxId),
+				),
 			);
 
 		const grouped = await tx
@@ -705,11 +810,10 @@ export const markAsUnread = async (
 		for (const g of grouped) countMap.set(String(g.threadId), Number(g.count));
 
 		for (const tid of ids) {
-			const unread = countMap.get(tid);
 			await tx
 				.update(mailboxThreads)
 				.set({
-					unreadCount: unread ?? 1, // fallback to 1 so it surfaces in UI if uncertain
+					unreadCount: countMap.get(tid) ?? 1,
 					updatedAt: now,
 				})
 				.where(
@@ -721,44 +825,7 @@ export const markAsUnread = async (
 		}
 	});
 
-	if (refresh) {
-		revalidatePath("/mail");
-	}
-
-	if (markSmtp) {
-		const { smtpQueue, searchIngestQueue } = await getRedis();
-
-		await Promise.all(
-			ids.map((threadId) =>
-				smtpQueue.add(
-					"mail:set-flags",
-					{ threadId, mailboxId, op: "unread" },
-					{
-						attempts: 3,
-						backoff: { type: "exponential", delay: 1500 },
-						removeOnComplete: true,
-						removeOnFail: false,
-					},
-				),
-			),
-		);
-
-		await Promise.all(
-			ids.map((threadId) =>
-				searchIngestQueue.add(
-					"refresh-thread",
-					{ threadId },
-					{
-						jobId: `refresh-${threadId}`,
-						removeOnComplete: true,
-						removeOnFail: false,
-						attempts: 3,
-						backoff: { type: "exponential", delay: 1500 },
-					},
-				),
-			),
-		);
-	}
+	if (refresh) revalidatePath("/");
 };
 
 export const moveToTrash = async (
@@ -819,15 +886,29 @@ export const toggleStar = async (
 	starImap: boolean,
 ) => {
 	if (!threadId || !mailboxId) return;
-	const { smtpQueue, searchIngestQueue } = await getRedis();
 
-	if (starImap) {
-		await smtpQueue.add(
+	const [mailbox] = await db
+		.select({
+			identityId: mailboxes.identityId,
+		})
+		.from(mailboxes)
+		.where(eq(mailboxes.id, mailboxId))
+		.limit(1);
+
+	if (!mailbox) return;
+
+	const isGmail = await isGmailIdentity(mailbox.identityId);
+	const op = starred ? "unflag" : "flag";
+
+	if (starImap || isGmail) {
+		const { smtpQueue, smtpEvents } = await getRedis();
+
+		const job = await smtpQueue.add(
 			"mail:set-flags",
 			{
 				threadId,
 				mailboxId,
-				op: starred ? "unflag" : "flag",
+				op,
 			},
 			{
 				attempts: 3,
@@ -836,63 +917,66 @@ export const toggleStar = async (
 				removeOnFail: true,
 			},
 		);
-	} else {
-		const rls = await rlsClient();
-		const op = starred ? "unflag" : "flag";
-		await rls(async (tx) => {
-			const update: Record<string, any> = { updatedAt: new Date() };
-			if (op === "flag") update.flagged = true;
-			if (op === "unflag") update.flagged = false;
 
-			await tx
-				.update(messages)
-				.set(update)
-				.where(
-					and(
-						eq(messages.threadId, threadId),
-						eq(messages.mailboxId, mailboxId),
-					),
-				);
-
-			const [agg] = await tx
-				.select({
-					unreadCount: sql<number>`count(*) filter (where
-					${messages.seen}
-					=
-					false
-					)`,
-					anyFlagged: sql<boolean>`bool_or
-					(
-					${messages.flagged}
-					)`,
-				})
-				.from(messages)
-				.where(
-					and(
-						eq(messages.threadId, threadId),
-						eq(messages.mailboxId, mailboxId),
-					),
-				);
-
-			await tx
-				.update(mailboxThreads)
-				.set({
-					unreadCount: agg.unreadCount ?? 0,
-					starred: agg.anyFlagged ?? false,
-					updatedAt: new Date(),
-				})
-				.where(
-					and(
-						eq(mailboxThreads.threadId, threadId),
-						eq(mailboxThreads.mailboxId, mailboxId),
-					),
-				);
-		});
+		await job.waitUntilFinished(smtpEvents);
+		revalidatePath("/");
+		return;
 	}
+
+	const { searchIngestQueue } = await getRedis();
+	const rls = await rlsClient();
+
+	await rls(async (tx) => {
+		const update: Record<string, any> = { updatedAt: new Date() };
+
+		if (op === "flag") update.flagged = true;
+		if (op === "unflag") update.flagged = false;
+
+		await tx
+			.update(messages)
+			.set(update)
+			.where(
+				and(
+					eq(messages.threadId, threadId),
+					eq(messages.mailboxId, mailboxId),
+				),
+			);
+
+		const [agg] = await tx
+			.select({
+				unreadCount: sql<number>`
+					count(*) filter (where ${messages.seen} = false)
+				`,
+				anyFlagged: sql<boolean>`
+					bool_or(${messages.flagged})
+				`,
+			})
+			.from(messages)
+			.where(
+				and(
+					eq(messages.threadId, threadId),
+					eq(messages.mailboxId, mailboxId),
+				),
+			);
+
+		await tx
+			.update(mailboxThreads)
+			.set({
+				unreadCount: agg.unreadCount ?? 0,
+				starred: agg.anyFlagged ?? false,
+				updatedAt: new Date(),
+			})
+			.where(
+				and(
+					eq(mailboxThreads.threadId, threadId),
+					eq(mailboxThreads.mailboxId, mailboxId),
+				),
+			);
+	});
 
 	await searchIngestQueue.add(
 		"refresh-thread",
-		{ threadId: threadId },
+		{ threadId },
 		{
 			jobId: `refresh-${threadId}`,
 			removeOnComplete: true,
@@ -902,7 +986,7 @@ export const toggleStar = async (
 		},
 	);
 
-	revalidatePath("/mail");
+	revalidatePath("/");
 };
 
 export const fetchMailboxThreads = async (

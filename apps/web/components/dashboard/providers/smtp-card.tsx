@@ -39,8 +39,7 @@ export default function SMTPCard({
 	};
 
 	return (
-		<div className="grid grid-cols-12">
-			<div className="col-span-12 flex flex-col">
+		<div className="flex flex-col">
 				<Card className={"shadow-none border-border"}>
 					<CardHeader className="gap-2">
 						<div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
@@ -87,7 +86,7 @@ export default function SMTPCard({
 							</div>
 						)}
 
-						<div className="grid grid-cols-12 gap-6">
+						<div className="grid grid-cols-1 gap-4">
 							{!!smtpSecrets?.length &&
 								smtpSecrets.map((smtpSecret) => {
 									return (
@@ -100,7 +99,6 @@ export default function SMTPCard({
 						</div>
 					</CardContent>
 				</Card>
-			</div>
 		</div>
 	);
 }
