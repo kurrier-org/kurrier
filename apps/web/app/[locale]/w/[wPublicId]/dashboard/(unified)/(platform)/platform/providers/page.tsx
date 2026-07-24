@@ -2,11 +2,13 @@ import * as React from "react";
 import { Container } from "@/components/common/containers";
 import { PROVIDERS } from "@schema";
 import SMTPCard from "@/components/dashboard/providers/smtp-card";
-import { fetchDecryptedSecrets, syncProviders } from "@/lib/actions/dashboard";
+import {fetchDecryptedSecrets, fetchGoogleAccounts, syncProviders} from "@/lib/actions/dashboard";
 import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
 import { smtpAccountSecrets } from "@db";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
+import {fetchWorkspace} from "@/lib/actions/workspace";
+import GoogleCard from "@/components/dashboard/providers/google-card";
 
 export default async function ProvidersPage() {
 	const userProviders = await syncProviders();
@@ -16,6 +18,9 @@ export default async function ProvidersPage() {
 		foreignCol: smtpAccountSecrets.accountId,
 		secretIdCol: smtpAccountSecrets.secretId,
 	});
+
+	const googleAccounts = await fetchGoogleAccounts();
+	const workspaceId = await fetchWorkspace().then((workspace) => workspace.id);
 
 	return (
 		<>
@@ -51,8 +56,9 @@ export default async function ProvidersPage() {
 							/>
 						))}
 					</div>
-					<div className="grid gap-6 my-8">
+					<div className="grid gap-6 lg:grid-cols-2 my-8">
 						<SMTPCard smtpSecrets={smtpSecrets} />
+						<GoogleCard googleAccounts={googleAccounts} />
 					</div>
 				</Container>
 			</div>

@@ -24,6 +24,13 @@ export const PROVIDER_CONFIG: Record<
 		chipDark: "dark:bg-orange-500/10 dark:border-orange-900/40",
 		textDark: "dark:text-orange-300",
 	},
+	google: {
+		name: "Google Workspace / Gmail",
+		dot: "bg-red-500",
+		chip: "bg-red-50 border-red-200 text-red-700",
+		chipDark: "dark:bg-red-500/10 dark:border-red-900/40",
+		textDark: "dark:text-red-300",
+	},
 	sendgrid: {
 		name: "SendGrid",
 		dot: "bg-blue-500",

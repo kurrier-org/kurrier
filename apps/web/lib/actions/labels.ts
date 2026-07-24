@@ -1,25 +1,33 @@
 "use server";
 
 import { FormState, handleAction, LabelScope } from "@schema";
-import {getWorkspaceId, rlsClient} from "@/lib/actions/clients";
+import { getWorkspaceId, rlsClient } from "@/lib/actions/clients";
 import {
-	contactLabels, db, identities,
+	contactLabels,
+	db,
+	identities,
 	LabelCreate,
 	LabelEntity,
 	LabelInsertSchema,
 	labels,
-	MailboxThreadLabelEntity,
 	mailboxThreadLabels,
-	mailboxThreads, workspaceIdentityMembers,
+	mailboxThreads,
 } from "@db";
-import {and, asc, desc, eq, inArray, isNotNull, sql} from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { decode } from "decode-formdata";
 import slugify from "@sindresorhus/slugify";
 import { revalidatePath } from "next/cache";
 import { PAGE_SIZE } from "@common/mail-client";
 import type { FetchMailboxThreadsResult } from "@/lib/actions/mailbox";
+import { getRedis } from "@/lib/actions/get-redis";
+import { isGmailIdentity } from "@common";
 
-
+const DEFAULT_JOB_OPTS = {
+	attempts: 3,
+	backoff: { type: "exponential" as const, delay: 1500 },
+	removeOnComplete: true,
+	removeOnFail: true,
+};
 
 export const fetchLabelsByIdentityPublicId = async ({
 														identityPublicId,
@@ -35,29 +43,24 @@ export const fetchLabelsByIdentityPublicId = async ({
 		tx
 			.select({ label: labels })
 			.from(labels)
-			.innerJoin(
-				identities,
-				eq(labels.identityId, identities.id)
-			)
+			.innerJoin(identities, eq(labels.identityId, identities.id))
 			.where(
 				and(
 					eq(identities.publicId, identityPublicId),
 					eq(labels.scope, selectedScope),
-				)
+				),
 			)
-			.orderBy(asc(labels.name))
+			.orderBy(asc(labels.name)),
 	);
 
 	return rows.map((r) => r.label);
 };
 
-
-export const fetchLabels = async (scope?: LabelScope) => {
-
-	const selectedScope = scope || "thread";
+export const fetchLabels = async (scope?: LabelScope): Promise<LabelEntity[]> => {
+	const selectedScope = scope ?? "thread";
 	const workspaceId = await getWorkspaceId();
 
-	const globalLabels = await db
+	const rows = await db
 		.select()
 		.from(labels)
 		.where(
@@ -68,8 +71,7 @@ export const fetchLabels = async (scope?: LabelScope) => {
 		)
 		.orderBy(asc(labels.name));
 
-
-	return globalLabels as LabelEntity[];
+	return rows as LabelEntity[];
 };
 
 type LabelWithCount = typeof labels.$inferSelect & {
@@ -84,39 +86,28 @@ export const fetchLabelsWithCounts = async () => {
 			.select({
 				label: labels,
 				identityPublicId: identities.publicId,
-				threadCount: sql<number>`
-          count(${mailboxThreadLabels.threadId})
-        `,
+				threadCount: sql<number>`count(${mailboxThreadLabels.threadId})`,
 			})
 			.from(labels)
-			.innerJoin(
-				identities,
-				eq(labels.identityId, identities.id),
-			)
-			.leftJoin(
-				mailboxThreadLabels,
-				eq(mailboxThreadLabels.labelId, labels.id),
-			)
-			.where(
-				eq(labels.scope, "thread"),
-			)
+			.innerJoin(identities, eq(labels.identityId, identities.id))
+			.leftJoin(mailboxThreadLabels, eq(mailboxThreadLabels.labelId, labels.id))
+			.where(eq(labels.scope, "thread"))
 			.groupBy(labels.id, identities.publicId)
-			.orderBy(asc(labels.name))
+			.orderBy(asc(labels.name)),
 	);
 
 	const result = new Map<string, LabelWithCount[]>();
 
 	for (const row of rows) {
 		const key = row.identityPublicId;
+		const existing = result.get(key) ?? [];
 
-		if (!result.has(key)) {
-			result.set(key, []);
-		}
-
-		result.get(key)!.push({
+		existing.push({
 			...row.label,
-			threadCount: Number(row.threadCount),
+			threadCount: Number(row.threadCount ?? 0),
 		});
+
+		result.set(key, existing);
 	}
 
 	return result;
@@ -125,8 +116,8 @@ export const fetchLabelsWithCounts = async () => {
 export type FetchLabelsWithCountResult = Awaited<
 	ReturnType<typeof fetchLabelsWithCounts>
 >;
-export type FetchLabelsResult = Awaited<ReturnType<typeof fetchLabels>>;
 
+export type FetchLabelsResult = Awaited<ReturnType<typeof fetchLabels>>;
 
 export const fetchContactLabelsWithCounts = async () => {
 	const rls = await rlsClient();
@@ -141,7 +132,7 @@ export const fetchContactLabelsWithCounts = async () => {
 			.leftJoin(contactLabels, eq(contactLabels.labelId, labels.id))
 			.where(eq(labels.scope, "contact"))
 			.groupBy(labels.id)
-			.orderBy(asc(labels.name))
+			.orderBy(asc(labels.name)),
 	);
 
 	return rows.map((r) => ({
@@ -150,10 +141,46 @@ export const fetchContactLabelsWithCounts = async () => {
 	}));
 };
 
-
 export type FetchContactLabelsWithCountResult = Awaited<
 	ReturnType<typeof fetchContactLabelsWithCounts>
 >;
+
+async function fetchDescendantLabelIds(parentId: string): Promise<string[]> {
+	const rows = await db
+		.select({
+			id: labels.id,
+			parentId: labels.parentId,
+		})
+		.from(labels);
+
+	const childrenByParent = new Map<string, string[]>();
+
+	for (const row of rows) {
+		if (!row.parentId) continue;
+		childrenByParent.set(row.parentId, [
+			...(childrenByParent.get(row.parentId) ?? []),
+			row.id,
+		]);
+	}
+
+	const result: string[] = [];
+	const stack = [...(childrenByParent.get(parentId) ?? [])];
+
+	while (stack.length) {
+		const id = stack.pop()!;
+		result.push(id);
+		stack.push(...(childrenByParent.get(id) ?? []));
+	}
+
+	return result;
+}
+
+async function enqueueGmailJob(name: string, data: Record<string, unknown>) {
+	const { gmailQueue, gmailEvents } = await getRedis();
+
+	const job = await gmailQueue.add(name, data, DEFAULT_JOB_OPTS);
+	await job.waitUntilFinished(gmailEvents);
+}
 
 export async function addNewLabel(
 	_prev: FormState,
@@ -161,23 +188,37 @@ export async function addNewLabel(
 ): Promise<FormState> {
 	return handleAction(async () => {
 		const decodedForm = decode(formData);
-		const payloadData = {
+
+		const payload = LabelInsertSchema.parse({
 			name: decodedForm.name,
 			colorBg: decodedForm.color,
 			scope: decodedForm.scope,
 			slug: slugify(String(decodedForm.name)),
-			parentId: decodedForm.parentId ? String(decodedForm.parentId) : undefined,
-		}
-		const payload = LabelInsertSchema.parse(payloadData);
-		if(decodedForm.scope === "thread") {
-			const [identity] = await db.select().from(identities).where(eq(identities.publicId, decodedForm.identityPublicId));
-			if(!identity) {
+			parentId:
+				decodedForm.parentId && decodedForm.parentId !== "none"
+					? String(decodedForm.parentId)
+					: undefined,
+		});
+
+		let isGmail = false;
+
+		if (decodedForm.scope === "thread") {
+			const [identity] = await db
+				.select()
+				.from(identities)
+				.where(eq(identities.publicId, String(decodedForm.identityPublicId)))
+				.limit(1);
+
+			if (!identity) {
 				return { success: false, error: "Invalid identity" };
 			}
+
 			payload.identityId = identity.id;
+			isGmail = await isGmailIdentity(identity.id);
 		}
 
 		const rls = await rlsClient();
+
 		const newLabelRows = await rls((tx) =>
 			tx
 				.insert(labels)
@@ -185,14 +226,15 @@ export async function addNewLabel(
 				.returning(),
 		);
 
-		const scope = decodedForm.scope as LabelScope;
+		const newLabel = newLabelRows[0];
 
-		if (scope === "contact" || scope === "all") {
-			revalidatePath("/dashboard/contacts");
+		if (isGmail && newLabel?.id) {
+			await enqueueGmailJob("gmail:label:create", {
+				labelId: newLabel.id,
+			});
 		}
-		if (scope === "thread" || scope === "all") {
-			revalidatePath("/dashboard/mail");
-		}
+
+		revalidatePath("/");
 		return { success: true, data: newLabelRows };
 	});
 }
@@ -207,15 +249,59 @@ export async function addLabelToThread({
 	labelId: string;
 }): Promise<FormState> {
 	return handleAction(async () => {
+		const [thread] = await db
+			.select({
+				ownerId: mailboxThreads.ownerId,
+				workspaceId: mailboxThreads.workspaceId,
+			})
+			.from(mailboxThreads)
+			.where(
+				and(
+					eq(mailboxThreads.threadId, threadId),
+					eq(mailboxThreads.mailboxId, mailboxId),
+				),
+			)
+			.limit(1);
+
+		if (!thread) {
+			throw new Error(`Mailbox thread not found: ${threadId} / ${mailboxId}`);
+		}
+
 		const rls = await rlsClient();
+
 		await rls((tx) =>
-			tx.insert(mailboxThreadLabels).values({
-				threadId,
-				mailboxId,
-				labelId,
-			}),
+			tx
+				.insert(mailboxThreadLabels)
+				.values({
+					threadId,
+					mailboxId,
+					labelId,
+					ownerId: thread.ownerId,
+					workspaceId: thread.workspaceId,
+				})
+				.onConflictDoNothing(),
 		);
-		revalidatePath("/dashboard/mail");
+
+		const [label] = await db
+			.select()
+			.from(labels)
+			.where(eq(labels.id, labelId))
+			.limit(1);
+
+		if (label?.identityId) {
+			const isGmail = await isGmailIdentity(label.identityId);
+			const gmailLabelId = (label.metaData as any)?.gmail?.labelId;
+
+			if (isGmail && gmailLabelId) {
+				await enqueueGmailJob("gmail:thread-label:add", {
+					threadId,
+					mailboxId,
+					labelId,
+				});
+			}
+		}
+
+		revalidatePath("/");
 		return { success: true };
 	});
 }
@@ -231,6 +317,7 @@ export async function removeLabelFromThread({
 }): Promise<FormState> {
 	return handleAction(async () => {
 		const rls = await rlsClient();
+
 		await rls((tx) =>
 			tx
 				.delete(mailboxThreadLabels)
@@ -240,10 +327,29 @@ export async function removeLabelFromThread({
 						eq(mailboxThreadLabels.mailboxId, mailboxId),
 						eq(mailboxThreadLabels.labelId, labelId),
 					),
-				)
-				.returning(),
+				),
 		);
-		revalidatePath("/dashboard/mail");
+
+		const [label] = await db
+			.select()
+			.from(labels)
+			.where(eq(labels.id, labelId))
+			.limit(1);
+
+		if (label?.identityId) {
+			const isGmail = await isGmailIdentity(label.identityId);
+			const gmailLabelId = (label.metaData as any)?.gmail?.labelId;
+
+			if (isGmail && gmailLabelId) {
+				await enqueueGmailJob("gmail:thread-label:remove", {
+					threadId,
+					mailboxId,
+					labelId,
+				});
+			}
+		}
+
+		revalidatePath("/");
 		return { success: true };
 	});
 }
@@ -257,6 +363,7 @@ export async function addLabelToContact({
 }): Promise<FormState> {
 	return handleAction(async () => {
 		const rls = await rlsClient();
+
 		await rls((tx) =>
 			tx.insert(contactLabels).values({
 				contactId,
@@ -264,7 +371,6 @@ export async function addLabelToContact({
 			}),
 		);
 
-		// contacts sidebar / list
 		revalidatePath("/dashboard/contacts");
 		return { success: true };
 	});
@@ -279,6 +385,7 @@ export async function removeLabelFromContact({
 }): Promise<FormState> {
 	return handleAction(async () => {
 		const rls = await rlsClient();
+
 		await rls((tx) =>
 			tx
 				.delete(contactLabels)
@@ -287,8 +394,7 @@ export async function removeLabelFromContact({
 						eq(contactLabels.contactId, contactId),
 						eq(contactLabels.labelId, labelId),
 					),
-				)
-				.returning(),
+				),
 		);
 
 		revalidatePath("/dashboard/contacts");
@@ -296,14 +402,12 @@ export async function removeLabelFromContact({
 	});
 }
 
-
-
-
 export const fetchMailboxThreadLabels = async (
 	threads: FetchMailboxThreadsResult,
 ) => {
 	const rls = await rlsClient();
 	const threadIds = threads.map((t) => t.threadId).filter(Boolean);
+
 	if (!threadIds.length) return {};
 
 	const rows = await rls((tx) =>
@@ -314,29 +418,29 @@ export const fetchMailboxThreadLabels = async (
 			})
 			.from(mailboxThreadLabels)
 			.innerJoin(labels, eq(mailboxThreadLabels.labelId, labels.id))
-			.where(inArray(mailboxThreadLabels.threadId, threadIds))
+			.where(inArray(mailboxThreadLabels.threadId, threadIds)),
 	);
 
 	const byThreadId: Record<string, any[]> = {};
 
 	for (const { mt, l } of rows) {
-		if (!byThreadId[mt.threadId]) byThreadId[mt.threadId] = [];
+		byThreadId[mt.threadId] ??= [];
 		byThreadId[mt.threadId].push({ mt, label: l });
 	}
 
 	return byThreadId;
 };
 
-
 export type FetchMailboxThreadLabelsResult = Awaited<
 	ReturnType<typeof fetchMailboxThreadLabels>
 >;
 
 export const fetchContactLabelsByContactIds = async (contactIds: string[]) => {
-	if (!contactIds?.length) return {};
+	if (!contactIds.length) return {};
 
 	const rls = await rlsClient();
 	const workspaceId = await getWorkspaceId();
+
 	const rows = await rls((tx) =>
 		tx
 			.select({
@@ -345,22 +449,19 @@ export const fetchContactLabelsByContactIds = async (contactIds: string[]) => {
 			})
 			.from(contactLabels)
 			.innerJoin(labels, eq(contactLabels.labelId, labels.id))
-			.where(and(
-				inArray(contactLabels.contactId, contactIds),
-				eq(contactLabels.workspaceId, workspaceId),
-			))
+			.where(
+				and(
+					inArray(contactLabels.contactId, contactIds),
+					eq(contactLabels.workspaceId, workspaceId),
+				),
+			),
 	);
 
 	const byContactId: Record<string, { label: LabelEntity }[]> = {};
 
 	for (const { cl, l } of rows) {
-		const contactId = cl.contactId;
-
-		if (!byContactId[contactId]) {
-			byContactId[contactId] = [];
-		}
-
-		byContactId[contactId].push({ label: l });
+		byContactId[cl.contactId] ??= [];
+		byContactId[cl.contactId].push({ label: l });
 	}
 
 	return byContactId;
@@ -370,7 +471,6 @@ export type FetchContactLabelsByIdResult = Awaited<
 	ReturnType<typeof fetchContactLabelsByContactIds>
 >;
 
-
 export const fetchMailboxThreadsByLabel = async (
 	identityPublicId: string,
 	mailboxSlug: string,
@@ -378,8 +478,14 @@ export const fetchMailboxThreadsByLabel = async (
 	page: number,
 ) => {
 	const rls = await rlsClient();
-	const pageNum = page && page > 0 ? page : 1;
+	const pageNum = page > 0 ? page : 1;
 	const offset = (pageNum - 1) * PAGE_SIZE;
+
+	const where = and(
+		eq(mailboxThreads.identityPublicId, identityPublicId),
+		eq(mailboxThreads.mailboxSlug, mailboxSlug),
+		eq(labels.slug, labelSlug),
+	);
 
 	const rows = await rls((tx) =>
 		tx
@@ -393,16 +499,10 @@ export const fetchMailboxThreadsByLabel = async (
 				),
 			)
 			.innerJoin(labels, eq(mailboxThreadLabels.labelId, labels.id))
-			.where(
-				and(
-					eq(mailboxThreads.identityPublicId, identityPublicId),
-					eq(mailboxThreads.mailboxSlug, mailboxSlug),
-					eq(labels.slug, labelSlug),
-				),
-			)
+			.where(where)
 			.orderBy(desc(mailboxThreads.lastActivityAt))
 			.offset(offset)
-			.limit(PAGE_SIZE)
+			.limit(PAGE_SIZE),
 	);
 
 	const [{ total }] = await rls((tx) =>
@@ -417,13 +517,7 @@ export const fetchMailboxThreadsByLabel = async (
 				),
 			)
 			.innerJoin(labels, eq(mailboxThreadLabels.labelId, labels.id))
-			.where(
-				and(
-					eq(mailboxThreads.identityPublicId, identityPublicId),
-					eq(mailboxThreads.mailboxSlug, mailboxSlug),
-					eq(labels.slug, labelSlug),
-				),
-			)
+			.where(where),
 	);
 
 	return {
@@ -438,15 +532,61 @@ export type FetchMailboxThreadsByLabelResult = Awaited<
 
 export const deleteLabel = async ({ id }: { id: string }) => {
 	try {
+		const labelIdsToDelete = [id, ...(await fetchDescendantLabelIds(id))];
+
+		const rows = await db
+			.select()
+			.from(labels)
+			.where(inArray(labels.id, labelIdsToDelete));
+
+		const { gmailQueue } = await getRedis();
+
+		for (const label of rows) {
+			const isGmail = label.identityId
+				? await isGmailIdentity(label.identityId)
+				: false;
+
+			const gmailLabelId = (label.metaData as any)?.gmail?.labelId;
+
+			if (isGmail && gmailLabelId) {
+				await gmailQueue.add(
+					"gmail:label:delete",
+					{ labelId: label.id },
+					DEFAULT_JOB_OPTS,
+				);
+			}
+
+			// if (isGmail && gmailLabelId) {
+			// 	await enqueueGmailJob("gmail:label:delete", {
+			// 		labelId: label.id,
+			// 	});
+			// }
+		}
+
 		const rls = await rlsClient();
 
-		await rls((tx) => tx.delete(labels).where(eq(labels.id, id)));
-		revalidatePath("/dashboard");
+		await rls(async (tx) => {
+			await tx
+				.delete(mailboxThreadLabels)
+				.where(inArray(mailboxThreadLabels.labelId, labelIdsToDelete));
+
+			await tx
+				.delete(contactLabels)
+				.where(inArray(contactLabels.labelId, labelIdsToDelete));
+
+			await tx
+				.delete(labels)
+				.where(inArray(labels.id, labelIdsToDelete));
+		});
+
+		revalidatePath("/");
 		return { success: true };
 	} catch (err: any) {
+		console.error("DELETE LABEL FAILED", err);
 		return { success: false, error: err?.message ?? "Unknown error" };
 	}
 };
+
 
 export const updateLabel = async ({
 									  id,
@@ -460,6 +600,14 @@ export const updateLabel = async ({
 	color: string;
 }) => {
 	try {
+		const [oldLabel] = await db
+			.select()
+			.from(labels)
+			.where(eq(labels.id, id))
+			.limit(1);
+
+		const descendantIds = await fetchDescendantLabelIds(id);
+
 		const rls = await rlsClient();
 
 		await rls((tx) =>
@@ -467,6 +615,7 @@ export const updateLabel = async ({
 				.update(labels)
 				.set({
 					name,
+					slug: slugify(name),
 					parentId,
 					colorBg: color,
 					updatedAt: new Date(),
@@ -474,12 +623,25 @@ export const updateLabel = async ({
 				.where(eq(labels.id, id)),
 		);
 
-		revalidatePath("/dashboard");
+		const isGmail = oldLabel?.identityId
+			? await isGmailIdentity(oldLabel.identityId)
+			: false;
+
+		if (isGmail) {
+			for (const labelId of [id, ...descendantIds]) {
+				await enqueueGmailJob("gmail:label:update", {
+					labelId,
+				});
+			}
+		}
+
+		revalidatePath("/");
 		return { success: true };
 	} catch (err: any) {
 		return { success: false, error: err?.message ?? "Unknown error" };
 	}
 };
+
 
 export async function getOrCreateSystemLabel({
 												 name,
@@ -492,15 +654,18 @@ export async function getOrCreateSystemLabel({
 }): Promise<LabelEntity> {
 	const rls = await rlsClient();
 	const workspaceId = await getWorkspaceId();
+
 	const [existing] = await rls((tx) =>
 		tx
 			.select()
 			.from(labels)
-			.where(and(
-				eq(labels.slug, slugify(name)),
-				eq(labels.scope, scope),
-				eq(labels.workspaceId, workspaceId),
-			))
+			.where(
+				and(
+					eq(labels.slug, slugify(name)),
+					eq(labels.scope, scope),
+					eq(labels.workspaceId, workspaceId),
+				),
+			)
 			.limit(1),
 	);
 
@@ -514,7 +679,6 @@ export async function getOrCreateSystemLabel({
 		colorBg: colorBg ?? null,
 		parentId: undefined,
 	});
-
 
 	const [inserted] = await rls((tx) =>
 		tx
@@ -532,15 +696,18 @@ export async function toggleFavoriteContact(formData: FormData) {
 		const contactId = String(decodedForm.contactId);
 		const rls = await rlsClient();
 		const workspaceId = await getWorkspaceId();
+
 		let [favorite] = await rls((tx) =>
 			tx
 				.select()
 				.from(labels)
-				.where(and(
-					eq(labels.slug, "favorite"),
-					eq(labels.scope, "contact"),
-					eq(labels.workspaceId, workspaceId),
-				))
+				.where(
+					and(
+						eq(labels.slug, "favorite"),
+						eq(labels.scope, "contact"),
+						eq(labels.workspaceId, workspaceId),
+					),
+				)
 				.limit(1),
 		);
 
@@ -557,6 +724,7 @@ export async function toggleFavoriteContact(formData: FormData) {
 					})
 					.returning(),
 			);
+
 			favorite = rows[0];
 		}
 
@@ -585,7 +753,7 @@ export async function toggleFavoriteContact(formData: FormData) {
 					),
 			);
 
-			revalidatePath("/dashboard/contacts");
+			revalidatePath("/");
 			return { success: true, isFavorite: false };
 		}
 
@@ -596,7 +764,7 @@ export async function toggleFavoriteContact(formData: FormData) {
 			}),
 		);
 
-		revalidatePath("/dashboard/contacts");
+		revalidatePath("/");
 		return { success: true, isFavorite: true };
 	});
 }

@@ -22,6 +22,9 @@ const redisConnection = {
 const smtpQueue = new Queue("smtp-worker", redisConnection);
 const smtpEvents = new QueueEvents("smtp-worker", redisConnection);
 
+const gmailQueue = new Queue("gmail-worker", redisConnection);
+const gmailEvents = new QueueEvents("gmail-worker", redisConnection);
+
 const sendMailQueue = new Queue("send-mail", redisConnection);
 const sendMailEvents = new QueueEvents("send-mail", redisConnection);
 
@@ -48,6 +51,7 @@ export async function getRedis() {
 		commonWorkerEvents.waitUntilReady(),
 		migrationWorkerEvents.waitUntilReady(),
 		davWorkerEvents.waitUntilReady(),
+		gmailEvents.waitUntilReady()
 	]);
 	return {
 		connection: redis,
@@ -63,5 +67,7 @@ export async function getRedis() {
 		migrationWorkerEvents,
 		davWorkerQueue,
 		davWorkerEvents,
+		gmailQueue,
+		gmailEvents
 	};
 }

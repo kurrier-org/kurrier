@@ -111,7 +111,11 @@ export const DraftMessageStatusEnum = pgEnum(
 
 export const MailSubscriptionStatusEnum = pgEnum("mail_subscription_status", mailSubscriptionStatusList);
 export const MailRuleActionTypeEnum = pgEnum("mail_rule_action_type", mailRulesActionsList);
-
+export const googleAccountStatusEnum = pgEnum("google_account_status", [
+	"connected",
+	"revoked",
+	"error",
+]);
 
 
 
@@ -1846,5 +1850,85 @@ export const authAccounts = pgTable(
 		),
 
 		...workspaceCrudPolicies(t, "auth_accounts"),
+	],
+).enableRLS();
+
+
+export const googleAccounts = pgTable(
+	"google_accounts",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+
+		workspaceId: uuid("workspace_id")
+			.references(() => workspaces.id, { onDelete: "cascade" })
+			.notNull()
+			.default(authWorkspaceId),
+
+		ownerId: uuid("owner_id")
+			.references(() => users.id, { onDelete: "cascade" })
+			.notNull()
+			.default(authUid),
+
+		identityId: uuid("identity_id")
+			.references(() => identities.id, { onDelete: "set null" })
+			.default(sql`null`),
+
+		googleSub: text("google_sub").notNull(),
+
+		email: text("email").notNull(),
+
+		name: text("name").default(sql`null`),
+
+		pictureUrl: text("picture_url").default(sql`null`),
+
+		accessTokenSecretId: uuid("access_token_secret_id")
+			.references(() => secretsMeta.id, { onDelete: "set null" })
+			.default(sql`null`),
+
+		refreshTokenSecretId: uuid("refresh_token_secret_id")
+			.references(() => secretsMeta.id, { onDelete: "set null" })
+			.default(sql`null`),
+
+		scopes: text("scopes").array().notNull().default(sql`'{}'::text[]`),
+
+		expiresAt: timestamp("expires_at", { withTimezone: true }).default(sql`null`),
+
+		status: googleAccountStatusEnum("status")
+			.notNull()
+			.default("connected"),
+
+		lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }).default(sql`null`),
+
+		lastError: text("last_error").default(sql`null`),
+
+		metaData: jsonb("meta")
+			.$type<Record<string, any> | null>()
+			.default(sql`null`),
+
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		uniqueIndex("ux_google_accounts_workspace_sub").on(
+			t.workspaceId,
+			t.googleSub,
+		),
+
+		uniqueIndex("ux_google_accounts_workspace_email").on(
+			t.workspaceId,
+			t.email,
+		),
+
+		index("ix_google_accounts_workspace").on(t.workspaceId),
+		index("ix_google_accounts_owner").on(t.ownerId),
+		index("ix_google_accounts_identity").on(t.identityId),
+		index("ix_google_accounts_status").on(t.workspaceId, t.status),
+
+		...workspaceCrudPolicies(t, "google_accounts"),
 	],
 ).enableRLS();

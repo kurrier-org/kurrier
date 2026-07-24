@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const providersList = [
 	"smtp",
+	"google",
 	"ses",
 	"mailgun",
 	"postmark",
@@ -18,6 +19,8 @@ export const ProviderLabels: Record<Providers, string> = {
 	mailgun: "Mailgun",
 	postmark: "Postmark",
 	sendgrid: "SendGrid",
+	google: "Google",
+
 	s3: "S3 Compatible Storage",
 };
 
@@ -57,7 +60,16 @@ export const PROVIDERS: ProviderSpec[] = [
 	},
 ];
 
-/** SMTP block used by the SMTP card */
+export const GOOGLE_SPEC = {
+	key: "google" as const,
+	name: ProviderLabels.google,
+	docsUrl: "https://developers.google.com/gmail/api",
+	requiredEnv: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"],
+	help:
+		"Connect Gmail or Google Workspace accounts using OAuth. No app passwords or SMTP credentials required.",
+};
+
+
 export const SMTP_SPEC = {
 	key: "smtp" as const,
 	name: ProviderLabels.smtp,

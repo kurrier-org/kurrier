@@ -20,6 +20,9 @@ import { discoverMailboxes } from "../../lib/imap/backfill/discover/discover-mai
 import {startBackfillForIdentity} from "../../lib/imap/backfill/backfill-full";
 import {db, mailboxSync} from "@db";
 import {eq} from "drizzle-orm";
+import { isGmailMailbox, isGmailThread } from "@common";
+import { moveGmailMail } from "../../lib/gmail/gmail-move";
+import { gmailSetFlags } from "../../lib/gmail/gmail-flags";
 
 export default defineNitroPlugin(async (nitroApp) => {
 	console.info("**********************SMTP-WORKER***************************");
@@ -43,20 +46,34 @@ export default defineNitroPlugin(async (nitroApp) => {
 				if (job.data.op === "move" && !job.data.toMailboxId) {
 					throw new Error("mail:move requires toMailboxId when op === 'move'");
 				}
-				await moveMail(job.data, imapInstances);
+
+				const isGmail = await isGmailMailbox(job.data.mailboxId);
+
+				if (isGmail) {
+					await moveGmailMail(job.data);
+				} else {
+					await moveMail(job.data, imapInstances);
+				}
+
 				await searchIngestQueue.add(
 					"refresh-thread",
 					{ threadId: job.data.threadId },
 					{
-						jobId: `refresh-${job.data.threadId}`, // collapses duplicates
+						jobId: `refresh-${job.data.threadId}`,
 						removeOnComplete: true,
-						removeOnFail: false,
+						removeOnFail: true,
 						attempts: 3,
 						backoff: { type: "exponential", delay: 1500 },
 					},
 				);
 			} else if (job.name === "mail:set-flags") {
-				await mailSetFlags(job.data, imapInstances);
+				const isGmail = await isGmailThread(job.data.threadId);
+
+				if (isGmail) {
+					await gmailSetFlags(job.data);
+				} else {
+					await mailSetFlags(job.data, imapInstances);
+				}
 				await searchIngestQueue.add(
 					"refresh-thread",
 					{ threadId: job.data.threadId },

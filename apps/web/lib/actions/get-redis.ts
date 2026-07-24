@@ -14,6 +14,9 @@ export const getRedis = async () => {
 	const smtpQueue = new Queue("smtp-worker", redisConnection);
 	const smtpEvents = new QueueEvents("smtp-worker", redisConnection);
 
+	const gmailQueue = new Queue("gmail-worker", redisConnection);
+	const gmailEvents = new QueueEvents("gmail-worker", redisConnection);
+
 	const sendMailQueue = new Queue("send-mail", redisConnection);
 	const sendMailEvents = new QueueEvents("send-mail", redisConnection);
 
@@ -32,12 +35,15 @@ export const getRedis = async () => {
 	const commonWorkerQueue = new Queue("common-worker", redisConnection);
 	const commonWorkerEvents = new QueueEvents("common-worker", redisConnection);
 
-	await smtpEvents.waitUntilReady();
-	await sendMailEvents.waitUntilReady();
-	await searchIngestEvents.waitUntilReady();
-	await davEvents.waitUntilReady();
-	await migrationWorkerEvents.waitUntilReady();
-	await commonWorkerEvents.waitUntilReady();
+	await Promise.all([
+		smtpEvents.waitUntilReady(),
+		sendMailEvents.waitUntilReady(),
+		searchIngestEvents.waitUntilReady(),
+		davEvents.waitUntilReady(),
+		migrationWorkerEvents.waitUntilReady(),
+		commonWorkerEvents.waitUntilReady(),
+		gmailEvents.waitUntilReady()
+	])
 
 	return {
 		smtpQueue,
@@ -52,5 +58,7 @@ export const getRedis = async () => {
 		migrationWorkerEvents,
 		commonWorkerQueue,
 		commonWorkerEvents,
+		gmailQueue,
+		gmailEvents,
 	};
 };

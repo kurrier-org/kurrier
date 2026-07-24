@@ -243,13 +243,6 @@ export async function parseAndStoreEmail(
 	},
 ) {
 	const { ownerId, workspaceId, mailboxId, rawStorageKey } = opts;
-	const [workspace] = await db
-		.select()
-		.from(workspaces)
-		.where(eq(workspaces.id, workspaceId))
-	if (workspace?.isStorageOverLimit) {
-		return
-	}
 
 	const mode = opts.mode ?? "live";
 
