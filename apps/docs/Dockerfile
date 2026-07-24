@@ -2,11 +2,10 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 
-# (optional, but helps some native deps on alpine)
 RUN apk add --no-cache libc6-compat
 
-# use pnpm via Corepack
-RUN corepack enable && corepack prepare pnpm@10.18.3 --activate
+#RUN corepack enable && corepack prepare pnpm@10.18.3 --activate
+RUN pnpm install --frozen-lockfile && pnpm run build
 
 # copy app and build
 COPY . .
