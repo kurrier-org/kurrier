@@ -1,5 +1,11 @@
 # @kurrier/db
 
+## 3.1.0
+
+### Minor Changes
+
+- [#486](https://github.com/kurrier-org/kurrier/pull/486) [`9fcdac7`](https://github.com/kurrier-org/kurrier/commit/9fcdac79285793dd939c736477b65418dc436be1) Thanks [@krokhale](https://github.com/krokhale)! - added support for google workspace and gmail accounts
+
 ## 3.0.3
 
 ### Patch Changes
