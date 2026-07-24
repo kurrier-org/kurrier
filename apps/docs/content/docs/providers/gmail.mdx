@@ -1,0 +1,180 @@
+---
+title: Google
+description: Connecting your Google account
+---
+
+# Google
+
+Kurrier can connect directly to your **Google (Gmail)** account using Google's secure OAuth sign-in flow.
+
+Unlike SMTP/IMAP, no app passwords, server names, or API keys are required.
+
+Make sure to have
+
+**OIDC_GOOGLE_CLIENT_ID**
+
+
+**OIDC_GOOGLE_CLIENT_SECRET**
+
+set in your environment variables before connecting your Google account.
+
+---
+
+
+## 3. Self-Hosting with Your Own Google OAuth App
+
+If you're self-hosting Kurrier, you'll need to create your own Google OAuth application.
+
+### Create a Google Cloud Project
+
+1. Visit the Google Cloud Console:
+
+https://console.cloud.google.com/
+
+2. Create a new project (or select an existing one).
+
+3. Enable the **Gmail API** for your project.
+
+4. Configure the **OAuth Consent Screen**.
+
+5. Create an **OAuth 2.0 Client ID** for a Web Application.
+
+6. Configure the redirect URI to point to your Kurrier instance.
+
+For example:
+
+```text
+
+https://mail.example.com/api/oauth/google/callback
+
+```
+
+Replace the domain with your own Kurrier installation.
+
+---
+
+## 4. Required OAuth Scopes
+
+Kurrier requires the following Google OAuth scopes:
+
+| Scope | Purpose |
+
+|--------|---------|
+
+| `openid` | Authenticate the user |
+
+| `email` | Read the connected email address |
+
+| `profile` | Basic profile information |
+
+| `https://www.googleapis.com/auth/gmail.modify` | Read emails, modify labels, archive, trash, mark read/unread |
+
+| `https://www.googleapis.com/auth/gmail.send` | Send emails |
+
+These are the minimum permissions required for a complete Gmail experience.
+
+---
+
+
+
+## 1. Overview
+
+When you connect a Google account, Kurrier uses the official Gmail API to:
+
+- Send emails
+- Sync your inbox
+- Sync folders and labels
+- Track read/unread status
+- Receive new emails
+- Keep your mailbox synchronized automatically
+
+Your Google password is **never stored** by Kurrier. Authentication is handled entirely through Google OAuth.
+
+---
+
+## 2. Connecting Your Google Account
+
+In Kurrier, go to:
+
+> **Dashboard → Providers → Add Provider → Google**
+
+Click:
+
+> **Sign in with Google**
+
+You'll be redirected to Google's secure authentication page.
+
+After signing in and granting permission, you'll be returned to Kurrier automatically.
+
+Once connected, the provider will display a **Verified** status.
+
+---
+
+## 3. Required Permissions
+
+Kurrier requests the minimum Google permissions required to provide a complete email experience.
+
+These permissions allow Kurrier to:
+
+- Read your mailbox
+- Send emails on your behalf
+- Create, modify and delete drafts
+- Read and manage labels
+- Keep your mailbox synchronized
+
+Kurrier only accesses the Google account(s) that you explicitly connect.
+
+---
+
+## 4. Verification
+
+After connecting your account, Kurrier automatically verifies the connection by communicating with the Gmail API.
+
+If successful, the provider card will display:
+
+- ✅ Verified
+- Connected Google email address
+- Mailbox information
+
+---
+
+## 5. Disconnecting
+
+You can disconnect your Google account at any time by removing the identity from Kurrier.
+
+If you would also like to revoke Kurrier's access completely, visit:
+
+> https://myaccount.google.com/permissions
+
+Locate **Kurrier** in the list of connected applications and choose **Remove Access**.
+
+---
+
+## 6. Troubleshooting
+
+### Authentication failed
+
+Try signing in again and ensure you complete the Google consent flow.
+
+### Permission denied
+
+If you denied one or more permissions, remove the existing connection and reconnect the account.
+
+### Account disconnected
+
+If your Google refresh token is revoked or expires, Kurrier will notify you that the provider needs to be reconnected.
+
+---
+
+## 7. Why use Google instead of SMTP?
+
+Using the Gmail API provides several advantages over SMTP/IMAP:
+
+- No App Passwords required
+- Secure OAuth authentication
+- Automatic token refresh
+- Better Gmail compatibility
+- Reliable mailbox synchronization
+- Supports Gmail labels natively
+
+For Gmail accounts, connecting through **Google** is the recommended option over SMTP/IMAP.
