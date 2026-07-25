@@ -1,6 +1,7 @@
 import "@/app/global.css";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 
 const inter = Inter({
 	subsets: ["latin"],
@@ -53,6 +54,23 @@ export const metadata = {
 export default function Layout({ children }: LayoutProps<"/">) {
 	return (
 		<html lang="en" className={inter.className} suppressHydrationWarning>
+		<Script
+			id="tag-js"
+			async
+			src={`https://www.googletagmanager.com/gtag/js?id=G-E54E6C52S5`}
+		/>
+		<Script
+			id="tag-code"
+			strategy="afterInteractive"
+			dangerouslySetInnerHTML={{
+				__html: `
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-E54E6C52S5');
+`,
+			}}
+		/>
 			<body className="flex flex-col min-h-screen">
 				<RootProvider>{children}</RootProvider>
 			</body>
