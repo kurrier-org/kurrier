@@ -6,7 +6,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 
 # use pnpm via Corepack
-RUN corepack enable && corepack prepare pnpm@10.18.3 --activate && pnpm install --prod
+RUN corepack enable && corepack prepare pnpm@10.18.3 --activate
 
 # copy app and build
 COPY . .
