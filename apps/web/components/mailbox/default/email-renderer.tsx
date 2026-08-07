@@ -16,6 +16,19 @@ import {getRawMessageDownloadUrl} from "@/lib/actions/uploads-actions";
 import { useParams } from "next/navigation";
 import { useDisclosure } from "@mantine/hooks";
 import MailUnsubscriber from "@/components/mailbox/default/mail-unsubscriber";
+const InspectorBar = dynamic(
+	() => import("@/components/dashboard/inspector/inspector-bar"),
+	{
+		ssr: true,
+		loading: () => (
+			<div className="my-5 rounded-xl border bg-card p-6 text-sm text-muted-foreground">
+				Loading message inspector…
+			</div>
+		),
+	},
+
+);
+
 const EmailEditor = dynamic(
 	() => import("@/components/mailbox/default/editor/email-editor"),
 	{
@@ -389,7 +402,7 @@ function EmailRenderer({
 				</div>
 			</div>
 
-			{children}
+			<InspectorBar children={children} message={message} onDownloadEml={downloadEml} />
 
             {attachments?.length > 0 && (
                 <div className="border-t border-dotted py-4">

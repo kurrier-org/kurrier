@@ -1,6 +1,5 @@
 "use client";
 import * as React from "react";
-import { MailboxEntity, MailboxSyncEntity } from "@db";
 import { PublicConfig } from "@schema";
 import {
 	FetchIdentityMailboxListResult, FetchMailboxResult,
