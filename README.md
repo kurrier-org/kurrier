@@ -6,6 +6,14 @@ The self-hosted open-source workspace for **email, calendars, contacts and stora
 
 ## ✨ What's New
 
+
+### 🎉 Kurrier Message Inspector 
+
+![img.png](https://www.kurrier.org/docs-message-inspector.png)
+
+Kurrier now includes a built-in **Message Inspector** that lets you look beyond the rendered email.
+Instead of only displaying what the recipient sees, Kurrier exposes the underlying message structure so developers, QA engineers, support teams, and operators can quickly inspect and debug email without leaving the inbox.
+
 ### 🎉 Kurrier Drive — integrated **WebDAV/S3 storage**
 Store and manage files directly within Kurrier using **WebDAV** locally or S3-compatible storage
 Support for providers like AWS S3, Backblaze B2, MinIO, and DigitalOcean Spaces is coming soon.
