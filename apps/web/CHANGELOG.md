@@ -1,5 +1,11 @@
 # web
 
+## 2.2.0
+
+### Minor Changes
+
+- [#489](https://github.com/kurrier-org/kurrier/pull/489) [`2610e8b`](https://github.com/kurrier-org/kurrier/commit/2610e8b57cc39f05bf6b1d59a39cc624bad543ab) Thanks [@krokhale](https://github.com/krokhale)! - added new inspector tabs
+
 ## 2.1.0
 
 ### Minor Changes
