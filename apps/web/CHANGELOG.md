@@ -1,5 +1,11 @@
 # web
 
+## 2.2.1
+
+### Patch Changes
+
+- [#492](https://github.com/kurrier-org/kurrier/pull/492) [`dc29805`](https://github.com/kurrier-org/kurrier/commit/dc29805c0aff2629e2c24302480e5e9ba04a4717) Thanks [@krokhale](https://github.com/krokhale)! - added json, smtp and delivery panes for the inspector tab
+
 ## 2.2.0
 
 ### Minor Changes
