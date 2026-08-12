@@ -5,10 +5,12 @@ import * as React from "react";
 import { getPublicEnv } from "@schema";
 import { redirect } from "next/navigation";
 import {getDictionary, Locale} from "@/lib/dictionaries";
+import { getGenericOidcSettings } from "@/lib/generic-oidc";
 
 export default async function SignupPage({ params }: { params: Promise<{ locale: Locale }>; }) {
 	const { DISABLE_SIGNUP } = getPublicEnv();
 	const googleEnabled = process.env.OIDC_GOOGLE_CLIENT_ID && process.env.OIDC_GOOGLE_CLIENT_SECRET;
+	const genericOidc = getGenericOidcSettings();
 
 	if (DISABLE_SIGNUP) {
 		redirect("/auth/login?message=signup_disabled");
@@ -29,6 +31,8 @@ export default async function SignupPage({ params }: { params: Promise<{ locale:
 				</Link>
 				<SignupForm oidc={{
 					googleEnabled: !!googleEnabled,
+					genericEnabled: !!genericOidc,
+					genericName: genericOidc?.providerName,
 				}} dict={dict}  />
 			</div>
 		</div>
