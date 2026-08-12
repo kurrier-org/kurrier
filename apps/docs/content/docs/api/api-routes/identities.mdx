@@ -30,6 +30,43 @@ status, and metadata.
 
 ---
 
+## Create an email identity
+
+### `POST /identities`
+
+Creates an **email identity** backed by an [SMTP account](/docs/api/api-routes/smtp-accounts),
+assigns it to workspace members, and — when the SMTP account has IMAP settings —
+kicks off mailbox discovery, backfill, and live sync, exactly like adding the
+identity from the dashboard.
+
+```json
+{
+	"value": "user@example.com",
+	"displayName": "User Example",
+	"smtpAccountId": "0d63d43a-2b3f-4f8e-9a76-2f0f2c9a3b1e"
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| **value** *(required)* | The email address of the identity. |
+| **smtpAccountId** *(required)* | The SMTP account that backs this identity. Must belong to the API key owner. |
+| **displayName** *(optional)* | Display name used when sending. |
+| **sharedWithWorkspace** *(optional)* | Share the identity with all workspace members. Defaults to `false`. |
+| **memberIds** *(optional)* | Workspace member user ids granted access. Defaults to the key owner. Ignored when `sharedWithWorkspace` is `true`. |
+| **dailyQuota** *(optional)* | Daily sending quota. Defaults to the standard IMAP quota. |
+
+The response contains the created identity plus a `backfill` field:
+
+- `"completed"` — IMAP mailbox discovery finished and message backfill + IDLE sync were queued
+- `"skipped"` — the SMTP account has no IMAP settings (send-only)
+- `"failed"` — mailbox discovery failed or timed out (check the account's IMAP credentials; the identity is still created)
+
+Returns `409 IDENTITY_EXISTS` if an email identity with the same address
+already exists in the workspace.
+
+---
+
 ## List identities
 
 ### `GET /identities`
