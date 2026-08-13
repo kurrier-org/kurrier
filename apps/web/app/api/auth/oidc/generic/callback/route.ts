@@ -24,10 +24,16 @@ import {
 const GENERIC_PROVIDER_NAME = "generic";
 
 export async function GET(request: NextRequest) {
+	// Behind a reverse proxy, Next.js standalone rewrites request.url's host
+	// to the server's own hostname (e.g. the pod name on Kubernetes), and
+	// openid-client derives the token-exchange redirect_uri from the current
+	// URL — so anchor everything on WEB_URL, the canonical public origin.
+	const baseUrl = process.env.WEB_URL || request.url;
+
 	const settings = getGenericOidcSettings();
 
 	if (!settings) {
-		return NextResponse.redirect(new URL("/auth/login", request.url));
+		return NextResponse.redirect(new URL("/auth/login", baseUrl));
 	}
 
 	const cookieStore = await cookies();
@@ -36,7 +42,7 @@ export async function GET(request: NextRequest) {
 	const state = cookieStore.get("oidc_state")?.value;
 
 	if (!codeVerifier || !state) {
-		return NextResponse.redirect(new URL("/auth/login", request.url));
+		return NextResponse.redirect(new URL("/auth/login", baseUrl));
 	}
 
 	let claims: Record<string, unknown>;
@@ -44,19 +50,22 @@ export async function GET(request: NextRequest) {
 	try {
 		const config = await discoverGenericOidc(settings);
 
-		const tokens = await client.authorizationCodeGrant(
-			config,
-			new URL(request.url),
-			{
-				pkceCodeVerifier: codeVerifier,
-				expectedState: state,
-			},
-		);
+		const currentUrl = new URL(request.url);
+		const callbackUrl = process.env.WEB_URL
+			? new URL(
+					`${process.env.WEB_URL}/api/auth/oidc/generic/callback${currentUrl.search}`,
+				)
+			: currentUrl;
+
+		const tokens = await client.authorizationCodeGrant(config, callbackUrl, {
+			pkceCodeVerifier: codeVerifier,
+			expectedState: state,
+		});
 
 		const idTokenClaims = tokens.claims();
 
 		if (!idTokenClaims?.sub) {
-			return NextResponse.redirect(new URL("/auth/login", request.url));
+			return NextResponse.redirect(new URL("/auth/login", baseUrl));
 		}
 
 		claims = { ...idTokenClaims };
@@ -73,14 +82,14 @@ export async function GET(request: NextRequest) {
 		}
 	} catch (err) {
 		console.error("[OIDC] generic callback failed:", err);
-		return NextResponse.redirect(new URL("/auth/login", request.url));
+		return NextResponse.redirect(new URL("/auth/login", baseUrl));
 	}
 
 	const email = claims.email as string | undefined;
 	const providerUserId = claims.sub as string | undefined;
 
 	if (!email || !providerUserId) {
-		return NextResponse.redirect(new URL("/auth/login", request.url));
+		return NextResponse.redirect(new URL("/auth/login", baseUrl));
 	}
 
 	let [user] = await db.select().from(users).where(eq(users.email, email));
@@ -95,7 +104,7 @@ export async function GET(request: NextRequest) {
 		});
 
 		if (!createdUser || "error" in createdUser) {
-			return NextResponse.redirect(new URL("/auth/login", request.url));
+			return NextResponse.redirect(new URL("/auth/login", baseUrl));
 		}
 
 		user = createdUser;
@@ -107,7 +116,7 @@ export async function GET(request: NextRequest) {
 		.where(eq(workspaces.ownerId, user.id));
 
 	if (!workspace) {
-		return NextResponse.redirect(new URL("/auth/login", request.url));
+		return NextResponse.redirect(new URL("/auth/login", baseUrl));
 	}
 
 	let [genericProvider] = await db
@@ -159,5 +168,5 @@ export async function GET(request: NextRequest) {
 
 	const redirectUrl = await getWorkspaceRedirectUrl(user);
 
-	return NextResponse.redirect(new URL(redirectUrl, request.url));
+	return NextResponse.redirect(new URL(redirectUrl, baseUrl));
 }
