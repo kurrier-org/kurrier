@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 3.2.2
+
+### Patch Changes
+
+- [#495](https://github.com/kurrier-org/kurrier/pull/495) [`a79e71a`](https://github.com/kurrier-org/kurrier/commit/a79e71ac55cf0728d75b7c6a599977a6c2ae390c) Thanks [@krokhale](https://github.com/krokhale)! - nextjs version upgrade
+
 ## 3.2.1
 
 ### Patch Changes
