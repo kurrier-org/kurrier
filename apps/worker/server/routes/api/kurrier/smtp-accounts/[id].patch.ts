@@ -12,6 +12,7 @@ import { defineEventHandler, getRouterParam } from "h3";
 import {
 	apiError,
 	apiSuccess,
+	isAdminApiRequest,
 	validateApiKey,
 	validateJSONBody,
 } from "../../../../../lib/api-helpers";
@@ -23,7 +24,10 @@ import {
 } from "../../../../../lib/smtp-account-helpers";
 
 export default defineEventHandler(async (event) => {
-	const { ownerId, apiKey } = await validateApiKey(event);
+	// Admin API key: any account resolves; regular keys only patch their own.
+	const ownerId = isAdminApiRequest(event)
+		? null
+		: (await validateApiKey(event)).ownerId;
 	const id = getRouterParam(event, "id");
 
 	if (!id) {
@@ -51,7 +55,10 @@ export default defineEventHandler(async (event) => {
 		);
 	}
 
-	const secret = await getSmtpAccountSecret({ accountId: account.id, ownerId });
+	const secret = await getSmtpAccountSecret({
+		accountId: account.id,
+		ownerId: account.ownerId,
+	});
 
 	const config = applySmtpConfigUpdate(secret?.config ?? {}, parsed.data);
 
@@ -63,15 +70,15 @@ export default defineEventHandler(async (event) => {
 		// Account rows without a linked secret can exist; heal them here.
 		config.ulid = config.ulid ?? crypto.randomUUID();
 		const created = await createSecretAdmin({
-			ownerId,
-			workspaceId: apiKey.workspaceId,
+			ownerId: account.ownerId,
+			workspaceId: account.workspaceId,
 			name: config.ulid,
 			value: JSON.stringify(config),
 		});
 		await db.insert(smtpAccountSecrets).values({
 			accountId: account.id,
 			secretId: created.id,
-			workspaceId: apiKey.workspaceId,
+			workspaceId: account.workspaceId,
 		});
 	}
 

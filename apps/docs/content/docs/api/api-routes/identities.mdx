@@ -55,6 +55,7 @@ identity from the dashboard.
 | **sharedWithWorkspace** *(optional)* | Share the identity with all workspace members. Defaults to `false`. |
 | **memberIds** *(optional)* | Workspace member user ids granted access. Defaults to the key owner. Ignored when `sharedWithWorkspace` is `true`. |
 | **dailyQuota** *(optional)* | Daily sending quota. Defaults to the standard IMAP quota. |
+| **userEmail** *(optional)* | [Admin API key](/docs/api/authentication) only: create the identity on behalf of this user. |
 
 The response contains the created identity plus a `backfill` field:
 

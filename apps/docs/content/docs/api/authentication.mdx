@@ -34,3 +34,32 @@ Every request must include your API key. Kurrier supports bearer token authentic
 ```http
 Authorization: Bearer YOUR_API_KEY
 ```
+
+---
+
+## Admin API key (instance-level)
+
+Regular API keys always act as the user who created them. For **infrastructure
+automation** — onboarding users before their first login, provisioning mail
+accounts in bulk, rotating credentials from a secrets manager — Kurrier
+supports an optional **instance-level admin key**, configured through the
+environment (worker service):
+
+```env
+API_ADMIN_KEY=some-long-random-value   # 32+ characters required
+```
+
+The feature is **opt-in**: when the variable is unset (the default), nothing
+changes and only regular API keys work.
+
+Requests bearing the admin key can act **on behalf of any user**:
+
+- [`POST /users`](/docs/api/api-routes/users) — pre-provision a user account
+  (admin key only)
+- `POST /smtp-accounts` and `POST /identities` accept a `userEmail` field
+- `GET /smtp-accounts` accepts a `?userEmail=` query parameter
+- `GET/PATCH/DELETE /smtp-accounts/{id}` resolve any account by id
+
+Treat this key like a root credential: generate it with
+`openssl rand -hex 32`, store it in your secrets manager, and never expose it
+to end users.

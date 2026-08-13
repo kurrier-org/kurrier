@@ -51,6 +51,8 @@ export const SmtpAccountCreateSchema = z.object({
 	smtp: smtpSettingsSchema,
 	// Optional: only needed to receive/sync messages over IMAP
 	imap: imapSettingsSchema.optional(),
+	// Admin API key only: create the account on behalf of this user
+	userEmail: emailAddress.optional(),
 });
 
 export type SmtpAccountCreateInput = z.infer<typeof SmtpAccountCreateSchema>;
@@ -72,6 +74,15 @@ export const IdentityCreateApiSchema = z.object({
 	// Workspace member user ids to grant access to; defaults to the key owner
 	memberIds: z.array(z.string().min(1)).optional(),
 	dailyQuota: z.coerce.number().int().positive().optional(),
+	// Admin API key only: create the identity on behalf of this user
+	userEmail: emailAddress.optional(),
 });
 
 export type IdentityCreateApiInput = z.infer<typeof IdentityCreateApiSchema>;
+
+export const UserCreateApiSchema = z.object({
+	email: emailAddress,
+	workspaceName: z.string().trim().min(1).optional(),
+});
+
+export type UserCreateApiInput = z.infer<typeof UserCreateApiSchema>;
