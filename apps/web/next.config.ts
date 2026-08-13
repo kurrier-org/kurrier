@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-	devIndicators: false,
+	// devIndicators: false,
 	output: "standalone",
 	serverExternalPackages: ["pino", "pino-pretty", "thread-stream"],
 	reactCompiler: true,
