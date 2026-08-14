@@ -213,7 +213,8 @@ https://your-domain.com/api/auth/oidc/generic/callback
 
 - **Token endpoint authentication** defaults to `client_secret_basic` (the OAuth 2.0 default). Some providers default to or require `client_secret_post` — set `OIDC_TOKEN_AUTH_METHOD` accordingly.
 - **Claims**: Kurrier needs the `email` and `sub` claims. If the ID token does not carry `email` (e.g. Authelia exposes profile claims only through the userinfo endpoint), Kurrier automatically falls back to the **userinfo endpoint**.
-- **User provisioning**: as with Google login, a Kurrier user and default workspace are created automatically on first login, keyed by the verified email address.
+- **Identity mapping**: returning users are identified by the stable `issuer + sub` pair stored in `auth_accounts` — never by email. A change to the email reported by the IdP does not change which Kurrier user is authenticated.
+- **User provisioning**: on the very first login, the **verified** email claim is used once, to link the external identity to an existing Kurrier user or to create a new user + default workspace. Unverified emails are rejected.
 
 ### Example: Authelia
 

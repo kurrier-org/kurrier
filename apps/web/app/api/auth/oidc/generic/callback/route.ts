@@ -85,40 +85,116 @@ export async function GET(request: NextRequest) {
 		return NextResponse.redirect(new URL("/auth/login", baseUrl));
 	}
 
-	const email = claims.email as string | undefined;
+	/*
+	 * `sub` is the stable identity assigned by the OIDC provider.
+	 *
+	 * Do not use email to identify returning OIDC users.
+	 */
 	const providerUserId = claims.sub as string | undefined;
+	const email = claims.email as string | undefined;
+	const emailVerified = claims.email_verified === true;
 
-	if (!email || !providerUserId) {
+	if (!providerUserId) {
 		return NextResponse.redirect(new URL("/auth/login", baseUrl));
 	}
 
-	let [user] = await db.select().from(users).where(eq(users.email, email));
+	/*
+	 * First try to resolve an already-linked account.
+	 *
+	 * provider + sub is the external identity.
+	 */
+	const [existingAuthAccount] = await db
+		.select({
+			account: authAccounts,
+		})
+		.from(authAccounts)
+		.innerJoin(authProviders, eq(authAccounts.providerId, authProviders.id))
+		.where(
+			and(
+				eq(authAccounts.providerUserId, providerUserId),
+				eq(authProviders.name, GENERIC_PROVIDER_NAME),
+				eq(authProviders.type, "oidc"),
+				eq(authProviders.issuerUrl, settings.issuerUrl),
+			),
+		)
+		.limit(1);
 
-	if (!user) {
-		const passwordHash = await argon2.hash(crypto.randomUUID());
+	let user: typeof users.$inferSelect;
 
-		const createdUser = await createUserWithWorkspace({
-			email,
-			passwordHash,
-			workspaceName: "Default Workspace",
-		});
+	if (existingAuthAccount) {
+		/*
+		 * Returning user.
+		 *
+		 * The auth account is authoritative. We deliberately don't look the
+		 * user up by email here — a change to the email returned by the IdP
+		 * must not change which Kurrier user is authenticated.
+		 */
+		const [existingUser] = await db
+			.select()
+			.from(users)
+			.where(eq(users.id, existingAuthAccount.account.userId))
+			.limit(1);
 
-		if (!createdUser || "error" in createdUser) {
+		if (!existingUser) {
 			return NextResponse.redirect(new URL("/auth/login", baseUrl));
 		}
 
-		user = createdUser;
+		user = existingUser;
+	} else {
+		/*
+		 * First login / account linking.
+		 *
+		 * Email is only used at this point to either:
+		 *
+		 * 1. link the external identity to an existing Kurrier user, or
+		 * 2. provision a new Kurrier user.
+		 *
+		 * Don't automatically link/create from an unverified email.
+		 */
+		if (!email || !emailVerified) {
+			return NextResponse.redirect(new URL("/auth/login", baseUrl));
+		}
+
+		let [existingUser] = await db
+			.select()
+			.from(users)
+			.where(eq(users.email, email))
+			.limit(1);
+
+		if (!existingUser) {
+			const passwordHash = await argon2.hash(crypto.randomUUID());
+
+			const createdUser = await createUserWithWorkspace({
+				email,
+				passwordHash,
+				workspaceName: "Default Workspace",
+			});
+
+			if (!createdUser || "error" in createdUser) {
+				return NextResponse.redirect(new URL("/auth/login", baseUrl));
+			}
+
+			existingUser = createdUser;
+		}
+
+		user = existingUser;
 	}
 
 	const [workspace] = await db
 		.select()
 		.from(workspaces)
-		.where(eq(workspaces.ownerId, user.id));
+		.where(eq(workspaces.ownerId, user.id))
+		.limit(1);
 
 	if (!workspace) {
 		return NextResponse.redirect(new URL("/auth/login", baseUrl));
 	}
 
+	/*
+	 * Existing auth accounts already have a provider, so technically we only
+	 * need to create/find this for first-time linking. Keeping this here makes
+	 * the existing workspace/provider model work without changing the schema.
+	 */
 	let [genericProvider] = await db
 		.select()
 		.from(authProviders)
@@ -126,8 +202,11 @@ export async function GET(request: NextRequest) {
 			and(
 				eq(authProviders.workspaceId, workspace.id),
 				eq(authProviders.name, GENERIC_PROVIDER_NAME),
+				eq(authProviders.type, "oidc"),
+				eq(authProviders.issuerUrl, settings.issuerUrl),
 			),
-		);
+		)
+		.limit(1);
 
 	if (!genericProvider) {
 		[genericProvider] = await db
@@ -148,18 +227,27 @@ export async function GET(request: NextRequest) {
 			.returning();
 	}
 
-	await db
-		.insert(authAccounts)
-		.values({
-			userId: user.id,
-			providerId: genericProvider.id,
-			providerUserId,
-			email,
-			emailVerified: claims.email_verified === true,
-			rawProfile: claims ?? null,
-			workspaceId: workspace.id,
-		})
-		.onConflictDoNothing();
+	/*
+	 * On first login this creates the permanent mapping:
+	 *
+	 *     issuer + sub -> authAccount -> Kurrier user
+	 *
+	 * On later logins the row already exists and this is a no-op.
+	 */
+	if (!existingAuthAccount) {
+		await db
+			.insert(authAccounts)
+			.values({
+				userId: user.id,
+				providerId: genericProvider.id,
+				providerUserId,
+				email: email!,
+				emailVerified,
+				rawProfile: claims ?? null,
+				workspaceId: workspace.id,
+			})
+			.onConflictDoNothing();
+	}
 
 	cookieStore.delete("oidc_code_verifier");
 	cookieStore.delete("oidc_state");
