@@ -11,15 +11,46 @@ import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { simpleParser } from "mailparser";
 import { eq } from "drizzle-orm";
 import { parseAndStoreEmail } from "../../../../../../../lib/message-payload-parser";
+import {MessageValidator} from "aws-sns-validator";
+const snsValidator = new MessageValidator();
+async function verifySnsMessage(message: unknown): Promise<void> {
+	await snsValidator.validate(message as Record<string, unknown>);
+}
+function isSafeSnsSubscribeUrl(value: unknown): value is string {
+
+	if (typeof value !== "string") return false;
+	try {
+		const url = new URL(value);
+		if (url.protocol !== "https:") {
+			return false;
+		}
+		return (
+			/^sns\.[a-z0-9-]+\.amazonaws\.com$/.test(url.hostname) ||
+			/^sns\.[a-z0-9-]+\.amazonaws\.com\.cn$/.test(url.hostname)
+		);
+	} catch {
+		return false;
+	}
+
+}
 
 export default defineEventHandler(async (event) => {
 	try {
 		const raw = (await readRawBody(event)) || "";
 		const sns = JSON.parse(raw as string);
 
+		await verifySnsMessage(sns);
+
 		// 1) One-time SNS handshake
 		if (sns?.Type === "SubscriptionConfirmation" && sns.SubscribeURL) {
-			await $fetch(sns.SubscribeURL as string, { method: "GET" });
+
+			if (!isSafeSnsSubscribeUrl(sns.SubscribeURL)) {
+				throw new Error("Invalid SNS SubscribeURL");
+			}
+			await $fetch(sns.SubscribeURL, {
+				method: "GET",
+				redirect: "error",
+			});
 			console.log("[Webhook] SNS subscription confirmed");
 			return { ok: true };
 		}
