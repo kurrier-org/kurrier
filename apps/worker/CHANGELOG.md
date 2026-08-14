@@ -1,5 +1,11 @@
 # @kurrier/worker
 
+## 2.1.1
+
+### Patch Changes
+
+- [#504](https://github.com/kurrier-org/kurrier/pull/504) [`847e310`](https://github.com/kurrier-org/kurrier/commit/847e310a26ddbca92bbc05c9a7b3119ef3194a44) Thanks [@krokhale](https://github.com/krokhale)! - security update for validating sns url
+
 ## 2.1.0
 
 ### Minor Changes
