@@ -42,12 +42,19 @@ export function getGenericOidcSettings(): GenericOidcSettings | null {
  * while openid-client v6 would otherwise default to client_secret_post.
  */
 export async function discoverGenericOidc(settings: GenericOidcSettings) {
+	const issuer = new URL(settings.issuerUrl);
 	return client.discovery(
-		new URL(settings.issuerUrl),
+		issuer,
 		settings.clientId,
 		undefined,
 		settings.tokenAuthMethod === "client_secret_post"
 			? client.ClientSecretPost(settings.clientSecret)
 			: client.ClientSecretBasic(settings.clientSecret),
+		// An http:// issuer is only ever useful against a local development
+		// IdP (mock servers, test containers); openid-client refuses plain
+		// HTTP unless explicitly allowed.
+		issuer.protocol === "http:"
+			? { execute: [client.allowInsecureRequests] }
+			: undefined,
 	);
 }
