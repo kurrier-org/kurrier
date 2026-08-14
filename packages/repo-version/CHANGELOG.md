@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 3.2.3
+
+### Patch Changes
+
+- [#504](https://github.com/kurrier-org/kurrier/pull/504) [`847e310`](https://github.com/kurrier-org/kurrier/commit/847e310a26ddbca92bbc05c9a7b3119ef3194a44) Thanks [@krokhale](https://github.com/krokhale)! - security update for validating sns url
+
 ## 3.2.2
 
 ### Patch Changes
