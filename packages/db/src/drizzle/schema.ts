@@ -1736,9 +1736,14 @@ export const mailRuleActions = pgTable(
             .notNull(),
         actionType: MailRuleActionTypeEnum("action_type").notNull(),
         order: integer("order").notNull().default(0),
-        params: jsonb("params")
-            .$type<{ labelId?: string; mailboxId?: string } | null>()
-            .default(sql`null`),
+       params: jsonb("params")
+    .$type<{
+        labelId?: string;
+        mailboxId?: string;
+        forwardTo?: string[];
+        keepOriginal?: boolean;
+    } | null>()
+    .default(sql`null`),
 		workspaceId: uuid("workspace_id")
 			.references(() => workspaces.id)
 			.notNull()

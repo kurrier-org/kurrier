@@ -38,6 +38,7 @@ export const mailRulesActionsList = [
     "flag",
     "add_label",
     "trash",
+    "forward",
 ] as const;
 
 

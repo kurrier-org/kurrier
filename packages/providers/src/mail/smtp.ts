@@ -144,6 +144,7 @@ export class SmtpMailer implements Mailer {
 			from: string;
 			inReplyTo: string;
 			references: string[];
+			headers?: Record<string, string>;
 			attachments?: { name: string; content: Blob; contentType: string }[];
 		},
 	): Promise<{ success: boolean; MessageId?: string }> {
@@ -161,6 +162,7 @@ export class SmtpMailer implements Mailer {
 			if (opts.inReplyTo) headers["In-Reply-To"] = opts.inReplyTo;
 			if (opts.references?.length)
 				headers["References"] = opts.references.join(" ");
+if (opts.headers) Object.assign(headers, opts.headers);
 
 			const info = await this.transporter.sendMail({
 				from: opts.from,
