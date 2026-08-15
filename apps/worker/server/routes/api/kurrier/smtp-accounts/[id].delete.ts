@@ -10,12 +10,16 @@ import { defineEventHandler, getRouterParam } from "h3";
 import {
 	apiError,
 	apiSuccess,
+	isAdminApiRequest,
 	validateApiKey,
 } from "../../../../../lib/api-helpers";
 import { validateSmtpAccountOwnership } from "../../../../../lib/smtp-account-helpers";
 
 export default defineEventHandler(async (event) => {
-	const { ownerId } = await validateApiKey(event);
+	// Admin API key: any account resolves; regular keys only delete their own.
+	const ownerId = isAdminApiRequest(event)
+		? null
+		: (await validateApiKey(event)).ownerId;
 	const id = getRouterParam(event, "id");
 
 	if (!id) {

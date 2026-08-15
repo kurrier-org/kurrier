@@ -121,18 +121,21 @@ export function serializeSmtpAccount(
 	};
 }
 
+// ownerId null = admin API key: no ownership filter, any account resolves.
 export async function validateSmtpAccountOwnership(opts: {
 	accountId: string;
-	ownerId: string;
+	ownerId: string | null;
 }) {
 	const [account] = await db
 		.select()
 		.from(smtpAccounts)
 		.where(
-			and(
-				eq(smtpAccounts.id, opts.accountId),
-				eq(smtpAccounts.ownerId, opts.ownerId),
-			),
+			opts.ownerId === null
+				? eq(smtpAccounts.id, opts.accountId)
+				: and(
+						eq(smtpAccounts.id, opts.accountId),
+						eq(smtpAccounts.ownerId, opts.ownerId),
+					),
 		)
 		.limit(1);
 

@@ -4,7 +4,7 @@ import { defineEventHandler } from "h3";
 import {
 	apiError,
 	apiSuccess,
-	validateApiKey,
+	resolveApiActor,
 	validateJSONBody,
 } from "../../../../../lib/api-helpers";
 import {
@@ -13,7 +13,6 @@ import {
 } from "../../../../../lib/smtp-account-helpers";
 
 export default defineEventHandler(async (event) => {
-	const { ownerId, apiKey } = await validateApiKey(event);
 	const { json } = await validateJSONBody(event);
 
 	const parsed = SmtpAccountCreateSchema.safeParse(json);
@@ -31,7 +30,10 @@ export default defineEventHandler(async (event) => {
 		);
 	}
 
-	const workspaceId = apiKey.workspaceId;
+	const { ownerId, workspaceId } = await resolveApiActor(
+		event,
+		parsed.data.userEmail,
+	);
 	const config = smtpConfigFromInput(parsed.data);
 
 	const [account] = await db

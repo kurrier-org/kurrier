@@ -1,0 +1,95 @@
+---
+title: Users
+description: Pre-provision Kurrier users through the admin API
+---
+
+These endpoints let an **administrator** create user accounts ahead of time —
+so a mailbox can be fully wired up **before the person ever logs in**. Combined
+with [SMTP accounts](/docs/api/api-routes/smtp-accounts) and
+[identities](/docs/api/api-routes/identities), this enables fully automated
+onboarding: when the user signs in later (e.g. through
+[OIDC/SSO](/docs/oidc), which attaches to the existing account by email),
+their mail is already there.
+
+All routes below are relative to:
+
+```text
+https://your-domain.com/api/kurrier
+```
+
+⚠️ These endpoints require the **instance-level admin API key** — see the
+[authentication guide](/docs/api/authentication). Regular API keys are
+rejected.
+
+---
+
+## Create a user
+
+### `POST /users`
+
+```json
+{
+	"email": "user@example.com",
+	"workspaceName": "Family"
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| **email** *(required)* | Email address of the user. Must match the email their SSO/OIDC provider reports so the account links up at first login. |
+| **workspaceName** *(optional)* | Name of the default workspace. Defaults to `"Default Workspace"`. |
+
+Creates the user, their default workspace, and the owner membership, then
+queues the same provider-sync and migration jobs as a regular signup. The
+account has a random unusable password — it can only be accessed through
+SSO/OIDC login (or a password reset, where enabled).
+
+The endpoint is **idempotent on email**: if the user already exists, it
+returns them with `"created": false` instead of failing.
+
+```json
+{
+	"success": true,
+	"data": {
+		"user": { "id": "7f3b1a84-…", "email": "user@example.com" },
+		"workspace": { "id": "0d63d43a-…", "publicId": "9ANdDSgvj5" },
+		"created": true
+	}
+}
+```
+
+---
+
+## Provisioning a mailbox end to end
+
+```bash
+# 1. Create the user (before their first login)
+curl -X POST https://mail.example.com/api/kurrier/users \
+  -H "Authorization: Bearer $API_ADMIN_KEY" \
+  -d '{"email": "alice@example.com"}'
+
+# 2. Create their SMTP/IMAP account
+curl -X POST https://mail.example.com/api/kurrier/smtp-accounts \
+  -H "Authorization: Bearer $API_ADMIN_KEY" \
+  -d '{
+    "userEmail": "alice@example.com",
+    "label": "Alice mailbox",
+    "smtp": {"host": "smtp.example.com", "port": 465, "secure": true,
+             "username": "alice@example.com", "password": "…"},
+    "imap": {"host": "imap.example.com", "port": 993, "secure": true,
+             "username": "alice@example.com", "password": "…"}
+  }'
+
+# 3. Create the email identity (starts mailbox discovery + sync)
+curl -X POST https://mail.example.com/api/kurrier/identities \
+  -H "Authorization: Bearer $API_ADMIN_KEY" \
+  -d '{
+    "userEmail": "alice@example.com",
+    "value": "alice@example.com",
+    "smtpAccountId": "<id from step 2>",
+    "sharedWithWorkspace": true
+  }'
+```
+
+When Alice signs in through SSO for the first time, her mailbox is already
+synced and waiting.

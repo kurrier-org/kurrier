@@ -21,6 +21,7 @@
 	"dependencies": {
 		"@libsql/client": "^0.15.15",
 		"addressparser": "^1.0.1",
+		"argon2": "^0.44.0",
 		"aws-sns-validator": "^1.1.5",
 		"base64-arraybuffer": "^1.0.2",
 		"bcrypt": "^6.0.0",

@@ -11,7 +11,7 @@ import { defineEventHandler } from "h3";
 import {
 	apiError,
 	apiSuccess,
-	validateApiKey,
+	resolveApiActor,
 	validateJSONBody,
 } from "../../../../../lib/api-helpers";
 import { getRedis } from "../../../../../lib/get-redis";
@@ -103,7 +103,6 @@ async function startImapBackfill(identityId: string, workspaceId: string) {
 }
 
 export default defineEventHandler(async (event) => {
-	const { ownerId, apiKey } = await validateApiKey(event);
 	const { json } = await validateJSONBody(event);
 
 	const parsed = IdentityCreateApiSchema.safeParse(json);
@@ -122,7 +121,7 @@ export default defineEventHandler(async (event) => {
 	}
 
 	const data = parsed.data;
-	const workspaceId = apiKey.workspaceId;
+	const { ownerId, workspaceId } = await resolveApiActor(event, data.userEmail);
 
 	const account = await validateSmtpAccountOwnership({
 		accountId: data.smtpAccountId,

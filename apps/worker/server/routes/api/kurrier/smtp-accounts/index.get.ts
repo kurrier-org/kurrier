@@ -1,14 +1,19 @@
 import { db, smtpAccounts } from "@db";
 import { eq } from "drizzle-orm";
-import { defineEventHandler } from "h3";
-import { apiSuccess, validateApiKey } from "../../../../../lib/api-helpers";
+import { defineEventHandler, getQuery } from "h3";
+import { apiSuccess, resolveApiActor } from "../../../../../lib/api-helpers";
 import {
 	getSmtpAccountSecret,
 	serializeSmtpAccount,
 } from "../../../../../lib/smtp-account-helpers";
 
 export default defineEventHandler(async (event) => {
-	const { ownerId } = await validateApiKey(event);
+	// Admin API key: pass ?userEmail= to list another user's accounts.
+	const userEmail = getQuery(event).userEmail;
+	const { ownerId } = await resolveApiActor(
+		event,
+		userEmail ? String(userEmail) : undefined,
+	);
 
 	const accounts = await db
 		.select()
