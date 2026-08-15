@@ -3,6 +3,7 @@ import Link from "next/link";
 import KurrierLogo from "@/components/common/kurrier-logo";
 import * as React from "react";
 import {getDictionary, Locale} from "@/lib/dictionaries";
+import { getGenericOidcSettings } from "@/lib/generic-oidc";
 
 export default async function LoginPage({ params, searchParams }: {
 	params: Promise<{ locale: Locale }>;
@@ -14,6 +15,7 @@ export default async function LoginPage({ params, searchParams }: {
 	const dict = await getDictionary(nParams.locale);
 	const showSignupDisabledMessage = sParams.message === "signup_disabled";
 	const googleEnabled = process.env.OIDC_GOOGLE_CLIENT_ID && process.env.OIDC_GOOGLE_CLIENT_SECRET;
+	const genericOidc = getGenericOidcSettings();
 
 
 	return (
@@ -36,6 +38,8 @@ export default async function LoginPage({ params, searchParams }: {
 				)}
 				<LoginForm dict={dict} oidc={{
 					googleEnabled: !!googleEnabled,
+					genericEnabled: !!genericOidc,
+					genericName: genericOidc?.providerName,
 				}} />
 			</div>
 		</div>

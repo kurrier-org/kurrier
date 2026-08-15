@@ -15,7 +15,7 @@ import { FormState } from "@schema";
 import Form from "next/form";
 import { Loader2Icon } from "lucide-react";
 import { Button } from "@mantine/core";
-import { IconBrandGoogle } from "@tabler/icons-react";
+import { IconBrandGoogle, IconLogin2 } from "@tabler/icons-react";
 import {Dictionary} from "@/lib/dictionaries";
 
 export function SignupForm({ className,
@@ -24,6 +24,8 @@ export function SignupForm({ className,
 						   }: React.ComponentProps<"div"> &
 	{oidc?: {
 			googleEnabled?: boolean;
+			genericEnabled?: boolean;
+			genericName?: string;
 		} } & {dict: Dictionary}
 ) {
 	const passwordRef = React.useRef<HTMLInputElement>(null);
@@ -56,11 +58,19 @@ export function SignupForm({ className,
 					{/*<CardDescription>Signup with your Google account</CardDescription>*/}
 				</CardHeader>
 				<CardContent>
-					{oidc?.googleEnabled ? (
+					{oidc?.googleEnabled && (
 						<Button fullWidth variant="default" className="w-full" href={"/api/auth/oidc/google"} component="a" leftSection={<IconBrandGoogle/>}>
 							Signup with Google
 						</Button>
-					) : <div className={'text-sm text-center'}>No third-party authentication methods are currently enabled.</div>}
+					)}
+					{oidc?.genericEnabled && (
+						<Button fullWidth variant="default" className="w-full mt-2" href={"/api/auth/oidc/generic"} component="a" leftSection={<IconLogin2/>}>
+							Signup with {oidc?.genericName || "SSO"}
+						</Button>
+					)}
+					{!oidc?.googleEnabled && !oidc?.genericEnabled && (
+						<div className={'text-sm text-center'}>No third-party authentication methods are currently enabled.</div>
+					)}
 					<Form action={formAction}>
 						<input type="hidden" name="locale" value={dict.locale} />
 						<div className="grid gap-6">

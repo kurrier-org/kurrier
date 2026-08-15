@@ -7,15 +7,16 @@ description: Authentication using penID Connect (OIDC) providers.
 
 Kurrier supports authentication using **OpenID Connect (OIDC)** providers.
 
-Currently, **Google** login is available out of the box, but the architecture is provider-agnostic and additional providers such as GitHub, Microsoft, Auth0, Okta, Keycloak, Zitadel, and others can be added easily.
+Currently, **Google** login is available out of the box, and a **generic OIDC provider** lets you plug in any spec-compliant IdP such as Authelia, Keycloak, Authentik, Zitadel, Okta, Auth0, or Microsoft Entra ID — configured entirely through environment variables.
 
 ---
 
 ## ✨ Currently Supported
 
 - Google OIDC Login
+- Generic OIDC Login (any spec-compliant OpenID Connect provider)
 
-Additional providers can be implemented by adding another OIDC route and provider configuration.
+Additional dedicated providers can be implemented by adding another OIDC route and provider configuration.
 
 ---
 
@@ -171,6 +172,78 @@ Kurrier uses:
 - Signed JWT session tokens
 
 Sensitive provider tokens are never logged in production.
+
+---
+
+## 🌐 Generic OIDC Provider
+
+Any OpenID Connect provider that supports **discovery** (`/.well-known/openid-configuration`) and the **Authorization Code Flow with PKCE** can be used for login — no code changes required.
+
+### Environment Variables
+
+```env
+OIDC_ISSUER_URL=https://auth.example.com
+OIDC_CLIENT_ID=kurrier
+OIDC_CLIENT_SECRET=your_client_secret
+
+# Optional
+OIDC_PROVIDER_NAME=My Company SSO   # label on the login button (default: "SSO")
+OIDC_SCOPES=openid email profile    # default shown
+OIDC_TOKEN_AUTH_METHOD=client_secret_basic  # or client_secret_post
+```
+
+The generic login button appears on the login and signup pages as soon as `OIDC_ISSUER_URL`, `OIDC_CLIENT_ID` and `OIDC_CLIENT_SECRET` are all set.
+
+### Redirect URI
+
+Register the following redirect URI with your provider:
+
+```txt
+https://your-domain.com/api/auth/oidc/generic/callback
+```
+
+### Route Structure
+
+```txt
+/api/auth/oidc/generic            → start route (discovery, PKCE, state, redirect)
+/api/auth/oidc/generic/callback   → callback route (code exchange, user provisioning, session)
+```
+
+### Provider Notes
+
+- **Token endpoint authentication** defaults to `client_secret_basic` (the OAuth 2.0 default). Some providers default to or require `client_secret_post` — set `OIDC_TOKEN_AUTH_METHOD` accordingly.
+- **Claims**: Kurrier needs the `email` and `sub` claims. If the ID token does not carry `email` (e.g. Authelia exposes profile claims only through the userinfo endpoint), Kurrier automatically falls back to the **userinfo endpoint**.
+- **Identity mapping**: returning users are identified by the stable `issuer + sub` pair stored in `auth_accounts` — never by email. A change to the email reported by the IdP does not change which Kurrier user is authenticated.
+- **User provisioning**: on the very first login, the **verified** email claim is used once, to link the external identity to an existing Kurrier user or to create a new user + default workspace. Unverified emails are rejected.
+
+### Example: Authelia
+
+```yaml
+identity_providers:
+  oidc:
+    clients:
+      - client_id: kurrier
+        client_name: Kurrier
+        client_secret: '$pbkdf2-sha512$...'   # hashed secret
+        public: false
+        authorization_policy: one_factor
+        redirect_uris:
+          - https://mail.example.com/api/auth/oidc/generic/callback
+        scopes:
+          - openid
+          - email
+          - profile
+        userinfo_signed_response_alg: none
+```
+
+Authelia authenticates clients with `client_secret_basic` by default, which matches Kurrier's default — no extra configuration needed.
+
+### Example: Keycloak
+
+1. Create a new **confidential** client in your realm
+2. Enable **Standard Flow** (Authorization Code)
+3. Set the redirect URI to `https://your-domain.com/api/auth/oidc/generic/callback`
+4. Use the realm issuer URL, e.g. `https://keycloak.example.com/realms/myrealm`, as `OIDC_ISSUER_URL`
 
 ---
 

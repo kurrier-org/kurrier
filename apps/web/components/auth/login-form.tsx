@@ -17,7 +17,7 @@ import { useActionState } from "react";
 import Form from "next/form";
 import { Loader2Icon } from "lucide-react";
 import { FormState } from "@schema";
-import { IconBrandGoogle } from "@tabler/icons-react";
+import { IconBrandGoogle, IconLogin2 } from "@tabler/icons-react";
 import { Button } from "@mantine/core";
 import type {Dictionary} from "@/lib/dictionaries";
 
@@ -28,6 +28,8 @@ export function LoginForm({
 	...props
 }: React.ComponentProps<"div"> & {oidc?: {
 		googleEnabled?: boolean;
+		genericEnabled?: boolean;
+		genericName?: string;
 	} }  & {dict: Dictionary}) {
 	const [formState, formAction, isPending] = useActionState<
 		FormState,
@@ -39,12 +41,22 @@ export function LoginForm({
 			<Card>
 				<CardHeader className="text-center">
 					<CardTitle className="text-xl">{dict.auth.welcomeBack}</CardTitle>
-					<CardDescription>Login with your Google account</CardDescription>
-					{oidc?.googleEnabled ? (
+					{(oidc?.googleEnabled || oidc?.genericEnabled) && (
+						<CardDescription>Login with your existing account</CardDescription>
+					)}
+					{oidc?.googleEnabled && (
 						<Button fullWidth variant="default" className="w-full" href={"/api/auth/oidc/google"} component="a" leftSection={<IconBrandGoogle/>}>
 							Login with Google
 						</Button>
-					) : <div className={'text-sm text-center'}>No third-party authentication methods are currently enabled.</div>}
+					)}
+					{oidc?.genericEnabled && (
+						<Button fullWidth variant="default" className="w-full" href={"/api/auth/oidc/generic"} component="a" leftSection={<IconLogin2/>}>
+							Login with {oidc?.genericName || "SSO"}
+						</Button>
+					)}
+					{!oidc?.googleEnabled && !oidc?.genericEnabled && (
+						<div className={'text-sm text-center'}>No third-party authentication methods are currently enabled.</div>
+					)}
 				</CardHeader>
 
 				<CardContent>
