@@ -1,0 +1,115 @@
+---
+title: SMTP Accounts
+description: Provision SMTP/IMAP accounts through Kurrier's unified API
+---
+
+SMTP accounts hold the **connection settings and credentials** for a custom
+SMTP/IMAP mail host (cPanel, Office365, OVH, Zimbra, and most other providers).
+Once created, an SMTP account can back one or more [email identities](/docs/api/api-routes/identities).
+
+These endpoints let you **provision mail accounts entirely from your backend** —
+for example to onboard users automatically — instead of clicking through the
+dashboard. Credentials are encrypted at rest with `APP_SECRET_ENCRYPTION_KEY`,
+exactly like accounts created through the UI, and both stay interchangeable.
+
+All routes below are relative to:
+
+```text
+https://your-domain.com/api/kurrier
+```
+
+For authentication, see the [authentication guide](/docs/api/authentication).
+
+---
+
+## Create an SMTP account
+
+### `POST /smtp-accounts`
+
+```json
+{
+	"label": "OVH mail account",
+	"smtp": {
+		"host": "ssl0.ovh.net",
+		"port": 465,
+		"secure": true,
+		"username": "user@example.com",
+		"password": "app-password"
+	},
+	"imap": {
+		"host": "ssl0.ovh.net",
+		"port": 993,
+		"secure": true,
+		"username": "user@example.com",
+		"password": "app-password"
+	}
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| **label** *(required)* | Free-form name shown in the dashboard. |
+| **smtp** *(required)* | Outgoing mail settings: `host`, `port`, `username`, `password`, plus optional `secure` (implicit TLS, e.g. port 465 — leave unset/false for STARTTLS on 587) and `pool`. |
+| **imap** *(optional)* | Incoming mail settings: `host`, `port`, `username`, `password`, optional `secure` (defaults to true). Only needed if you want to receive/sync messages. |
+
+Passwords are **never returned** by the API — responses only carry connection
+metadata:
+
+```json
+{
+	"success": true,
+	"data": {
+		"id": "0d63d43a-2b3f-4f8e-9a76-2f0f2c9a3b1e",
+		"label": "OVH mail account",
+		"smtp": { "host": "ssl0.ovh.net", "port": 465, "username": "user@example.com", "secure": true, "pool": false },
+		"imap": { "host": "ssl0.ovh.net", "port": 993, "username": "user@example.com", "secure": true },
+		"sendVerified": null,
+		"receiveVerified": null
+	}
+}
+```
+
+---
+
+## List SMTP accounts
+
+### `GET /smtp-accounts`
+
+Returns all SMTP accounts owned by the authenticated user.
+
+---
+
+## Get a single SMTP account
+
+### `GET /smtp-accounts/{id}`
+
+Fetch a single SMTP account by id.
+
+---
+
+## Update an SMTP account
+
+### `PATCH /smtp-accounts/{id}`
+
+Partially update the label or connection settings. Only the fields you send are
+changed — omitted fields (including passwords) keep their current values.
+
+```json
+{
+	"smtp": { "password": "rotated-password" },
+	"imap": { "password": "rotated-password" }
+}
+```
+
+Pass `"imap": null` to remove the IMAP settings entirely.
+
+---
+
+## Delete an SMTP account
+
+### `DELETE /smtp-accounts/{id}`
+
+Permanently deletes the account and its encrypted credentials.
+
+Returns `409 ACCOUNT_IN_USE` (with the list of offending identities) if the
+account still backs one or more identities — delete those first.

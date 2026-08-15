@@ -28,3 +28,50 @@ export const EmailSendSchema = z
 	});
 
 export type EmailSendInput = z.infer<typeof EmailSendSchema>;
+
+const smtpSettingsSchema = z.object({
+	host: z.string().trim().min(1),
+	port: z.coerce.number().int().min(1).max(65535),
+	username: z.string().min(1),
+	password: z.string().min(1),
+	secure: z.boolean().optional(),
+	pool: z.boolean().optional(),
+});
+
+const imapSettingsSchema = z.object({
+	host: z.string().trim().min(1),
+	port: z.coerce.number().int().min(1).max(65535),
+	username: z.string().min(1),
+	password: z.string().min(1),
+	secure: z.boolean().optional(),
+});
+
+export const SmtpAccountCreateSchema = z.object({
+	label: z.string().trim().min(1),
+	smtp: smtpSettingsSchema,
+	// Optional: only needed to receive/sync messages over IMAP
+	imap: imapSettingsSchema.optional(),
+});
+
+export type SmtpAccountCreateInput = z.infer<typeof SmtpAccountCreateSchema>;
+
+export const SmtpAccountUpdateSchema = z.object({
+	label: z.string().trim().min(1).optional(),
+	smtp: smtpSettingsSchema.partial().optional(),
+	// Pass null to remove the IMAP settings entirely
+	imap: imapSettingsSchema.partial().nullable().optional(),
+});
+
+export type SmtpAccountUpdateInput = z.infer<typeof SmtpAccountUpdateSchema>;
+
+export const IdentityCreateApiSchema = z.object({
+	value: emailAddress,
+	displayName: z.string().trim().min(1).optional(),
+	smtpAccountId: z.string().min(1),
+	sharedWithWorkspace: z.boolean().optional().default(false),
+	// Workspace member user ids to grant access to; defaults to the key owner
+	memberIds: z.array(z.string().min(1)).optional(),
+	dailyQuota: z.coerce.number().int().positive().optional(),
+});
+
+export type IdentityCreateApiInput = z.infer<typeof IdentityCreateApiSchema>;
