@@ -6,6 +6,25 @@ The self-hosted open-source workspace for **email, calendars, contacts and stora
 
 ## ✨ What's New
 
+### 🎉 Generic OIDC/SSO support
+
+Kurrier now supports **generic OpenID Connect (OIDC)** authentication, making it possible to use your own identity provider for SSO.
+
+Configure Kurrier with any standards-compliant OIDC provider alongside the existing Google authentication support.
+
+[OIDC / SSO Documentation](https://www.kurrier.org/docs/authentication/oidc)
+
+![img.png](https://www.kurrier.org/docs-sso.png)
+
+
+### 🎉 Management API
+
+Kurrier now includes a **Management API** for programmatic provisioning and integration with external applications.
+
+Use the API to provision users, configure SMTP/IMAP accounts, and create email identities. An optional instance-level admin API key allows trusted infrastructure to manage accounts before a user's first login.
+
+[API Documentation](https://www.kurrier.org/docs/api)
+
 
 ### 🎉 Kurrier Message Inspector 
 
