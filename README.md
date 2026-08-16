@@ -14,7 +14,7 @@ Configure Kurrier with any standards-compliant OIDC provider alongside the exist
 
 [OIDC / SSO Documentation](https://www.kurrier.org/docs/authentication/oidc)
 
-![img.png](https://www.kurrier.org/docs-sso.png)
+<img src="https://www.kurrier.org/docs-sso.jpg" alt="Kurrier SSO" width="600" />
 
 
 ### 🎉 Management API
