@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 3.3.0
+
+### Minor Changes
+
+- [`e93acfd`](https://github.com/kurrier-org/kurrier/commit/e93acfd893d32be28c86d62e2cc3dff691ac5740) Thanks [@krokhale](https://github.com/krokhale)! - Add generic OIDC/SSO support and management APIs for provisioning users, SMTP accounts, and email identities.
+
 ## 3.2.3
 
 ### Patch Changes
