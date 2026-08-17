@@ -25,12 +25,13 @@ export function LoginForm({
 	className,
 	oidc,
 	dict,
+	disableLocalLogin,
 	...props
 }: React.ComponentProps<"div"> & {oidc?: {
 		googleEnabled?: boolean;
 		genericEnabled?: boolean;
 		genericName?: string;
-	} }  & {dict: Dictionary}) {
+	} }  & {dict: Dictionary} & {disableLocalLogin?: boolean}) {
 	const [formState, formAction, isPending] = useActionState<
 		FormState,
 		FormData
@@ -54,11 +55,15 @@ export function LoginForm({
 							Login with {oidc?.genericName || "SSO"}
 						</Button>
 					)}
-					{!oidc?.googleEnabled && !oidc?.genericEnabled && (
+					{!oidc?.googleEnabled && !oidc?.genericEnabled && disableLocalLogin && (
+						<div className={'text-sm text-center'}>No login methods are currently enabled. Please contact your administrator.</div>
+					)}
+					{!oidc?.googleEnabled && !oidc?.genericEnabled && !disableLocalLogin && (
 						<div className={'text-sm text-center'}>No third-party authentication methods are currently enabled.</div>
 					)}
 				</CardHeader>
 
+				{!disableLocalLogin && (
 				<CardContent>
 					<Form action={formAction}>
 						<input type="hidden" name="locale" value={dict.locale} />
@@ -150,6 +155,7 @@ export function LoginForm({
 						</div>
 					</Form>
 				</CardContent>
+				)}
 			</Card>
 
 			{/*<div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">*/}

@@ -141,6 +141,15 @@ export async function login(
 	_prev: FormState,
 	formData: FormData,
 ): Promise<FormState> {
+	const { DISABLE_LOCAL_LOGIN } = getPublicEnv();
+
+	if (DISABLE_LOCAL_LOGIN) {
+		return {
+			success: false,
+			error: "Local login is currently disabled. Please use SSO to sign in.",
+		};
+	}
+
 	const { email, password, locale } = decode(formData) as {
 		email: string;
 		password: string;

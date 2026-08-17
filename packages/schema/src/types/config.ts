@@ -38,6 +38,7 @@ export const ZPublicConfig = z.object({
 	DOCS_URL: z.string().optional(),
 	DAV_URL: z.string("DAV_URL must be present"),
 	DISABLE_SIGNUP: z.string().optional().transform((val) => val === "true").default(false),
+	DISABLE_LOCAL_LOGIN: z.string().optional().transform((val) => val === "true").default(false),
 });
 
 export type ServerConfig = z.infer<typeof ZServerConfig>;
