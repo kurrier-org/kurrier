@@ -5,7 +5,8 @@
 		"loggedIn": "Login realizado!",
 		"accountAlreadyExists": "Já existe uma conta com este e-mail",
 		"welcome": "Bem-vindo!",
-		"signupDisabled": "O cadastro está desativado no momento. Entre em contato com o administrador."
+		"signupDisabled": "O cadastro está desativado no momento. Entre em contato com o administrador.",
+		"localLoginDisabled": "O login local está desativado no momento. Use o SSO para entrar."
 	},
 	"contacts": {
 		"noDefaultAddressBook": "Nenhum catálogo de endereços padrão encontrado para o usuário."

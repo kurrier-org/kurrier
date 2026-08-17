@@ -5,7 +5,8 @@
 		"loggedIn": "Logged in!",
 		"accountAlreadyExists": "An account with this email already exists",
 		"welcome": "Welcome!",
-		"signupDisabled": "Signup is currently disabled. Please contact your administrator."
+		"signupDisabled": "Signup is currently disabled. Please contact your administrator.",
+		"localLoginDisabled": "Local login is currently disabled. Please use SSO to sign in."
 	},
 	"contacts": {
 		"noDefaultAddressBook": "No default address book found for user."

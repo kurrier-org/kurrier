@@ -118,6 +118,22 @@ email, raw EML files, or attachments, and it does not delete existing Drive
 data. Set the value back to `false` and restart the web container to restore the
 Drive interface.
 
+### Optional: disable local login
+
+For SSO-only deployments, you can hide the email/password login form and reject
+local login attempts server-side:
+
+```bash
+DISABLE_LOCAL_LOGIN=true
+```
+
+Configure at least one Google or generic OIDC provider before enabling this
+option. Otherwise, the login page will report that no login methods are
+available. Restart the web container after changing the value.
+
+This setting does not change signup availability. Use `DISABLE_SIGNUP=true`
+separately when local account registration should also be disabled.
+
 ---
 
 ✅ Once you are all set with your environment variables you are now ready to run
