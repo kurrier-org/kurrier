@@ -1,12 +1,12 @@
 "use client";
 
-import * as React from "react";
-import { FieldConfig, SelectGroupOption, SelectOption } from "@schema";
 import {
-	TextInput,
-	Textarea as MantineTextarea,
 	Select as MantineSelect,
+	Textarea as MantineTextarea,
+	TextInput,
 } from "@mantine/core";
+import type { FieldConfig, SelectGroupOption, SelectOption } from "@schema";
+import * as React from "react";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import { resolveDictMessage } from "@/lib/resolve-dict-message";
 
@@ -27,13 +27,14 @@ export function SelectField({
 	className?: string;
 	onChange?: (value: string) => void;
 }) {
+	const dict = useOptionalDictionary();
 	const [val, setVal] = React.useState<string>(defaultValue ?? "");
 	return (
 		<>
 			<input type="hidden" name={name} value={val} />
 			<MantineSelect
 				className={className}
-				placeholder={placeholder}
+				placeholder={placeholder ?? dict?.common?.pickValue}
 				data={options}
 				value={val || null}
 				onChange={(v) => {
