@@ -20,6 +20,7 @@ import { hasLocale, type Locale } from "@/lib/dictionaries";
 const LOCALE_LABELS: Record<Locale, string> = {
 	en: "English",
 	ko: "한국어",
+	br: "Português (Brasil)",
 };
 
 const locales = Object.keys(LOCALE_LABELS) as Locale[];
