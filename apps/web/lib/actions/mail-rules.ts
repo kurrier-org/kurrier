@@ -85,11 +85,11 @@ function validateRulePayload(p: {
 }) {
     const errors: Record<string, string[]> = {};
 
-    if (!p.name.trim()) errors.name = ["Rule name is required."];
-    if (!Number.isFinite(p.priority) || p.priority < 0) errors.priority = ["Priority must be a non-negative number."];
-    if (p.match.conditions.length === 0) errors.match = ["Add at least one criteria field."];
-    if (p.actions.length === 0) errors.actions = ["Select at least one action."];
-    if (p.applyLabel && !p.labelId.trim()) errors.labelId = ["Label ID is required when Apply label is enabled."];
+    if (!p.name.trim()) errors.name = ["mailRules.nameRequired"];
+    if (!Number.isFinite(p.priority) || p.priority < 0) errors.priority = ["mailRules.priorityNonNegative"];
+    if (p.match.conditions.length === 0) errors.match = ["mailRules.atLeastOneCriteria"];
+    if (p.actions.length === 0) errors.actions = ["mailRules.atLeastOneAction"];
+    if (p.applyLabel && !p.labelId.trim()) errors.labelId = ["mailRules.labelIdRequired"];
 
     return errors;
 }
@@ -213,8 +213,8 @@ export async function createMailRule(payload: {
             if (e?.code === "23505") {
                 return {
                     ok: false as const,
-                    error: "A rule with this name already exists for this identity.",
-                    errors: { name: ["Rule name must be unique per identity."] },
+                    error: "mailRules.duplicateName",
+                    errors: { name: ["mailRules.nameMustBeUnique"] },
                 };
             }
             throw e;
@@ -228,7 +228,7 @@ export async function createRule(_prev: any, formData: FormData) {
         if (payload._errors) {
             const errors = payload._errors ?? {};
             const firstError =
-                Object.values(errors)[0]?.[0] ?? "Validation errors occurred.";
+                Object.values(errors)[0]?.[0] ?? "mailRules.validationErrorsOccurred";
 
             return {
                 success: false,
@@ -259,7 +259,7 @@ export async function createRule(_prev: any, formData: FormData) {
 export async function deleteRule(_prev: any, formData: FormData) {
     return handleAction(async () => {
         const ruleId = String(formData.get("ruleId") || "");
-        if (!ruleId) return { success: false, error: "Missing ruleId" };
+        if (!ruleId) return { success: false, error: "mailRules.missingRuleId" };
 
         const rls = await rlsClient();
         await rls(async (tx) => {

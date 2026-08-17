@@ -210,7 +210,7 @@ export async function addNewLabel(
 				.limit(1);
 
 			if (!identity) {
-				return { success: false, error: "Invalid identity" };
+				return { success: false, error: "labels.invalidIdentity" };
 			}
 
 			payload.identityId = identity.id;

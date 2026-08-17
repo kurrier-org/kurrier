@@ -15,5 +15,46 @@
 		"folderCreated": "Pasta criada",
 		"deletedFolder": "Pasta excluída",
 		"deletedFile": "Arquivo excluído"
+	},
+	"labels": {
+		"invalidIdentity": "Identidade inválida"
+	},
+	"mailRules": {
+		"nameRequired": "O nome da regra é obrigatório.",
+		"priorityNonNegative": "A prioridade deve ser um número não negativo.",
+		"atLeastOneCriteria": "Adicione pelo menos um critério.",
+		"atLeastOneAction": "Selecione pelo menos uma ação.",
+		"labelIdRequired": "O ID da etiqueta é obrigatório quando Aplicar etiqueta está ativado.",
+		"duplicateName": "Já existe uma regra com este nome para esta identidade.",
+		"nameMustBeUnique": "O nome da regra deve ser único por identidade.",
+		"validationErrorsOccurred": "Ocorreram erros de validação.",
+		"missingRuleId": "ID da regra ausente"
+	},
+	"mailbox": {
+		"folderNameRequired": "O nome da pasta é obrigatório",
+		"invalidParentFolder": "Pasta pai inválida",
+		"subscriptionNotFound": "Inscrição não encontrada"
+	},
+	"dashboard": {
+		"providerAccountUpdated": "Conta do provedor atualizada com sucesso",
+		"done": "Concluído",
+		"noProviderSecretFound": "Nenhum segredo de provedor encontrado para esta seleção",
+		"unsupportedProviderType": "Tipo de provedor não suportado ou provedor ausente",
+		"failedToAddIdentity": "Falha ao adicionar nova identidade",
+		"addedNewIdentity": "Nova identidade adicionada",
+		"mustAssignAtLeastOneMember": "É necessário atribuir pelo menos um membro",
+		"notSignedIn": "Não conectado",
+		"googleAccountNotFound": "Conta do Google não encontrada",
+		"googleAccountNotConnected": "A conta do Google não está conectada",
+		"addedGoogleEmailIdentity": "Identidade de e-mail do Google adicionada",
+		"apiKeyCreated": "Chave de API criada com sucesso",
+		"volumeNameRequired": "O nome do volume é obrigatório",
+		"invalidVolumeName": "Nome de volume inválido",
+		"s3BucketNotConfigured": "S3_BUCKET não está configurado",
+		"addedNewVolume": "Novo volume adicionado",
+		"webhookCreated": "Webhook criado com sucesso"
+	},
+	"workspace": {
+		"updated": "Workspace atualizado"
 	}
 }
