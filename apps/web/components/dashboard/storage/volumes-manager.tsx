@@ -12,6 +12,7 @@ import Link from "next/link";
 import { IconDatabaseShare } from "@tabler/icons-react";
 import { modals } from "@mantine/modals";
 import AddVolumeForm from "@/components/dashboard/storage/add-volume-form";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function SectionHeader({
 	title,
@@ -45,21 +46,23 @@ function SectionHeader({
 }
 
 function EmptyState() {
+	const dict = useOptionalDictionary();
 	return (
 		<div className="rounded-lg border border-dashed p-6 text-center">
 			<p className="text-sm text-muted-foreground">
-				No volumes yet — create your first one to get started.
+				{dict?.platform?.noVolumesYet ?? "No volumes yet — create your first one to get started."}
 			</p>
 		</div>
 	);
 }
 
 function VolumeStatusPill({ verified, provisioned }: { verified: boolean; provisioned: boolean }) {
+	const dict = useOptionalDictionary();
 
 	if (provisioned) {
 		return <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
 			<CheckCircle className="size-3.5" />
-			Provider verified
+			{dict?.platform?.providerVerified ?? "Provider verified"}
 		</span>
 	}
 
@@ -70,7 +73,7 @@ function VolumeStatusPill({ verified, provisioned }: { verified: boolean; provis
 			) : (
 				<Clock className="size-3.5" />
 			)}
-			{verified ? "Provider verified" : "Provider not verified"}
+			{verified ? (dict?.platform?.providerVerified ?? "Provider verified") : (dict?.platform?.providerNotVerified ?? "Provider not verified")}
 		</span>
 	);
 }
@@ -88,10 +91,11 @@ export default function VolumesManager({
 	provisioned: boolean
 	providerSelectOptions: { label: string; value: string }[];
 }) {
+	const dict = useOptionalDictionary();
 	const openAddVolumeForm = async () => {
 		const openModalId = modals.open({
 			title: (
-				<div className="font-semibold text-brand-foreground">Add Volume</div>
+				<div className="font-semibold text-brand-foreground">{dict?.platform?.addVolume ?? "Add Volume"}</div>
 			),
 			closeOnEscape: false,
 			closeOnClickOutside: false,
@@ -111,30 +115,30 @@ export default function VolumesManager({
 	return (
 		<Container variant="wide">
 			<div className="flex items-center justify-between my-4">
-				<h1 className="text-xl font-bold text-foreground">Storage</h1>
+				<h1 className="text-xl font-bold text-foreground">{dict?.platform?.storage ?? "Storage"}</h1>
 			</div>
 
 			<p className="max-w-prose text-sm text-muted-foreground my-6">
-				Configure storage providers and manage volumes that appear in Drive.
+				{dict?.platform?.configureStorageProvidersDescription ?? "Configure storage providers and manage volumes that appear in Drive."}
 			</p>
 
 			<Card className="shadow-none mb-48">
 				<CardContent className="space-y-10">
 					<div className="space-y-3">
 						<SectionHeader
-							title="Volumes"
+							title={dict?.platform?.volumes ?? "Volumes"}
 							count={volumes.length}
-							subtitle="Volumes are named roots (local paths or buckets) that users can browse in Drive."
+							subtitle={dict?.platform?.volumesSubtitle ?? "Volumes are named roots (local paths or buckets) that users can browse in Drive."}
 							action={
 								<Button
 									onClick={openAddVolumeForm}
 									variant="outline"
 									size="sm"
 									className="gap-2"
-									aria-label="Create volume"
+									aria-label={dict?.platform?.createVolumeAriaLabel ?? "Create volume"}
 								>
 									<Plus className="size-4" />
-									Create Volume
+									{dict?.platform?.createVolume ?? "Create Volume"}
 								</Button>
 							}
 						/>
@@ -175,7 +179,7 @@ export default function VolumesManager({
 															/>
 															{v.createdAt ? (
 																<span className="text-xs text-muted-foreground">
-																	Created:{" "}
+																	{dict?.platform?.createdColonPrefix ?? "Created:"}{" "}
 																	{dayjs(v.createdAt).format("MMM D, YYYY")}
 																</span>
 															) : null}
@@ -192,7 +196,7 @@ export default function VolumesManager({
 													href={`/w/${workspacePublicId}/dashboard/drive/volumes/${v.publicId}`}
 													component={Link}
 												>
-													View
+													{dict?.platform?.view ?? "View"}
 												</Button>
 											</div>
 										</div>

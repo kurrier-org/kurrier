@@ -9,8 +9,15 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import {fetchWorkspace} from "@/lib/actions/workspace";
 import GoogleCard from "@/components/dashboard/providers/google-card";
+import { getDictionary } from "@/lib/dictionaries";
 
-export default async function ProvidersPage() {
+export default async function ProvidersPage({
+	params,
+}: {
+	params: Promise<{ locale: string }>;
+}) {
+	const { locale } = await params;
+	const dict = await getDictionary(locale);
 	const userProviders = await syncProviders();
 
 	const smtpSecrets = await fetchDecryptedSecrets({
@@ -36,14 +43,11 @@ export default async function ProvidersPage() {
 			<div className="flex flex-1 flex-col gap-4 p-4 pt-0">
 				<Container variant="wide">
 					<div className="flex items-center justify-between my-4">
-						<h1 className="text-xl font-bold text-foreground">Providers</h1>
+						<h1 className="text-xl font-bold text-foreground">{dict.platform.providers}</h1>
 					</div>
 
 					<p className="max-w-prose text-sm text-muted-foreground my-6">
-						Connect email providers directly from the dashboard — no manual
-						environment setup required. All provider credentials are securely
-						encrypted and stored in the Vault, never in plain text or source
-						code ensuring full control and privacy.
+						{dict.platform.providersPageDescription}
 					</p>
 
 					<div className="grid gap-6 lg:grid-cols-2">

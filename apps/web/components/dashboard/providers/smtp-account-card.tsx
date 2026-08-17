@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from "react";
 import {
 	deleteSmtpAccount,
@@ -11,18 +13,20 @@ import { Lock, Pencil, Play, ShieldCheck, Trash2 } from "lucide-react";
 import { ActionIcon, Button } from "@mantine/core";
 import { toast } from "sonner";
 import IsVerifiedStatus from "@/components/dashboard/providers/is-verified-status";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function SmtpAccountCard({
 	smtpSecret,
 }: {
 	smtpSecret: FetchDecryptedSecretsResultRow;
 }) {
+	const dict = useOptionalDictionary();
 	const parsedVaultValues = parseSecret(smtpSecret);
 	const openEdit = () => {
 		const openModalId = modals.open({
 			title: (
 				<div className="font-semibold text-brand-foreground">
-					Edit SMTP Account
+					{dict?.platform?.editSmtpAccount ?? "Edit SMTP Account"}
 				</div>
 			),
 			size: "lg",
@@ -41,24 +45,32 @@ function SmtpAccountCard({
 		modals.openConfirmModal({
 			title: (
 				<div className={"font-semibold text-brand-foreground"}>
-					Delete SMTP Account
+					{dict?.platform?.deleteSmtpAccount ?? "Delete SMTP Account"}
 				</div>
 			),
 			centered: true,
 			children: (
 				<div className="text-sm ">
-					Are you sure you want to delete <b>{parsedVaultValues.label}</b>? This
-					will remove the account and unlink any associated secrets.
+					{dict?.platform?.confirmDeleteSmtpAccountPrefix ??
+						"Are you sure you want to delete "}
+					<b>{parsedVaultValues.label}</b>
+					{dict?.platform?.confirmDeleteSmtpAccountSuffix ??
+						"? This will remove the account and unlink any associated secrets."}
 				</div>
 			),
-			labels: { confirm: "Delete", cancel: "Cancel" },
+			labels: {
+				confirm: dict?.platform?.delete ?? "Delete",
+				cancel: dict?.platform?.cancel ?? "Cancel",
+			},
 			confirmProps: { color: "red" },
 			onConfirm: async () => {
 				const { success } = await deleteSmtpAccount(
 					String(smtpSecret?.linkRow?.accountId),
 				);
 				if (success) {
-					toast.success("SMTP account deleted");
+					toast.success(
+						dict?.platform?.smtpAccountDeleted ?? "SMTP account deleted",
+					);
 				}
 			},
 		});
@@ -72,42 +84,68 @@ function SmtpAccountCard({
 			const { data: res } = await verifySmtpAccount(smtpSecret);
 
 			if (res?.meta?.send) {
-				toast.success("SMTP connection verified", {
-					description:
-						"Outgoing mail server is reachable and credentials are valid.",
-				});
+				toast.success(
+					dict?.platform?.smtpConnectionVerified ?? "SMTP connection verified",
+					{
+						description:
+							dict?.platform?.outgoingMailServerReachable ??
+							"Outgoing mail server is reachable and credentials are valid.",
+					},
+				);
 			} else {
-				toast.error("SMTP verification failed", {
-					description:
-						String(res?.meta?.response) ||
-						"Could not connect with the provided SMTP credentials.",
-				});
+				toast.error(
+					dict?.platform?.smtpVerificationFailed ?? "SMTP verification failed",
+					{
+						description:
+							String(res?.meta?.response) ||
+							(dict?.platform?.couldNotConnectWithSmtpCredentials ??
+								"Could not connect with the provided SMTP credentials."),
+					},
+				);
 			}
 
 			if (res?.meta?.receive !== undefined) {
 				if (res?.meta.receive) {
-					toast.success("IMAP connection verified", {
-						description:
-							"Incoming mail server is reachable and credentials are valid.",
-					});
+					toast.success(
+						dict?.platform?.imapConnectionVerified ??
+							"IMAP connection verified",
+						{
+							description:
+								dict?.platform?.incomingMailServerReachable ??
+								"Incoming mail server is reachable and credentials are valid.",
+						},
+					);
 				} else {
-					toast.error("IMAP verification failed", {
-						description:
-							String(res.meta?.response) ||
-							"Could not connect with the provided IMAP credentials.",
-					});
+					toast.error(
+						dict?.platform?.imapVerificationFailed ??
+							"IMAP verification failed",
+						{
+							description:
+								String(res.meta?.response) ||
+								(dict?.platform?.couldNotConnectWithImapCredentials ??
+									"Could not connect with the provided IMAP credentials."),
+						},
+					);
 				}
 			}
 
 			if (!res?.ok) {
-				toast.error("SMTP verification failed", {
-					description:
-						res?.message || "Verification failed due to an unknown error.",
-				});
+				toast.error(
+					dict?.platform?.smtpVerificationFailed ?? "SMTP verification failed",
+					{
+						description:
+							res?.message ||
+							(dict?.platform?.verificationFailedUnknownError ??
+								"Verification failed due to an unknown error."),
+					},
+				);
 			}
 		} catch (err: any) {
-			toast.error("Verification error", {
-				description: err?.message ?? "Unexpected error during SMTP/IMAP test.",
+			toast.error(dict?.platform?.verificationError ?? "Verification error", {
+				description:
+					err?.message ??
+					dict?.platform?.unexpectedErrorSmtpImapTest ??
+					"Unexpected error during SMTP/IMAP test.",
 			});
 		} finally {
 			setTesting(false);
@@ -135,7 +173,9 @@ function SmtpAccountCard({
 							<span className="">•</span>
 							<span className="inline-flex items-center gap-1">
 								<ShieldCheck className="h-3.5 w-3.5" />
-								{parsedVaultValues.SMTP_SECURE === "true" ? "TLS" : "STARTTLS"}
+								{parsedVaultValues.SMTP_SECURE === "true"
+									? (dict?.platform?.tls ?? "TLS")
+									: (dict?.platform?.starttls ?? "STARTTLS")}
 							</span>
 						</div>
 						<div className="mt-1 text-sm  flex items-center gap-2">
@@ -152,19 +192,19 @@ function SmtpAccountCard({
 								<span className="inline-flex items-center gap-1">
 									<ShieldCheck className="h-3.5 w-3.5" />
 									{parsedVaultValues.IMAP_SECURE === "true"
-										? "TLS"
-										: "STARTTLS"}
+										? (dict?.platform?.tls ?? "TLS")
+										: (dict?.platform?.starttls ?? "STARTTLS")}
 								</span>
 							)}
 						</div>
 						<div className={"flex justify-start -mx-2 my-2"}>
 							<IsVerifiedStatus
 								verified={parsedVaultValues.sendVerified}
-								statusName={"Outgoing"}
+								statusName={dict?.platform?.outgoing ?? "Outgoing"}
 							/>
 							<IsVerifiedStatus
 								verified={parsedVaultValues.receiveVerified}
-								statusName={"Incoming"}
+								statusName={dict?.platform?.incoming ?? "Incoming"}
 							/>
 						</div>
 						<Button
@@ -176,7 +216,7 @@ function SmtpAccountCard({
 							size={"xs"}
 							variant={"filled"}
 						>
-							Verify Connection
+							{dict?.platform?.verifyConnection ?? "Verify Connection"}
 						</Button>
 					</div>
 

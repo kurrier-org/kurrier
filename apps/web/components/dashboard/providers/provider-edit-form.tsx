@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { ProviderSpec } from "@schema";
 import { ulid } from "ulid";
@@ -8,6 +10,7 @@ import {
 } from "@/lib/actions/dashboard";
 import { parseSecret } from "@/lib/utils";
 import { VerifyResult } from "@providers";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function ProviderEditForm({
 	spec,
@@ -20,13 +23,14 @@ function ProviderEditForm({
 	providerId: string;
 	decryptedSecret: FetchDecryptedSecretsResult[number];
 }) {
+	const dict = useOptionalDictionary();
 	const decryptedValues = parseSecret(decryptedSecret);
 
 	const fields = [
 		{
 			type: "el",
 			el:	<div className="mb-2 block text-sm font-medium leading-6 text-brand-foreground">
-				You can use any S3 compatible storage provider that supports the S3 API. Just fill in the required fields and we will take care of the rest.
+				{dict?.platform?.s3CompatibleHelp ?? "You can use any S3 compatible storage provider that supports the S3 API. Just fill in the required fields and we will take care of the rest."}
 			</div>
 		},
 		{

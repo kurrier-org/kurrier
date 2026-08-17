@@ -1,4 +1,7 @@
+"use client";
+
 import { BadgeMinus, Verified } from "lucide-react";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function IsVerifiedStatus({
 	verified,
@@ -7,6 +10,7 @@ function IsVerifiedStatus({
 	verified: boolean;
 	statusName?: string;
 }) {
+	const dict = useOptionalDictionary();
 	return (
 		<>
 			{verified ? (
@@ -16,7 +20,9 @@ function IsVerifiedStatus({
 					}
 				>
 					<Verified size={16} />
-					<span>{statusName} Verified</span>
+					<span>
+						{statusName} {dict?.platform?.verified ?? "Verified"}
+					</span>
 				</div>
 			) : (
 				<div
@@ -25,7 +31,9 @@ function IsVerifiedStatus({
 					}
 				>
 					<BadgeMinus size={16} />
-					<span>{statusName} Unverified</span>
+					<span>
+						{statusName} {dict?.platform?.unverified ?? "Unverified"}
+					</span>
 				</div>
 			)}
 		</>

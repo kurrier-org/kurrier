@@ -5,18 +5,25 @@ import {getWorkspacePublicId} from "@/lib/actions/clients";
 import {SidebarTrigger} from "@/components/ui/sidebar";
 import {Separator} from "@/components/ui/separator";
 import WorkspacesTabs from "@/components/dashboard/workspaces/workspaces-tabs";
+import { getDictionary } from "@/lib/dictionaries";
 
 type LayoutProps = {
 	children: ReactNode;
+	params: Promise<{ locale: string }>;
 };
 
 
 
 export default async function Layout({
 	children,
+	params,
 }: LayoutProps) {
 
-    const workspacePublicId = await getWorkspacePublicId()
+    const { locale } = await params;
+    const [workspacePublicId, dict] = await Promise.all([
+        getWorkspacePublicId(),
+        getDictionary(locale),
+    ]);
 
 
     return <>
@@ -35,11 +42,11 @@ export default async function Layout({
 
             <div className={"mx-12"}>
                 <div className="flex items-center justify-between my-4">
-                    <h1 className="text-xl font-bold text-foreground">Workspace</h1>
+                    <h1 className="text-xl font-bold text-foreground">{dict.platform.workspace}</h1>
                 </div>
 
                 <p className="max-w-prose text-sm text-muted-foreground my-6 mb-12">
-                    Manage your workspace identities and settings here. Each workspace can have its own identity and configuration.
+                    {dict.platform.workspaceLayoutDescription}
                 </p>
             </div>
 
@@ -52,10 +59,10 @@ export default async function Layout({
                             </div>
                             <div className={"min-w-0"}>
                                 <div className={"truncate text-sm font-semibold text-neutral-900 dark:text-neutral-50"}>
-                                    Workspaces
+                                    {dict.platform.workspaces}
                                 </div>
                                 <div className={"truncate text-xs text-neutral-600 dark:text-neutral-400"}>
-                                    Settings
+                                    {dict.platform.settings}
                                 </div>
                             </div>
                         </div>
