@@ -1,38 +1,39 @@
 "use client";
 
-import Link from "next/link";
-import { useParams, usePathname, useRouter } from "next/navigation";
-import { cn, setSidebarWidth } from "@/lib/utils";
-import {
-	Inbox,
-	Send,
-	FileText,
-	Archive,
-	Ban,
-	Trash2,
-	Folder,
-	ChevronRight,
-	ChevronDown,
-	MoreVertical,
-	Clock4,
-} from "lucide-react";
-import * as React from "react";
-import { Suspense, use, useEffect } from "react";
-import {
-	FetchIdentityMailboxListResult,
-	FetchMailboxUnreadCountsResult,
-} from "@/lib/actions/mailbox";
-import { MailboxKind } from "@schema";
-import {
+import type {
 	DraftMessageEntity,
 	IdentityEntity,
 	MailboxEntity,
 	MailboxThreadEntity,
 } from "@db";
-import AddNewFolder from "@/components/mailbox/default/add-new-folder";
 import { Menu, Select } from "@mantine/core";
-import DeleteMailboxFolder from "@/components/mailbox/default/delete-folder";
+import type { MailboxKind } from "@schema";
 import { IconMailFast } from "@tabler/icons-react";
+import {
+	Archive,
+	Ban,
+	ChevronDown,
+	ChevronRight,
+	Clock4,
+	FileText,
+	Folder,
+	Inbox,
+	MoreVertical,
+	Send,
+	Trash2,
+} from "lucide-react";
+import Link from "next/link";
+import { useParams, usePathname, useRouter } from "next/navigation";
+import * as React from "react";
+import { Suspense, use, useEffect } from "react";
+import AddNewFolder from "@/components/mailbox/default/add-new-folder";
+import DeleteMailboxFolder from "@/components/mailbox/default/delete-folder";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import type {
+	FetchIdentityMailboxListResult,
+	FetchMailboxUnreadCountsResult,
+} from "@/lib/actions/mailbox";
+import { cn, setSidebarWidth } from "@/lib/utils";
 
 const ORDER: MailboxKind[] = [
 	"inbox",
@@ -120,12 +121,12 @@ function buildTree(
 }
 
 function IdentityExtraCounts({
-								 identity,
-								 scheduledDraftsPromise,
-								 snoozedThreadsPromise,
-								 workspacePublicId,
-								 currentSlug,
-							 }: {
+	identity,
+	scheduledDraftsPromise,
+	snoozedThreadsPromise,
+	workspacePublicId,
+	currentSlug,
+}: {
 	identity: IdentityEntity;
 	scheduledDraftsPromise: Promise<DraftMessageEntity[]>;
 	snoozedThreadsPromise: Promise<{ threads: MailboxThreadEntity[] }>;
@@ -171,9 +172,7 @@ function IdentityExtraCounts({
 					} flex justify-start gap-1 w-full p-1.5 items-center`}
 				>
 					<Clock4 size={16} />
-					<span className="font-normal text-sm">
-						Snoozed ({snoozedCount})
-					</span>
+					<span className="font-normal text-sm">Snoozed ({snoozedCount})</span>
 				</Link>
 			)}
 		</>
@@ -181,13 +180,13 @@ function IdentityExtraCounts({
 }
 
 export default function IdentityMailboxesList({
-												  identityMailboxes,
-												  unreadCounts,
-												  scheduledDraftsPromise,
-												  snoozedThreadsPromise,
-												  workspacePublicId,
-												  onComplete,
-											  }: {
+	identityMailboxes,
+	unreadCounts,
+	scheduledDraftsPromise,
+	snoozedThreadsPromise,
+	workspacePublicId,
+	onComplete,
+}: {
 	identityMailboxes: FetchIdentityMailboxListResult;
 	unreadCounts: FetchMailboxUnreadCountsResult;
 	scheduledDraftsPromise: Promise<DraftMessageEntity[]>;
@@ -195,6 +194,7 @@ export default function IdentityMailboxesList({
 	workspacePublicId: string | undefined;
 	onComplete?: () => void;
 }) {
+	const dict = useOptionalDictionary();
 	const pathname = usePathname();
 	const params = useParams() as {
 		identityPublicId?: string;
@@ -211,14 +211,14 @@ export default function IdentityMailboxesList({
 		return parts.at(-1) ?? "inbox";
 	}, [pathname]);
 
-	const router = useRouter()
+	const router = useRouter();
 
 	const Item = ({
-					  m,
-					  identityPublicId,
-					  identity,
-					  level = 0,
-				  }: {
+		m,
+		identityPublicId,
+		identity,
+		level = 0,
+	}: {
 		m: TreeMailbox;
 		identityPublicId: string;
 		identity: IdentityEntity;
@@ -268,7 +268,7 @@ export default function IdentityMailboxesList({
 									? "text-brand dark:text-white bg-brand-100 dark:bg-neutral-800 hover:text-brand hover:bg-brand-100"
 									: "",
 								!m.selectable &&
-								"opacity-60 pointer-events-none cursor-default",
+									"opacity-60 pointer-events-none cursor-default",
 							)}
 							style={{ paddingLeft: 8 + level * 8 }}
 						>
@@ -327,15 +327,19 @@ export default function IdentityMailboxesList({
 	return (
 		<div className="space-y-2 px-2">
 			<div className={"my-2"}>
-				<Select placeholder="Pick value"
-				        size={"xs"}
-				        onChange={(publicId) => {
-							router.push(`/w/${workspacePublicId}/dashboard/mail/${publicId}/inbox`)
-						}}
-				        value={params.identityPublicId}
-				        data={identityMailboxes.map((id) => {
-							return {value: id.identity.publicId, label: id.identity.value}
-						})} />
+				<Select
+					placeholder={dict?.common?.pickValue ?? "Pick value"}
+					size={"xs"}
+					onChange={(publicId) => {
+						router.push(
+							`/w/${workspacePublicId}/dashboard/mail/${publicId}/inbox`,
+						);
+					}}
+					value={params.identityPublicId}
+					data={identityMailboxes.map((id) => {
+						return { value: id.identity.publicId, label: id.identity.value };
+					})}
+				/>
 			</div>
 
 			{identityMailboxes.map(({ identity, mailboxes }) => {
