@@ -95,6 +95,14 @@ you should use your own domain and disable tunneling by removing or commenting o
 WEB_URL=https://www.yourdomain.com
 ```
 
+<Callout type="warning">
+    `DAV_URL` also needs to be a publicly reachable address — it's the CalDAV/CardDAV
+    connection URL shown on the Sync Services page for configuring external clients
+    (Thunderbird, iOS, Android, etc). The default (`http://localhost:5232`) only works
+    for local setups. For a hosted deployment, set it to your own domain/port or a
+    reverse-proxied path, e.g. `DAV_URL=https://dav.yourdomain.com`.
+</Callout>
+
 ---
 
 ✅ Once you are all set with your environment variables you are now ready to run
