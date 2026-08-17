@@ -1,3 +1,10 @@
 {
-	"overview": "Overview"
+	"overview": "Overview",
+	"navMail": "All Mail",
+	"navContacts": "Contacts",
+	"navCalendar": "Calendar",
+	"navDrive": "Drive",
+	"navPlatform": "Platform",
+	"logOut": "Log out",
+	"storageOverLimit": "Your account is on hold. Please upgrade your workspace storage limit."
 }
