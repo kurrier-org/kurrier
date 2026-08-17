@@ -62,7 +62,7 @@ export default async function ProvidersPage() {
 									Server settings are managed by your administrator.
 								</p>
 							</div>
-							<div className="grid gap-6 lg:grid-cols-2">
+							<div className="grid gap-6">
 								{customEmailProviders.map((provider) => (
 									<CustomEmailProviderCard
 										key={provider.id}

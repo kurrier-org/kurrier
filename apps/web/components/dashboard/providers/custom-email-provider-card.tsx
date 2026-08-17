@@ -3,9 +3,14 @@
 import { Button } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import type { CustomEmailProvider } from "@schema";
-import { Inbox, Plus, Send } from "lucide-react";
+import { Inbox, Mail, Plus, Send } from "lucide-react";
 import NewCustomEmailProviderAccountForm from "@/components/dashboard/providers/new-custom-email-provider-account-form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardTitle,
+} from "@/components/ui/card";
 
 function Endpoint({
 	icon,
@@ -19,13 +24,13 @@ function Endpoint({
 	port: number;
 }) {
 	return (
-		<div className="flex min-w-0 items-center gap-3 py-2">
+		<div className="flex min-w-0 items-center gap-3 border-l pl-4">
 			<div className="text-muted-foreground">{icon}</div>
 			<div className="min-w-0">
 				<p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
 					{label}
 				</p>
-				<p className="truncate font-mono text-sm">
+				<p className="break-all font-mono text-sm">
 					{host}:{port}
 				</p>
 			</div>
@@ -60,26 +65,27 @@ export default function CustomEmailProviderCard({
 	};
 
 	return (
-		<Card className="shadow-none">
-			<CardHeader className="gap-3">
-				<div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between">
+		<Card className="grid gap-0 overflow-hidden py-0 shadow-none lg:grid-cols-[minmax(14rem,0.75fr)_minmax(24rem,1.25fr)_auto]">
+			<CardContent className="flex flex-col p-5">
+				<div className="flex min-w-0 items-start gap-3">
+					<Mail className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
 					<div className="min-w-0">
 						<CardTitle className="text-lg">{provider.name}</CardTitle>
-						<p className="mt-1 text-sm text-muted-foreground">
+						<CardDescription className="mt-1">
 							{provider.description ?? "Configured by your administrator."}
-						</p>
+						</CardDescription>
 					</div>
-					<span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
-						{!provider.imap
-							? "SMTP only"
-							: provider.credentialMode === "shared"
-								? "Shared login"
-								: "Separate logins"}
-					</span>
 				</div>
-			</CardHeader>
-			<CardContent>
-				<div className="divide-y border-y">
+				<span className="mt-4 inline-flex self-start rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+					{!provider.imap
+						? "SMTP only"
+						: provider.credentialMode === "shared"
+							? "Shared login"
+							: "Separate logins"}
+				</span>
+			</CardContent>
+			<CardContent className="grid gap-3 border-t p-5 lg:border-t-0 lg:border-l">
+				<div className="grid gap-2">
 					<Endpoint
 						icon={<Send className="size-4" />}
 						label="SMTP"
@@ -95,16 +101,16 @@ export default function CustomEmailProviderCard({
 						/>
 					) : null}
 				</div>
-
-				<div className="mt-4 flex justify-end">
-					<Button
-						size="xs"
-						leftSection={<Plus className="size-4" />}
-						onClick={openAddModal}
-					>
-						Add account
-					</Button>
-				</div>
+			</CardContent>
+			<CardContent className="flex items-center border-t bg-muted/10 p-5 lg:border-t-0 lg:border-l">
+				<Button
+					size="xs"
+					className="w-full lg:w-auto"
+					leftSection={<Plus className="size-4" />}
+					onClick={openAddModal}
+				>
+					Add account
+				</Button>
 			</CardContent>
 		</Card>
 	);

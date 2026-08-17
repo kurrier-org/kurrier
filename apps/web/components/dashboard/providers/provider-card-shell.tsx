@@ -1,11 +1,11 @@
-import { ProviderSpec } from "@schema";
+import { providerSecrets } from "@db";
+import type { ProviderSpec } from "@schema";
+import ProviderCard from "@/components/dashboard/providers/provider-card";
+import ProvisionedProviderCard from "@/components/dashboard/providers/provisioned-provider-card";
 import {
 	fetchDecryptedSecrets,
-	SyncProvidersRow,
+	type SyncProvidersRow,
 } from "@/lib/actions/dashboard";
-import ProviderCard from "@/components/dashboard/providers/provider-card";
-import { providerSecrets } from "@db";
-import ProvisionedProviderCard from "@/components/dashboard/providers/provisioned-provider-card";
 
 type Props = {
 	userProviders: SyncProvidersRow[];
@@ -19,28 +19,28 @@ export default async function ProviderCardShell({
 	spec,
 }: Props) {
 	const userProvider = userProviders.find((p) => p.type === spec.key);
+	if (!userProvider) {
+		return null;
+	}
 
 	const [decryptedSecret] = await fetchDecryptedSecrets({
 		linkTable: providerSecrets,
 		foreignCol: providerSecrets.providerId,
 		secretIdCol: providerSecrets.secretId,
-		parentId: String(userProvider?.id),
+		parentId: userProvider.id,
 	});
 
-	if (userProvider) {
-		return (
-			provisioned ?
-				<ProvisionedProviderCard
-					spec={spec}
-					userProvider={userProvider}
-					decryptedSecret={decryptedSecret} /> :
-				<ProviderCard
-				spec={spec}
-				userProvider={userProvider}
-				decryptedSecret={decryptedSecret}
-			/>
-		);
-	} else {
-		return <div>No Providers Found</div>;
-	}
+	return provisioned ? (
+		<ProvisionedProviderCard
+			spec={spec}
+			userProvider={userProvider}
+			decryptedSecret={decryptedSecret}
+		/>
+	) : (
+		<ProviderCard
+			spec={spec}
+			userProvider={userProvider}
+			decryptedSecret={decryptedSecret}
+		/>
+	);
 }
