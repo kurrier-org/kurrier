@@ -258,7 +258,19 @@ export default function IdentityMailboxesList({
 					<div className="flex w-full items-start">
 						<Link
 							href={href}
-							onClick={onComplete ? () => onComplete() : undefined}
+							onClick={(e) => {
+								// Next.js doesn't reliably reset the intercepted @thread
+								// parallel-route slot when navigating back to the bare
+								// mailbox path from within an open thread (the mailboxSlug
+								// segment itself doesn't change), so the thread stays
+								// rendered on top of the list. Force a real navigation.
+								if (pathname.includes("/threads/")) {
+									e.preventDefault();
+									router.push(href);
+									router.refresh();
+								}
+								onComplete?.();
+							}}
 							aria-disabled={!m.selectable}
 							className={cn(
 								"flex min-w-0 flex-1 items-center gap-2 rounded-md py-1.5 pl-2 text-sm",
