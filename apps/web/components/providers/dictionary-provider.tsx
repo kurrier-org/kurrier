@@ -21,3 +21,13 @@ export function useDictionary() {
 		throw new Error("useDictionary must be used within <DictionaryProvider>");
 	return ctx;
 }
+
+/**
+ * Same as useDictionary(), but returns null instead of throwing when used
+ * outside a <DictionaryProvider>. For shared, high-blast-radius components
+ * (forms, generic error rendering) that must keep working even in the rare
+ * tree that isn't wrapped yet, falling back to raw/untranslated text.
+ */
+export function useOptionalDictionary() {
+	return useContext(Ctx);
+}
