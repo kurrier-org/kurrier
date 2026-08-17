@@ -3,6 +3,7 @@
 import { Languages } from "lucide-react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -15,7 +16,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { setLocaleServer } from "@/lib/actions/locale";
-import { hasLocale, type Locale } from "@/lib/dictionaries";
+import { hasLocale, type Locale } from "@/lib/locale";
 
 const LOCALE_LABELS: Record<Locale, string> = {
 	en: "English",
@@ -90,12 +91,13 @@ export function LanguageSwitcher() {
  */
 export function LanguageSwitcherSubmenu() {
 	const { currentLocale, pending, onSelect } = useLocaleSwitch();
+	const dict = useOptionalDictionary();
 
 	return (
 		<DropdownMenuSub>
 			<DropdownMenuSubTrigger disabled={pending}>
 				<Languages />
-				Language
+				{dict?.common?.language ?? "Language"}
 			</DropdownMenuSubTrigger>
 			<DropdownMenuSubContent>
 				<DropdownMenuRadioGroup value={currentLocale} onValueChange={onSelect}>

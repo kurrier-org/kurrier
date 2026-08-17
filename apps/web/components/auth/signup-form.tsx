@@ -1,33 +1,30 @@
 "use client";
-import { cn } from "@/lib/utils";
-import {
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { Button } from "@mantine/core";
+import type { FormState } from "@schema";
+import { IconBrandGoogle, IconLogin2 } from "@tabler/icons-react";
+import { Loader2Icon } from "lucide-react";
+import Form from "next/form";
+import Link from "next/link";
+import React, { useActionState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signup } from "@/lib/actions/auth";
-import Link from "next/link";
-import React, { useActionState } from "react";
-import { FormState } from "@schema";
-import Form from "next/form";
-import { Loader2Icon } from "lucide-react";
-import { Button } from "@mantine/core";
-import { IconBrandGoogle, IconLogin2 } from "@tabler/icons-react";
-import {Dictionary} from "@/lib/dictionaries";
+import type { Dictionary } from "@/lib/dictionaries";
+import { cn } from "@/lib/utils";
 
-export function SignupForm({ className,
-							   oidc, dict,
-							   ...props
-						   }: React.ComponentProps<"div"> &
-	{oidc?: {
-			googleEnabled?: boolean;
-			genericEnabled?: boolean;
-			genericName?: string;
-		} } & {dict: Dictionary}
-) {
+export function SignupForm({
+	className,
+	oidc,
+	dict,
+	...props
+}: React.ComponentProps<"div"> & {
+	oidc?: {
+		googleEnabled?: boolean;
+		genericEnabled?: boolean;
+		genericName?: string;
+	};
+} & { dict: Dictionary }) {
 	const passwordRef = React.useRef<HTMLInputElement>(null);
 	const retypeRef = React.useRef<HTMLInputElement>(null);
 
@@ -59,17 +56,33 @@ export function SignupForm({ className,
 				</CardHeader>
 				<CardContent>
 					{oidc?.googleEnabled && (
-						<Button fullWidth variant="default" className="w-full" href={"/api/auth/oidc/google"} component="a" leftSection={<IconBrandGoogle/>}>
+						<Button
+							fullWidth
+							variant="default"
+							className="w-full"
+							href={"/api/auth/oidc/google"}
+							component="a"
+							leftSection={<IconBrandGoogle />}
+						>
 							Signup with Google
 						</Button>
 					)}
 					{oidc?.genericEnabled && (
-						<Button fullWidth variant="default" className="w-full mt-2" href={"/api/auth/oidc/generic"} component="a" leftSection={<IconLogin2/>}>
+						<Button
+							fullWidth
+							variant="default"
+							className="w-full mt-2"
+							href={"/api/auth/oidc/generic"}
+							component="a"
+							leftSection={<IconLogin2 />}
+						>
 							Signup with {oidc?.genericName || "SSO"}
 						</Button>
 					)}
 					{!oidc?.googleEnabled && !oidc?.genericEnabled && (
-						<div className={'text-sm text-center'}>No third-party authentication methods are currently enabled.</div>
+						<div className={"text-sm text-center"}>
+							{dict.auth.noOidcEnabled}
+						</div>
 					)}
 					<Form action={formAction}>
 						<input type="hidden" name="locale" value={dict.locale} />
@@ -171,10 +184,9 @@ export function SignupForm({ className,
 								</Button>
 							</div>
 							<div className="text-center text-sm">
-								Already have an account?{" "}
-								{dict.auth.accountPresent}{" "}
+								Already have an account? {dict.auth.accountPresent}{" "}
 								<Link
-									href={"/auth/login"}
+									href={`/${dict.locale}/auth/login`}
 									className="underline underline-offset-4"
 								>
 									{dict.auth.signIn}

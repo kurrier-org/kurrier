@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
-import { ConfigProvider } from "@/components/providers/config-provider";
-import { AppearanceProvider } from "@/components/providers/appearance-provider";
+import { getPublicEnv } from "@schema";
 import {
 	MODE_COOKIE,
 	RESOLVED_COOKIE,
 	THEME_COOKIE,
-	ThemeMode,
+	type ThemeMode,
 	ThemeModeSchema,
-	ThemeName,
+	type ThemeName,
 	ThemeNameSchema,
 } from "@schema/types/themes";
-import { getPublicEnv } from "@schema";
+import { AppearanceProvider } from "@/components/providers/appearance-provider";
+import { ConfigProvider } from "@/components/providers/config-provider";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import {
@@ -21,9 +21,10 @@ import {
 	MantineProvider,
 	mantineHtmlProps,
 } from "@mantine/core";
-import { createMantineTheme } from "@/lib/mantine-theme";
 import { ModalsProvider } from "@mantine/modals";
-import { hasLocale } from "@/lib/dictionaries";
+import { DictionaryProvider } from "@/components/providers/dictionary-provider";
+import { getDictionary, hasLocale } from "@/lib/dictionaries";
+import { createMantineTheme } from "@/lib/mantine-theme";
 
 const jakartaSans = Plus_Jakarta_Sans({
 	variable: "--font-sans",
@@ -65,6 +66,7 @@ export default async function RootLayout({
 		theme,
 		mode,
 	});
+	const dict = await getDictionary(lang);
 
 	return (
 		<html
@@ -88,7 +90,9 @@ export default async function RootLayout({
 							theme={mantineTheme}
 							defaultColorScheme={colorScheme}
 						>
-							<ModalsProvider>{children}</ModalsProvider>
+							<DictionaryProvider dict={dict}>
+								<ModalsProvider>{children}</ModalsProvider>
+							</DictionaryProvider>
 						</MantineProvider>
 					</ConfigProvider>
 				</AppearanceProvider>

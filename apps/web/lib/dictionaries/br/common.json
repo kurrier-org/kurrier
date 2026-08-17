@@ -15,5 +15,7 @@
 	"next": "Avançar",
 	"success": "Sucesso",
 	"error": "Erro",
-	"requiredField": "Este campo é obrigatório"
+	"requiredField": "Este campo é obrigatório",
+	"language": "Idioma",
+	"pickValue": "Selecione um valor"
 }

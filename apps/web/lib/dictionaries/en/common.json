@@ -15,5 +15,7 @@
 	"next": "Next",
 	"success": "Success",
 	"error": "Error",
-	"requiredField": "This field is required"
+	"requiredField": "This field is required",
+	"language": "Language",
+	"pickValue": "Pick value"
 }
