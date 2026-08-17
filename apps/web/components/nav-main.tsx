@@ -2,16 +2,20 @@
 
 import {
 	Blocks,
-	ChevronRight, CreditCard,
+	ChevronRight,
+	CreditCard,
 	FolderSync,
 	HardDrive,
 	Key,
 	LayoutDashboard,
 	type LucideIcon,
 	Plug,
-	Send, Webhook,
+	Send,
+	Webhook,
 } from "lucide-react";
-
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useDictionary } from "@/components/providers/dictionary-provider";
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -28,11 +32,16 @@ import {
 	SidebarMenuSubButton,
 	SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 
-export function NavMain({workspacePublicId, workspaceRole}: {workspacePublicId?: string, workspaceRole?: string}) {
+export function NavMain({
+	workspacePublicId,
+	workspaceRole,
+}: {
+	workspacePublicId?: string;
+	workspaceRole?: string;
+}) {
 	const pathname = usePathname();
+	const dict = useDictionary();
 
 	const navPlatformItems: {
 		title: string;
@@ -41,67 +50,66 @@ export function NavMain({workspacePublicId, workspaceRole}: {workspacePublicId?:
 		items?: { title: string; url: string }[];
 	}[] = [
 		{
-			title: "Overview",
+			title: dict.dashboard.overview,
 			url: `/w/${workspacePublicId}/dashboard/platform/overview`,
 			icon: LayoutDashboard,
 			items: [],
 		},
 		...(workspaceRole === "owner"
 			? [
-				{
-					title: "Providers",
-					url: `/w/${workspacePublicId}/dashboard/platform/providers`,
-					icon: Plug,
-					items: [],
-				},
-				{
-					title: "Identities",
-					url: `/w/${workspacePublicId}/dashboard/platform/identities`,
-					icon: Send,
-					items: [],
-				},
-			]
+					{
+						title: dict.platform.providers,
+						url: `/w/${workspacePublicId}/dashboard/platform/providers`,
+						icon: Plug,
+						items: [],
+					},
+					{
+						title: dict.platform.identities,
+						url: `/w/${workspacePublicId}/dashboard/platform/identities`,
+						icon: Send,
+						items: [],
+					},
+				]
 			: []),
 		...(workspaceRole === "owner"
 			? [
-				{
-					title: "Workspace",
-					url: `/w/${workspacePublicId}/dashboard/platform/workspace`,
-					icon: Blocks,
-					items: [],
-				},
-				{
-					title: "Storage",
-					url: `/w/${workspacePublicId}/dashboard/platform/storage`,
-					icon: HardDrive,
-					items: [],
-				},
-				{
-					title: "API Keys",
-					url: `/w/${workspacePublicId}/dashboard/platform/api-keys`,
-					icon: Key,
-					items: [],
-				},
-				{
-					title: "Webhooks",
-					url: `/w/${workspacePublicId}/dashboard/platform/webhooks`,
-					icon: Webhook,
-					items: [],
-				},
-				{
-					title: "Sync Services",
-					url: `/w/${workspacePublicId}/dashboard/platform/sync-services`,
-					icon: FolderSync,
-					items: [],
-				},
-			]
+					{
+						title: dict.platform.workspace,
+						url: `/w/${workspacePublicId}/dashboard/platform/workspace`,
+						icon: Blocks,
+						items: [],
+					},
+					{
+						title: dict.platform.storage,
+						url: `/w/${workspacePublicId}/dashboard/platform/storage`,
+						icon: HardDrive,
+						items: [],
+					},
+					{
+						title: dict.platform.apiKeys,
+						url: `/w/${workspacePublicId}/dashboard/platform/api-keys`,
+						icon: Key,
+						items: [],
+					},
+					{
+						title: dict.platform.webhooks,
+						url: `/w/${workspacePublicId}/dashboard/platform/webhooks`,
+						icon: Webhook,
+						items: [],
+					},
+					{
+						title: dict.platform.syncServices,
+						url: `/w/${workspacePublicId}/dashboard/platform/sync-services`,
+						icon: FolderSync,
+						items: [],
+					},
+				]
 			: []),
-
 	];
 
 	return (
 		<SidebarGroup>
-			<SidebarGroupLabel>Platform</SidebarGroupLabel>
+			<SidebarGroupLabel>{dict.dashboard.navPlatform}</SidebarGroupLabel>
 			<SidebarMenu>
 				{navPlatformItems.map((item) => {
 					const isActive =
