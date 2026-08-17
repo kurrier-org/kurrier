@@ -184,7 +184,7 @@ export function SignupForm({
 								</Button>
 							</div>
 							<div className="text-center text-sm">
-								Already have an account? {dict.auth.accountPresent}{" "}
+								{dict.auth.accountPresent}{" "}
 								<Link
 									href={`/${dict.locale}/auth/login`}
 									className="underline underline-offset-4"
