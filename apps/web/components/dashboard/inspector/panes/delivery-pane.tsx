@@ -14,6 +14,9 @@ import {
 } from "@/components/dashboard/inspector/inspector-bar";
 import type { MessageEntity } from "@db";
 import { Badge } from "@/components/ui/badge";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+
+type Dict = ReturnType<typeof useOptionalDictionary>;
 
 type DeliveryPaneProps = {
     message?: MessageEntity;
@@ -87,7 +90,7 @@ function parseReceivedDate(received: string): Date | null {
         : parsed;
 }
 
-function parseReceivedServer(received: string): string | null {
+function parseReceivedServer(received: string, dict: Dict): string | null {
     const fromMatch = received.match(
         /\bfrom\s+([^\s(]+)/i,
     );
@@ -100,18 +103,18 @@ function parseReceivedServer(received: string): string | null {
     }
 
     if (byMatch?.[1]) {
-        return `Received by ${byMatch[1]}`;
+        return `${dict?.mailbox?.receivedByPrefix ?? "Received by "}${byMatch[1]}`;
     }
 
     if (fromMatch?.[1]) {
-        return `Received from ${fromMatch[1]}`;
+        return `${dict?.mailbox?.receivedFromPrefix ?? "Received from "}${fromMatch[1]}`;
     }
 
     return null;
 }
 
-function formatEventDate(date: Date | null): string {
-    if (!date) return "Time unavailable";
+function formatEventDate(date: Date | null, dict: Dict): string {
+    if (!date) return dict?.mailbox?.timeUnavailable ?? "Time unavailable";
 
     return new Intl.DateTimeFormat(undefined, {
         day: "2-digit",
@@ -135,6 +138,7 @@ function formatEventTime(date: Date | null): string {
 
 function createDeliveryEvents(
     message: MessageEntity,
+    dict: Dict,
 ): DeliveryEvent[] {
     const headers =
         (message.headersJson as Record<string, unknown> | null) ?? {};
@@ -160,9 +164,9 @@ function createDeliveryEvents(
     if (message.date) {
         events.push({
             id: "message-date",
-            title: "Message timestamp",
+            title: dict?.mailbox?.messageTimestamp ?? "Message timestamp",
             description:
-                "The sender-declared Date header of the message.",
+                dict?.mailbox?.messageTimestampDescription ?? "The sender-declared Date header of the message.",
             date: new Date(message.date),
             status: "neutral",
             icon: Clock3,
@@ -181,11 +185,11 @@ function createDeliveryEvents(
         events.push({
             id: `received-${index}`,
             title: isLastHop
-                ? "Message delivered"
-                : "Message relayed",
+                ? (dict?.mailbox?.messageDelivered ?? "Message delivered")
+                : (dict?.mailbox?.messageRelayed ?? "Message relayed"),
             description:
-                parseReceivedServer(received) ??
-                "The message passed through an SMTP server.",
+                parseReceivedServer(received, dict) ??
+                (dict?.mailbox?.messagePassedThroughSmtp ?? "The message passed through an SMTP server."),
             date: parseReceivedDate(received),
             status: "success",
             icon: isLastHop ? Inbox : Route,
@@ -197,9 +201,9 @@ function createDeliveryEvents(
     if (message.createdAt) {
         events.push({
             id: "stored",
-            title: "Message indexed by Kurrier",
+            title: dict?.mailbox?.messageIndexedByKurrier ?? "Message indexed by Kurrier",
             description:
-                "Kurrier synchronized, parsed and stored the message.",
+                dict?.mailbox?.messageIndexedDescription ?? "Kurrier synchronized, parsed and stored the message.",
             date: new Date(message.createdAt),
             status: "success",
             icon: Database,
@@ -216,6 +220,7 @@ function DeliveryEventRow({
     event: DeliveryEvent;
     isLast: boolean;
 }) {
+    const dict = useOptionalDictionary();
     const Icon = event.icon;
 
     return (
@@ -249,7 +254,7 @@ function DeliveryEventRow({
                             className="border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400"
                         >
                             <CheckCircle2 className="mr-1 size-3" />
-                            Success
+                            {dict?.common?.success ?? "Success"}
                         </Badge>
                     )}
                 </div>
@@ -261,7 +266,7 @@ function DeliveryEventRow({
                 {event.details && (
                     <details className="mt-3">
                         <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
-                            Show SMTP details
+                            {dict?.mailbox?.showSmtpDetails ?? "Show SMTP details"}
                         </summary>
 
                         <pre className="mt-2 whitespace-pre-wrap break-words rounded-lg border bg-muted/30 p-3 font-mono text-xs leading-5">
@@ -273,7 +278,7 @@ function DeliveryEventRow({
 
             <div
                 className="shrink-0 pl-4 text-right"
-                title={formatEventDate(event.date)}
+                title={formatEventDate(event.date, dict)}
             >
                 <div className="font-mono text-xs text-muted-foreground">
                     {formatEventTime(event.date)}
@@ -295,20 +300,21 @@ function DeliveryEventRow({
 export default function DeliveryPane({
                                          message,
                                      }: DeliveryPaneProps) {
+    const dict = useOptionalDictionary();
     const events = useMemo(() => {
         if (!message) return [];
 
-        return createDeliveryEvents(message);
-    }, [message]);
+        return createDeliveryEvents(message, dict);
+    }, [message, dict]);
 
     if (!message) {
         return (
             <InspectorPlaceholder
-                title="Delivery"
-                description="The message delivery timeline will be shown here."
+                title={dict?.mailbox?.tabDelivery ?? "Delivery"}
+                description={dict?.mailbox?.deliveryTimelinePlaceholder ?? "The message delivery timeline will be shown here."}
             >
                 <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                    No message selected.
+                    {dict?.mailbox?.noMessageSelected ?? "No message selected."}
                 </div>
             </InspectorPlaceholder>
         );
@@ -316,8 +322,8 @@ export default function DeliveryPane({
 
     return (
         <InspectorPlaceholder
-            title="Delivery"
-            description="The message delivery timeline from sender to Kurrier."
+            title={dict?.mailbox?.tabDelivery ?? "Delivery"}
+            description={dict?.mailbox?.deliveryTimelineDescription ?? "The message delivery timeline from sender to Kurrier."}
         >
             <div className="h-full min-h-0 w-full overflow-auto p-4">
                 <div className="mb-5 flex flex-wrap items-center gap-2">
@@ -326,15 +332,15 @@ export default function DeliveryPane({
                         className="gap-1.5"
                     >
                         <Route className="size-3" />
-                        {events.length} delivery{" "}
+                        {events.length} {dict?.mailbox?.deliveryLabel ?? "delivery"}{" "}
                         {events.length === 1
-                            ? "event"
-                            : "events"}
+                            ? (dict?.mailbox?.event ?? "event")
+                            : (dict?.mailbox?.eventsPlural ?? "events")}
                     </Badge>
 
                     {message.rawStorageKey && (
                         <span className="text-xs text-muted-foreground">
-							Raw source retained
+							{dict?.mailbox?.rawSourceRetained ?? "Raw source retained"}
 						</span>
                     )}
                 </div>
@@ -354,8 +360,7 @@ export default function DeliveryPane({
                     </div>
                 ) : (
                     <div className="flex min-h-48 items-center justify-center rounded-xl border bg-card p-8 text-sm text-muted-foreground">
-                        No delivery information is available for this
-                        message.
+                        {dict?.mailbox?.noDeliveryInformation ?? "No delivery information is available for this message."}
                     </div>
                 )}
             </div>

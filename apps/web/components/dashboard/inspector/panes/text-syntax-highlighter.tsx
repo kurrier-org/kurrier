@@ -6,6 +6,7 @@ import {
     oneDark,
     oneLight,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 type TextSyntaxHighlighterProps = {
     text: string;
@@ -15,11 +16,12 @@ export default function TextSyntaxHighlighter({
                                                   text,
                                               }: TextSyntaxHighlighterProps) {
     const { colorScheme } = useMantineColorScheme();
+    const dict = useOptionalDictionary();
 
     if (!text) {
         return (
             <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-                No plain-text body available.
+                {dict?.mailbox?.noPlainTextBodyAvailable ?? "No plain-text body available."}
             </div>
         );
     }

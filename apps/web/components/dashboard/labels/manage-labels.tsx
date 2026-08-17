@@ -19,6 +19,7 @@ import {
 import { DEFAULT_COLORS_SWATCH } from "@common/mail-client";
 import { toast } from "sonner";
 import colors from "tailwindcss/colors";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function useLabelOptions({ labels }: { labels: FetchLabelsResult }) {
 	const options = labels
@@ -36,6 +37,7 @@ export default function ManageLabels({
 }: {
 	globalLabels: FetchLabelsResult;
 }) {
+	const dict = useOptionalDictionary();
 	const [opened, { open, close }] = useDisclosure(false);
 
 	const { options: labelOptions } = useLabelOptions({ labels: globalLabels });
@@ -74,14 +76,14 @@ export default function ManageLabels({
 			close();
 		} finally {
 			setIsSubmitting(false);
-			toast.success("Label updated");
+			toast.success(dict?.mailbox?.labelUpdated ?? "Label updated");
 		}
 	};
 
 	const handleDelete = async () => {
 		if (!editLabelId) return;
 		const ok = window.confirm(
-			"Delete this label? This action cannot be undone.",
+			dict?.mailbox?.deleteLabelConfirm ?? "Delete this label? This action cannot be undone.",
 		);
 		if (!ok) return;
 
@@ -89,7 +91,7 @@ export default function ManageLabels({
 		try {
 			await deleteLabel({ id: editLabelId });
 			setEditLabelId(null);
-			toast.success("Label deleted");
+			toast.success(dict?.mailbox?.labelDeleted ?? "Label deleted");
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -97,13 +99,13 @@ export default function ManageLabels({
 
 	return (
 		<>
-			<Modal opened={opened} onClose={close} title="Manage labels" size="sm">
+			<Modal opened={opened} onClose={close} title={dict?.mailbox?.manageLabels ?? "Manage labels"} size="sm">
 				<div className="flex flex-col gap-6">
 					<section className="space-y-3">
 						<Select
 							size="xs"
-							label="Choose label"
-							placeholder="Select a label to edit…"
+							label={dict?.mailbox?.chooseLabel ?? "Choose label"}
+							placeholder={dict?.mailbox?.selectLabelToEdit ?? "Select a label to edit…"}
 							data={labelOptions}
 							value={editLabelId}
 							onChange={(value) => setEditLabelId(value)}
@@ -114,15 +116,15 @@ export default function ManageLabels({
 								<div className="col-span-12 md:col-span-6 space-y-2">
 									<TextInput
 										size="xs"
-										label="Label name"
+										label={dict?.mailbox?.labelNameField ?? "Label name"}
 										value={editName}
 										onChange={(e) => setEditName(e.currentTarget.value)}
 									/>
 
 									<Select
 										size="xs"
-										label="Nest under (optional)"
-										placeholder="No parent"
+										label={dict?.mailbox?.nestUnderOptional ?? "Nest under (optional)"}
+										placeholder={dict?.mailbox?.noParent ?? "No parent"}
 										data={labelOptions.filter((o) => o.value !== editLabelId)}
 										value={editParentId}
 										onChange={(v) => setEditParentId(v)}
@@ -132,7 +134,7 @@ export default function ManageLabels({
 
 								<div className="col-span-12 md:col-span-6 space-y-2">
 									<div className="text-xs font-medium text-muted-foreground">
-										Label color
+										{dict?.mailbox?.labelColor ?? "Label color"}
 									</div>
 									<ColorPicker
 										size="sm"
@@ -151,7 +153,7 @@ export default function ManageLabels({
 										onClick={handleUpdate}
 										disabled={isSubmitting || !editLabelId}
 									>
-										Save changes
+										{dict?.mailbox?.saveChanges ?? "Save changes"}
 									</Button>
 
 									<Button
@@ -161,7 +163,7 @@ export default function ManageLabels({
 										onClick={handleDelete}
 										disabled={isSubmitting || !editLabelId}
 									>
-										Delete label
+										{dict?.mailbox?.deleteLabel ?? "Delete label"}
 									</Button>
 								</div>
 							</div>

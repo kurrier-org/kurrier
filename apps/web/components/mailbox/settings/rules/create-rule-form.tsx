@@ -7,6 +7,7 @@ import type { BaseFormProps } from "@schema";
 import { ReusableFormItems } from "@/components/common/reusable-form-items";
 import { LabelEntity } from "@db";
 import {FetchAppLabelsResult} from "@/lib/actions/mail-rules";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 type BoolSwitchProps = {
     name: string;
@@ -98,67 +99,69 @@ function BoolCheckboxControlled({
     );
 }
 
-const SIZE_OP_OPTIONS = [
-    { value: "gt", label: "greater than" },
-    { value: "lt", label: "less than" },
-] as const;
-
-const SIZE_UNIT_OPTIONS = [
-    { value: "KB", label: "KB" },
-    { value: "MB", label: "MB" },
-] as const;
-
-export default function CreateRuleFormGmailV1({ action, identityId, appLabels, initialName = "New rule"}: { action: any; identityId: string; appLabels: FetchAppLabelsResult, initialName?: string; }) {
+export default function CreateRuleFormGmailV1({ action, identityId, appLabels, initialName}: { action: any; identityId: string; appLabels: FetchAppLabelsResult, initialName?: string; }) {
+    const dict = useOptionalDictionary();
     const [applyLabel, setApplyLabel] = useState(false);
+    const resolvedInitialName = initialName ?? (dict?.mailbox?.newRule ?? "New rule");
+
+    const SIZE_OP_OPTIONS = [
+        { value: "gt", label: dict?.mailbox?.greaterThan ?? "greater than" },
+        { value: "lt", label: dict?.mailbox?.lessThan ?? "less than" },
+    ] as const;
+
+    const SIZE_UNIT_OPTIONS = [
+        { value: "KB", label: "KB" },
+        { value: "MB", label: "MB" },
+    ] as const;
 
     const criteriaFields: BaseFormProps["fields"] = [
         {
             name: "from",
-            label: "From",
+            label: dict?.mailbox?.from ?? "From",
             wrapperClasses: "col-span-12 md:col-span-6",
             props: {
                 defaultValue: "",
-                placeholder: "e.g. newsletter@company.com",
+                placeholder: dict?.mailbox?.fromPlaceholder ?? "e.g. newsletter@company.com",
                 autoComplete: "off",
             },
         },
         {
             name: "to",
-            label: "To",
+            label: dict?.mailbox?.to ?? "To",
             wrapperClasses: "col-span-12 md:col-span-6",
             props: {
                 defaultValue: "",
-                placeholder: "e.g. me@domain.com",
+                placeholder: dict?.mailbox?.toPlaceholder ?? "e.g. me@domain.com",
                 autoComplete: "off",
             },
         },
         {
             name: "subject",
-            label: "Subject",
+            label: dict?.mailbox?.subject ?? "Subject",
             wrapperClasses: "col-span-12 md:col-span-6",
             props: {
                 defaultValue: "",
-                placeholder: "e.g. invoice",
+                placeholder: dict?.mailbox?.subjectPlaceholder ?? "e.g. invoice",
                 autoComplete: "off",
             },
         },
         {
             name: "hasWords",
-            label: "Has the words",
+            label: dict?.mailbox?.hasTheWords ?? "Has the words",
             wrapperClasses: "col-span-12 md:col-span-6",
             props: {
                 defaultValue: "",
-                placeholder: "e.g. unsubscribe",
+                placeholder: dict?.mailbox?.hasTheWordsPlaceholder ?? "e.g. unsubscribe",
                 autoComplete: "off",
             },
         },
         {
             name: "doesntHave",
-            label: "Doesn't have",
+            label: dict?.mailbox?.doesntHave ?? "Doesn't have",
             wrapperClasses: "col-span-12 md:col-span-6",
             props: {
                 defaultValue: "",
-                placeholder: "e.g. urgent",
+                placeholder: dict?.mailbox?.doesntHavePlaceholder ?? "e.g. urgent",
                 autoComplete: "off",
             },
         },
@@ -170,7 +173,7 @@ export default function CreateRuleFormGmailV1({ action, identityId, appLabels, i
                 "col-span-12 md:col-span-6 flex items-center gap-2 justify-end-safe flex-row flex-row-reverse mt-3",
             props: {
                 defaultChecked: false,
-                label: <div className="text-sm -mt-1">Has attachment</div>,
+                label: <div className="text-sm -mt-1">{dict?.mailbox?.hasAttachment ?? "Has attachment"}</div>,
             },
         },
     ];
@@ -178,7 +181,7 @@ export default function CreateRuleFormGmailV1({ action, identityId, appLabels, i
     const sizeFields: BaseFormProps["fields"] = [
         {
             name: "sizeOp",
-            label: "Operator",
+            label: dict?.mailbox?.operator ?? "Operator",
             kind: "select",
             wrapperClasses: "col-span-12 md:col-span-4",
             options: SIZE_OP_OPTIONS as any,
@@ -188,7 +191,7 @@ export default function CreateRuleFormGmailV1({ action, identityId, appLabels, i
         },
         {
             name: "sizeValue",
-            label: "Value",
+            label: dict?.mailbox?.value ?? "Value",
             kind: "custom",
             component: NumberInput,
             wrapperClasses: "col-span-12 md:col-span-4",
@@ -200,7 +203,7 @@ export default function CreateRuleFormGmailV1({ action, identityId, appLabels, i
         },
         {
             name: "sizeUnit",
-            label: "Unit",
+            label: dict?.mailbox?.unit ?? "Unit",
             kind: "select",
             wrapperClasses: "col-span-12 md:col-span-4",
             options: SIZE_UNIT_OPTIONS as any,
@@ -213,43 +216,43 @@ export default function CreateRuleFormGmailV1({ action, identityId, appLabels, i
     const actionFields: BaseFormProps["fields"] = [
         {
             name: "markRead",
-            label: "Mark as read",
+            label: dict?.mailbox?.markAsRead ?? "Mark as read",
             kind: "custom",
             component: BoolCheckbox,
             wrapperClasses:
                 "col-span-12 md:col-span-6 rounded-lg border border-neutral-200 dark:border-neutral-800 px-3 py-2",
             props: {
                 defaultChecked: false,
-                label: <div className="text-sm">Mark as read</div>,
+                label: <div className="text-sm">{dict?.mailbox?.markAsRead ?? "Mark as read"}</div>,
             },
         },
         {
             name: "flag",
-            label: "Star it (Flag)",
+            label: dict?.mailbox?.starItFlag ?? "Star it (Flag)",
             kind: "custom",
             component: BoolCheckbox,
             wrapperClasses:
                 "col-span-12 md:col-span-6 rounded-lg border border-neutral-200 dark:border-neutral-800 px-3 py-2",
             props: {
                 defaultChecked: false,
-                label: <div className="text-sm">Star it (Flag)</div>,
+                label: <div className="text-sm">{dict?.mailbox?.starItFlag ?? "Star it (Flag)"}</div>,
             },
         },
         {
             name: "trash",
-            label: "Delete it (Trash)",
+            label: dict?.mailbox?.deleteItTrash ?? "Delete it (Trash)",
             kind: "custom",
             component: BoolCheckbox,
             wrapperClasses:
                 "col-span-12 md:col-span-6 rounded-lg border border-neutral-200 dark:border-neutral-800 px-3 py-2",
             props: {
                 defaultChecked: false,
-                label: <div className="text-sm">Delete it (Trash)</div>,
+                label: <div className="text-sm">{dict?.mailbox?.deleteItTrash ?? "Delete it (Trash)"}</div>,
             },
         },
         {
             name: "applyLabel",
-            label: "Apply label",
+            label: dict?.mailbox?.applyLabel ?? "Apply label",
             kind: "custom",
             component: BoolCheckboxControlled,
             wrapperClasses:
@@ -257,14 +260,14 @@ export default function CreateRuleFormGmailV1({ action, identityId, appLabels, i
             props: {
                 checked: applyLabel,
                 onChange: (e: any) => setApplyLabel(e.currentTarget.checked),
-                label: <div className="text-sm">Apply label</div>,
+                label: <div className="text-sm">{dict?.mailbox?.applyLabel ?? "Apply label"}</div>,
             },
         },
         ...(applyLabel
             ? ([
                 {
                     name: "labelId",
-                    label: "Label Name",
+                    label: dict?.mailbox?.labelName ?? "Label Name",
                     kind: "custom",
                     component: Select,
                     wrapperClasses: "col-span-12",
@@ -296,18 +299,18 @@ export default function CreateRuleFormGmailV1({ action, identityId, appLabels, i
         },
         {
             name: "name",
-            label: "Rule name",
+            label: dict?.mailbox?.ruleName ?? "Rule name",
             wrapperClasses: "col-span-12 md:col-span-7",
             props: {
                 required: true,
-                placeholder: "e.g. Newsletters",
-                defaultValue: initialName,
+                placeholder: dict?.mailbox?.ruleNamePlaceholder ?? "e.g. Newsletters",
+                defaultValue: resolvedInitialName,
                 autoComplete: "off",
             },
         },
         {
             name: "priority",
-            label: "Priority",
+            label: dict?.mailbox?.priority ?? "Priority",
             kind: "custom",
             component: NumberInput,
             wrapperClasses: "col-span-12 md:col-span-3",
@@ -319,7 +322,7 @@ export default function CreateRuleFormGmailV1({ action, identityId, appLabels, i
         },
         {
             name: "enabled",
-            label: "Enabled",
+            label: dict?.mailbox?.enabled ?? "Enabled",
             kind: "custom",
             component: BoolSwitch,
             wrapperClasses: "col-span-12 md:col-span-2 flex items-end justify-end gap-2 flex-col",
@@ -331,9 +334,9 @@ export default function CreateRuleFormGmailV1({ action, identityId, appLabels, i
         {
             el: (
                 <div className="col-span-12 mt-2 rounded-xl border border-neutral-200 dark:border-neutral-800 p-4">
-                    <div className="text-sm font-semibold">Criteria</div>
+                    <div className="text-sm font-semibold">{dict?.mailbox?.criteria ?? "Criteria"}</div>
                     <div className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
-                        Messages must match all filled fields.
+                        {dict?.mailbox?.criteriaHelp ?? "Messages must match all filled fields."}
                     </div>
 
                     <ReusableFormItems
@@ -342,7 +345,7 @@ export default function CreateRuleFormGmailV1({ action, identityId, appLabels, i
                     />
 
                     <div className="mt-3 rounded-lg border border-neutral-200 dark:border-neutral-800 p-3">
-                        <div className="text-sm font-medium">Size</div>
+                        <div className="text-sm font-medium">{dict?.mailbox?.size ?? "Size"}</div>
                         <ReusableFormItems
                             formWrapperClasses="mt-3 grid grid-cols-12 gap-3"
                             fields={sizeFields}
@@ -354,9 +357,9 @@ export default function CreateRuleFormGmailV1({ action, identityId, appLabels, i
         {
             el: (
                 <div className="col-span-12 rounded-xl border border-neutral-200 dark:border-neutral-800 p-4">
-                    <div className="text-sm font-semibold">Actions</div>
+                    <div className="text-sm font-semibold">{dict?.mailbox?.actions ?? "Actions"}</div>
                     <div className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
-                        What to do when a message matches.
+                        {dict?.mailbox?.actionsHelp ?? "What to do when a message matches."}
                     </div>
 
                     <ReusableFormItems
@@ -373,7 +376,7 @@ export default function CreateRuleFormGmailV1({ action, identityId, appLabels, i
             action={action}
             fields={fields}
             submitButtonProps={{
-                submitLabel: "Create rule",
+                submitLabel: dict?.mailbox?.createRule ?? "Create rule",
                 wrapperClasses: "mt-4 flex justify-start py-4",
                 fullWidth: false,
             }}

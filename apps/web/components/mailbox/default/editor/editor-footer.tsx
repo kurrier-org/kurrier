@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import { MessageEntity } from "@db";
 import ScheduleSend from "@/components/mailbox/default/editor/schedule-send";
 import {createAttachmentDownloadUrl, createAttachmentUploadUrl} from "@/lib/actions/uploads-actions";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 type UploadItem = {
 	name: string;
@@ -30,6 +31,7 @@ const formatBytes = (n: number) => {
 };
 
 export default function EditorFooter() {
+	const dict = useOptionalDictionary();
 	const { state } = useDynamicContext<{
 		isPending: boolean;
 		message: MessageEntity;
@@ -71,10 +73,10 @@ export default function EditorFooter() {
 
 			xhr.onload = () => {
 				if (xhr.status >= 200 && xhr.status < 300) resolve();
-				else reject(`Upload failed: ${xhr.status}`);
+				else reject(`${dict?.mailbox?.uploadFailedPrefix ?? "Upload failed: "}${xhr.status}`);
 			};
 
-			xhr.onerror = () => reject("Network error");
+			xhr.onerror = () => reject(dict?.mailbox?.networkError ?? "Network error");
 
 			xhr.send(file);
 		});
@@ -225,7 +227,7 @@ export default function EditorFooter() {
 						type="submit"
 						className="!rounded-l-4xl !rounded-r-xs"
 					>
-						Send
+						{dict?.mailbox?.send ?? "Send"}
 					</Button>
 					<ScheduleSend />
 				</div>

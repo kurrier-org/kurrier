@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import LabelRowTag from "@/components/dashboard/labels/label-row-tag";
 import ThreadLabelHoverButtons from "@/components/dashboard/labels/thread-label-hover-buttons";
 import SnoozeMail from "@/components/mailbox/default/snooze-mail";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export default function WebmailListItem({
 	mailboxThreadItem,
@@ -41,6 +42,8 @@ export default function WebmailListItem({
 	labelsByThreadId,
 	workspacePublicId
 }: Props) {
+	const dict = useOptionalDictionary();
+
 	function formatDateLabel(input?: string | number | Date) {
 		const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 		if (!input) return "";
@@ -98,10 +101,10 @@ export default function WebmailListItem({
 		const hours = Math.abs(dur.hours);
 		const minutes = Math.abs(dur.minutes);
 
-		if (days >= 1) return `${days}d ago`;
-		if (hours >= 1) return `${hours}h ago`;
-		if (minutes >= 1) return `${minutes}m ago`;
-		return "just now";
+		if (days >= 1) return `${dict?.mailbox?.agoPrefix ?? ""}${days}${dict?.mailbox?.daysAbbr ?? "d ago"}`;
+		if (hours >= 1) return `${dict?.mailbox?.agoPrefix ?? ""}${hours}${dict?.mailbox?.hoursAbbr ?? "h ago"}`;
+		if (minutes >= 1) return `${dict?.mailbox?.agoPrefix ?? ""}${minutes}${dict?.mailbox?.minutesAbbr ?? "m ago"}`;
+		return dict?.mailbox?.justNow ?? "just now";
 	}
 
 	function getThreadTimeLabel(item: typeof mailboxThreadItem) {
@@ -109,9 +112,9 @@ export default function WebmailListItem({
 
 		if (item.snoozedUntil && new Date(item.snoozedUntil).getTime() > now) {
 			return {
-				text: "Snoozed",
+				text: dict?.mailbox?.snoozed ?? "Snoozed",
 				className: "text-sm text-orange-400",
-				title: `Snoozed until ${new Date(item.snoozedUntil).toLocaleString()}`,
+				title: `${dict?.mailbox?.snoozedUntilPrefix ?? "Snoozed until "}${new Date(item.snoozedUntil).toLocaleString()}`,
 			};
 		}
 
@@ -121,9 +124,9 @@ export default function WebmailListItem({
 
 			if (ageMs >= 0 && ageMs <= showWindowMs) {
 				return {
-					text: `Snoozed back ${formatRelative(item.unsnoozedAt)}`,
+					text: `${dict?.mailbox?.snoozedBackPrefix ?? "Snoozed back "}${formatRelative(item.unsnoozedAt)}`,
 					className: "text-sm text-orange-400",
-					title: `Returned from snooze ${new Date(item.unsnoozedAt).toLocaleString()}`,
+					title: `${dict?.mailbox?.returnedFromSnoozePrefix ?? "Returned from snooze "}${new Date(item.unsnoozedAt).toLocaleString()}`,
 				};
 			}
 		}
@@ -231,7 +234,7 @@ export default function WebmailListItem({
 							checked={state?.selectedThreadIds?.has(
 								mailboxThreadItem.threadId,
 							)}
-							aria-label={`Select thread ${mailboxThreadItem.subject}`}
+							aria-label={`${dict?.mailbox?.selectThreadPrefix ?? "Select thread "}${mailboxThreadItem.subject}`}
 							className="h-4 w-4 rounded border-muted-foreground/40"
 							onClick={(e) => e.stopPropagation()}
 						/>
@@ -240,7 +243,7 @@ export default function WebmailListItem({
 
 				<button
 					type="button"
-					aria-label="Star"
+					aria-label={dict?.mailbox?.star ?? "Star"}
 					className="text-muted-foreground hover:text-foreground"
 					onClick={() =>
 						toggleStar(
@@ -329,7 +332,7 @@ export default function WebmailListItem({
 								);
 							}}
 							className="rounded p-1 hover:bg-muted"
-							title="Mark as unread"
+							title={dict?.mailbox?.markAsUnread ?? "Mark as unread"}
 						>
 							<Mail className="h-4 w-4" />
 						</button>
@@ -344,7 +347,7 @@ export default function WebmailListItem({
 								)
 							}
 							className="rounded p-1 hover:bg-muted"
-							title="Mark as read"
+							title={dict?.mailbox?.markAsRead ?? "Mark as read"}
 						>
 							<MailOpen className="h-4 w-4" />
 						</button>
@@ -363,12 +366,12 @@ export default function WebmailListItem({
 								!!mailboxSync,
 								true,
 							);
-							toast.success("Messages moved to Trash", {
+							toast.success(dict?.mailbox?.movedToTrash ?? "Messages moved to Trash", {
 								position: "bottom-left",
 							});
 						}}
 						className="rounded p-1 hover:bg-muted"
-						title="Delete"
+						title={dict?.mailbox?.delete ?? "Delete"}
 					>
 						<Trash2 className="h-4 w-4" />
 					</button>
