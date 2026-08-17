@@ -1,17 +1,18 @@
 "use client";
 
-import React from "react";
-import { Tree, type RenderTreeNodePayload, useTree } from "@mantine/core";
+import type { LabelEntity } from "@db";
+import { type RenderTreeNodePayload, Tree, useTree } from "@mantine/core";
 import {
-	IconLabelFilled,
-	IconCaretRightFilled,
 	IconCaretDownFilled,
+	IconCaretRightFilled,
+	IconLabelFilled,
 } from "@tabler/icons-react";
-import AddNewLabel from "@/components/dashboard/labels/add-new-label";
-import colors from "tailwindcss/colors";
 import { useParams, useRouter } from "next/navigation";
+import React from "react";
+import colors from "tailwindcss/colors";
+import AddNewLabel from "@/components/dashboard/labels/add-new-label";
 import ManageLabels from "@/components/dashboard/labels/manage-labels";
-import { LabelEntity } from "@db";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 
 type LabelWithCount = LabelEntity & {
@@ -71,6 +72,7 @@ function buildLabelTree(labels: LabelWithCount[]): LabelNode[] {
 }
 
 function LabelHome() {
+	const dict = useOptionalDictionary();
 	const { state } = useDynamicContext();
 	const labels = (state.labels ?? []) as LabelWithCount[];
 
@@ -148,7 +150,9 @@ function LabelHome() {
 	return (
 		<div className="flex h-full flex-col">
 			<div className="mx-3 mt-8 mb-3 flex items-center justify-between">
-				<div className="text-sm font-semibold tracking-tight">Labels</div>
+				<div className="text-sm font-semibold tracking-tight">
+					{dict?.mailbox?.labels ?? "Labels"}
+				</div>
 				<div className="flex gap-2">
 					<AddNewLabel globalLabels={labels} />
 					<ManageLabels globalLabels={labels} />
