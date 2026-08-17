@@ -1,1 +1,5 @@
-{}
+{
+	"contacts": {
+		"noDefaultAddressBook": "No default address book found for user."
+	}
+}

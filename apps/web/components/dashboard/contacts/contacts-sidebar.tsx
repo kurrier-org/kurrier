@@ -11,6 +11,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export default function ContactsNav({
 	onComplete,
@@ -19,16 +20,17 @@ export default function ContactsNav({
 	workspacePublicId: string;
 	onComplete?: () => void;
 }) {
+	const dict = useOptionalDictionary();
 	const pathName = usePathname();
 
 	const mainItems = [
 		{
-			title: "New Contact",
+			title: dict?.contacts?.newContact ?? "New Contact",
 			url: `/w/${workspacePublicId}/dashboard/contacts/new`,
 			icon: Plus,
 		},
 		{
-			title: "All contacts",
+			title: dict?.contacts?.allContacts ?? "All contacts",
 			url: `/w/${workspacePublicId}/dashboard/contacts`,
 			icon: Users,
 		}
@@ -37,7 +39,7 @@ export default function ContactsNav({
 	return (
 		<>
 			<SidebarGroup>
-				<SidebarGroupLabel>Contacts</SidebarGroupLabel>
+				<SidebarGroupLabel>{dict?.contacts?.contacts ?? "Contacts"}</SidebarGroupLabel>
 				<SidebarMenu>
 					{mainItems.map((item) => (
 						<SidebarMenuItem key={item.title}>
@@ -60,7 +62,7 @@ export default function ContactsNav({
 						</SidebarMenuItem>
 					))}
 				</SidebarMenu>
-				<SidebarGroupLabel>Address Books</SidebarGroupLabel>
+				<SidebarGroupLabel>{dict?.contacts?.addressBooks ?? "Address Books"}</SidebarGroupLabel>
 			</SidebarGroup>
 		</>
 	);

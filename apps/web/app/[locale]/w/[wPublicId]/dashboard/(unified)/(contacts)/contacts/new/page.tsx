@@ -29,7 +29,7 @@ async function Page() {
 			if (!defaultAddressBook) {
 				return {
 					success: false,
-					error: "No default address book found for user.",
+					error: "contacts.noDefaultAddressBook",
 				};
 			}
 			data.addressBookId = defaultAddressBook.id;
