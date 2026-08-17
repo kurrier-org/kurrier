@@ -104,7 +104,7 @@ export async function createUserWithWorkspace(opts: {
 		.where(eq(users.email, opts.email));
 
 	if (existing) {
-		return { error: "An account with this email already exists" };
+		return { error: "auth.accountAlreadyExists" };
 	}
 
 	const [user] = await db
@@ -148,24 +148,24 @@ export async function login(
 	};
 
 	if (!email || !password) {
-		return { error: "Missing email or password" };
+		return { error: "auth.missingCredentials" };
 	}
 
 	const [user] = await db.select().from(users).where(eq(users.email, email));
 
 	if (!user || !user.passwordHash) {
-		return { error: "Invalid credentials" };
+		return { error: "auth.invalidCredentials" };
 	}
 
 	const valid = await argon2.verify(user.passwordHash, password);
 
 	if (!valid) {
-		return { error: "Invalid credentials" };
+		return { error: "auth.invalidCredentials" };
 	}
 
 	await signInUserAndRedirect(user, locale);
 
-	return { success: true, message: "Logged in!" };
+	return { success: true, message: "auth.loggedIn" };
 }
 
 export async function signup(
@@ -177,7 +177,7 @@ export async function signup(
 	if (DISABLE_SIGNUP) {
 		return {
 			success: false,
-			error: "Signup is currently disabled. Please contact your administrator.",
+			error: "auth.signupDisabled",
 		};
 	}
 
@@ -188,7 +188,7 @@ export async function signup(
 	};
 
 	if (!email || !password) {
-		return { error: "Missing email or password" };
+		return { error: "auth.missingCredentials" };
 	}
 
 	const passwordHash = await argon2.hash(password);
@@ -205,7 +205,7 @@ export async function signup(
 
 	await signInUserAndRedirect(user);
 
-	return { success: true, message: "Welcome!" };
+	return { success: true, message: "auth.welcome" };
 }
 
 export type TokenClaims = JWTPayload & {

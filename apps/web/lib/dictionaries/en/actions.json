@@ -1,4 +1,12 @@
 {
+	"auth": {
+		"missingCredentials": "Missing email or password",
+		"invalidCredentials": "Invalid credentials",
+		"loggedIn": "Logged in!",
+		"accountAlreadyExists": "An account with this email already exists",
+		"welcome": "Welcome!",
+		"signupDisabled": "Signup is currently disabled. Please contact your administrator."
+	},
 	"contacts": {
 		"noDefaultAddressBook": "No default address book found for user."
 	},
