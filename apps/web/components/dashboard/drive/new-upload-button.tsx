@@ -11,12 +11,14 @@ import { DriveState } from "@schema";
 import DriveUploader, {
 	DriveUploaderHandle,
 } from "@/components/dashboard/drive/drive-uploader";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export default function NewUploadButton({
 	hideOnMobile,
 }: {
 	hideOnMobile?: boolean;
 }) {
+	const dict = useOptionalDictionary();
 	const [folderOpened, folderHandlers] = useDisclosure(false);
 	const { state } = useDynamicContext<DriveState>();
 	const uploaderRef = useRef<DriveUploaderHandle | null>(null);
@@ -36,7 +38,7 @@ export default function NewUploadButton({
 				<Menu.Target>
 					<Button hidden={!hideOnMobile} size="lg" className={"w-full"}>
 						<Plus className="h-5 w-5" />
-						New
+						{dict?.drive?.new ?? "New"}
 					</Button>
 				</Menu.Target>
 
@@ -49,7 +51,7 @@ export default function NewUploadButton({
 							uploaderRef.current?.openPicker();
 						}}
 					>
-						Upload
+						{dict?.drive?.upload ?? "Upload"}
 					</Menu.Item>
 
 					<Menu.Item
@@ -60,7 +62,7 @@ export default function NewUploadButton({
 							folderHandlers.open();
 						}}
 					>
-						Folder
+						{dict?.drive?.folder ?? "Folder"}
 					</Menu.Item>
 				</Menu.Dropdown>
 			</Menu>
@@ -70,14 +72,14 @@ export default function NewUploadButton({
 			<Modal
 				opened={folderOpened}
 				onClose={folderHandlers.close}
-				title="New folder"
+				title={dict?.drive?.newFolder ?? "New folder"}
 				centered
 				size={"xs"}
 				trapFocus={false}
 			>
 				<ReusableFormButton
 					action={addNewFolder}
-					label="Create Folder"
+					label={dict?.drive?.createFolder ?? "Create Folder"}
 					formWrapperClasses={"flex justify-center flex-col"}
 					onSuccess={() => folderHandlers.close()}
 					buttonProps={{

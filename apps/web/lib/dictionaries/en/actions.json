@@ -5,5 +5,15 @@
 	"calendar": {
 		"missingCalendarId": "Missing calendarId",
 		"failedToPersistEvent": "Failed to persist calendar event"
+	},
+	"drive": {
+		"folderNameRequired": "Folder name is required",
+		"missingVolume": "Missing volume",
+		"volumeNotFound": "Volume not found",
+		"invalidVolumeType": "Invalid volume type",
+		"cloudVolumeMissingBucket": "Cloud volume missing bucket",
+		"folderCreated": "Folder created",
+		"deletedFolder": "Deleted folder",
+		"deletedFile": "Deleted file"
 	}
 }

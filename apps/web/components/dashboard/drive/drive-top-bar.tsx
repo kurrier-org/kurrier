@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import { DriveRouteContext, DriveState } from "@schema";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import Link from "next/link";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function encodeSegments(segs: string[]) {
 	return segs.map(encodeURIComponent);
@@ -19,11 +20,12 @@ export function buildDriveBreadcrumb(
 		} | null;
 	},
 	workspacePublicId: string,
+	dict?: ReturnType<typeof useOptionalDictionary>,
 ) {
 	const out: { label: string; href: string }[] = [];
 
 	out.push({
-		label: "My Drive",
+		label: dict?.drive?.myDrive ?? "My Drive",
 		href: `/w/${workspacePublicId}/dashboard/drive`,
 	});
 
@@ -31,7 +33,7 @@ export function buildDriveBreadcrumb(
 
 	if (vol) {
 		out.push({
-			label: vol.label || vol.code || "Volume",
+			label: vol.label || vol.code || (dict?.drive?.volume ?? "Volume"),
 			href: `/dashboard/drive/volumes/${encodeURIComponent(vol.publicId)}`,
 		});
 	}
@@ -63,6 +65,7 @@ function DriveTopBar({
 	userId: string;
 	workspacePublicId: string;
 }) {
+	const dict = useOptionalDictionary();
 	const { setState } = useDynamicContext<DriveState>();
 
 	useEffect(() => {
@@ -85,6 +88,7 @@ function DriveTopBar({
 				: null,
 		},
 		workspacePublicId,
+		dict,
 	);
 
 	return (

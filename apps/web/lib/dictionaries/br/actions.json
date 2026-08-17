@@ -5,5 +5,15 @@
 	"calendar": {
 		"missingCalendarId": "ID do calendário ausente",
 		"failedToPersistEvent": "Falha ao salvar o evento do calendário"
+	},
+	"drive": {
+		"folderNameRequired": "O nome da pasta é obrigatório",
+		"missingVolume": "Volume ausente",
+		"volumeNotFound": "Volume não encontrado",
+		"invalidVolumeType": "Tipo de volume inválido",
+		"cloudVolumeMissingBucket": "Volume em nuvem sem bucket",
+		"folderCreated": "Pasta criada",
+		"deletedFolder": "Pasta excluída",
+		"deletedFile": "Arquivo excluído"
 	}
 }
