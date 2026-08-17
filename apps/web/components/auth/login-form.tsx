@@ -1,7 +1,13 @@
 "use client";
 
-import * as React from "react";
-import { cn } from "@/lib/utils";
+import { Button } from "@mantine/core";
+import type { FormState } from "@schema";
+import { IconBrandGoogle, IconLogin2 } from "@tabler/icons-react";
+import { Loader2Icon } from "lucide-react";
+import Form from "next/form";
+import Link from "next/link";
+import type * as React from "react";
+import { useActionState } from "react";
 import {
 	Card,
 	CardContent,
@@ -12,25 +18,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login } from "@/lib/actions/auth";
-import Link from "next/link";
-import { useActionState } from "react";
-import Form from "next/form";
-import { Loader2Icon } from "lucide-react";
-import { FormState } from "@schema";
-import { IconBrandGoogle, IconLogin2 } from "@tabler/icons-react";
-import { Button } from "@mantine/core";
-import type {Dictionary} from "@/lib/dictionaries";
+import type { Dictionary } from "@/lib/dictionaries";
+import { cn } from "@/lib/utils";
 
 export function LoginForm({
 	className,
 	oidc,
 	dict,
 	...props
-}: React.ComponentProps<"div"> & {oidc?: {
+}: React.ComponentProps<"div"> & {
+	oidc?: {
 		googleEnabled?: boolean;
 		genericEnabled?: boolean;
 		genericName?: string;
-	} }  & {dict: Dictionary}) {
+	};
+} & { dict: Dictionary }) {
 	const [formState, formAction, isPending] = useActionState<
 		FormState,
 		FormData
@@ -45,17 +47,33 @@ export function LoginForm({
 						<CardDescription>Login with your existing account</CardDescription>
 					)}
 					{oidc?.googleEnabled && (
-						<Button fullWidth variant="default" className="w-full" href={"/api/auth/oidc/google"} component="a" leftSection={<IconBrandGoogle/>}>
+						<Button
+							fullWidth
+							variant="default"
+							className="w-full"
+							href={"/api/auth/oidc/google"}
+							component="a"
+							leftSection={<IconBrandGoogle />}
+						>
 							Login with Google
 						</Button>
 					)}
 					{oidc?.genericEnabled && (
-						<Button fullWidth variant="default" className="w-full" href={"/api/auth/oidc/generic"} component="a" leftSection={<IconLogin2/>}>
+						<Button
+							fullWidth
+							variant="default"
+							className="w-full"
+							href={"/api/auth/oidc/generic"}
+							component="a"
+							leftSection={<IconLogin2 />}
+						>
 							Login with {oidc?.genericName || "SSO"}
 						</Button>
 					)}
 					{!oidc?.googleEnabled && !oidc?.genericEnabled && (
-						<div className={'text-sm text-center'}>No third-party authentication methods are currently enabled.</div>
+						<div className={"text-sm text-center"}>
+							{dict.auth.noOidcEnabled}
+						</div>
 					)}
 				</CardHeader>
 
@@ -141,7 +159,7 @@ export function LoginForm({
 							<div className="text-center text-sm">
 								{dict.auth.noAccount}{" "}
 								<Link
-									href="/auth/signup"
+									href={`/${dict.locale}/auth/signup`}
 									className="underline underline-offset-4"
 								>
 									{dict.auth.signUp}

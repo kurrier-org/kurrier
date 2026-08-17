@@ -1,4 +1,5 @@
 import "server-only";
+import { hasLocale, type Locale } from "@/lib/locale";
 
 async function loadEn() {
 	const [
@@ -124,16 +125,14 @@ async function loadKo(): Promise<Dictionary> {
 	} as Dictionary;
 }
 
-const dictionaries = {
+const dictionaries: Record<Locale, () => Promise<Dictionary>> = {
 	en: loadEn,
 	br: loadBr,
 	ko: loadKo,
 };
 
-export type Locale = keyof typeof dictionaries;
-
-export const hasLocale = (locale: string): locale is Locale =>
-	locale in dictionaries;
+export type { Locale };
+export { hasLocale };
 
 export async function getDictionary(locale: string): Promise<Dictionary> {
 	const key: Locale = hasLocale(locale) ? locale : "en";
