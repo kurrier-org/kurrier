@@ -21,6 +21,7 @@ import { Avatar as MantineAvatar } from "@mantine/core";
 import {FetchIsSignedInResult, getGravatarUrl, signOut} from "@/lib/actions/auth";
 import { useEffect, useState } from "react";
 import {FetchWorkspacesResult, switchWorkSpace} from "@/lib/actions/workspace";
+import { LanguageSwitcherSubmenu } from "@/components/common/language-switcher";
 
 export function NavUser({ workspacePublicId, user, userWorkspaces }: { workspacePublicId: string | undefined, user: FetchIsSignedInResult, userWorkspaces: FetchWorkspacesResult }) {
 	const { isMobile } = useSidebar();
@@ -110,6 +111,8 @@ export function NavUser({ workspacePublicId, user, userWorkspaces }: { workspace
 							</ul>
 
 						</DropdownMenuLabel>
+						<DropdownMenuSeparator />
+						<LanguageSwitcherSubmenu />
 						<DropdownMenuSeparator />
 						<DropdownMenuItem
 							onClick={() => signOut()}
