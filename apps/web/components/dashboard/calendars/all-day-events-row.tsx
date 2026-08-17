@@ -4,6 +4,7 @@ import { AllDayFragment, CalendarState } from "@schema";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import CalendarAddEventPopover from "@/components/dashboard/calendars/calendar-add-event-popover";
 import { useState } from "react";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 type WeekDayMeta = {
 	label: string;
@@ -28,6 +29,7 @@ export default function AllDayEventsRow({
 	weekDays: WeekDayMeta[];
 	allDayByDay: Map<string, AllDayFragment[]>;
 }) {
+	const dict = useOptionalDictionary();
 	const { state, setState } = useDynamicContext<CalendarState>();
 	const dayjsTz = getDayjsTz(state.defaultCalendar.timezone);
 
@@ -152,7 +154,7 @@ export default function AllDayEventsRow({
 	return (
 		<div className="grid grid-cols-[64px_repeat(7,1fr)] border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 w-full">
 			<div className="flex items-center justify-start px-3 py-1 text-xxs text-neutral-500 dark:text-brand-foreground">
-				All day
+				{dict?.calendar?.allDay ?? "All day"}
 			</div>
 			<div className="relative col-span-7">
 				{weekDays.map((_, idx) => (

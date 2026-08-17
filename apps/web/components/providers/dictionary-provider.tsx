@@ -1,7 +1,15 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import dayjs from "dayjs";
+import { createContext, useContext, useEffect } from "react";
+import "dayjs/locale/pt-br";
 import type { Dictionary } from "@/lib/dictionaries";
+
+const DAYJS_LOCALES: Record<string, string> = {
+	en: "en",
+	br: "pt-br",
+	ko: "en",
+};
 
 const Ctx = createContext<Dictionary | null>(null);
 
@@ -12,6 +20,10 @@ export function DictionaryProvider({
 	dict: Dictionary;
 	children: React.ReactNode;
 }) {
+	useEffect(() => {
+		dayjs.locale(DAYJS_LOCALES[dict.locale] ?? "en");
+	}, [dict.locale]);
+
 	return <Ctx.Provider value={dict}>{children}</Ctx.Provider>;
 }
 

@@ -388,7 +388,7 @@ export async function upsertCalendarEvent(
 		});
 
 		if (!finalEventId) {
-			throw new Error("Failed to persist calendar event");
+			throw new Error("calendar.failedToPersistEvent");
 		}
 
 		const { davQueue } = await getRedis();
@@ -822,7 +822,7 @@ export async function updateCalendarTimezone(
 		const timezone = String(decodedForm.timezone || "UTC");
 
 		if (!calendarId) {
-			return { success: false, error: "Missing calendarId" };
+			return { success: false, error: "calendar.missingCalendarId" };
 		}
 
 		const rls = await rlsClient();

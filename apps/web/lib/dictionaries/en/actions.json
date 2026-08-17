@@ -1,5 +1,9 @@
 {
 	"contacts": {
 		"noDefaultAddressBook": "No default address book found for user."
+	},
+	"calendar": {
+		"missingCalendarId": "Missing calendarId",
+		"failedToPersistEvent": "Failed to persist calendar event"
 	}
 }

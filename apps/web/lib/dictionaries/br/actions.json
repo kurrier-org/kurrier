@@ -1,5 +1,9 @@
 {
 	"contacts": {
 		"noDefaultAddressBook": "Nenhum catálogo de endereços padrão encontrado para o usuário."
+	},
+	"calendar": {
+		"missingCalendarId": "ID do calendário ausente",
+		"failedToPersistEvent": "Falha ao salvar o evento do calendário"
 	}
 }
