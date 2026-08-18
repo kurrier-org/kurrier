@@ -3,7 +3,7 @@ version: "3.9"
 services:
   web:
 #    image: ghcr.io/kurrier-org/kurrier-web:v3.0.11
-    image: ghcr.io/kurrier-org/kurrier-web:v3.3.0
+    image: ghcr.io/kurrier-org/kurrier-web:v3.4.0
     restart: unless-stopped
     env_file:
       - .env
@@ -14,7 +14,7 @@ services:
         condition: service_healthy
   worker:
 #    image: ghcr.io/kurrier-org/kurrier-worker:v3.0.11
-    image: ghcr.io/kurrier-org/kurrier-worker:v3.3.0
+    image: ghcr.io/kurrier-org/kurrier-worker:v3.4.0
     restart: unless-stopped
     env_file:
       - .env
