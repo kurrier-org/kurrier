@@ -8,6 +8,7 @@ export const providersList = [
 	"postmark",
 	"sendgrid",
 	"s3",
+	"inbound"
 ] as const;
 export const ProvidersEnum = z.enum(providersList);
 export type Providers = z.infer<typeof ProvidersEnum>;
@@ -20,6 +21,7 @@ export const ProviderLabels: Record<Providers, string> = {
 	postmark: "Postmark",
 	sendgrid: "SendGrid",
 	google: "Google",
+	inbound: "Kurrier Inbound",
 
 	s3: "S3 Compatible Storage",
 };
@@ -103,3 +105,10 @@ export const STORAGE_PROVIDERS: ProviderSpec[] = [
 		requiredEnv: ["S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY", "S3_REGION"],
 	},
 ];
+
+export const INBOUND_SPEC = {
+	key: "inbound" as const,
+	name: ProviderLabels.inbound,
+	help:
+		"Receive email directly through Kurrier’s API without configuring an external mail provider.",
+};

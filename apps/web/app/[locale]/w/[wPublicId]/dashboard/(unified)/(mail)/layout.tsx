@@ -18,6 +18,7 @@ export default async function DashboardLayout({
 	const publicConfig = getPublicEnv();
 	const workspacePublicId = await getWorkspacePublicId()
 	const identityMailboxes = await fetchIdentityMailboxList();
+	const isInbound = identityMailboxes[0]?.identity?.metaData?.provider === "inbound"
 
 	return (
 		<>
@@ -26,7 +27,12 @@ export default async function DashboardLayout({
 				sidebarTopContent={
 					<Suspense fallback={<Loading />}>
 						<div className={"-mt-1"} key={"mail-sidebar-compose"}>
-							<ComposeMail publicConfig={publicConfig} identityMailboxes={identityMailboxes} />
+							{!isInbound && (
+								<ComposeMail
+									publicConfig={publicConfig}
+									identityMailboxes={identityMailboxes}
+								/>
+							)}
 						</div>
 					</Suspense>
 				}

@@ -2,7 +2,7 @@ import { defineNitroPlugin } from "nitropack/runtime";
 import { JobScheduler, Worker } from "bullmq";
 import { getRedis } from "../../lib/get-redis";
 import { db, mailboxThreads, MessageEntity, providers } from "@db";
-import { PROVIDERS, STORAGE_PROVIDERS } from "@schema";
+import { INBOUND_SPEC, PROVIDERS, STORAGE_PROVIDERS } from "@schema";
 import { kvDel, kvGet, kvSet } from "@common";
 import { processWebhook } from "../../lib/webhooks/message.received";
 import { and, isNull, lte } from "drizzle-orm";
@@ -21,7 +21,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 					await db
 						.insert(providers)
 						.values(
-							[...PROVIDERS, ...STORAGE_PROVIDERS].map((k) => ({
+							[...PROVIDERS, ...STORAGE_PROVIDERS, INBOUND_SPEC].map((k) => ({
 								type: k.key,
 								ownerId: userId,
 								workspaceId: workspaceId,

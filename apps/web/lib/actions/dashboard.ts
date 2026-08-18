@@ -1580,3 +1580,196 @@ export const verifyGoogleAccount = async (googleAccountId: string) => {
 		}
 	});
 };
+
+
+export async function createInboundIdentity(
+	_prev: FormState,
+	formData: FormData,
+): Promise<FormState> {
+	return handleAction(async () => {
+		const data = decode(formData);
+
+		const label = String(data.label || "").trim();
+
+		if (!label) {
+			return {
+				success: false,
+				error: "Identity label is required",
+			};
+		}
+
+		const slug = slugify(label);
+
+		if (!slug) {
+			return {
+				success: false,
+				error: "Invalid identity label",
+			};
+		}
+
+		const value = `${slug}@inbound.kurrier`;
+
+		const workspaceId = await getWorkspaceId();
+		const user = await isSignedIn();
+		const userId = String(user?.id || "");
+
+		if (!userId) {
+			return {
+				success: false,
+				error: "Not signed in",
+			};
+		}
+
+		const rls = await rlsClient();
+
+		const [inboundProvider] = await rls((tx) =>
+			tx
+				.select()
+				.from(providers)
+				.where(
+					and(
+						eq(providers.workspaceId, workspaceId),
+						eq(providers.ownerId, userId),
+						eq(providers.type, "inbound"),
+					),
+				)
+				.limit(1),
+		);
+
+		if (!inboundProvider) {
+			return {
+				success: false,
+				error: "Kurrier Inbound provider is not initialized",
+			};
+		}
+
+		const [existingIdentity] = await rls((tx) =>
+			tx
+				.select({ id: identities.id })
+				.from(identities)
+				.where(
+					and(
+						eq(identities.workspaceId, workspaceId),
+						eq(identities.kind, "email"),
+						eq(identities.value, value),
+					),
+				)
+				.limit(1),
+		);
+
+		if (existingIdentity) {
+			return {
+				success: false,
+				error: `Inbound identity ${value} already exists`,
+			};
+		}
+
+		const identityData = IdentityInsertSchema.parse({
+			workspaceId,
+			ownerId: userId,
+			kind: "email",
+			value,
+			displayName: label,
+			providerId: inboundProvider.id,
+			status: "verified",
+			sharedWithWorkspace: true,
+			metaData: {
+				provider: "inbound",
+			},
+		});
+
+		const [identity] = await rls((tx) =>
+			tx
+				.insert(identities)
+				.values(identityData as IdentityCreate)
+				.returning(),
+		);
+		await assignIdentityToAllWorkspaceMembers(identity);
+		await initializeMailboxes(identity, userId, workspaceId);
+
+		revalidatePath(DASHBOARD_PATH);
+		return {
+			success: true,
+			message: `Created ${value}`,
+		};
+	});
+}
+
+
+export const fetchInboundIdentities = async () => {
+
+	const rls = await rlsClient();
+	return rls((tx) =>
+		tx
+			.select({
+				identity: identities,
+				provider: providers,
+			})
+			.from(identities)
+			.innerJoin(providers, eq(identities.providerId, providers.id))
+			.where(
+				and(
+					eq(identities.kind, "email"),
+					eq(providers.type, "inbound"),
+				),
+			)
+			.orderBy(desc(identities.createdAt)),
+	);
+
+};
+
+export type FetchInboundIdentitiesResult = Awaited<ReturnType<typeof fetchInboundIdentities>>;
+export type FetchInboundIdentitiesResultRow = FetchInboundIdentitiesResult[number];
+
+
+export const deleteInboundIdentity = async (
+	identityId: string,
+): Promise<FormState> => {
+	return handleAction(async () => {
+		const rls = await rlsClient();
+		const workspaceId = await getWorkspaceId();
+
+		const [identity] = await rls((tx) =>
+			tx
+				.select({
+					identity: identities,
+					provider: providers,
+				})
+				.from(identities)
+				.innerJoin(providers, eq(identities.providerId, providers.id))
+				.where(
+					and(
+						eq(identities.id, identityId),
+						eq(providers.type, "inbound"),
+					),
+				)
+				.limit(1),
+		);
+
+		if (!identity) {
+			return {
+				success: false,
+				error: "Inbound identity not found",
+			};
+		}
+
+		await enqueueIdentityCleanup(
+			identity.identity.id,
+			workspaceId,
+		);
+
+		await rls((tx) =>
+			tx
+				.delete(identities)
+				.where(eq(identities.id, identity.identity.id)),
+		);
+
+		revalidatePath(DASHBOARD_PATH);
+		revalidatePath("/w/[workspaceId]/dashboard/platform/identities");
+
+		return {
+			success: true,
+			message: "Inbound identity deleted",
+		};
+	});
+};
