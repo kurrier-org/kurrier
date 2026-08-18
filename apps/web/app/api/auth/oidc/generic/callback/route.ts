@@ -149,9 +149,10 @@ export async function GET(request: NextRequest) {
 		 * 1. link the external identity to an existing Kurrier user, or
 		 * 2. provision a new Kurrier user.
 		 *
-		 * Don't automatically link/create from an unverified email.
+		 * Don't automatically link/create from an unverified email, unless
+		 * the operator has explicitly opted out via OIDC_REQUIRE_VERIFIED_EMAIL.
 		 */
-		if (!email || !emailVerified) {
+		if (!email || (settings.requireVerifiedEmail && !emailVerified)) {
 			return NextResponse.redirect(new URL("/auth/login", baseUrl));
 		}
 
