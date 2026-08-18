@@ -1,26 +1,24 @@
+import { providerSecrets, smtpAccountSecrets } from "@db";
+import { ProviderLabels } from "@schema";
 import React from "react";
 import MailIdentities from "@/components/dashboard/identities/mail-identities";
+import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
-	fetchDecryptedSecrets, fetchGoogleAccounts,
+	fetchDecryptedSecrets,
+	fetchGoogleAccounts,
 	fetchUserIdentities,
 	getProviderById,
 } from "@/lib/actions/dashboard";
-import { smtpAccountSecrets, providerSecrets } from "@db";
-import { ProviderLabels } from "@schema";
-import { parseSecret } from "@/lib/utils";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
 import {
 	fetchWorkspace,
-	fetchWorkspaceMembers, workspaceIdentityAssignments
+	fetchWorkspaceMembers,
+	workspaceIdentityAssignments,
 } from "@/lib/actions/workspace";
 import { getDictionary } from "@/lib/dictionaries";
+import { parseSecret } from "@/lib/utils";
 
-async function Page({
-	params,
-}: {
-	params: Promise<{ locale: string }>;
-}) {
+async function Page({ params }: { params: Promise<{ locale: string }> }) {
 	const { locale } = await params;
 	const dict = await getDictionary(locale);
 	const [userSmtpAccounts, userProviderAccounts] = await Promise.all([
@@ -92,9 +90,9 @@ async function Page({
 		}
 	}
 
-	const workspace = await fetchWorkspace()
-	const workspaceMembers = await fetchWorkspaceMembers(workspace?.id)
-	const workspaceUserIdentities = await workspaceIdentityAssignments()
+	const workspace = await fetchWorkspace();
+	const workspaceMembers = await fetchWorkspaceMembers(workspace?.id);
+	const workspaceUserIdentities = await workspaceIdentityAssignments();
 
 	return (
 		<>
