@@ -7,7 +7,7 @@ import type { Dictionary } from "@/lib/dictionaries";
 
 const DAYJS_LOCALES: Record<string, string> = {
 	en: "en",
-	br: "pt-br",
+	"pt-BR": "pt-br",
 	ko: "en",
 };
 

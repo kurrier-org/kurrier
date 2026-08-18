@@ -3,7 +3,7 @@
 Conventions for keeping locale files consistent as they grow. This file is
 documentation only — it isn't read by the app.
 
-## Brazilian Portuguese (`br`)
+## Brazilian Portuguese (`pt-BR`)
 
 - **Formality**: use formal *você* (never *tu* or *o senhor/a senhora*).
 - **Buttons and actions**: imperative mood, capitalized like a title —
@@ -15,7 +15,7 @@ documentation only — it isn't read by the app.
 
 Keep these consistent everywhere a term appears, across all namespaces.
 
-| English | pt-BR (`br`) | Notes |
+| English | pt-BR | Notes |
 |---|---|---|
 | mailbox | caixa de entrada | |
 | thread | conversa | |
@@ -37,7 +37,7 @@ so subsequent PRs stay consistent instead of re-deciding it per file.
 1. Create `apps/web/lib/dictionaries/<code>/` with one `.json` file per
    namespace (mirror the file list under `en/`).
 2. Add the locale to `dictionaries.ts` (loader map + `Dictionary` casting,
-   following the `br`/`ko` pattern), `proxy.ts`'s `locales` array, and
+   following the `pt-BR`/`ko` pattern), `proxy.ts`'s `locales` array, and
    `LOCALE_LABELS` in `components/common/language-switcher.tsx`.
 3. Run `pnpm check:locales` — it diffs your new locale's keys against `en`
    (the source of truth) and reports anything missing or extra.

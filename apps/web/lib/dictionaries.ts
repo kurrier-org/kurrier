@@ -45,7 +45,7 @@ async function loadEn() {
 // scripts/check-locales.ts verifies that structurally at build/review time.
 export type Dictionary = Awaited<ReturnType<typeof loadEn>>;
 
-async function loadBr(): Promise<Dictionary> {
+async function loadPtBr(): Promise<Dictionary> {
 	const [
 		common,
 		auth,
@@ -58,20 +58,20 @@ async function loadBr(): Promise<Dictionary> {
 		validation,
 		actions,
 	] = await Promise.all([
-		import("@/lib/dictionaries/br/common.json").then((m) => m.default),
-		import("@/lib/dictionaries/br/auth.json").then((m) => m.default),
-		import("@/lib/dictionaries/br/mailbox.json").then((m) => m.default),
-		import("@/lib/dictionaries/br/platform.json").then((m) => m.default),
-		import("@/lib/dictionaries/br/contacts.json").then((m) => m.default),
-		import("@/lib/dictionaries/br/calendar.json").then((m) => m.default),
-		import("@/lib/dictionaries/br/drive.json").then((m) => m.default),
-		import("@/lib/dictionaries/br/dashboard.json").then((m) => m.default),
-		import("@/lib/dictionaries/br/validation.json").then((m) => m.default),
-		import("@/lib/dictionaries/br/actions.json").then((m) => m.default),
+		import("@/lib/dictionaries/pt-BR/common.json").then((m) => m.default),
+		import("@/lib/dictionaries/pt-BR/auth.json").then((m) => m.default),
+		import("@/lib/dictionaries/pt-BR/mailbox.json").then((m) => m.default),
+		import("@/lib/dictionaries/pt-BR/platform.json").then((m) => m.default),
+		import("@/lib/dictionaries/pt-BR/contacts.json").then((m) => m.default),
+		import("@/lib/dictionaries/pt-BR/calendar.json").then((m) => m.default),
+		import("@/lib/dictionaries/pt-BR/drive.json").then((m) => m.default),
+		import("@/lib/dictionaries/pt-BR/dashboard.json").then((m) => m.default),
+		import("@/lib/dictionaries/pt-BR/validation.json").then((m) => m.default),
+		import("@/lib/dictionaries/pt-BR/actions.json").then((m) => m.default),
 	]);
 
 	return {
-		locale: "br",
+		locale: "pt-BR",
 		common,
 		auth,
 		mailbox,
@@ -127,7 +127,7 @@ async function loadKo(): Promise<Dictionary> {
 
 const dictionaries: Record<Locale, () => Promise<Dictionary>> = {
 	en: loadEn,
-	br: loadBr,
+	"pt-BR": loadPtBr,
 	ko: loadKo,
 };
 
