@@ -7,7 +7,6 @@ import { ReusableForm } from "@/components/common/reusable-form";
 import React, {useEffect} from "react";
 import { parseSecret } from "@/lib/utils";
 import { imapQuotaList } from "@schema";
-import {Checkbox, MultiSelect, Select} from "@mantine/core";
 import {FetchWorkspaceMembersResult} from "@/lib/actions/workspace";
 
 function AddEmailIdentityForm({
@@ -16,7 +15,6 @@ function AddEmailIdentityForm({
 	smtpAccounts,
 	providerAccounts,
 	googleAccounts,
-	workspaceMembers,
 	userDomainIdentities,
 	userEmailIdentities
 }: {
