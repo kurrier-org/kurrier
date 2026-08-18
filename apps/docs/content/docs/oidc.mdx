@@ -190,6 +190,7 @@ OIDC_CLIENT_SECRET=your_client_secret
 OIDC_PROVIDER_NAME=My Company SSO   # label on the login button (default: "SSO")
 OIDC_SCOPES=openid email profile    # default shown
 OIDC_TOKEN_AUTH_METHOD=client_secret_basic  # or client_secret_post
+OIDC_REQUIRE_VERIFIED_EMAIL=true    # set to "false" to accept unverified emails
 ```
 
 The generic login button appears on the login and signup pages as soon as `OIDC_ISSUER_URL`, `OIDC_CLIENT_ID` and `OIDC_CLIENT_SECRET` are all set.
@@ -214,7 +215,8 @@ https://your-domain.com/api/auth/oidc/generic/callback
 - **Token endpoint authentication** defaults to `client_secret_basic` (the OAuth 2.0 default). Some providers default to or require `client_secret_post` — set `OIDC_TOKEN_AUTH_METHOD` accordingly.
 - **Claims**: Kurrier needs the `email` and `sub` claims. If the ID token does not carry `email` (e.g. Authelia exposes profile claims only through the userinfo endpoint), Kurrier automatically falls back to the **userinfo endpoint**.
 - **Identity mapping**: returning users are identified by the stable `issuer + sub` pair stored in `auth_accounts` — never by email. A change to the email reported by the IdP does not change which Kurrier user is authenticated.
-- **User provisioning**: on the very first login, the **verified** email claim is used once, to link the external identity to an existing Kurrier user or to create a new user + default workspace. Unverified emails are rejected.
+- **User provisioning**: on the very first login, the **verified** email claim is used once, to link the external identity to an existing Kurrier user or to create a new user + default workspace. Unverified emails are rejected by default.
+- **Unverified emails**: some IdPs never set `email_verified: true` (e.g. OpenCloud's native OIDC provider). Set `OIDC_REQUIRE_VERIFIED_EMAIL=false` to accept the email claim regardless of the `email_verified` value. Leave this unset (or `true`) unless your IdP requires it — it's a deliberate security default.
 
 ### Example: Authelia
 

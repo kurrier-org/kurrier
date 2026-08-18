@@ -59,4 +59,11 @@ export const PROVIDER_CONFIG: Record<
 		chipDark: "dark:bg-gray-500/10 dark:border-gray-900/40",
 		textDark: "dark:text-gray-300",
 	},
+	inbound: {
+		name: "Kurrier Inbound",
+		dot: "bg-cyan-500",
+		chip: "bg-cyan-50 border-cyan-200 text-cyan-700",
+		chipDark: "dark:bg-cyan-500/10 dark:border-cyan-900/40",
+		textDark: "dark:text-cyan-300",
+	},
 };
