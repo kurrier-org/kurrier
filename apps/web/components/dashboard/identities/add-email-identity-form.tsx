@@ -1,13 +1,17 @@
+"use client";
+
+import { imapQuotaList } from "@schema";
+import React, { useEffect } from "react";
+import { ReusableForm } from "@/components/common/reusable-form";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import {
 	addNewEmailIdentity,
-	FetchDecryptedSecretsResult, FetchGoogleAccountsResult,
-	FetchUserIdentitiesResult,
+	type FetchDecryptedSecretsResult,
+	type FetchGoogleAccountsResult,
+	type FetchUserIdentitiesResult,
 } from "@/lib/actions/dashboard";
-import { ReusableForm } from "@/components/common/reusable-form";
-import React, {useEffect} from "react";
+import type { FetchWorkspaceMembersResult } from "@/lib/actions/workspace";
 import { parseSecret } from "@/lib/utils";
-import { imapQuotaList } from "@schema";
-import {FetchWorkspaceMembersResult} from "@/lib/actions/workspace";
 
 function AddEmailIdentityForm({
 	onCompleted,
@@ -16,7 +20,7 @@ function AddEmailIdentityForm({
 	providerAccounts,
 	googleAccounts,
 	userDomainIdentities,
-	userEmailIdentities
+	userEmailIdentities,
 }: {
 	onCompleted?: () => void;
 	providerOptions: { label: string; value: string }[];
@@ -27,6 +31,7 @@ function AddEmailIdentityForm({
 	userDomainIdentities: FetchUserIdentitiesResult;
 	userEmailIdentities: FetchUserIdentitiesResult;
 }) {
+	const dict = useOptionalDictionary();
 	const [provider, setProvider] = React.useState<
 		FetchDecryptedSecretsResult[number] | null
 	>(null);
@@ -35,8 +40,9 @@ function AddEmailIdentityForm({
 	>(null);
 	const [activeId, setActiveId] = React.useState<string | null>(null);
 
-	const [googleAccount, setGoogleAccount] =
-		React.useState<FetchGoogleAccountsResult[number] | null>(null);
+	const [googleAccount, setGoogleAccount] = React.useState<
+		FetchGoogleAccountsResult[number] | null
+	>(null);
 
 	const [rawProvider, setRawProvider] = React.useState<string | null>(null);
 
@@ -55,9 +61,10 @@ function AddEmailIdentityForm({
 	}, [localPart, chosenDomain]);
 
 	const mustBeShared = userEmailIdentities.length === 0;
-	const [sharedWithWorkspace, setSharedWithWorkspace] = React.useState<boolean>(mustBeShared);
+	const [sharedWithWorkspace, setSharedWithWorkspace] =
+		React.useState<boolean>(mustBeShared);
 	useEffect(() => {
-		setSharedWithWorkspace(mustBeShared)
+		setSharedWithWorkspace(mustBeShared);
 	}, [mustBeShared]);
 
 	function getSmtpFields() {
@@ -65,7 +72,7 @@ function AddEmailIdentityForm({
 		return [
 			{
 				name: "value",
-				label: "Email address",
+				label: dict?.platform?.emailAddress ?? "Email address",
 				required: true,
 				wrapperClasses: "col-span-12",
 				props: {
@@ -77,13 +84,13 @@ function AddEmailIdentityForm({
 			},
 			{
 				name: "displayName",
-				label: "Display Name",
+				label: dict?.platform?.displayName ?? "Display Name",
 				required: true,
 				wrapperClasses: "col-span-12",
 				bottomStartPrefix: (
 					<span className={"text-xs"}>
-						This name will appear as the organizer when you create calendar
-						events or send invitations.
+						{dict?.platform?.displayNameHelp ??
+							"This name will appear as the organizer when you create calendar events or send invitations."}
 					</span>
 				),
 				props: {
@@ -93,8 +100,11 @@ function AddEmailIdentityForm({
 			},
 			{
 				name: "dailyQuota",
-				label: "Daily IMAP quota (Used for backfilling older mails)",
-				labelSuffix: "(Default: 500 MB per day)",
+				label:
+					dict?.platform?.dailyImapQuota ??
+					"Daily IMAP quota (Used for backfilling older mails)",
+				labelSuffix:
+					dict?.platform?.dailyImapQuotaSuffix ?? "(Default: 500 MB per day)",
 				kind: "select" as const,
 				defaultValue: "500",
 				options: imapQuotaList.map((quota) => {
@@ -125,7 +135,8 @@ function AddEmailIdentityForm({
 		return [
 			{
 				name: "domain",
-				label: "Choose a verified domain",
+				label:
+					dict?.platform?.chooseAVerifiedDomain ?? "Choose a verified domain",
 				kind: "select" as const,
 				options: userDomainIdentities
 					?.filter((userDomainIdentity) => {
@@ -152,13 +163,13 @@ function AddEmailIdentityForm({
 			},
 			{
 				name: "displayName",
-				label: "Display Name",
+				label: dict?.platform?.displayName ?? "Display Name",
 				required: true,
 				wrapperClasses: "col-span-12",
 				bottomStartPrefix: (
 					<span className={"text-xs"}>
-						This name will appear as the organizer when you create calendar
-						events or send invitations.
+						{dict?.platform?.displayNameHelp ??
+							"This name will appear as the organizer when you create calendar events or send invitations."}
 					</span>
 				),
 				props: {
@@ -168,18 +179,21 @@ function AddEmailIdentityForm({
 			},
 			{
 				name: "local",
-				label: "Local part",
+				label: dict?.platform?.localPart ?? "Local part",
 				wrapperClasses: "col-span-12",
 				props: {
 					defaultValue: localPart,
 					autoComplete: "off",
-					placeholder: "e.g. support",
+					placeholder: dict?.platform?.localPartPlaceholder ?? "e.g. support",
 					required: true,
 					onInput: (e: any) => setLocalPart(e.target.value),
 				},
 				bottomStartPrefix: (
 					<p className="text-xs text-muted-foreground">
-						The part before the “@”. Example: <code>support</code> → support@…
+						{dict?.platform?.localPartHelpPrefix ??
+							"The part before the “@”. Example: "}
+						<code>support</code>
+						{dict?.platform?.localPartHelpSuffix ?? " → support@…"}
 					</p>
 				),
 			},
@@ -206,7 +220,7 @@ function AddEmailIdentityForm({
 		return [
 			{
 				name: "value",
-				label: "Email address",
+				label: dict?.platform?.emailAddress ?? "Email address",
 				required: true,
 				wrapperClasses: "col-span-12",
 				props: {
@@ -218,7 +232,7 @@ function AddEmailIdentityForm({
 			},
 			{
 				name: "displayName",
-				label: "Display Name",
+				label: dict?.platform?.displayName ?? "Display Name",
 				required: true,
 				wrapperClasses: "col-span-12",
 				props: {
@@ -237,8 +251,11 @@ function AddEmailIdentityForm({
 			},
 			{
 				name: "dailyQuota",
-				label: "Daily IMAP quota (Used for backfilling older mails)",
-				labelSuffix: "(Default: 500 MB per day)",
+				label:
+					dict?.platform?.dailyImapQuota ??
+					"Daily IMAP quota (Used for backfilling older mails)",
+				labelSuffix:
+					dict?.platform?.dailyImapQuotaSuffix ?? "(Default: 500 MB per day)",
 				kind: "select" as const,
 				defaultValue: "500",
 				options: imapQuotaList.map((quota) => {
@@ -273,12 +290,21 @@ function AddEmailIdentityForm({
 		} else {
 			return [];
 		}
-	}, [provider, smtpAccount, activeId, localPart, subdomain, domainId, googleAccount]);
+	}, [
+		provider,
+		smtpAccount,
+		activeId,
+		localPart,
+		subdomain,
+		domainId,
+		googleAccount,
+	]);
 
 	const fields = [
 		{
 			name: "provider",
-			label: "Choose a verified provider",
+			label:
+				dict?.platform?.chooseAVerifiedProvider ?? "Choose a verified provider",
 			kind: "select" as const,
 			options: providerOptions,
 			wrapperClasses: "col-span-12",
@@ -323,18 +349,19 @@ function AddEmailIdentityForm({
 		},
 		...extraFields,
 		{
-			el: <>
-				{composedEmail && provider?.linkRow.providerId === activeId && (
-					<div className="mt-3 p-3 border rounded-md bg-muted text-sm text-muted-foreground text-center">
-						Preview:
-						<span className="mx-2 font-medium text-foreground">
-						{composedEmail}{" "}
-					</span>
-					</div>
-				)}
-			</>
-
-		}
+			el: (
+				<>
+					{composedEmail && provider?.linkRow.providerId === activeId && (
+						<div className="mt-3 p-3 border rounded-md bg-muted text-sm text-muted-foreground text-center">
+							{dict?.platform?.previewColon ?? "Preview:"}
+							<span className="mx-2 font-medium text-foreground">
+								{composedEmail}{" "}
+							</span>
+						</div>
+					)}
+				</>
+			),
+		},
 	];
 
 	const finalizeEmail = async () => {

@@ -6,6 +6,7 @@ import {
 	FetchContactLabelsByIdResult,
 	removeLabelFromContact,
 } from "@/lib/actions/labels";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 type ContactLabelHoverButtonsProps = {
 	contact: ContactEntity;
@@ -18,6 +19,7 @@ export function ContactLabelHoverButtons({
 	allLabels,
 	labelsByContactId,
 }: ContactLabelHoverButtonsProps) {
+	const dict = useOptionalDictionary();
 	const labelContacts = labelsByContactId[contact.id] || [];
 	const selectedLabelIds = labelContacts
 		.map((lc) => lc?.label?.id)
@@ -39,7 +41,7 @@ export function ContactLabelHoverButtons({
 
 	return (
 		<LabelAssignPopover
-			title="Label contact"
+			title={dict?.contacts?.labelContact ?? "Label contact"}
 			scope="contact"
 			allLabels={allLabels}
 			selectedLabelIds={selectedLabelIds}

@@ -5,12 +5,14 @@ import { Download, MoreVertical, Trash2 } from "lucide-react";
 import type { DriveEntryEntity } from "@db";
 import { deleteDriveEntry, getDriveDownloadUrl } from "@/lib/actions/drive";
 import { toast } from "sonner";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export default function DriveEntryOptions({
 											  entry,
 										  }: {
 	entry: DriveEntryEntity;
 }) {
+	const dict = useOptionalDictionary();
 	const download = async () => {
 		const url = await getDriveDownloadUrl(entry.id);
 		window.location.href = url;
@@ -19,16 +21,16 @@ export default function DriveEntryOptions({
 	const remove = async () => {
 		if (
 			!window.confirm(
-				`Delete "${entry.name}"?\n\nThis action cannot be undone.`,
+				`${dict?.drive?.deleteConfirmPrefix ?? 'Delete "'}${entry.name}${dict?.drive?.deleteConfirmSuffix ?? '"?\n\nThis action cannot be undone.'}`,
 			)
 		) {
 			return;
 		}
 		const res = await deleteDriveEntry(entry.id);
 		if (res.success) {
-			toast.success("Deleted");
+			toast.success(dict?.drive?.deleted ?? "Deleted");
 		} else {
-			toast.error("Delete failed");
+			toast.error(dict?.drive?.deleteFailed ?? "Delete failed");
 		}
 	};
 
@@ -44,7 +46,7 @@ export default function DriveEntryOptions({
 				<Menu.Dropdown>
 					{entry.type !== "folder" ? (
 						<Menu.Item leftSection={<Download size={14} />} onClick={download}>
-							Download
+							{dict?.drive?.download ?? "Download"}
 						</Menu.Item>
 					) : null}
 
@@ -53,7 +55,7 @@ export default function DriveEntryOptions({
 						leftSection={<Trash2 size={14} />}
 						onClick={remove}
 					>
-						Delete
+						{dict?.drive?.delete ?? "Delete"}
 					</Menu.Item>
 				</Menu.Dropdown>
 			</Menu>

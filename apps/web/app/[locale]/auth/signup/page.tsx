@@ -6,6 +6,7 @@ import { getPublicEnv } from "@schema";
 import { redirect } from "next/navigation";
 import {getDictionary, Locale} from "@/lib/dictionaries";
 import { getGenericOidcSettings } from "@/lib/generic-oidc";
+import { LanguageSwitcher } from "@/components/common/language-switcher";
 
 export default async function SignupPage({ params }: { params: Promise<{ locale: Locale }>; }) {
 	const { DISABLE_SIGNUP } = getPublicEnv();
@@ -22,13 +23,16 @@ export default async function SignupPage({ params }: { params: Promise<{ locale:
 	return (
 		<div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
 			<div className="flex w-full max-w-sm flex-col gap-6">
-				<Link
-					href="/"
-					className="flex items-center gap-2 self-center font-medium"
-				>
-					<KurrierLogo size={56} />
-					<span className="truncate font-medium text-4xl">Kurrier</span>
-				</Link>
+				<div className="flex items-center justify-between">
+					<Link
+						href="/"
+						className="flex items-center gap-2 font-medium"
+					>
+						<KurrierLogo size={56} />
+						<span className="truncate font-medium text-4xl">Kurrier</span>
+					</Link>
+					<LanguageSwitcher />
+				</div>
 				<SignupForm oidc={{
 					googleEnabled: !!googleEnabled,
 					genericEnabled: !!genericOidc,

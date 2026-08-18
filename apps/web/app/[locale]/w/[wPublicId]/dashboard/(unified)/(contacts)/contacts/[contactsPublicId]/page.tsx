@@ -25,9 +25,14 @@ import ContactListAvatar from "@/components/dashboard/contacts/contact-list-avat
 import {getRedis} from "@/lib/actions/get-redis";
 import {isSignedIn} from "@/lib/actions/auth";
 import {generateSignedUrl} from "@common";
+import { getDictionary } from "@/lib/dictionaries";
+import { cookies } from "next/headers";
 
 async function Page({ params }: { params: { contactsPublicId: string } }) {
 	const { contactsPublicId } = await params;
+	const cookieStore = await cookies();
+	const dict = await getDictionary(cookieStore.get("locale")?.value ?? "en");
+	const c = dict.contacts;
 
 	const rls = await rlsClient();
 	const [contact] = await rls((tx) =>
@@ -37,7 +42,7 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 	if (!contact) {
 		return (
 			<div className="flex h-full flex-col items-center justify-center gap-2 px-6 py-4 text-sm text-muted-foreground">
-				<p>No contact found.</p>
+				<p>{c.noContactFound}</p>
 			</div>
 		);
 	}
@@ -101,7 +106,7 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 		[];
 
 	function formatDob(dob?: string | null) {
-		if (!dob) return "Not specified";
+		if (!dob) return c.notSpecified;
 		try {
 			return new Date(dob).toLocaleDateString(undefined, {
 				year: "numeric",
@@ -132,7 +137,7 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 									<ActionIcon
 										type="submit"
 										variant="subtle"
-										title="Toggle favorite"
+										title={c.toggleFavorite}
 										className="h-7 w-7 rounded-full bg-primary/5 text-amber-400 hover:bg-primary/10 dark:bg-primary/20 dark:hover:bg-primary/30"
 									>
 										<Star
@@ -189,7 +194,7 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 							<ActionIcon
 								size="sm"
 								variant="outline"
-								title="Edit contact"
+								title={c.editContact}
 								className="border-transparent bg-background/60 hover:bg-primary/5 dark:bg-background/80 dark:hover:bg-primary/15"
 							>
 								<IconEdit size={14} stroke={1.5} />
@@ -214,16 +219,16 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 								<span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/25">
 									<span className="h-1.5 w-1.5 rounded-full bg-primary" />
 								</span>
-								<span>Contact details</span>
+								<span>{c.contactDetails}</span>
 							</div>
 							{(emails.length > 0 || phones.length > 0) && (
 								<span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-medium text-brand dark:bg-brand/25 dark:text-brand-foreground/90">
 									<span className="h-1.5 w-1.5 rounded-full bg-emerald-400 dark:bg-emerald-300" />
 									{emails.length > 0 && phones.length > 0
-										? "Email & phone on file"
+										? c.emailAndPhoneOnFile
 										: emails.length > 0
-											? "Email on file"
-											: "Phone on file"}
+											? c.emailOnFile
+											: c.phoneOnFile}
 								</span>
 							)}
 						</header>
@@ -234,14 +239,14 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 									<span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] text-primary dark:bg-primary/25">
 										@
 									</span>
-									<span>Primary email</span>
+									<span>{c.primaryEmail}</span>
 								</dt>
 								<dd className="rounded-xl bg-white/70 px-3 py-2 text-[13px] text-foreground/90 ring-1 ring-white/40 backdrop-blur-sm dark:bg-slate-900/70 dark:text-slate-50 dark:ring-slate-900/80">
 									{emails.length > 0 && emails[0]?.address ? (
 										emails[0].address
 									) : (
 										<span className="text-muted-foreground/70">
-											Not specified
+											{c.notSpecified}
 										</span>
 									)}
 								</dd>
@@ -252,14 +257,14 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 									<span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] text-primary dark:bg-primary/25">
 										☎
 									</span>
-									<span>Primary phone</span>
+									<span>{c.primaryPhone}</span>
 								</dt>
 								<dd className="rounded-xl bg-white/70 px-3 py-2 text-[13px] text-foreground/90 ring-1 ring-white/40 backdrop-blur-sm dark:bg-slate-900/70 dark:text-slate-50 dark:ring-slate-900/80">
 									{phones.length > 0 && phones[0]?.number ? (
 										formatPhone(phones[0])
 									) : (
 										<span className="text-muted-foreground/70">
-											Not specified
+											{c.notSpecified}
 										</span>
 									)}
 								</dd>
@@ -270,12 +275,12 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 									<span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] text-primary dark:bg-primary/25">
 										🎂
 									</span>
-									<span>Birthday</span>
+									<span>{c.birthday}</span>
 								</dt>
 								<dd className="rounded-xl bg-white/70 px-3 py-2 text-[13px] text-foreground/90 ring-1 ring-white/40 backdrop-blur-sm dark:bg-slate-900/70 dark:text-slate-50 dark:ring-slate-900/80">
 									{formatDob(contact.dob) ?? (
 										<span className="text-muted-foreground/70">
-											Not specified
+											{c.notSpecified}
 										</span>
 									)}
 								</dd>
@@ -287,7 +292,7 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 								{emails.length > 1 && (
 									<div className="space-y-2">
 										<p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-											All emails
+											{c.allEmails}
 										</p>
 										<ul className="space-y-1.5">
 											{emails.map((e, idx) =>
@@ -308,7 +313,7 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 								{phones.length > 1 && (
 									<div className="space-y-2">
 										<p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-											All phones
+											{c.allPhones}
 										</p>
 										<ul className="space-y-1.5">
 											{phones.map((p, idx) =>
@@ -338,12 +343,12 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 										<IconMap size={16} />
 									</span>
 									<span className={"text-brand dark:text-brand-foreground/90"}>
-										Addresses
+										{c.addresses}
 									</span>
 								</div>
 								<span className="text-[11px] text-muted-foreground/70">
 									{addresses.length}{" "}
-									{addresses.length === 1 ? "location" : "locations"}
+									{addresses.length === 1 ? c.location : c.locations}
 								</span>
 							</header>
 
@@ -372,7 +377,7 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 												<span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[10px] text-primary dark:bg-primary/25">
 													●
 												</span>
-												<span>Location {idx + 1}</span>
+												<span>{c.locationPrefix}{idx + 1}</span>
 											</div>
 											{lines}
 										</div>
@@ -390,7 +395,7 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 									✎
 								</span>
 								<span className={"text-brand dark:text-brand-foreground/90"}>
-									Notes
+									{c.notes}
 								</span>
 							</h3>
 							<div className="rounded-xl bg-white/80 px-4 py-3 text-sm leading-relaxed text-foreground/90 dark:bg-slate-900/80 dark:text-slate-50">

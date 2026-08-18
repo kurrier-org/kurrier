@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
-import { IconTrash } from "@tabler/icons-react";
+import type { ContactEntity } from "@db";
 import { ActionIcon } from "@mantine/core";
 import { modals } from "@mantine/modals";
-import { ContactEntity } from "@db";
+import { IconTrash } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
+import React from "react";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 type DeleteContactButtonProps = {
 	contact: ContactEntity;
@@ -18,6 +19,7 @@ function DeleteContactButton({
 	workspacePublicId,
 	onDeleteAction,
 }: DeleteContactButtonProps) {
+	const dict = useOptionalDictionary();
 	const router = useRouter();
 	const confirmDeleteContact = () => {
 		if (!contact.id) return;
@@ -25,20 +27,25 @@ function DeleteContactButton({
 		modals.openConfirmModal({
 			title: (
 				<div className="font-semibold text-brand-foreground">
-					Delete Contact
+					{dict?.contacts?.deleteContact ?? "Delete Contact"}
 				</div>
 			),
 			centered: true,
 			children: (
 				<div className="text-sm">
-					Are you sure you want to delete{" "}
+					{dict?.contacts?.confirmDeleteContactPrefix ??
+						"Are you sure you want to delete"}{" "}
 					<b>
 						{contact.firstName} {contact.lastName}
 					</b>
-					? This will remove the contact permanently.
+					{dict?.contacts?.confirmDeleteContactSuffix ??
+						"? This will remove the contact permanently."}
 				</div>
 			),
-			labels: { confirm: "Delete", cancel: "Cancel" },
+			labels: {
+				confirm: dict?.contacts?.delete ?? "Delete",
+				cancel: dict?.contacts?.cancel ?? "Cancel",
+			},
 			confirmProps: { color: "red" },
 			onConfirm: async () => {
 				await onDeleteAction(contact.id);

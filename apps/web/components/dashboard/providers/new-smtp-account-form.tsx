@@ -9,6 +9,7 @@ import { ReusableForm } from "@/components/common/reusable-form";
 import { ulid } from "ulid";
 import { VerifyResult } from "@providers";
 import { parseSecret } from "@/lib/utils";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function NewSmtpAccountForm({
 	smtpSecret,
@@ -17,6 +18,7 @@ function NewSmtpAccountForm({
 	smtpSecret?: FetchDecryptedSecretsResultRow;
 	onCompleted?: (res: VerifyResult) => void;
 }) {
+	const dict = useOptionalDictionary();
 	const parsedVaultValues = parseSecret(smtpSecret);
 
 	const fields = [
@@ -40,14 +42,15 @@ function NewSmtpAccountForm({
 			name: "label",
 			label: (
 				<code className="rounded bg-muted/50 px-2 py-1 text-xs">
-					ACCOUNT LABEL
+					{dict?.platform?.accountLabel ?? "ACCOUNT LABEL"}
 				</code>
 			),
 			required: true,
 			props: {
 				autoComplete: "off",
 				required: true,
-				placeholder: "My SMTP Account",
+				placeholder:
+					dict?.platform?.mySmtpAccountPlaceholder ?? "My SMTP Account",
 				defaultValue: parsedVaultValues
 					? (parsedVaultValues["label"] ?? "")
 					: "",
@@ -65,8 +68,8 @@ function NewSmtpAccountForm({
 						),
 						kind: "select" as const,
 						options: [
-							{ label: "TRUE", value: "true" },
-							{ label: "FALSE", value: "false" },
+							{ label: dict?.platform?.trueLabel ?? "TRUE", value: "true" },
+							{ label: dict?.platform?.falseLabel ?? "FALSE", value: "false" },
 						],
 						required: false,
 						wrapperClasses: "col-span-12 sm:col-span-6",
@@ -103,7 +106,8 @@ function NewSmtpAccountForm({
 			el: (
 				<div className="my-3 md:my-4">
 					<h4 className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
-						Optional IMAP Config (Required for receiving emails)
+						{dict?.platform?.optionalImapConfig ??
+							"Optional IMAP Config (Required for receiving emails)"}
 					</h4>
 				</div>
 			),
@@ -120,8 +124,8 @@ function NewSmtpAccountForm({
 						),
 						kind: "select" as const,
 						options: [
-							{ label: "TRUE", value: "true" },
-							{ label: "FALSE", value: "false" },
+							{ label: dict?.platform?.trueLabel ?? "TRUE", value: "true" },
+							{ label: dict?.platform?.falseLabel ?? "FALSE", value: "false" },
 						],
 						required: false,
 						wrapperClasses: "col-span-12 sm:col-span-6",
@@ -163,7 +167,7 @@ function NewSmtpAccountForm({
 			{...(parsedVaultValues
 				? {
 						submitButtonProps: {
-							submitLabel: "Save",
+							submitLabel: dict?.platform?.save ?? "Save",
 							wrapperClasses: "justify-center mt-6 flex",
 							fullWidth: true,
 						},

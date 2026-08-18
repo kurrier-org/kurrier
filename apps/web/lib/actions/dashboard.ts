@@ -111,7 +111,7 @@ export async function upsertProviderAccount(
 
 		return {
 			success: true,
-			message: "Successfully updated provider account",
+			message: "dashboard.providerAccountUpdated",
 		};
 	});
 }
@@ -186,7 +186,7 @@ export async function upsertSMTPAccount(
 
 		return {
 			success: true,
-			message: "Done",
+			message: "dashboard.done",
 		};
 	});
 }
@@ -345,12 +345,12 @@ export async function initializeDomainIdentity(
 		});
 
 		if (!secret) {
-			throw new Error("No provider secret found for this selection");
+			throw new Error("dashboard.noProviderSecretFound");
 		}
 
 		const providerIdentifier = secret?.provider?.type;
 		if (!providerIdentifier) {
-			throw new Error("Unsupported provider type or missing provider");
+			throw new Error("dashboard.unsupportedProviderType");
 		}
 
 		const decrypted = secret.parsedSecret;
@@ -388,7 +388,7 @@ export async function addNewDomainIdentity(
 		const { success, data, error } = await initializeDomainIdentity(parsed);
 
 		if (!success || !data?.identity)
-			throw new Error(error ?? "Failed to add new identity");
+			throw new Error(error ?? "dashboard.failedToAddIdentity");
 
 		const identity = data.identity;
 
@@ -408,7 +408,7 @@ export async function addNewDomainIdentity(
 		// await addIdentityOwnerGrant(domainIdentity)
 		revalidatePath(DASHBOARD_PATH);
 
-		return { success: true, message: "Added new identity", data };
+		return { success: true, message: "dashboard.addedNewIdentity", data };
 	});
 }
 
@@ -584,7 +584,7 @@ export async function addNewEmailIdentity(
 			if (!workspaceMembers?.length) {
 				return {
 					success: false,
-					error: "Must assign at least one member",
+					error: "dashboard.mustAssignAtLeastOneMember",
 				};
 			}
 		}
@@ -595,7 +595,7 @@ export async function addNewEmailIdentity(
 		if (!userId) {
 			return {
 				success: false,
-				error: "Not signed in",
+				error: "dashboard.notSignedIn",
 			};
 		}
 
@@ -620,14 +620,14 @@ export async function addNewEmailIdentity(
 			if (!googleAccount) {
 				return {
 					success: false,
-					error: "Google account not found",
+					error: "dashboard.googleAccountNotFound",
 				};
 			}
 
 			if (googleAccount.status !== "connected") {
 				return {
 					success: false,
-					error: "Google account is not connected",
+					error: "dashboard.googleAccountNotConnected",
 				};
 			}
 
@@ -685,7 +685,7 @@ export async function addNewEmailIdentity(
 
 			return {
 				success: true,
-				message: "Added Google email identity",
+				message: "dashboard.addedGoogleEmailIdentity",
 			};
 		}
 
@@ -782,7 +782,7 @@ export async function addNewEmailIdentity(
 
 		return {
 			success: true,
-			message: "Added new identity",
+			message: "dashboard.addedNewIdentity",
 		};
 	});
 }
@@ -1316,7 +1316,7 @@ export async function addApiKey(
 
 		return {
 			success: true,
-			message: "API key created successfully",
+			message: "dashboard.apiKeyCreated",
 		};
 	});
 }
@@ -1378,7 +1378,7 @@ export async function addNewVolume(_prev: FormState, formData: FormData) {
 		const label = String(data.bucketName || "").trim();
 
 		if (!label) {
-			return { success: false, error: "Volume name is required" };
+			return { success: false, error: "dashboard.volumeNameRequired" };
 		}
 
 		const code = label
@@ -1387,13 +1387,13 @@ export async function addNewVolume(_prev: FormState, formData: FormData) {
 			.replace(/^-+|-+$/g, "");
 
 		if (!code) {
-			return { success: false, error: "Invalid volume name" };
+			return { success: false, error: "dashboard.invalidVolumeName" };
 		}
 
 		const bucket = process.env.S3_BUCKET;
 
 		if (!bucket) {
-			return { success: false, error: "S3_BUCKET is not configured" };
+			return { success: false, error: "dashboard.s3BucketNotConfigured" };
 		}
 
 		await rls((tx) =>
@@ -1413,7 +1413,7 @@ export async function addNewVolume(_prev: FormState, formData: FormData) {
 
 		return {
 			success: true,
-			message: "Added new volume",
+			message: "dashboard.addedNewVolume",
 		};
 	});
 }
@@ -1461,7 +1461,7 @@ export async function addWebhook(
 
 		return {
 			success: true,
-			message: "Webhook created successfully",
+			message: "dashboard.webhookCreated",
 		};
 	});
 }

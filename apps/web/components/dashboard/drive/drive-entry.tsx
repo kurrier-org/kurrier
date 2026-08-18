@@ -1,35 +1,37 @@
 "use client";
 
-import React from "react";
 import type { DriveEntryEntity } from "@db";
 import {
-	IconFolder,
-	IconFile,
-	IconFileText,
-	IconFileTypePdf,
-	IconPhoto,
-	IconMusic,
-	IconVideo,
 	IconArchive,
-	IconFileSpreadsheet,
-	IconFileTypeDoc,
-	IconFileTypePpt,
 	IconCode,
+	IconFile,
+	IconFileSpreadsheet,
+	IconFileText,
+	IconFileTypeDoc,
+	IconFileTypePdf,
+	IconFileTypePpt,
+	IconFolder,
+	IconMusic,
+	IconPhoto,
+	IconVideo,
 } from "@tabler/icons-react";
 import dayjs from "dayjs";
-import DriveEntryOptions from "@/components/dashboard/drive/drive-entry-options";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import React from "react";
+import DriveEntryOptions from "@/components/dashboard/drive/drive-entry-options";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export default function DriveEntry({ entry }: { entry: DriveEntryEntity }) {
 	return <DriveTile entry={entry} />;
 }
 
 function DriveTile({ entry }: { entry: DriveEntryEntity }) {
+	const dict = useOptionalDictionary();
 	const meta = entry.metaData as any;
 	const lastModified = meta?.lastModified ?? null;
 	const ext = guessExt(entry);
-	const { Icon, badge } = pickIconAndBadge(entry, ext);
+	const { Icon, badge } = pickIconAndBadge(entry, ext, dict);
 	const pathname = usePathname();
 	const base = pathname.replace(/\/$/, "");
 	const prettyName = formatEntryName(entry.name);
@@ -128,40 +130,50 @@ function cleanMime(mime: string) {
 	return main || mime;
 }
 
-function pickIconAndBadge(entry: DriveEntryEntity, ext: string | null) {
+function pickIconAndBadge(
+	entry: DriveEntryEntity,
+	ext: string | null,
+	dict: ReturnType<typeof useOptionalDictionary>,
+) {
 	if (entry.type === "folder") return { Icon: IconFolder, badge: "" };
 
 	const mime = cleanMime(entry.mimeType ?? "").toLowerCase();
 
 	if (mime.includes("pdf") || ext === "pdf")
-		return { Icon: IconFileTypePdf, badge: "PDF" };
+		return { Icon: IconFileTypePdf, badge: dict?.drive?.badgePdf ?? "PDF" };
 	if (
 		mime.startsWith("image/") ||
 		["png", "jpg", "jpeg", "webp", "gif", "svg", "heic"].includes(ext ?? "")
 	) {
-		return { Icon: IconPhoto, badge: "Image" };
+		return { Icon: IconPhoto, badge: dict?.drive?.badgeImage ?? "Image" };
 	}
 	if (
 		mime.startsWith("audio/") ||
 		["mp3", "wav", "m4a", "aac", "flac", "ogg"].includes(ext ?? "")
 	) {
-		return { Icon: IconMusic, badge: "Audio" };
+		return { Icon: IconMusic, badge: dict?.drive?.badgeAudio ?? "Audio" };
 	}
 	if (
 		mime.startsWith("video/") ||
 		["mp4", "mov", "mkv", "webm", "avi"].includes(ext ?? "")
 	) {
-		return { Icon: IconVideo, badge: "Video" };
+		return { Icon: IconVideo, badge: dict?.drive?.badgeVideo ?? "Video" };
 	}
 	if (["zip", "rar", "7z", "tar", "gz"].includes(ext ?? ""))
-		return { Icon: IconArchive, badge: "Archive" };
+		return { Icon: IconArchive, badge: dict?.drive?.badgeArchive ?? "Archive" };
 
 	if (["csv", "xls", "xlsx"].includes(ext ?? ""))
-		return { Icon: IconFileSpreadsheet, badge: "Sheet" };
+		return {
+			Icon: IconFileSpreadsheet,
+			badge: dict?.drive?.badgeSheet ?? "Sheet",
+		};
 	if (["doc", "docx"].includes(ext ?? ""))
-		return { Icon: IconFileTypeDoc, badge: "Doc" };
+		return { Icon: IconFileTypeDoc, badge: dict?.drive?.badgeDoc ?? "Doc" };
 	if (["ppt", "pptx"].includes(ext ?? ""))
-		return { Icon: IconFileTypePpt, badge: "Slides" };
+		return {
+			Icon: IconFileTypePpt,
+			badge: dict?.drive?.badgeSlides ?? "Slides",
+		};
 
 	if (
 		mime.includes("json") ||
@@ -195,11 +207,11 @@ function pickIconAndBadge(entry: DriveEntryEntity, ext: string | null) {
 			"php",
 		].includes(ext ?? "")
 	) {
-		return { Icon: IconCode, badge: "Code" };
+		return { Icon: IconCode, badge: dict?.drive?.badgeCode ?? "Code" };
 	}
 
 	if (mime.startsWith("text/") || ["txt", "md", "rtf"].includes(ext ?? ""))
-		return { Icon: IconFileText, badge: "Text" };
+		return { Icon: IconFileText, badge: dict?.drive?.badgeText ?? "Text" };
 
 	return { Icon: IconFile, badge: ext ? ext.toUpperCase() : "" };
 }

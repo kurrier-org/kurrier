@@ -1,0 +1,19 @@
+{
+	"save": "Save",
+	"cancel": "Cancel",
+	"delete": "Delete",
+	"edit": "Edit",
+	"close": "Close",
+	"confirm": "Confirm",
+	"loading": "Loading...",
+	"search": "Search",
+	"add": "Add",
+	"remove": "Remove",
+	"yes": "Yes",
+	"no": "No",
+	"back": "Back",
+	"next": "Next",
+	"success": "Success",
+	"error": "Error",
+	"requiredField": "This field is required"
+}

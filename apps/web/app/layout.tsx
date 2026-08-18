@@ -23,6 +23,7 @@ import {
 } from "@mantine/core";
 import { createMantineTheme } from "@/lib/mantine-theme";
 import { ModalsProvider } from "@mantine/modals";
+import { hasLocale } from "@/lib/dictionaries";
 
 const jakartaSans = Plus_Jakarta_Sans({
 	variable: "--font-sans",
@@ -44,6 +45,8 @@ export default async function RootLayout({
 	children: React.ReactNode;
 }) {
 	const jar = await cookies();
+	const localeCookie = jar.get("locale")?.value ?? "";
+	const lang = hasLocale(localeCookie) ? localeCookie : "en";
 	const theme: ThemeName = ThemeNameSchema.catch("indigo").parse(
 		jar.get(THEME_COOKIE)?.value,
 	);
@@ -65,7 +68,7 @@ export default async function RootLayout({
 
 	return (
 		<html
-			lang="en"
+			lang={lang}
 			data-theme={theme}
 			className={`${initialDark ? "dark" : ""}`}
 			{...mantineHtmlProps}

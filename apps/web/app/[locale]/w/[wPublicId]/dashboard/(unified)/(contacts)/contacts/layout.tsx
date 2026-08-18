@@ -10,12 +10,16 @@ import { getServerEnv } from "@schema";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { s3 } from "@/lib/create-s3-client";
+import { getDictionary } from "@/lib/dictionaries";
+import { cookies } from "next/headers";
 
 export default async function ContactsLayout({
 												 children,
 											 }: {
 	children: React.ReactNode;
 }) {
+	const cookieStore = await cookies();
+	const dict = await getDictionary(cookieStore.get("locale")?.value ?? "en");
 	const rls = await rlsClient();
 	const rows = await rls((tx) =>
 		tx
@@ -79,7 +83,7 @@ export default async function ContactsLayout({
 					orientation="vertical"
 					className="data-[orientation=vertical]:h-4"
 				/>
-				<h1 className="text-sm font-semibold text-foreground/80">Contacts</h1>
+				<h1 className="text-sm font-semibold text-foreground/80">{dict.contacts.contacts}</h1>
 			</header>
 
 			<ContactsShell

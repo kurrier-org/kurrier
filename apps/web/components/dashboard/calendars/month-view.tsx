@@ -11,6 +11,7 @@ import {
 import { useParams, useRouter } from "next/navigation";
 import { CalendarEventAttendeeEntity, CalendarEventEntity } from "@db";
 import { getDayjsTz } from "@common/day-js-extended";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 type MonthGridProps = {
 	events: CalendarEventEntity[];
@@ -30,6 +31,7 @@ export default function MonthGrid({
 	attendeeContacts,
 	workspacePublicId
 }: MonthGridProps) {
+	const dict = useOptionalDictionary();
 	const { state, setState } = useDynamicContext<CalendarState>();
 	const params = useParams();
 	const router = useRouter();
@@ -94,7 +96,15 @@ export default function MonthGrid({
 	return (
 		<div className="w-full h-full flex flex-col">
 			<div className="grid grid-cols-7 text-xxs uppercase tracking-wide text-neutral-500 dark:text-brand-foreground border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
-				{["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((label) => (
+				{[
+					dict?.calendar?.weekdayMon ?? "Mo",
+					dict?.calendar?.weekdayTue ?? "Tu",
+					dict?.calendar?.weekdayWed ?? "We",
+					dict?.calendar?.weekdayThu ?? "Th",
+					dict?.calendar?.weekdayFri ?? "Fr",
+					dict?.calendar?.weekdaySat ?? "Sa",
+					dict?.calendar?.weekdaySun ?? "Su",
+				].map((label) => (
 					<div key={label} className="px-3 py-2 text-left">
 						{label}
 					</div>
@@ -136,7 +146,7 @@ export default function MonthGrid({
 								{visibleSlots.map((slot) => {
 									const ev = slot.event;
 									const key = ev.instanceId ?? ev.id;
-									const title = ev.title?.trim() || "(no title)";
+									const title = ev.title?.trim() || (dict?.calendar?.noTitle ?? "(no title)");
 									const startLabel = ev.isAllDay
 										? null
 										: dayjsTz(ev.startsAt).format("h:mm A");
@@ -157,7 +167,7 @@ export default function MonthGrid({
 
 								{remaining > 0 && (
 									<div className="text-[10px] text-brand-600 dark:text-brand-400 mt-0.5">
-										+{remaining} more
+										+{remaining} {dict?.calendar?.more ?? "more"}
 									</div>
 								)}
 							</div>

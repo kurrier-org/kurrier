@@ -1,0 +1,10 @@
+{
+	"mailRules": {
+		"nameRequired": "Rule name is required.",
+		"priorityNonNegative": "Priority must be a non-negative number.",
+		"atLeastOneCriteria": "Add at least one criteria field.",
+		"atLeastOneAction": "Select at least one action.",
+		"labelIdRequired": "Label ID is required when Apply label is enabled.",
+		"nameMustBeUnique": "Rule name must be unique per identity."
+	}
+}

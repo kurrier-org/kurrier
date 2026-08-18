@@ -3,6 +3,7 @@ import React, {useMemo} from 'react';
 import {Bell, Cog, Filter, Trash2} from "lucide-react";
 import Link from "next/link";
 import {useParams, usePathname} from "next/navigation";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function SidebarItem({ icon, label, href }: {
     icon: React.ReactNode;
@@ -30,16 +31,17 @@ function SidebarItem({ icon, label, href }: {
 
 function SettingsTabs({workspacePublicId}: {workspacePublicId: string}) {
 
+    const dict = useOptionalDictionary();
     const params = useParams()
 
     const tabs = useMemo(
         () => [
-            { key: "general" as const, label: "General", icon: <Cog size={16} />, href: `/w/${workspacePublicId}/dashboard/mail/${params.identityPublicId}/settings` },
-            { key: "rules" as const, label: "Rules", icon: <Filter size={16} />, href: `/w/${workspacePublicId}/dashboard/mail/${params.identityPublicId}/settings/rules` },
+            { key: "general" as const, label: dict?.mailbox?.general ?? "General", icon: <Cog size={16} />, href: `/w/${workspacePublicId}/dashboard/mail/${params.identityPublicId}/settings` },
+            { key: "rules" as const, label: dict?.mailbox?.rules ?? "Rules", icon: <Filter size={16} />, href: `/w/${workspacePublicId}/dashboard/mail/${params.identityPublicId}/settings/rules` },
             // { key: "subscriptions" as const, label: "Subscriptions", icon: <Bell size={16} />, href: `/dashboard/mail/${params.identityPublicId}/settings/subscriptions` },
             // { key: "danger" as const, label: "Danger zone", icon: <Trash2 size={16} />, href: `/dashboard/mail/${params.identityPublicId}/settings/danger` },
         ],
-        [],
+        [dict, workspacePublicId, params.identityPublicId],
     );
 
 

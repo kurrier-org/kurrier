@@ -1,7 +1,7 @@
 import {type NextRequest, NextResponse} from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
-const locales = ["en", "ko"];
+const locales = ["en", "ko", "br"];
 const defaultLocale = "en";
 
 function getRedirectLocale(request: NextRequest) {

@@ -3,6 +3,7 @@ import React, {useMemo} from 'react';
 import {Cog} from "lucide-react";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function SidebarItem({ icon, label, href }: {
     icon: React.ReactNode;
@@ -29,12 +30,13 @@ function SidebarItem({ icon, label, href }: {
 }
 
 function WorkspacesTabs({workspacePublicId}: {workspacePublicId: string}) {
+    const dict = useOptionalDictionary();
 
     const tabs = useMemo(
         () => [
-            { key: "general" as const, label: "General", icon: <Cog size={16} />, href: `/w/${workspacePublicId}/dashboard/platform/workspace` },
+            { key: "general" as const, label: dict?.platform?.general ?? "General", icon: <Cog size={16} />, href: `/w/${workspacePublicId}/dashboard/platform/workspace` },
         ],
-        [],
+        [dict],
     );
 
 

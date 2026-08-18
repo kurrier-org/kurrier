@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { deleteMailboxFolder } from "@/lib/actions/mailbox";
 import { Menu } from "@mantine/core";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function DeleteMailboxFolder({
 	imapOp,
@@ -11,6 +12,7 @@ function DeleteMailboxFolder({
 	identityPublicId: string;
 	mailboxId: string;
 }) {
+	const dict = useOptionalDictionary();
 	const [loading, setLoading] = useState(false);
 	const [uiDeleted, setUiDeleted] = useState(true);
 
@@ -33,7 +35,7 @@ function DeleteMailboxFolder({
 				closeMenuOnClick={false}
 				className={uiDeleted ? "hidden" : ""}
 			>
-				{loading ? "Deleting..." : "Delete"}
+				{loading ? (dict?.mailbox?.deletingEllipsis ?? "Deleting...") : (dict?.mailbox?.delete ?? "Delete")}
 			</Menu.Item>
 		</>
 	);

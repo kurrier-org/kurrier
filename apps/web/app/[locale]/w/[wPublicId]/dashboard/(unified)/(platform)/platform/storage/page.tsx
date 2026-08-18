@@ -13,8 +13,15 @@ import {getWorkspacePublicId, rlsClient} from "@/lib/actions/clients";
 import { driveVolumes, providerSecrets, smtpAccountSecrets } from "@db";
 import { parseSecret } from "@/lib/utils";
 import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
+import { getDictionary } from "@/lib/dictionaries";
 
-export default async function ProvidersPage() {
+export default async function ProvidersPage({
+	params,
+}: {
+	params: Promise<{ locale: string }>;
+}) {
+	const { locale } = await params;
+	const dict = await getDictionary(locale);
 	const userProviders = await syncProviders();
 	const rls = await rlsClient();
 	const workspacePublicId = await getWorkspacePublicId()
@@ -39,8 +46,13 @@ export default async function ProvidersPage() {
 			const provider = await getProviderById(
 				String(providerAccount.linkRow.providerId),
 			);
+			const providerTypeKey = provider?.type
+				? `providerName${provider.type.charAt(0).toUpperCase()}${provider.type.slice(1)}`
+				: null;
 			const providerName =
-				ProviderLabels[provider?.type || "unknown"] || "Unknown Provider";
+				(providerTypeKey && (dict.platform as Record<string, string>)[providerTypeKey]) ||
+				ProviderLabels[provider?.type || "unknown"] ||
+				dict.platform.unknownProvider;
 			if (provider) {
 				options.push({
 					label: providerName,
@@ -65,13 +77,12 @@ export default async function ProvidersPage() {
 				<Container variant="wide">
 					<div className="flex items-center justify-between my-4">
 						<h1 className="text-xl font-bold text-foreground">
-							Storage Providers
+							{dict.platform.storageProviders}
 						</h1>
 					</div>
 
 					<p className="max-w-prose text-sm text-muted-foreground my-6">
-						Connect storage providers directly from the dashboard - no manual
-						environment setup required.
+						{dict.platform.storageProvidersPageDescription}
 					</p>
 
 					<div className="grid gap-6 lg:grid-cols-2">

@@ -6,6 +6,8 @@ import {
 import DriveEntry from "@/components/dashboard/drive/drive-entry";
 import Link from "next/link";
 import {getWorkspacePublicId} from "@/lib/actions/clients";
+import { getDictionary } from "@/lib/dictionaries";
+import { cookies } from "next/headers";
 
 export default async function Page({
                                        params,
@@ -13,6 +15,8 @@ export default async function Page({
     params: Promise<{ segments?: string[] }>;
 }) {
     const { segments } = await params;
+    const cookieStore = await cookies();
+    const dict = await getDictionary(cookieStore.get("locale")?.value ?? "en");
     const ctx = await normalizeWithinPath(segments ?? []);
     const workspacePublicId = await getWorkspacePublicId();
 
@@ -22,9 +26,9 @@ export default async function Page({
         return (
             <div className="p-8">
                 <div className="mb-6">
-                    <h1 className="text-xl font-semibold text-foreground">Drive</h1>
+                    <h1 className="text-xl font-semibold text-foreground">{dict.drive.drive}</h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Choose a volume to browse files.
+                        {dict.drive.chooseAVolume}
                     </p>
                 </div>
 

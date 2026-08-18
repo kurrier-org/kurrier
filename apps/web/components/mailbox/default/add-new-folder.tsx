@@ -8,6 +8,7 @@ import {
 	FetchIdentityMailboxListResult,
 } from "@/lib/actions/mailbox";
 import { useMailboxOptions } from "@/hooks/use-mailbox-options";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export default function AddNewFolder({
 	mailboxes,
@@ -16,6 +17,7 @@ export default function AddNewFolder({
 	mailboxes: FetchIdentityMailboxListResult[number]["mailboxes"];
 	identity: FetchIdentityMailboxListResult[number]["identity"];
 }) {
+	const dict = useOptionalDictionary();
 	const [opened, { open, close }] = useDisclosure(false);
 
 	const { options: mailboxOptions } = useMailboxOptions({
@@ -26,7 +28,7 @@ export default function AddNewFolder({
 	const fields = [
 		{
 			name: "name",
-			label: "Folder Name",
+			label: dict?.mailbox?.folderName ?? "Folder Name",
 			wrapperClasses: "col-span-12",
 			props: {},
 		},
@@ -42,7 +44,7 @@ export default function AddNewFolder({
 		},
 		{
 			name: "parentId",
-			label: "Nest Folder Under (Optional)",
+			label: dict?.mailbox?.nestFolderUnder ?? "Nest Folder Under (Optional)",
 			kind: "select" as const,
 			options: mailboxOptions,
 			wrapperClasses: "col-span-12",
@@ -57,7 +59,7 @@ export default function AddNewFolder({
 
 	return (
 		<>
-			<Modal opened={opened} onClose={close} title="New folder">
+			<Modal opened={opened} onClose={close} title={dict?.mailbox?.newFolder ?? "New folder"}>
 				<ReusableForm
 					fields={fields}
 					onSuccess={close}

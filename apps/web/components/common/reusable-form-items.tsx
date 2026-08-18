@@ -7,6 +7,8 @@ import {
 	Textarea as MantineTextarea,
 	Select as MantineSelect,
 } from "@mantine/core";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { resolveDictMessage } from "@/lib/resolve-dict-message";
 
 export function SelectField({
 	name,
@@ -61,6 +63,8 @@ export function ReusableFormItems({
 	errorClasses = "text-red-500",
 	errors = {},
 }: ReusableFormItemsProps) {
+	const dict = useOptionalDictionary();
+
 	return (
 		<div className={formWrapperClasses}>
 			{fields.map((f: FieldConfig, idx) => {
@@ -170,7 +174,7 @@ export function ReusableFormItems({
 
 								{name && errors?.[name] && (
 									<span className={`${errorClasses} mt-1 block text-sm`}>
-										{errors[name][0]}
+										{resolveDictMessage(dict?.validation, errors[name][0])}
 									</span>
 								)}
 							</>

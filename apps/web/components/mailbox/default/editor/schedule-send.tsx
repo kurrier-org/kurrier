@@ -13,6 +13,7 @@ import { DateTimePicker } from "@mantine/dates";
 import { getTimeZones } from "@vvo/tzdb";
 import { getDayjsTz } from "@common/day-js-extended";
 import { Dayjs } from "dayjs";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function formatWhen(d: Date) {
 	const pad = (n: number) => String(n).padStart(2, "0");
@@ -23,14 +24,15 @@ function formatWhen(d: Date) {
 }
 
 function ScheduleSend() {
+	const dict = useOptionalDictionary();
 	const [scheduledAt, setScheduledAt] = useState<Date | null>(null);
 
 	const scheduled = !!scheduledAt;
 
 	const label = useMemo(() => {
-		if (!scheduledAt) return "Schedule Send";
-		return `Scheduled • ${formatWhen(scheduledAt)}`;
-	}, [scheduledAt]);
+		if (!scheduledAt) return dict?.mailbox?.scheduleSend ?? "Schedule Send";
+		return `${dict?.mailbox?.scheduledBullet ?? "Scheduled • "}${formatWhen(scheduledAt)}`;
+	}, [scheduledAt, dict]);
 
 	const [opened, { open, close }] = useDisclosure(false);
 	const [pickerOpened, { open: openPicker, close: closePicker }] =
@@ -42,15 +44,15 @@ function ScheduleSend() {
 	const dayjsTz = getDayjsTz(localTz);
 	const presets = [
 		{
-			label: "Tomorrow Morning",
+			label: dict?.mailbox?.tomorrowMorningCaps ?? "Tomorrow Morning",
 			date: dayjsTz().endOf("d").add(8, "h").add(1, "m"),
 		},
 		{
-			label: "Tomorrow Afternoon",
+			label: dict?.mailbox?.tomorrowAfternoonCaps ?? "Tomorrow Afternoon",
 			date: dayjsTz().endOf("d").add(13, "h").add(1, "m"),
 		},
 		{
-			label: "Monday Morning",
+			label: dict?.mailbox?.mondayMorningCaps ?? "Monday Morning",
 			date: dayjsTz().endOf("w").add(8, "h").add(1, "m"),
 		},
 	];
@@ -76,13 +78,13 @@ function ScheduleSend() {
 				centered
 				opened={pickerOpened}
 				onClose={closePicker}
-				title={<span className={"text-xl"}>Schedule Send</span>}
+				title={<span className={"text-xl"}>{dict?.mailbox?.scheduleSend ?? "Schedule Send"}</span>}
 				size="sm"
 				zIndex={1003}
 			>
 				<DateTimePicker
-					label="Pick date and time"
-					placeholder="Pick date and time"
+					label={dict?.mailbox?.pickDateAndTime ?? "Pick date and time"}
+					placeholder={dict?.mailbox?.pickDateAndTime ?? "Pick date and time"}
 					value={pickerDateValue}
 					onChange={(val) => {
 						if (!val) return;
@@ -105,7 +107,7 @@ function ScheduleSend() {
 						setScheduledAt(pickerValue.toDate());
 					}}
 				>
-					Schedule
+					{dict?.mailbox?.schedule ?? "Schedule"}
 				</Button>
 			</Modal>
 
@@ -114,7 +116,7 @@ function ScheduleSend() {
 				opened={opened}
 				closeOnClickOutside={false}
 				onClose={close}
-				title={<span className={"text-xl"}>Schedule Send</span>}
+				title={<span className={"text-xl"}>{dict?.mailbox?.scheduleSend ?? "Schedule Send"}</span>}
 				size="sm"
 				zIndex={1001}
 			>
@@ -150,7 +152,7 @@ function ScheduleSend() {
 						openPicker();
 					}}
 				>
-					Pick date and time
+					{dict?.mailbox?.pickDateAndTime ?? "Pick date and time"}
 				</Button>
 			</Modal>
 
@@ -214,7 +216,7 @@ function ScheduleSend() {
 								leftSection={<SendHorizonal size={14} />}
 								onClick={open}
 							>
-								Schedule Send
+								{dict?.mailbox?.scheduleSend ?? "Schedule Send"}
 							</Menu.Item>
 						</>
 					) : (
@@ -228,7 +230,7 @@ function ScheduleSend() {
 								}
 								onClick={() => {}}
 							>
-								Scheduled
+								{dict?.mailbox?.scheduled ?? "Scheduled"}
 							</Menu.Item>
 
 							<Menu.Divider />
@@ -237,7 +239,7 @@ function ScheduleSend() {
 								leftSection={<X size={14} />}
 								onClick={() => setScheduledAt(null)}
 							>
-								Remove schedule
+								{dict?.mailbox?.removeSchedule ?? "Remove schedule"}
 							</Menu.Item>
 						</>
 					)}

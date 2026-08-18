@@ -1,16 +1,23 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import {fetchWorkspace} from "@/lib/actions/workspace";
+import { getDictionary } from "@/lib/dictionaries";
 
 export default async function DashboardLayout({
 	children,
+	params,
 }: {
 	children: React.ReactNode;
+	params: Promise<{ locale: string }>;
 }) {
-	const workspace = await fetchWorkspace();
+	const { locale } = await params;
+	const [workspace, dict] = await Promise.all([
+		fetchWorkspace(),
+		getDictionary(locale),
+	]);
 	return (
 		<>
 		{workspace?.isStorageOverLimit && <div className={" bg-red-100 w-full mb-4 rounded text-center z-10 text-sm text-red-700 p-2"}>
-				Your account is on hold. Please upgrade your workspace storage limit.
+				{dict.dashboard.storageOverLimit}
 			</div>}
 
 			<SidebarProvider

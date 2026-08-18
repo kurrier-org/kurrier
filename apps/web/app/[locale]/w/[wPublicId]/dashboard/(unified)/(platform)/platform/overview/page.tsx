@@ -22,12 +22,23 @@ import { Separator } from "@/components/ui/separator";
 import React from "react";
 import { getWorkspacePublicId, getWorkspaceRole } from "@/lib/actions/clients";
 import { fetchWorkspace } from "@/lib/actions/workspace";
+import { getDictionary } from "@/lib/dictionaries";
 
-export default async function Page() {
-	const { data: statsData } = await getDashboardStats();
-	const workspacePublicId = await getWorkspacePublicId();
-	const workspaceRole = await getWorkspaceRole();
-	const workspace = await fetchWorkspace();
+export default async function Page({
+	params,
+}: {
+	params: Promise<{ locale: string }>;
+}) {
+	const { locale } = await params;
+	const [{ data: statsData }, workspacePublicId, workspaceRole, workspace, dict] =
+		await Promise.all([
+			getDashboardStats(),
+			getWorkspacePublicId(),
+			getWorkspaceRole(),
+			fetchWorkspace(),
+			getDictionary(locale),
+		]);
+	const p = dict.platform;
 
 	const isOwner = workspaceRole === "owner";
 	const base = `/w/${workspacePublicId}/dashboard/platform`;
@@ -36,82 +47,82 @@ export default async function Page() {
 		? [
 			{
 				icon: <Plug className="size-5 text-primary" />,
-				label: "Connected Providers",
+				label: p.connectedProviders,
 				value: statsData?.connectedProviders || 0,
-				hint: "Sending and storage integrations",
+				hint: p.sendingAndStorageIntegrations,
 			},
 			{
 				icon: <Send className="size-5 text-primary" />,
-				label: "Active Identities",
+				label: p.activeIdentities,
 				value: statsData?.activeIdentities || 0,
-				hint: "Mailboxes and senders",
+				hint: p.mailboxesAndSenders,
 			},
 			{
 				icon: <Mail className="size-5 text-primary" />,
-				label: "Messages Stored",
+				label: p.messagesStored,
 				value: statsData?.emailsProcessedTotal || 0,
-				hint: `${statsData?.emailsProcessed24h || 0} in last 24h`,
+				hint: `${statsData?.emailsProcessed24h || 0} ${p.inLast24h}`,
 			},
 			{
 				icon: <HardDrive className="size-5 text-primary" />,
-				label: "Storage Used",
+				label: p.storageUsed,
 				value: formatBytes(
 					statsData?.totalStorageBytes || statsData?.storageBytesUsed || 0,
 				),
 				hint: statsData?.isStorageOverLimit
-					? "Over storage limit"
-					: "Within plan limit",
+					? p.overStorageLimit
+					: p.withinPlanLimit,
 			},
 		]
 		: [
 			{
 				icon: <Mail className="size-5 text-primary" />,
-				label: "Messages",
+				label: p.messages,
 				value: statsData?.emailsProcessedTotal || 0,
-				hint: `${statsData?.emailsProcessed24h || 0} in last 24h`,
+				hint: `${statsData?.emailsProcessed24h || 0} ${p.inLast24h}`,
 			},
 			{
 				icon: <FileText className="size-5 text-primary" />,
-				label: "Threads",
+				label: p.threads,
 				value: statsData?.threadCount || 0,
-				hint: "Accessible conversations",
+				hint: p.accessibleConversations,
 			},
 			{
 				icon: <Database className="size-5 text-primary" />,
-				label: "Drafts",
+				label: p.drafts,
 				value: statsData?.draftCount || 0,
-				hint: `${statsData?.scheduledDraftCount || 0} scheduled`,
+				hint: `${statsData?.scheduledDraftCount || 0} ${p.scheduled}`,
 			},
 			{
 				icon: <HardDrive className="size-5 text-primary" />,
-				label: "Mail Storage",
+				label: p.mailStorage,
 				value: formatBytes(statsData?.rawMessageBytes || 0),
-				hint: "Accessible stored mail",
+				hint: p.accessibleStoredMail,
 			},
 		];
 
 	const setupItems = [
 		{
-			title: "Connect a provider",
-			description: "Add SES, Postmark, SendGrid, Mailgun or SMTP.",
+			title: p.connectAProvider,
+			description: p.connectAProviderDescription,
 			done: Number(statsData?.connectedProviders || 0) > 0,
 			href: `${base}/providers`,
 		},
 		{
-			title: "Verify a domain",
-			description: "Add DNS records and confirm ownership.",
+			title: p.verifyADomain,
+			description: p.verifyADomainDescription,
 			done: Number(statsData?.verifiedDomains || 0) > 0,
 			href: `${base}/identities`,
 		},
 		{
-			title: "Create an identity",
-			description: "Create an email address for sending or receiving.",
+			title: p.createAnIdentity,
+			description: p.createAnIdentityDescription,
 			done: Number(statsData?.activeIdentities || 0) > 0,
 			href: `${base}/identities`,
 		},
 		{
-			title: "Create a storage volume",
-			description: "Add a Drive volume for workspace files.",
+			title: p.createAStorageVolume,
+			description: p.createAStorageVolumeDescription,
 			done: Number(statsData?.volumeCount || 0) > 0,
 			href: `${base}/storage`,
 		},
@@ -120,27 +131,27 @@ export default async function Page() {
 	const quickActions = [
 		{
 			icon: <Plug className="size-4" />,
-			title: "Providers",
+			title: p.providers,
 			href: `${base}/providers`,
 		},
 		{
 			icon: <Globe className="size-4" />,
-			title: "Identities",
+			title: p.identities,
 			href: `${base}/identities`,
 		},
 		{
 			icon: <HardDrive className="size-4" />,
-			title: "Storage",
+			title: p.storage,
 			href: `${base}/storage`,
 		},
 		{
 			icon: <Webhook className="size-4" />,
-			title: "Webhooks",
+			title: p.webhooks,
 			href: `${base}/webhooks`,
 		},
 		{
 			icon: <ShieldCheck className="size-4" />,
-			title: "Sync services",
+			title: p.syncServices,
 			href: `${base}/sync-services`,
 		},
 	];
@@ -165,11 +176,11 @@ export default async function Page() {
 								<div className="max-w-2xl">
 									<div className="mb-3 inline-flex items-center gap-2 rounded-full border bg-background/60 px-3 py-1 text-xs text-muted-foreground">
 										<Activity className="size-3.5 text-primary" />
-										Workspace overview
+										{p.workspaceOverview}
 									</div>
 
 									<h1 className="text-2xl font-semibold tracking-tight text-foreground">
-										Welcome to{" "}
+										{p.welcomeTo}{" "}
 										<span className="capitalize">
 											{workspace?.name || "Kurrier"}
 										</span>
@@ -177,22 +188,22 @@ export default async function Page() {
 
 									<p className="mt-2 text-sm leading-6 text-muted-foreground">
 										{isOwner
-											? "Track setup, mail volume, stored messages, Drive files and workspace storage from one place."
-											: "Track your accessible mail, threads, drafts and stored messages from one place."}
+											? p.ownerOverviewSubtitle
+											: p.memberOverviewSubtitle}
 									</p>
 								</div>
 
 								{isOwner ? (
 									<div className="flex flex-wrap gap-3">
 										<Link href={`${base}/providers`}>
-											<Button>Add Provider</Button>
+											<Button>{p.addProvider}</Button>
 										</Link>
 
 										<Link
 											href={`${base}/identities`}
 											className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm text-muted-foreground transition hover:bg-muted"
 										>
-											Create Identity
+											{p.createIdentity}
 										</Link>
 									</div>
 								) : null}
@@ -211,31 +222,31 @@ export default async function Page() {
 							}
 						>
 							<Panel
-								title="Mail flow"
+								title={p.mailFlow}
 								description={
 									isOwner
-										? "Workspace mail activity stored in Kurrier."
-										: "Mail activity you can access in this workspace."
+										? p.ownerMailFlowDescription
+										: p.memberMailFlowDescription
 								}
 							>
 								<MetricGrid
 									rows={[
 										[
-											"Total messages",
+											p.totalMessages,
 											formatNumber(statsData?.emailsProcessedTotal || 0),
 										],
 										[
-											"Last 24h",
+											p.last24h,
 											formatNumber(statsData?.emailsProcessed24h || 0),
 										],
-										["Threads", formatNumber(statsData?.threadCount || 0)],
-										["Drafts", formatNumber(statsData?.draftCount || 0)],
+										[p.threads, formatNumber(statsData?.threadCount || 0)],
+										[p.drafts, formatNumber(statsData?.draftCount || 0)],
 										[
-											"Scheduled drafts",
+											p.scheduledDrafts,
 											formatNumber(statsData?.scheduledDraftCount || 0),
 										],
 										[
-											"Attachments",
+											p.attachments,
 											formatNumber(statsData?.attachmentCount || 0),
 										],
 									]}
@@ -244,8 +255,8 @@ export default async function Page() {
 
 							{isOwner ? (
 								<Panel
-									title="Setup progress"
-									description="Core steps for making this workspace useful."
+									title={p.setupProgress}
+									description={p.setupProgressDescription}
 								>
 									<div className="space-y-3">
 										{setupItems.map((item) => (
@@ -292,24 +303,24 @@ export default async function Page() {
 						>
 							<MiniPanel
 								icon={<Database className="size-4" />}
-								title="Storage"
+								title={p.storage}
 								rows={
 									isOwner
 										? [
 											[
-												"Raw EML",
+												p.rawEml,
 												formatBytes(statsData?.rawMessageBytes || 0),
 											],
 											[
-												"Attachments",
+												p.attachments,
 												formatBytes(statsData?.attachmentBytes || 0),
 											],
 											[
-												"Drive files",
+												p.driveFiles,
 												formatBytes(statsData?.driveStorageBytes || 0),
 											],
 											[
-												"Total",
+												p.total,
 												formatBytes(
 													statsData?.totalStorageBytes ||
 													statsData?.storageBytesUsed ||
@@ -319,15 +330,15 @@ export default async function Page() {
 										]
 										: [
 											[
-												"Raw EML",
+												p.rawEml,
 												formatBytes(statsData?.rawMessageBytes || 0),
 											],
 											[
-												"Attachments",
+												p.attachments,
 												formatBytes(statsData?.attachmentBytes || 0),
 											],
 											[
-												"Total",
+												p.total,
 												formatBytes(
 													statsData?.totalStorageBytes ||
 													statsData?.storageBytesUsed ||
@@ -341,59 +352,59 @@ export default async function Page() {
 							{isOwner ? (
 								<MiniPanel
 									icon={<Globe className="size-4" />}
-									title="Configuration"
+									title={p.configuration}
 									rows={[
 										[
-											"Providers",
+											p.providers,
 											formatNumber(statsData?.connectedProviders || 0),
 										],
 										[
-											"Verified domains",
+											p.verifiedDomains,
 											formatNumber(statsData?.verifiedDomains || 0),
 										],
 										[
-											"Identities",
+											p.identities,
 											formatNumber(statsData?.activeIdentities || 0),
 										],
-										["Volumes", formatNumber(statsData?.volumeCount || 0)],
+										[p.volumes, formatNumber(statsData?.volumeCount || 0)],
 									]}
 								/>
 							) : null}
 
 							<MiniPanel
 								icon={<FileText className="size-4" />}
-								title="Records"
+								title={p.records}
 								rows={
 									isOwner
 										? [
 											[
-												"Messages",
+												p.messages,
 												formatNumber(statsData?.emailsProcessedTotal || 0),
 											],
 											[
-												"Threads",
+												p.threads,
 												formatNumber(statsData?.threadCount || 0),
 											],
 											[
-												"Drafts",
+												p.drafts,
 												formatNumber(statsData?.draftCount || 0),
 											],
 											[
-												"Drive entries",
+												p.driveEntries,
 												formatNumber(statsData?.driveEntryCount || 0),
 											],
 										]
 										: [
 											[
-												"Messages",
+												p.messages,
 												formatNumber(statsData?.emailsProcessedTotal || 0),
 											],
 											[
-												"Threads",
+												p.threads,
 												formatNumber(statsData?.threadCount || 0),
 											],
 											[
-												"Drafts",
+												p.drafts,
 												formatNumber(statsData?.draftCount || 0),
 											],
 										]
@@ -405,10 +416,10 @@ export default async function Page() {
 							<div className="rounded-2xl border bg-card p-5">
 								<div className="mb-5">
 									<h2 className="text-base font-semibold text-foreground">
-										Quick actions
+										{p.quickActions}
 									</h2>
 									<p className="mt-1 text-sm text-muted-foreground">
-										Common setup and workspace management tasks.
+										{p.quickActionsDescription}
 									</p>
 								</div>
 
