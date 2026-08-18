@@ -576,7 +576,7 @@ export async function addNewEmailIdentity(
 		const rls = await rlsClient();
 		const data = decode(formData) as Record<string, any>;
 
-		const sharedWithWorkspace = data.shared === "on";
+		const sharedWithWorkspace = true
 
 		if (!sharedWithWorkspace) {
 			const workspaceMembers = data?.workspaceMembers as string[] | undefined;

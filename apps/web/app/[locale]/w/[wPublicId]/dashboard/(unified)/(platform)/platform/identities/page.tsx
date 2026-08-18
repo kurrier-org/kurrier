@@ -32,20 +32,24 @@ async function Page() {
 	const googleAccounts = await fetchGoogleAccounts();
 
 	const options = [];
+	const emailProviderTypes = ["ses", "mailgun", "postmark"];
+
 	for (const providerAccount of userProviderAccounts) {
 		const secret = parseSecret(providerAccount);
+
 		if (secret.verified) {
 			const provider = await getProviderById(
 				String(providerAccount.linkRow.providerId),
 			);
-			const providerName =
-				ProviderLabels[provider?.type || "unknown"] || "Unknown Provider";
-			if (provider) {
-				options.push({
-					label: providerName,
-					value: `provider-${String(providerAccount.linkRow.id)}`,
-				});
+
+			if (!provider || !emailProviderTypes.includes(provider.type)) {
+				continue;
 			}
+
+			options.push({
+				label: ProviderLabels[provider.type] || "Unknown Provider",
+				value: `provider-${String(providerAccount.linkRow.id)}`,
+			});
 		}
 	}
 	for (const smtpAccount of userSmtpAccounts) {
