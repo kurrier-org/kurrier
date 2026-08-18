@@ -1,20 +1,19 @@
 "use server";
 
+import * as crypto from "node:crypto";
 import { APP_VERSION } from "@common";
-import { db, identities, users, workspaces, workspaceMembers } from "@db";
-import { FormState, getPublicEnv, getServerEnv } from "@schema";
+import { db, identities, users, workspaceMembers, workspaces } from "@db";
+import { type FormState, getPublicEnv, getServerEnv } from "@schema";
 import argon2 from "argon2";
 import { Queue, QueueEvents } from "bullmq";
 import { decode } from "decode-formdata";
 import { eq } from "drizzle-orm";
-import { jwtVerify, JWTPayload, SignJWT } from "jose";
+import { type JWTPayload, jwtVerify, SignJWT } from "jose";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import * as crypto from "node:crypto";
 import { getRedis } from "@/lib/actions/get-redis";
 import { updateWorkSpaceContext } from "@/lib/actions/workspace";
-import {withLocale} from "@/lib/utils";
-
+import { withLocale } from "@/lib/utils";
 
 const initProviders = async (userId: string, workspaceId: string) => {
 	const { REDIS_PASSWORD, REDIS_HOST, REDIS_PORT } = getServerEnv();
@@ -132,7 +131,10 @@ export async function createUserWithWorkspace(opts: {
 	return user;
 }
 
-export async function signInUserAndRedirect(user: typeof users.$inferSelect,  locale?: string) {
+export async function signInUserAndRedirect(
+	user: typeof users.$inferSelect,
+	locale?: string,
+) {
 	await createSessionForUser(user.id);
 	redirect(await getWorkspaceRedirectUrl(user));
 }
@@ -280,7 +282,6 @@ export const getGravatarUrl = async (email: string, size = 80) => {
 	return `https://www.gravatar.com/avatar/${hash}?s=${size}&d=identicon`;
 };
 
-
 export async function createSessionForUser(userId: string) {
 	const token = await signToken(userId);
 	await setAuthToken(token);
@@ -312,7 +313,12 @@ export async function getWorkspaceRedirectUrl(
 
 		if (defaultIdentity) {
 			if (locale) {
-				redirect(withLocale(locale,`/w/${workspace.publicId}/dashboard/platform/overview`));
+				redirect(
+					withLocale(
+						locale,
+						`/w/${workspace.publicId}/dashboard/platform/overview`,
+					),
+				);
 			}
 			return `/w/${workspace.publicId}/dashboard/mail/${defaultIdentity.publicId}/inbox`;
 		}

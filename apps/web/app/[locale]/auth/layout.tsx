@@ -1,6 +1,6 @@
+import { redirect } from "next/navigation";
 import { getWorkspaceRedirectUrl, isSignedIn } from "@/lib/actions/auth";
 import { withLocale } from "@/lib/utils";
-import { redirect } from "next/navigation";
 
 export default async function DashboardLayout({
 	children,
@@ -13,7 +13,9 @@ export default async function DashboardLayout({
 	const user = await isSignedIn();
 
 	if (user) {
-		redirect(withLocale(locale, await getWorkspaceRedirectUrl(user, undefined, true)));
+		redirect(
+			withLocale(locale, await getWorkspaceRedirectUrl(user, undefined, true)),
+		);
 	}
 
 	return <>{children}</>;

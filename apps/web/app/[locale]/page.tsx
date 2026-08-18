@@ -14,5 +14,7 @@ export default async function LocaleRootPage({
 		redirect(withLocale(locale, "/auth/login"));
 	}
 
-	redirect(withLocale(locale, await getWorkspaceRedirectUrl(user, undefined, true)));
+	redirect(
+		withLocale(locale, await getWorkspaceRedirectUrl(user, undefined, true)),
+	);
 }
