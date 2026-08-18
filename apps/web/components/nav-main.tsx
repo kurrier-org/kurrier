@@ -104,8 +104,7 @@ export function NavMain({workspacePublicId, workspaceRole}: {workspacePublicId?:
 			<SidebarGroupLabel>Platform</SidebarGroupLabel>
 			<SidebarMenu>
 				{navPlatformItems.map((item) => {
-					const isActive =
-						pathname === item.url || pathname?.startsWith(item.url);
+					const isActive = pathname?.includes(item.url);
 
 					return (
 						<Collapsible key={item.title} asChild defaultOpen={isActive}>
