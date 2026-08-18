@@ -7,6 +7,7 @@ export type GenericOidcSettings = {
 	providerName: string;
 	scopes: string;
 	tokenAuthMethod: "client_secret_basic" | "client_secret_post";
+	requireVerifiedEmail: boolean;
 };
 
 /**
@@ -33,6 +34,10 @@ export function getGenericOidcSettings(): GenericOidcSettings | null {
 			process.env.OIDC_TOKEN_AUTH_METHOD === "client_secret_post"
 				? "client_secret_post"
 				: "client_secret_basic",
+		// Secure by default: only skip the email_verified check when the
+		// operator explicitly opts out, e.g. for IdPs that never set this
+		// claim to true (some deployments of OpenCloud's native OIDC provider).
+		requireVerifiedEmail: process.env.OIDC_REQUIRE_VERIFIED_EMAIL !== "false",
 	};
 }
 

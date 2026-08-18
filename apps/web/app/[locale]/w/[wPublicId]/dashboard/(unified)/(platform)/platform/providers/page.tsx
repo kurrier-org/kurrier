@@ -2,7 +2,7 @@ import * as React from "react";
 import { Container } from "@/components/common/containers";
 import { PROVIDERS } from "@schema";
 import SMTPCard from "@/components/dashboard/providers/smtp-card";
-import {fetchDecryptedSecrets, fetchGoogleAccounts, syncProviders} from "@/lib/actions/dashboard";
+import {fetchDecryptedSecrets, fetchGoogleAccounts, syncProviders, fetchInboundIdentities} from "@/lib/actions/dashboard";
 import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
 import { smtpAccountSecrets } from "@db";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import {fetchWorkspace} from "@/lib/actions/workspace";
 import GoogleCard from "@/components/dashboard/providers/google-card";
 import { getDictionary } from "@/lib/dictionaries";
+import InboundCard from "@/components/dashboard/providers/inbound-card";
 
 export default async function ProvidersPage({
 	params,
@@ -28,6 +29,7 @@ export default async function ProvidersPage({
 
 	const googleAccounts = await fetchGoogleAccounts();
 	const workspaceId = await fetchWorkspace().then((workspace) => workspace.id);
+	const inboundIdentities = await fetchInboundIdentities();
 
 	return (
 		<>
@@ -63,6 +65,7 @@ export default async function ProvidersPage({
 					<div className="grid gap-6 lg:grid-cols-2 my-8">
 						<SMTPCard smtpSecrets={smtpSecrets} />
 						<GoogleCard googleAccounts={googleAccounts} />
+						<InboundCard inboundIdentities={inboundIdentities} />
 					</div>
 				</Container>
 			</div>

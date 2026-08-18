@@ -39,25 +39,30 @@ async function Page({
 	const googleAccounts = await fetchGoogleAccounts();
 
 	const options = [];
+	const emailProviderTypes = ["ses", "mailgun", "postmark"];
+
 	for (const providerAccount of userProviderAccounts) {
 		const secret = parseSecret(providerAccount);
+
 		if (secret.verified) {
 			const provider = await getProviderById(
 				String(providerAccount.linkRow.providerId),
 			);
-			const providerTypeKey = provider?.type
-				? `providerName${provider.type.charAt(0).toUpperCase()}${provider.type.slice(1)}`
-				: null;
-			const providerName =
-				(providerTypeKey && (dict.platform as Record<string, string>)[providerTypeKey]) ||
-				ProviderLabels[provider?.type || "unknown"] ||
-				dict.platform.unknownProvider;
-			if (provider) {
-				options.push({
-					label: providerName,
-					value: `provider-${String(providerAccount.linkRow.id)}`,
-				});
+
+			if (!provider || !emailProviderTypes.includes(provider.type)) {
+				continue;
 			}
+
+			const providerTypeKey = `providerName${provider.type.charAt(0).toUpperCase()}${provider.type.slice(1)}`;
+			const providerName =
+				(dict.platform as Record<string, string>)[providerTypeKey] ||
+				ProviderLabels[provider.type] ||
+				dict.platform.unknownProvider;
+
+			options.push({
+				label: providerName,
+				value: `provider-${String(providerAccount.linkRow.id)}`,
+			});
 		}
 	}
 	for (const smtpAccount of userSmtpAccounts) {

@@ -9,7 +9,6 @@ import { ReusableForm } from "@/components/common/reusable-form";
 import React, {useEffect} from "react";
 import { parseSecret } from "@/lib/utils";
 import { imapQuotaList } from "@schema";
-import {Checkbox, MultiSelect, Select} from "@mantine/core";
 import {FetchWorkspaceMembersResult} from "@/lib/actions/workspace";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
@@ -19,7 +18,6 @@ function AddEmailIdentityForm({
 	smtpAccounts,
 	providerAccounts,
 	googleAccounts,
-	workspaceMembers,
 	userDomainIdentities,
 	userEmailIdentities
 }: {
@@ -338,43 +336,7 @@ function AddEmailIdentityForm({
 				)}
 			</>
 
-		},
-		{
-			name: "shared",
-			label: <div className={"flex flex-col"}>{dict?.platform?.shareIdentityLabel ?? "Share this identity with workspace members"} <span className={"text-xxs"}>{dict?.platform?.shareIdentityHelp ?? "(All members in this workspace will be able to access this identity. A workspace needs to have a default identity.)"}</span></div>,
-			kind: "custom" as const,
-			component: Checkbox,
-			wrapperClasses: provider || smtpAccount || googleAccount ? "flex col-span-12 flex-row-reverse gap-2 justify-end" : "hidden",
-			props: {
-				checked: sharedWithWorkspace,
-				onChange: (e: any) => {
-					if (!mustBeShared){
-						setSharedWithWorkspace(e.currentTarget.checked);
-					}
-				}
-			}
-		},
-		...(sharedWithWorkspace
-				? []
-				: [{
-					name: "workspaceMembers",
-					label: dict?.platform?.assignToWorkspaceMembers ?? "Assign to workspace members",
-					kind: "custom" as const,
-					component: MultiSelect,
-					wrapperClasses: provider || smtpAccount || googleAccount ? "col-span-12" : "hidden",
-					required: true,
-					props: {
-						data: workspaceMembers?.map((member) => ({
-							label: member?.users?.email,
-							value: String(member?.workspace_members?.userId),
-						})),
-						minLength: 1,
-						required: true,
-						placeholder: dict?.platform?.selectMembersPlaceholder ?? "Select members",
-						className: "w-full",
-					},
-				}]
-		)
+		}
 	];
 
 	const finalizeEmail = async () => {

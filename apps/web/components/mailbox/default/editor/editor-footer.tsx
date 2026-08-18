@@ -143,7 +143,6 @@ export default function EditorFooter() {
 	const removeUpload = (name: string) => {
 		setUploads((prev) => prev.filter((u) => u.name !== name));
 	};
-	console.log("isPending", state)
 
 	return (
 		<>
