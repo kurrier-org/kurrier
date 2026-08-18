@@ -1139,7 +1139,7 @@ export const getDashboardStats = async () => {
 	return handleAction(async () => {
 		const rls = await rlsClient();
 		const workspaceRole = await getWorkspaceRole();
-		const isOwner = workspaceRole === "owners";
+		const isOwner = workspaceRole === "owner";
 
 		const data = await rls(async (tx) => {
 			const [
