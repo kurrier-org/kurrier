@@ -1,0 +1,68 @@
+{
+	"auth": {
+		"missingCredentials": "Missing email or password",
+		"invalidCredentials": "Invalid credentials",
+		"loggedIn": "Logged in!",
+		"accountAlreadyExists": "An account with this email already exists",
+		"welcome": "Welcome!",
+		"signupDisabled": "Signup is currently disabled. Please contact your administrator."
+	},
+	"contacts": {
+		"noDefaultAddressBook": "No default address book found for user."
+	},
+	"calendar": {
+		"missingCalendarId": "Missing calendarId",
+		"failedToPersistEvent": "Failed to persist calendar event"
+	},
+	"drive": {
+		"folderNameRequired": "Folder name is required",
+		"missingVolume": "Missing volume",
+		"volumeNotFound": "Volume not found",
+		"invalidVolumeType": "Invalid volume type",
+		"cloudVolumeMissingBucket": "Cloud volume missing bucket",
+		"folderCreated": "Folder created",
+		"deletedFolder": "Deleted folder",
+		"deletedFile": "Deleted file"
+	},
+	"labels": {
+		"invalidIdentity": "Invalid identity"
+	},
+	"mailRules": {
+		"nameRequired": "Rule name is required.",
+		"priorityNonNegative": "Priority must be a non-negative number.",
+		"atLeastOneCriteria": "Add at least one criteria field.",
+		"atLeastOneAction": "Select at least one action.",
+		"labelIdRequired": "Label ID is required when Apply label is enabled.",
+		"duplicateName": "A rule with this name already exists for this identity.",
+		"nameMustBeUnique": "Rule name must be unique per identity.",
+		"validationErrorsOccurred": "Validation errors occurred.",
+		"missingRuleId": "Missing ruleId"
+	},
+	"mailbox": {
+		"folderNameRequired": "Folder name is required",
+		"invalidParentFolder": "Invalid parent folder",
+		"subscriptionNotFound": "Subscription not found"
+	},
+	"dashboard": {
+		"providerAccountUpdated": "Successfully updated provider account",
+		"done": "Done",
+		"noProviderSecretFound": "No provider secret found for this selection",
+		"unsupportedProviderType": "Unsupported provider type or missing provider",
+		"failedToAddIdentity": "Failed to add new identity",
+		"addedNewIdentity": "Added new identity",
+		"mustAssignAtLeastOneMember": "Must assign at least one member",
+		"notSignedIn": "Not signed in",
+		"googleAccountNotFound": "Google account not found",
+		"googleAccountNotConnected": "Google account is not connected",
+		"addedGoogleEmailIdentity": "Added Google email identity",
+		"apiKeyCreated": "API key created successfully",
+		"volumeNameRequired": "Volume name is required",
+		"invalidVolumeName": "Invalid volume name",
+		"s3BucketNotConfigured": "S3_BUCKET is not configured",
+		"addedNewVolume": "Added new volume",
+		"webhookCreated": "Webhook created successfully"
+	},
+	"workspace": {
+		"updated": "Workspace Updated"
+	}
+}

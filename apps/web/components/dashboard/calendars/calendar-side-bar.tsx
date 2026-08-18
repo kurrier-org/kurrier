@@ -17,6 +17,7 @@ import {
 	SidebarMenuItem
 } from "@/components/ui/sidebar";
 import Link from "next/link";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function CalendarSideBar({
 	defaultCalendar,
@@ -27,6 +28,7 @@ function CalendarSideBar({
 	workspacePublicId: string;
 	userCalendarsPromise: Promise<CalendarEntity[]>;
 }) {
+	const dict = useOptionalDictionary();
 	const today = dayjs();
 	const params = useParams();
 	const userCalendars = use(userCalendarsPromise);
@@ -160,7 +162,7 @@ function CalendarSideBar({
 				<div className="w-full rounded-xl bg-white dark:bg-neutral-800">
 					<div className="flex items-center justify-between mb-2 px-1">
 						<span className="text-xs uppercase tracking-wide text-neutral-500 dark:text-brand-foreground font-medium flex items-center gap-0.5">
-							Calendar
+							{dict?.calendar?.calendar ?? "Calendar"}
 							<CalendarSettings />
 						</span>
 						<button
@@ -168,7 +170,7 @@ function CalendarSideBar({
 							className="text-xs font-medium text-brand-600"
 							onClick={goToToday}
 						>
-							Today
+							{dict?.calendar?.today ?? "Today"}
 						</button>
 					</div>
 
@@ -195,7 +197,7 @@ function CalendarSideBar({
 
 
 		<SidebarGroup>
-			<SidebarGroupLabel>My Calendars</SidebarGroupLabel>
+			<SidebarGroupLabel>{dict?.calendar?.myCalendars ?? "My Calendars"}</SidebarGroupLabel>
 			<SidebarMenu>
 				{mainItems.map((item, index) => (
 					<SidebarMenuItem key={index}>

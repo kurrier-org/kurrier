@@ -1,7 +1,10 @@
-import React from "react";
-import { CheckCircle, CircleDashed, CircleX, X } from "lucide-react";
-import ContactListAvatar from "@/components/dashboard/contacts/contact-list-avatar";
+"use client";
+
 import { Badge, Tooltip } from "@mantine/core";
+import { CheckCircle, CircleDashed, CircleX, X } from "lucide-react";
+import React from "react";
+import ContactListAvatar from "@/components/dashboard/contacts/contact-list-avatar";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export type UiGuestStatus =
 	| "accepted"
@@ -25,12 +28,13 @@ type GuestListProps = {
 };
 
 function GuestList({ guests, onRemoveGuest }: GuestListProps) {
+	const dict = useOptionalDictionary();
 	const renderStatusBadge = (guest: UiGuest) => {
 		const partstat = guest.partstat ?? "needs_action";
 
 		if (partstat === "accepted") {
 			return (
-				<Tooltip label={"Accepted"}>
+				<Tooltip label={dict?.calendar?.accepted ?? "Accepted"}>
 					<CheckCircle
 						size={16}
 						className={"text-brand dark:text-brand-foreground"}
@@ -41,7 +45,7 @@ function GuestList({ guests, onRemoveGuest }: GuestListProps) {
 
 		if (partstat === "tentative") {
 			return (
-				<Tooltip label={"Tentative"}>
+				<Tooltip label={dict?.calendar?.tentative ?? "Tentative"}>
 					<CircleDashed
 						size={16}
 						className={"text-brand dark:text-brand-foreground"}
@@ -52,7 +56,7 @@ function GuestList({ guests, onRemoveGuest }: GuestListProps) {
 
 		if (partstat === "declined") {
 			return (
-				<Tooltip label={"Declined"}>
+				<Tooltip label={dict?.calendar?.declined ?? "Declined"}>
 					<CircleX
 						size={16}
 						className={"text-brand dark:text-brand-foreground"}
@@ -61,7 +65,11 @@ function GuestList({ guests, onRemoveGuest }: GuestListProps) {
 			);
 		}
 
-		return <Badge size={"xs"}>Awaiting Response</Badge>;
+		return (
+			<Badge size={"xs"}>
+				{dict?.calendar?.awaitingResponse ?? "Awaiting Response"}
+			</Badge>
+		);
 	};
 
 	if (!guests.length) return null;
@@ -107,7 +115,7 @@ function GuestList({ guests, onRemoveGuest }: GuestListProps) {
 						>
 							{guest.isOrganizer && (
 								<span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-semibold text-brand-700">
-									Organizer
+									{dict?.calendar?.organizer ?? "Organizer"}
 								</span>
 							)}
 
@@ -115,7 +123,7 @@ function GuestList({ guests, onRemoveGuest }: GuestListProps) {
 
 							{!guest.isPersisted && !guest.isOrganizer && (
 								<span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-									New
+									{dict?.calendar?.newGuest ?? "New"}
 								</span>
 							)}
 
@@ -124,7 +132,7 @@ function GuestList({ guests, onRemoveGuest }: GuestListProps) {
 									type="button"
 									onClick={() => onRemoveGuest(guest.email)}
 									className="rounded-full p-1 hover:bg-foreground/10"
-									aria-label={`Remove ${guest.email}`}
+									aria-label={`${dict?.calendar?.removePrefix ?? "Remove "}${guest.email}`}
 								>
 									<X size={12} />
 								</button>

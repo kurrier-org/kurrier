@@ -11,6 +11,7 @@ import {
     FetchDecryptedSecretsResult,
     SyncProvidersRow,
 } from "@/lib/actions/dashboard";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export default function ProvisionedProviderCard({
                                          spec,
@@ -19,6 +20,7 @@ export default function ProvisionedProviderCard({
     userProvider: SyncProvidersRow;
     decryptedSecret: FetchDecryptedSecretsResult[number];
 }) {
+    const dict = useOptionalDictionary();
 
     return (
         <div>
@@ -29,10 +31,10 @@ export default function ProvisionedProviderCard({
                             <Globe className="mt-1 size-4 shrink-0 text-muted-foreground" />
                             <div className="min-w-0">
                                 <CardTitle className="text-lg sm:text-xl">
-                                    {spec.name}
+                                    {(dict?.platform as Record<string, string> | undefined)?.[`providerName${spec.key.charAt(0).toUpperCase()}${spec.key.slice(1)}`] ?? spec.name}
                                 </CardTitle>
                                 <p className="text-sm text-muted-foreground my-2">
-                                    Managed securely in a secure Vault. Backed by your own account.
+                                    {dict?.platform?.managedSecurelyBackedByOwnAccount ?? "Managed securely in a secure Vault. Backed by your own account."}
                                 </p>
                             </div>
                         </div>
@@ -41,7 +43,7 @@ export default function ProvisionedProviderCard({
                     </div>
                     <div className={"flex items-center gap-1"}>
                         <Verified size={16} />
-                        <span>Verified</span>
+                        <span>{dict?.platform?.verified ?? "Verified"}</span>
                     </div>
                 </CardHeader>
             </Card>

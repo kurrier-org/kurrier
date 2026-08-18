@@ -13,12 +13,13 @@ import * as React from "react";
 import { Button } from "@mantine/core";
 import GoogleAccountCard from "@/components/dashboard/providers/google-account-card";
 import { FetchGoogleAccountsResult } from "@/lib/actions/dashboard";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export default function GoogleCard({ googleAccounts,
                                    }: {
     googleAccounts: FetchGoogleAccountsResult;
 }) {
-
+    const dict = useOptionalDictionary();
 
     return (
         <div className="flex flex-col">
@@ -26,12 +27,12 @@ export default function GoogleCard({ googleAccounts,
                 <CardHeader className="gap-2">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                         <div className="max-w-2xl">
-                            <CardTitle className="text-xl">{GOOGLE_SPEC.name}</CardTitle>
+                            <CardTitle className="text-xl">{dict?.platform?.providerNameGoogle ?? GOOGLE_SPEC.name}</CardTitle>
                             <p className="text-sm text-muted-foreground mt-1">
-                                Connect Gmail and Google Workspace accounts using OAuth.
+                                {dict?.platform?.connectGmailDescription ?? "Connect Gmail and Google Workspace accounts using OAuth."}
                             </p>
                             <p className="text-xs text-muted-foreground/80 mt-1">
-                                {GOOGLE_SPEC.help}
+                                {dict?.platform?.googleSpecHelp ?? GOOGLE_SPEC.help}
                             </p>
                         </div>
 
@@ -43,7 +44,7 @@ export default function GoogleCard({ googleAccounts,
                                 href={"/api/oauth/google/connect"}
                             >
                                 <Plus className="h-4 w-4" />
-                                Add Google Account
+                                {dict?.platform?.addGoogleAccount ?? "Add Google Account"}
                             </Button>
                         </CardAction>
                     </div>
@@ -54,10 +55,10 @@ export default function GoogleCard({ googleAccounts,
                         <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground text-center flex flex-col items-center gap-4 bg-muted">
                             <div>
                                 <div className="font-medium text-card-foreground">
-                                    No Google accounts connected
+                                    {dict?.platform?.noGoogleAccountsConnected ?? "No Google accounts connected"}
                                 </div>
                                 <div className="text-xs text-card-foreground mt-1">
-                                    Connect Gmail or Google Workspace to send and sync mail.
+                                    {dict?.platform?.connectGmailOrWorkspace ?? "Connect Gmail or Google Workspace to send and sync mail."}
                                 </div>
                             </div>
 
@@ -69,7 +70,7 @@ export default function GoogleCard({ googleAccounts,
                                 href={"/api/oauth/google/connect"}
                             >
                                 <Plus className="h-4 w-4" />
-                                Add Google Account
+                                {dict?.platform?.addGoogleAccount ?? "Add Google Account"}
                             </Button>
                         </div>
                     )}

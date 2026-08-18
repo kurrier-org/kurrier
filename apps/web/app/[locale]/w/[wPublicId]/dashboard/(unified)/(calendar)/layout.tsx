@@ -14,17 +14,21 @@ import {Suspense} from "react";
 import Loading from "@/app/loading";
 import NavUserWrapper from "@/components/ui/dashboards/workspace/nav-user-wrapper";
 import CalendarSidebarWrapper from "@/components/dashboard/calendars/calendar-sidebar-wrapper";
+import { getDictionary } from "@/lib/dictionaries";
+import { cookies } from "next/headers";
 
 export default async function DashboardLayout({
 												  children,
 											  }: {
 	children: React.ReactNode;
 }) {
-	const [defaultCalendar, organizers, workspacePublicId] =
+	const cookieStore = await cookies();
+	const [defaultCalendar, organizers, workspacePublicId, dict] =
 		await Promise.all([
 			fetchDefaultCalendar(),
 			fetchOrganizers(),
 			getWorkspacePublicId(),
+			getDictionary(cookieStore.get("locale")?.value ?? "en"),
 		]);
 
 	const timeZones = getTimeZones({ includeUtc: true });
@@ -88,7 +92,7 @@ export default async function DashboardLayout({
 					children
 				) : (
 					<div className="flex h-full items-center justify-center text-muted-foreground">
-						No calendar found. Connect an identity to create one.
+						{dict.calendar.noCalendarFound}
 					</div>
 				)}
 			</SidebarInset>

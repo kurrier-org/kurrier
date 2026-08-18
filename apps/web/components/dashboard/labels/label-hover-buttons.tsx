@@ -12,6 +12,7 @@ import {
 } from "@/lib/actions/labels";
 import { useDisclosure } from "@mantine/hooks";
 import AddNewLabel from "@/components/dashboard/labels/add-new-label";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 type LabelHoverButtonsProps = {
 	mailboxThreadItem: MailboxThreadEntity;
@@ -24,6 +25,7 @@ function LabelHoverButtons({
 	allLabels,
 	labelsByThreadId,
 }: LabelHoverButtonsProps) {
+	const dict = useOptionalDictionary();
 	const [opened, { toggle }] = useDisclosure(false);
 	const [query, setQuery] = useState("");
 	const labelThreads = labelsByThreadId[mailboxThreadItem.threadId] || [];
@@ -57,7 +59,7 @@ function LabelHoverButtons({
 						toggle();
 					}}
 					className="rounded p-1 hover:bg-muted"
-					title="Labels"
+					title={dict?.mailbox?.labels ?? "Labels"}
 				>
 					<IconLabel size={22} stroke={1.5} />
 				</button>
@@ -66,13 +68,13 @@ function LabelHoverButtons({
 			<Popover.Dropdown className="w-72 bg-popover border border-border rounded-xl p-3 shadow-lg">
 				<div className="flex flex-col gap-2">
 					<div className="px-0.5 text-xs font-semibold text-muted-foreground">
-						Label message
+						{dict?.mailbox?.labelMessage ?? "Label message"}
 					</div>
 
 					<TextInput
 						size="xs"
 						radius="md"
-						placeholder="Search labels…"
+						placeholder={dict?.mailbox?.searchLabelsPlaceholder ?? "Search labels…"}
 						value={query}
 						onChange={(event) => setQuery(event.currentTarget.value)}
 					/>
@@ -80,7 +82,7 @@ function LabelHoverButtons({
 					<ScrollArea.Autosize mah={220} className="mt-1.5">
 						{filteredLabels.length === 0 ? (
 							<div className="px-1.5 py-2 text-xs text-muted-foreground">
-								No labels found
+								{dict?.mailbox?.noLabelsFound ?? "No labels found"}
 							</div>
 						) : (
 							<div className="flex flex-col gap-0.5">
@@ -138,7 +140,7 @@ function LabelHoverButtons({
 
 					<div className={"flex justify-center gap-2 items-center"}>
 						<AddNewLabel globalLabels={allLabels} />
-						Add new label
+						{dict?.mailbox?.addNewLabel ?? "Add new label"}
 					</div>
 				</div>
 			</Popover.Dropdown>

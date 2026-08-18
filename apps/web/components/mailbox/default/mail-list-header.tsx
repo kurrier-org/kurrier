@@ -31,6 +31,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import { clsx } from "clsx";
 import MoveToFolder from "@/components/mailbox/default/move-to-folder";
 import { usePathname } from "next/navigation";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function MailListHeader({
 	mailboxThreads,
@@ -50,6 +51,7 @@ function MailListHeader({
 		activeMailbox?: MailboxEntity | null;
 		identityPublicId: string;
 	}>();
+	const dict = useOptionalDictionary();
 
 	const identityIdRef = useRef<string | undefined>(activeMailbox?.identityId);
 	const mailboxIdRef = useRef<string | undefined>(activeMailbox?.id);
@@ -102,7 +104,7 @@ function MailListHeader({
 			!!mailboxSync,
 			true,
 		);
-		toast.success("Messages moved to Trash", { position: "bottom-left" });
+		toast.success(dict?.mailbox?.movedToTrash ?? "Messages moved to Trash", { position: "bottom-left" });
 	};
 
 	const removeTrash = async () => {
@@ -112,7 +114,7 @@ function MailListHeader({
 			!!mailboxSync,
 			true,
 		);
-		toast.success("Thread deleted forever", { position: "bottom-left" });
+		toast.success(dict?.mailbox?.threadDeletedForever ?? "Thread deleted forever", { position: "bottom-left" });
 	};
 
 	const emptyTrash = async () => {
@@ -125,7 +127,7 @@ function MailListHeader({
 				emptyAll: true,
 			},
 		);
-		toast.success("Trash removed successfully", { position: "bottom-left" });
+		toast.success(dict?.mailbox?.trashRemoved ?? "Trash removed successfully", { position: "bottom-left" });
 	};
 
 	const isMobile = useMediaQuery("(max-width: 768px)");
@@ -151,7 +153,7 @@ function MailListHeader({
 							}));
 						}}
 						checked={isChecked}
-						aria-label="Select all"
+						aria-label={dict?.mailbox?.selectAll ?? "Select all"}
 						className="h-4 w-4 rounded border-muted-foreground/40"
 					/>
 				)}
@@ -159,11 +161,11 @@ function MailListHeader({
 				<div className="flex-1" />
 
 				<div className="flex items-center gap-2 ml-auto">
-					<Tooltip label="Sync" withArrow>
+					<Tooltip label={dict?.mailbox?.sync ?? "Sync"} withArrow>
 						<ActionIcon
 							variant="subtle"
 							onClick={reload}
-							title="Sync"
+							title={dict?.mailbox?.sync ?? "Sync"}
 							className="h-8 w-8"
 						>
 							<RotateCw className={reloading ? "animate-spin" : ""} size={16} />
@@ -186,7 +188,7 @@ function MailListHeader({
 							type="button"
 							onClick={deleteThreads}
 							className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs hover:bg-muted"
-							title="Delete"
+							title={dict?.mailbox?.delete ?? "Delete"}
 						>
 							<Trash2 className="h-4 w-4" />
 						</button>
@@ -194,7 +196,7 @@ function MailListHeader({
 							type="button"
 							onClick={markRead}
 							className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs hover:bg-muted"
-							title="Mark read"
+							title={dict?.mailbox?.markRead ?? "Mark read"}
 						>
 							<MailOpen className="h-4 w-4" />
 						</button>
@@ -211,25 +213,25 @@ function MailListHeader({
 					}
 				>
 					<span>
-						Messages that have been in the Trash for more than 30 days will be
-						deleted automatically.
+						{dict?.mailbox?.trashRetentionNotice ??
+							"Messages that have been in the Trash for more than 30 days will be deleted automatically."}
 					</span>
 					<AlertDialog>
 						<AlertDialogTrigger asChild={true} className={"-mx-2"}>
-							<Button variant={"transparent"}>Empty Bin Now</Button>
+							<Button variant={"transparent"}>{dict?.mailbox?.emptyBinNow ?? "Empty Bin Now"}</Button>
 						</AlertDialogTrigger>
 						<AlertDialogContent>
 							<AlertDialogHeader>
-								<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+								<AlertDialogTitle>{dict?.mailbox?.emptyBinConfirmTitle ?? "Are you absolutely sure?"}</AlertDialogTitle>
 								<AlertDialogDescription>
-									This action cannot be undone. This will permanently delete
-									your account and remove your data from our servers.
+									{dict?.mailbox?.emptyBinConfirmDescription ??
+										"This action cannot be undone. This will permanently delete your account and remove your data from our servers."}
 								</AlertDialogDescription>
 							</AlertDialogHeader>
 							<AlertDialogFooter>
-								<AlertDialogCancel>Cancel</AlertDialogCancel>
+								<AlertDialogCancel>{dict?.common?.cancel ?? "Cancel"}</AlertDialogCancel>
 								<AlertDialogAction onClick={emptyTrash}>
-									Continue
+									{dict?.mailbox?.continue ?? "Continue"}
 								</AlertDialogAction>
 							</AlertDialogFooter>
 						</AlertDialogContent>

@@ -1,20 +1,19 @@
 "use server";
 
+import * as crypto from "node:crypto";
 import { APP_VERSION } from "@common";
-import { db, identities, users, workspaces, workspaceMembers } from "@db";
-import { FormState, getPublicEnv, getServerEnv } from "@schema";
+import { db, identities, users, workspaceMembers, workspaces } from "@db";
+import { type FormState, getPublicEnv, getServerEnv } from "@schema";
 import argon2 from "argon2";
 import { Queue, QueueEvents } from "bullmq";
 import { decode } from "decode-formdata";
 import { eq } from "drizzle-orm";
-import { jwtVerify, JWTPayload, SignJWT } from "jose";
+import { type JWTPayload, jwtVerify, SignJWT } from "jose";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import * as crypto from "node:crypto";
 import { getRedis } from "@/lib/actions/get-redis";
 import { updateWorkSpaceContext } from "@/lib/actions/workspace";
-import {withLocale} from "@/lib/utils";
-
+import { withLocale } from "@/lib/utils";
 
 const initProviders = async (userId: string, workspaceId: string) => {
 	const { REDIS_PASSWORD, REDIS_HOST, REDIS_PORT } = getServerEnv();
@@ -104,7 +103,7 @@ export async function createUserWithWorkspace(opts: {
 		.where(eq(users.email, opts.email));
 
 	if (existing) {
-		return { error: "An account with this email already exists" };
+		return { error: "auth.accountAlreadyExists" };
 	}
 
 	const [user] = await db
@@ -132,7 +131,10 @@ export async function createUserWithWorkspace(opts: {
 	return user;
 }
 
-export async function signInUserAndRedirect(user: typeof users.$inferSelect,  locale?: string) {
+export async function signInUserAndRedirect(
+	user: typeof users.$inferSelect,
+	locale?: string,
+) {
 	await createSessionForUser(user.id);
 	redirect(await getWorkspaceRedirectUrl(user));
 }
@@ -148,24 +150,24 @@ export async function login(
 	};
 
 	if (!email || !password) {
-		return { error: "Missing email or password" };
+		return { error: "auth.missingCredentials" };
 	}
 
 	const [user] = await db.select().from(users).where(eq(users.email, email));
 
 	if (!user || !user.passwordHash) {
-		return { error: "Invalid credentials" };
+		return { error: "auth.invalidCredentials" };
 	}
 
 	const valid = await argon2.verify(user.passwordHash, password);
 
 	if (!valid) {
-		return { error: "Invalid credentials" };
+		return { error: "auth.invalidCredentials" };
 	}
 
 	await signInUserAndRedirect(user, locale);
 
-	return { success: true, message: "Logged in!" };
+	return { success: true, message: "auth.loggedIn" };
 }
 
 export async function signup(
@@ -177,7 +179,7 @@ export async function signup(
 	if (DISABLE_SIGNUP) {
 		return {
 			success: false,
-			error: "Signup is currently disabled. Please contact your administrator.",
+			error: "auth.signupDisabled",
 		};
 	}
 
@@ -188,7 +190,7 @@ export async function signup(
 	};
 
 	if (!email || !password) {
-		return { error: "Missing email or password" };
+		return { error: "auth.missingCredentials" };
 	}
 
 	const passwordHash = await argon2.hash(password);
@@ -205,7 +207,7 @@ export async function signup(
 
 	await signInUserAndRedirect(user);
 
-	return { success: true, message: "Welcome!" };
+	return { success: true, message: "auth.welcome" };
 }
 
 export type TokenClaims = JWTPayload & {
@@ -280,13 +282,16 @@ export const getGravatarUrl = async (email: string, size = 80) => {
 	return `https://www.gravatar.com/avatar/${hash}?s=${size}&d=identicon`;
 };
 
-
 export async function createSessionForUser(userId: string) {
 	const token = await signToken(userId);
 	await setAuthToken(token);
 }
 
-export async function getWorkspaceRedirectUrl(user: typeof users.$inferSelect, locale?: string) {
+export async function getWorkspaceRedirectUrl(
+	user: typeof users.$inferSelect,
+	locale?: string,
+	skipContextUpdate?: boolean,
+) {
 	const [workspace] = await db
 		.select()
 		.from(workspaces)
@@ -296,7 +301,9 @@ export async function getWorkspaceRedirectUrl(user: typeof users.$inferSelect, l
 		return "/auth/login";
 	}
 
-	await updateWorkSpaceContext(workspace.publicId, workspace.id, user);
+	if (!skipContextUpdate) {
+		await updateWorkSpaceContext(workspace.publicId, workspace.id, user);
+	}
 
 	if (workspace.defaultIdentityId) {
 		const [defaultIdentity] = await db
@@ -306,7 +313,12 @@ export async function getWorkspaceRedirectUrl(user: typeof users.$inferSelect, l
 
 		if (defaultIdentity) {
 			if (locale) {
-				redirect(withLocale(locale,`/w/${workspace.publicId}/dashboard/platform/overview`));
+				redirect(
+					withLocale(
+						locale,
+						`/w/${workspace.publicId}/dashboard/platform/overview`,
+					),
+				);
 			}
 			return `/w/${workspace.publicId}/dashboard/mail/${defaultIdentity.publicId}/inbox`;
 		}

@@ -12,15 +12,17 @@ import { addApiKey, FetchUserAPIKeysResult } from "@/lib/actions/dashboard";
 import { ReusableForm } from "@/components/common/reusable-form";
 import { ulid } from "ulid";
 import { apiScopeOptions } from "@schema";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export default function ManageApiKeys({
 	apiKeysList,
 }: {
 	apiKeysList: FetchUserAPIKeysResult;
 }) {
+	const dict = useOptionalDictionary();
 	const handleCopy = (id: string) => {
 		navigator.clipboard.writeText(id);
-		toast.info("Copied API key");
+		toast.info(dict?.platform?.copiedApiKey ?? "Copied API key");
 	};
 
 	const fields = [
@@ -31,13 +33,13 @@ export default function ManageApiKeys({
 		},
 		{
 			name: "name",
-			label: "Key Name",
+			label: dict?.platform?.keyName ?? "Key Name",
 			wrapperClasses: "col-span-12 sm:col-span-6",
 			props: { required: true },
 		},
 		{
 			name: `scope`,
-			label: "Scopes",
+			label: dict?.platform?.scopes ?? "Scopes",
 			kind: "custom" as const,
 			options: apiScopeOptions,
 			component: TagsInput,
@@ -56,7 +58,7 @@ export default function ManageApiKeys({
 	];
 
 	function fmtTemporal(input?: Date | string | null) {
-		if (!input) return "-";
+		if (!input) return dict?.platform?.dashDash ?? "-";
 
 		const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 		const instant =
@@ -73,11 +75,11 @@ export default function ManageApiKeys({
 		<>
 			<Container variant="wide">
 				<div className="flex items-center justify-between my-4">
-					<h1 className="text-xl font-bold text-foreground">API Keys</h1>
+					<h1 className="text-xl font-bold text-foreground">{dict?.platform?.apiKeys ?? "API Keys"}</h1>
 				</div>
 
 				<p className="max-w-prose text-sm text-muted-foreground my-6">
-					Create and manage API keys for server-to-server access.
+					{dict?.platform?.apiKeysDescription ?? "Create and manage API keys for server-to-server access."}
 				</p>
 
 				<Card className="shadow-none mt-4">
@@ -86,7 +88,7 @@ export default function ManageApiKeys({
 							action={addApiKey}
 							fields={fields}
 							submitButtonProps={{
-								submitLabel: "Create Key",
+								submitLabel: dict?.platform?.createKey ?? "Create Key",
 								wrapperClasses: "justify-center mt-6 flex",
 								fullWidth: true,
 							}}
@@ -98,16 +100,16 @@ export default function ManageApiKeys({
 					<div className="p-4">
 						{apiKeysList.length === 0 ? (
 							<div className="text-sm text-muted-foreground">
-								No API keys yet.
+								{dict?.platform?.noApiKeysYet ?? "No API keys yet."}
 							</div>
 						) : (
 							<Table verticalSpacing="sm" highlightOnHover>
 								<Table.Thead>
 									<Table.Tr>
-										<Table.Th>Name</Table.Th>
-										<Table.Th>Key ID</Table.Th>
-										<Table.Th>Scopes</Table.Th>
-										<Table.Th>Created</Table.Th>
+										<Table.Th>{dict?.platform?.name ?? "Name"}</Table.Th>
+										<Table.Th>{dict?.platform?.keyId ?? "Key ID"}</Table.Th>
+										<Table.Th>{dict?.platform?.scopes ?? "Scopes"}</Table.Th>
+										<Table.Th>{dict?.platform?.created ?? "Created"}</Table.Th>
 										{/*<Table.Th className="w-16 text-right">Actions</Table.Th>*/}
 									</Table.Tr>
 								</Table.Thead>
@@ -127,11 +129,11 @@ export default function ManageApiKeys({
 											</Table.Td>
 											<Table.Td>{fmtTemporal(k.createdAt)}</Table.Td>
 											<Table.Td className="text-right flex items-center gap-2 justify-end">
-												<span>Copy API Key{" "}</span>
+												<span>{dict?.platform?.copyApiKey ?? "Copy API Key"}{" "}</span>
 												<ActionIcon
 													variant="subtle"
-													title={"Copy API key"}
-													aria-label="Copy API key"
+													title={dict?.platform?.copyApiKeyLower ?? "Copy API key"}
+													aria-label={dict?.platform?.copyApiKeyLower ?? "Copy API key"}
 													onClick={() => handleCopy(k.vault.rawKey)}
 												>
 													<IconCopy size={16} />

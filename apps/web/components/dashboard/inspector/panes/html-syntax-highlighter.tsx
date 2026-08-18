@@ -6,6 +6,7 @@ import {
     oneDark,
     oneLight,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 type HtmlSyntaxHighlighterProps = {
     html: string;
@@ -15,11 +16,12 @@ export default function HtmlSyntaxHighlighter({
                                                   html,
                                               }: HtmlSyntaxHighlighterProps) {
     const { colorScheme } = useMantineColorScheme();
+    const dict = useOptionalDictionary();
 
     if (!html) {
         return (
             <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-                No HTML body available.
+                {dict?.mailbox?.noHtmlBodyAvailable ?? "No HTML body available."}
             </div>
         );
     }

@@ -21,6 +21,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { parseSecret } from "@/lib/utils";
 import IsVerifiedStatus from "@/components/dashboard/providers/is-verified-status";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export default function ProviderCard({
 	spec,
@@ -31,6 +32,7 @@ export default function ProviderCard({
 	userProvider: SyncProvidersRow;
 	decryptedSecret: FetchDecryptedSecretsResult[number];
 }) {
+	const dict = useOptionalDictionary();
 	const decryptedValues = useMemo(() => {
 		return parseSecret(decryptedSecret);
 	}, [decryptedSecret]);
@@ -39,7 +41,9 @@ export default function ProviderCard({
 		const openModalId = modals.open({
 			title: (
 				<div className="font-semibold text-brand-foreground">
-					Edit {spec.name} Account
+					{dict?.platform?.editPrefix ?? "Edit "}
+					{spec.name}
+					{dict?.platform?.editAccountSuffix ?? " Account"}
 				</div>
 			),
 			size: "lg",
@@ -74,37 +78,61 @@ export default function ProviderCard({
 
 			if (res.ok && (res.meta?.send || res.meta?.store)) {
 				toast.success(
-					`${userProvider.type.toUpperCase()} connection verified`,
+					`${userProvider.type.toUpperCase()} ${dict?.platform?.connectionVerified ?? "connection verified"}`,
 					{
 						description: (() => {
 							switch (userProvider.type) {
 								case "ses":
-									return "SES credentials are valid and the account is reachable.";
+									return (
+										dict?.platform?.sesCredentialsValid ??
+										"SES credentials are valid and the account is reachable."
+									);
 								case "postmark":
-									return "Postmark credentials are valid and the API is reachable.";
+									return (
+										dict?.platform?.postmarkCredentialsValid ??
+										"Postmark credentials are valid and the API is reachable."
+									);
 								case "sendgrid":
-									return "SendGrid API key is valid and sending is enabled.";
+									return (
+										dict?.platform?.sendgridCredentialsValid ??
+										"SendGrid API key is valid and sending is enabled."
+									);
 								case "mailgun":
-									return "Mailgun credentials are valid and the account is reachable.";
+									return (
+										dict?.platform?.mailgunCredentialsValid ??
+										"Mailgun credentials are valid and the account is reachable."
+									);
 								case "s3":
-									return "S3 credentials are valid and the account is reachable.";
+									return (
+										dict?.platform?.s3CredentialsValid ??
+										"S3 credentials are valid and the account is reachable."
+									);
 								default:
-									return "Outgoing mail server is reachable and credentials are valid.";
+									return (
+										dict?.platform?.outgoingMailServerReachable ??
+										"Outgoing mail server is reachable and credentials are valid."
+									);
 							}
 						})(),
 					},
 				);
 			} else {
-				toast.error(`${userProvider.type.toUpperCase()} verification failed`, {
-					description:
-						String(res.meta?.response ?? res.message) ||
-						"Could not connect with the provided credentials.",
-				});
+				toast.error(
+					`${userProvider.type.toUpperCase()} ${dict?.platform?.verificationFailed ?? "verification failed"}`,
+					{
+						description:
+							String(res.meta?.response ?? res.message) ||
+							(dict?.platform?.couldNotConnectWithCredentials ??
+								"Could not connect with the provided credentials."),
+					},
+				);
 			}
 		} catch (err: any) {
-			toast.error("Verification error", {
+			toast.error(dict?.platform?.verificationError ?? "Verification error", {
 				description:
-					err?.message ?? "Unexpected error while testing the account.",
+					err?.message ??
+					dict?.platform?.unexpectedErrorTestingAccount ??
+					"Unexpected error while testing the account.",
 			});
 		} finally {
 			setTesting(false);
@@ -120,11 +148,13 @@ export default function ProviderCard({
 							<Globe className="mt-1 size-4 shrink-0 text-muted-foreground" />
 							<div className="min-w-0">
 								<CardTitle className="text-lg sm:text-xl">
-									{spec.name}
+									{(dict?.platform as Record<string, string> | undefined)?.[
+										`providerName${spec.key.charAt(0).toUpperCase()}${spec.key.slice(1)}`
+									] ?? spec.name}
 								</CardTitle>
 								<p className="text-sm text-muted-foreground">
-									Managed securely in a secure Vault. Verify by adding or
-									removing stored credentials.
+									{dict?.platform?.managedSecurelyVerifyByAdding ??
+										"Managed securely in a secure Vault. Verify by adding or removing stored credentials."}
 								</p>
 							</div>
 						</div>
@@ -139,7 +169,7 @@ export default function ProviderCard({
 									target="_blank"
 									leftSection={<ExternalLink className="size-4" />}
 								>
-									Docs
+									{dict?.platform?.docs ?? "Docs"}
 								</Button>
 
 								<Button
@@ -148,14 +178,14 @@ export default function ProviderCard({
 									size={"xs"}
 									leftSection={<Play className="size-4" />}
 								>
-									Verify Connection
+									{dict?.platform?.verifyConnection ?? "Verify Connection"}
 								</Button>
 								<Button
 									onClick={openEdit}
 									size={"xs"}
 									leftSection={<Edit className="size-4" />}
 								>
-									Edit
+									{dict?.platform?.edit ?? "Edit"}
 								</Button>
 							</CardAction>
 						</div>

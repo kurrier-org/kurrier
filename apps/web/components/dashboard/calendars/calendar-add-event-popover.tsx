@@ -5,6 +5,7 @@ import { Dayjs } from "dayjs";
 import CombinedEventView from "@/components/dashboard/calendars/combined-event-view";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 export type OnCompletedOptions = {
 	showToast?: boolean;
 };
@@ -22,6 +23,7 @@ function CalendarAddEventPopover({
 	end: Dayjs;
 	onChange: (open: boolean) => void;
 }) {
+	const dict = useOptionalDictionary();
 	const { view } = useParams();
 	return (
 		<Popover
@@ -49,7 +51,7 @@ function CalendarAddEventPopover({
 							{ showToast }: { showToast?: boolean } = {},
 						) => {
 							if (showToast ?? true) {
-								toast.success("Success");
+								toast.success(dict?.common?.success ?? "Success");
 							}
 							onChange(false);
 						},

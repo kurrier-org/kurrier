@@ -10,6 +10,7 @@ import { getDayjsTz } from "@common/day-js-extended";
 import { CalendarState } from "@schema";
 import { useDisclosure } from "@mantine/hooks";
 import NewCalendarEventForm from "@/components/dashboard/calendars/new-calendar-event-form";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export default function NewEventButton({
 	hideOnMobile,
@@ -18,6 +19,7 @@ export default function NewEventButton({
 	hideOnMobile?: boolean;
 	workspacePublicId: string;
 }) {
+	const dict = useOptionalDictionary();
 	const isMobile = useIsMobile();
 	const { state } = useDynamicContext<CalendarState>();
 
@@ -37,7 +39,7 @@ export default function NewEventButton({
 				onClose={close}
 				title={
 					<span className={"font-bold dark:text-brand-foreground text-brand"}>
-						New Event
+						{dict?.calendar?.newEvent ?? "New Event"}
 					</span>
 				}
 			>
@@ -54,7 +56,7 @@ export default function NewEventButton({
 				<>
 					<Button hidden={!hideOnMobile} size="lg" onClick={open}>
 						<Plus className={"h-4 w-4"} />
-						Create Event
+						{dict?.calendar?.createEvent ?? "Create Event"}
 					</Button>
 				</>
 			)}

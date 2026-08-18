@@ -8,6 +8,7 @@ import NewContactButton from "@/components/dashboard/contacts/new-contact-button
 import { useParams, usePathname } from "next/navigation";
 import { useMediaQuery } from "@mantine/hooks";
 import {AddressBookEntity} from "@db";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 export type ProfileImage = {
 	path: string;
 	signedUrl: string;
@@ -27,6 +28,7 @@ export default function ContactsShell({
 	workspacePublicId: string;
 	userBook: AddressBookEntity
 }) {
+	const dict = useOptionalDictionary();
 	const pathname = usePathname();
 	const params = useParams<{
 		contactsPublicId?: string;
@@ -58,7 +60,7 @@ export default function ContactsShell({
 					>
 						<div className="flex items-center justify-between border-b px-3 py-3">
 							<span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-								All contacts
+								{dict?.contacts?.allContacts ?? "All contacts"}
 							</span>
 							<div className={"flex gap-2"}>
 								<NewContactButton workspacePublicId={workspacePublicId} />

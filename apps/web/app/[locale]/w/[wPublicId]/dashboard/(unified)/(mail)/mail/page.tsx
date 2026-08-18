@@ -1,6 +1,10 @@
 import React from "react";
+import { getDictionary, type Locale } from "@/lib/dictionaries";
 
-function Page() {
+async function Page({ params }: { params: Promise<{ locale: Locale }> }) {
+	const { locale } = await params;
+	const dict = await getDictionary(locale);
+
 	return (
 		<>
 			<div
@@ -8,7 +12,7 @@ function Page() {
 					"flex flex-1 flex-col items-center justify-center p-4 text-center"
 				}
 			>
-				Select a mailbox to view the emails.
+				{dict.mailbox.selectMailboxPrompt}
 			</div>
 		</>
 	);

@@ -1,21 +1,28 @@
 // @ts-nocheck
 "use client";
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { MessageAttachmentEntity, MessageEntity } from "@db";
 import { getMessageAddress, getMessageName } from "@common/mail-client";
+import type { MessageAttachmentEntity, MessageEntity } from "@db";
+import { Temporal } from "@js-temporal/polyfill";
+import { ActionIcon, Button, Menu, Modal } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
+import type { PublicConfig } from "@schema";
 import slugify from "@sindresorhus/slugify";
 import { Code, Download, EllipsisVertical, Forward, Reply } from "lucide-react";
-import { Temporal } from "@js-temporal/polyfill";
 import dynamic from "next/dynamic";
-import { ActionIcon, Button, Menu, Modal } from "@mantine/core";
-import { EmailEditorHandle } from "@/components/mailbox/default/editor/email-editor";
-import EditorAttachmentItem from "@/components/mailbox/default/editor/editor-attachment-item";
-import { PublicConfig } from "@schema";
-import {fetchMailbox, FetchThreadMailSubsResult, markAsRead} from "@/lib/actions/mailbox";
-import {getRawMessageDownloadUrl} from "@/lib/actions/uploads-actions";
 import { useParams } from "next/navigation";
-import { useDisclosure } from "@mantine/hooks";
+import type React from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import EditorAttachmentItem from "@/components/mailbox/default/editor/editor-attachment-item";
+import type { EmailEditorHandle } from "@/components/mailbox/default/editor/email-editor";
 import MailUnsubscriber from "@/components/mailbox/default/mail-unsubscriber";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import {
+	type FetchThreadMailSubsResult,
+	fetchMailbox,
+	markAsRead,
+} from "@/lib/actions/mailbox";
+import { getRawMessageDownloadUrl } from "@/lib/actions/uploads-actions";
+
 const InspectorBar = dynamic(
 	() => import("@/components/dashboard/inspector/inspector-bar"),
 	{
@@ -26,7 +33,6 @@ const InspectorBar = dynamic(
 			</div>
 		),
 	},
-
 );
 
 const EmailEditor = dynamic(
@@ -103,7 +109,7 @@ function EmailRenderer({
 	threadId,
 	markSmtp,
 	activeMailboxId,
-    mailSubscription,
+	mailSubscription,
 	identityMailboxes,
 	children,
 }: {
@@ -116,10 +122,11 @@ function EmailRenderer({
 	threadId: string;
 	markSmtp: boolean;
 	activeMailboxId: string;
-    mailSubscription: FetchThreadMailSubsResult["byMessageId"] | null;
+	mailSubscription: FetchThreadMailSubsResult["byMessageId"] | null;
 	identityMailboxes: FetchIdentityMailboxListResult;
 	children?: React.ReactNode;
 }) {
+	const dict = useOptionalDictionary();
 	const formatted = Temporal.Instant.from(message.createdAt.toISOString())
 		.toZonedDateTimeISO(Temporal.Now.timeZoneId())
 		.toLocaleString("en-US", {
@@ -171,7 +178,6 @@ function EmailRenderer({
 	const [opened, { open, close }] = useDisclosure(false);
 	const [emailString, setEmailString] = useState<string | null>(null);
 
-
 	useEffect(() => {
 		if (!opened) return;
 
@@ -179,11 +185,10 @@ function EmailRenderer({
 			if (!url) return;
 
 			fetch(url)
-				.then(res => res.text())
-				.then(raw => setEmailString(raw.slice(0, 10000)));
+				.then((res) => res.text())
+				.then((raw) => setEmailString(raw.slice(0, 10000)));
 		});
 	}, [opened]);
-
 
 	const formattedTime = useMemo(() => {
 		return Temporal.Instant.from(message.createdAt.toISOString())
@@ -201,12 +206,17 @@ function EmailRenderer({
 
 	return (
 		<>
-			<Modal opened={opened} onClose={close} title="Original message" size="xl">
+			<Modal
+				opened={opened}
+				onClose={close}
+				title={dict?.mailbox?.originalMessage ?? "Original message"}
+				size="xl"
+			>
 				<div className="text-sm border rounded-md overflow-hidden">
 					{/* Header Rows */}
 					<div className="grid grid-cols-[160px_1fr] border-b">
 						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
-							Message ID
+							{dict?.mailbox?.messageId ?? "Message ID"}
 						</div>
 						<div className="px-3 py-2 text-green-700 break-all">
 							{message.messageId}
@@ -215,14 +225,14 @@ function EmailRenderer({
 
 					<div className="grid grid-cols-[160px_1fr] border-b">
 						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
-							Created on
+							{dict?.mailbox?.createdOn ?? "Created on"}
 						</div>
 						<div className="px-3 py-2">{formattedTime}</div>
 					</div>
 
 					<div className="grid grid-cols-[160px_1fr] border-b">
 						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
-							From
+							{dict?.mailbox?.from ?? "From"}
 						</div>
 						<div className="px-3 py-2">
 							{String(message?.headersJson?.from?.text)}
@@ -231,7 +241,7 @@ function EmailRenderer({
 
 					<div className="grid grid-cols-[160px_1fr] border-b">
 						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
-							To
+							{dict?.mailbox?.to ?? "To"}
 						</div>
 						{/*<div className="px-3 py-2">suisse@dinebot.io</div>*/}
 						<div className="px-3 py-2">
@@ -241,7 +251,7 @@ function EmailRenderer({
 
 					<div className="grid grid-cols-[160px_1fr] border-b">
 						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
-							Subject
+							{dict?.mailbox?.subject ?? "Subject"}
 						</div>
 						<div className="px-3 py-2">
 							{/*Google Workspace: Your invoice is available for dinebot.io*/}
@@ -305,18 +315,25 @@ function EmailRenderer({
     shadow-sm text-neutral-800 dark:text-neutral-200
   "
 				>
-					{emailString || "Loading raw message..."}
+					{emailString ||
+						(dict?.mailbox?.loadingRawMessage ?? "Loading raw message...")}
 				</div>
 			</Modal>
 
 			<div className={"grid grid-cols-12"}>
 				<div className={"col-span-12"}>
-					{threadIndex === 0 && <div className={"flex gap-3 items-center"}>
-						<div className="text-xl font-base">
-							{message.subject || "No Subject"}
+					{threadIndex === 0 && (
+						<div className={"flex gap-3 items-center"}>
+							<div className="text-xl font-base">
+								{message.subject ||
+									(dict?.mailbox?.noSubjectTitle ?? "No Subject")}
+							</div>
+							<MailUnsubscriber
+								mailSubscription={mailSubscription}
+								message={message}
+							/>
 						</div>
-                        <MailUnsubscriber mailSubscription={mailSubscription} message={message}/>
-                    </div>}
+					)}
 				</div>
 
 				<div className={"md:col-span-6 col-span-12 flex flex-col"}>
@@ -333,7 +350,7 @@ function EmailRenderer({
 					</div>
 					<div className={"flex gap-1 items-center"}>
 						<div className={"text-xs"}>
-							to{" "}
+							{dict?.mailbox?.toLower ?? "to"}{" "}
 							{`<${getMessageAddress(message, "to") ?? getMessageName(message, "to")}>`}
 						</div>
 					</div>
@@ -373,7 +390,7 @@ function EmailRenderer({
 											setShowEditor(true);
 										}}
 									>
-										Reply
+										{dict?.mailbox?.reply ?? "Reply"}
 									</Menu.Item>
 									<Menu.Item
 										leftSection={<Forward size={14} />}
@@ -382,7 +399,7 @@ function EmailRenderer({
 											setShowEditor(true);
 										}}
 									>
-										Forward
+										{dict?.mailbox?.forward ?? "Forward"}
 									</Menu.Item>
 									<Menu.Divider />
 
@@ -390,10 +407,10 @@ function EmailRenderer({
 										leftSection={<Download size={14} />}
 										onClick={downloadEml}
 									>
-										Download
+										{dict?.mailbox?.download ?? "Download"}
 									</Menu.Item>
 									<Menu.Item leftSection={<Code size={14} />} onClick={open}>
-										Show Original
+										{dict?.mailbox?.showOriginal ?? "Show Original"}
 									</Menu.Item>
 								</Menu.Dropdown>
 							</Menu>
@@ -402,23 +419,30 @@ function EmailRenderer({
 				</div>
 			</div>
 
-			<InspectorBar children={children} message={message} onDownloadEml={downloadEml} />
+			<InspectorBar
+				children={children}
+				message={message}
+				onDownloadEml={downloadEml}
+			/>
 
-            {attachments?.length > 0 && (
-                <div className="border-t border-dotted py-4">
-                    <div className="font-semibold mb-4">{attachments.length} attachments</div>
+			{attachments?.length > 0 && (
+				<div className="border-t border-dotted py-4">
+					<div className="font-semibold mb-4">
+						{attachments.length}
+						{dict?.mailbox?.attachmentsCountSuffix ?? " attachments"}
+					</div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {attachments.map((attachment) => (
-                            <EditorAttachmentItem
-                                key={attachment.id}
-                                attachment={attachment}
-                                publicConfig={publicConfig}
-                            />
-                        ))}
-                    </div>
-                </div>
-            )}
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+						{attachments.map((attachment) => (
+							<EditorAttachmentItem
+								key={attachment.id}
+								attachment={attachment}
+								publicConfig={publicConfig}
+							/>
+						))}
+					</div>
+				</div>
+			)}
 
 			{threadIndex === numberOfMessages - 1 && !showEditor && (
 				<div className={"flex gap-6"}>
@@ -431,7 +455,7 @@ function EmailRenderer({
 						variant={"outline"}
 						radius={"xl"}
 					>
-						Reply
+						{dict?.mailbox?.reply ?? "Reply"}
 					</Button>
 					<Button
 						onClick={() => {
@@ -442,7 +466,7 @@ function EmailRenderer({
 						variant={"outline"}
 						radius={"xl"}
 					>
-						Forward
+						{dict?.mailbox?.forward ?? "Forward"}
 					</Button>
 				</div>
 			)}

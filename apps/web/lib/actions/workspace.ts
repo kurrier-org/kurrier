@@ -138,7 +138,7 @@ export async function updateWorkspace(
             tx.update(workspaces).set({name: String(decodedForm.name)})
         );
         revalidatePath("/w/[wPublicId]/dashboard/platform/workspace", "page");
-        return { success: true, message: "Workspace Updated" };
+        return { success: true, message: "workspace.updated" };
     });
 }
 

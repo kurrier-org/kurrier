@@ -21,9 +21,12 @@ import { Avatar as MantineAvatar } from "@mantine/core";
 import {FetchIsSignedInResult, getGravatarUrl, signOut} from "@/lib/actions/auth";
 import { useEffect, useState } from "react";
 import {FetchWorkspacesResult, switchWorkSpace} from "@/lib/actions/workspace";
+import { LanguageSwitcherSubmenu } from "@/components/common/language-switcher";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export function NavUser({ workspacePublicId, user, userWorkspaces }: { workspacePublicId: string | undefined, user: FetchIsSignedInResult, userWorkspaces: FetchWorkspacesResult }) {
 	const { isMobile } = useSidebar();
+	const dict = useOptionalDictionary();
 	const [gravatarUrl, setGravatarUrl] = useState<string | null>(null);
 
 	const fetchGravatar = async () => {
@@ -111,12 +114,14 @@ export function NavUser({ workspacePublicId, user, userWorkspaces }: { workspace
 
 						</DropdownMenuLabel>
 						<DropdownMenuSeparator />
+						<LanguageSwitcherSubmenu />
+						<DropdownMenuSeparator />
 						<DropdownMenuItem
 							onClick={() => signOut()}
 							className={"cursor-pointer"}
 						>
 							<LogOut />
-							Log out
+							{dict?.dashboard?.logOut ?? "Log out"}
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>

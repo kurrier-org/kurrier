@@ -23,6 +23,7 @@ import Link from "next/link";
 import { useMediaQuery } from "@mantine/hooks";
 import { Divider } from "@mantine/core";
 import { IconFrame } from "@tabler/icons-react";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	navUserContent: React.ReactNode;
@@ -41,35 +42,36 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 	} = props;
 
 	const isMobile = useMediaQuery("(max-width: 768px)");
+	const dict = useOptionalDictionary();
 
 	const data = {
 		navMain: [
 			{
-				title: "All Mail",
+				title: dict?.dashboard?.navMail ?? "All Mail",
 				url: `/w/${workspacePublicId}/dashboard/mail`,
 				icon: Inbox,
 				isActive: true,
 			},
 			{
-				title: "Contacts",
+				title: dict?.dashboard?.navContacts ?? "Contacts",
 				url: `/w/${workspacePublicId}/dashboard/contacts`,
 				icon: Contact,
 				isActive: true,
 			},
 			{
-				title: "Calendar",
+				title: dict?.dashboard?.navCalendar ?? "Calendar",
 				url: `/w/${workspacePublicId}/dashboard/calendar`,
 				icon: Calendar,
 				isActive: true,
 			},
 			{
-				title: "Drive",
+				title: dict?.dashboard?.navDrive ?? "Drive",
 				url: `/w/${workspacePublicId}/dashboard/drive`,
 				icon: HardDrive,
 				isActive: true,
 			},
 			{
-				title: "Platform",
+				title: dict?.dashboard?.navPlatform ?? "Platform",
 				url: `/w/${workspacePublicId}/dashboard/platform/overview`,
 				icon: IconFrame,
 				isActive: false,

@@ -1,21 +1,22 @@
 "use client";
-import React from "react";
+import type { MailboxEntity, MailboxSyncEntity } from "@db";
+import { Temporal } from "@js-temporal/polyfill";
+import { IconStar, IconStarFilled } from "@tabler/icons-react";
 import { Mail, MailOpen, Paperclip, Trash2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import type { MailboxEntity, MailboxSyncEntity } from "@db";
+import React from "react";
+import { toast } from "sonner";
+import LabelRowTag from "@/components/dashboard/labels/label-row-tag";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useDynamicContext } from "@/hooks/use-dynamic-context";
+import type { FetchMailboxThreadLabelsResult } from "@/lib/actions/labels";
 import {
-	FetchMailboxThreadsResult,
+	type FetchMailboxThreadsResult,
 	markAsRead,
 	markAsUnread,
 	moveToTrash,
 	toggleStar,
 } from "@/lib/actions/mailbox";
-import { FetchMailboxThreadLabelsResult } from "@/lib/actions/labels";
-import { IconStar, IconStarFilled } from "@tabler/icons-react";
-import { Temporal } from "@js-temporal/polyfill";
-import { useDynamicContext } from "@/hooks/use-dynamic-context";
-import { toast } from "sonner";
-import LabelRowTag from "@/components/dashboard/labels/label-row-tag";
 
 type Props = {
 	mailboxThreadItem: FetchMailboxThreadsResult[number];
@@ -33,6 +34,7 @@ export default function WebmailListItemMobile({
 	labelsByThreadId,
 }: Props) {
 	const router = useRouter();
+	const dict = useOptionalDictionary();
 
 	const dateLabel = (() => {
 		const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -130,11 +132,11 @@ export default function WebmailListItemMobile({
 							: next.delete(mailboxThreadItem.threadId);
 						setState({ selectedThreadIds: next });
 					}}
-					aria-label={`Select ${mailboxThreadItem.subject}`}
+					aria-label={`${dict?.mailbox?.selectThreadPrefix ?? "Select thread "}${mailboxThreadItem.subject}`}
 					className="h-4 w-4 rounded border-muted-foreground/40"
 				/>
 				<button
-					aria-label="Star"
+					aria-label={dict?.mailbox?.star ?? "Star"}
 					onClick={(e) => {
 						e.stopPropagation();
 						toggleStar(
@@ -207,7 +209,7 @@ export default function WebmailListItemMobile({
 							)
 						}
 						className="rounded p-1 hover:bg-muted"
-						title="Mark as unread"
+						title={dict?.mailbox?.markAsUnread ?? "Mark as unread"}
 					>
 						<Mail className="h-4 w-4" />
 					</button>
@@ -222,7 +224,7 @@ export default function WebmailListItemMobile({
 							)
 						}
 						className="rounded p-1 hover:bg-muted"
-						title="Mark as read"
+						title={dict?.mailbox?.markAsRead ?? "Mark as read"}
 					>
 						<MailOpen className="h-4 w-4" />
 					</button>
@@ -235,12 +237,15 @@ export default function WebmailListItemMobile({
 							!!mailboxSync,
 							true,
 						);
-						toast.success("Messages moved to Trash", {
-							position: "bottom-left",
-						});
+						toast.success(
+							dict?.mailbox?.movedToTrash ?? "Messages moved to Trash",
+							{
+								position: "bottom-left",
+							},
+						);
 					}}
 					className="rounded p-1 hover:bg-muted"
-					title="Delete"
+					title={dict?.mailbox?.delete ?? "Delete"}
 				>
 					<Trash2 className="h-4 w-4" />
 				</button>

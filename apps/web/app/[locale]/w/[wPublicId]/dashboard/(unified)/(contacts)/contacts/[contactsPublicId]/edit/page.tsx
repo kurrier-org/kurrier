@@ -1,19 +1,29 @@
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { type ContactCreate, ContactInsertSchema, contacts } from "@db";
+import {
+	type FormState,
+	getPublicEnv,
+	getServerEnv,
+	handleAction,
+} from "@schema";
+import { decode } from "decode-formdata";
+import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import React from "react";
 import NewContactForm from "@/components/dashboard/contacts/new-contact-form";
 import { isSignedIn } from "@/lib/actions/auth";
-import {FormState, getPublicEnv, getServerEnv, handleAction} from "@schema";
-import { decode } from "decode-formdata";
-import { ContactCreate, ContactInsertSchema, contacts } from "@db";
-import {getWorkspacePublicId, rlsClient} from "@/lib/actions/clients";
-import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
-import {GetObjectCommand} from "@aws-sdk/client-s3";
-import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
-import {s3} from "@/lib/create-s3-client";
-import {getRedis} from "@/lib/actions/get-redis";
+import { getWorkspacePublicId, rlsClient } from "@/lib/actions/clients";
+import { getRedis } from "@/lib/actions/get-redis";
+import { s3 } from "@/lib/create-s3-client";
+import { getDictionary, type Locale } from "@/lib/dictionaries";
 
-async function Page({ params }: { params: { contactsPublicId: string } }) {
-	const { contactsPublicId } = await params;
+async function Page({
+	params,
+}: {
+	params: { contactsPublicId: string; locale: Locale };
+}) {
+	const { contactsPublicId, locale } = await params;
 
 	const rls = await rlsClient();
 	const [contact] = await rls((tx) =>
@@ -21,9 +31,10 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 	);
 
 	if (!contact) {
+		const dict = await getDictionary(locale);
 		return (
 			<div className="flex h-full flex-col items-center justify-center gap-2 px-6 py-4 text-sm text-muted-foreground">
-				<p>No contact found.</p>
+				<p>{dict.contacts.noContactFound}</p>
 			</div>
 		);
 	}
@@ -41,7 +52,6 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 			expiresIn: 600,
 		});
 	}
-
 
 	const user = await isSignedIn();
 	const publicConfig = getPublicEnv();
@@ -81,7 +91,7 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 			return { success: true, data: updatedContact };
 		});
 	};
-	const workspacePublicId = await getWorkspacePublicId()
+	const workspacePublicId = await getWorkspacePublicId();
 
 	return (
 		<NewContactForm
