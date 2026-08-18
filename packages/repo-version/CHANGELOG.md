@@ -1,5 +1,19 @@
 # @kurrier/repo
 
+## 3.4.0
+
+### Minor Changes
+
+- [`fe13570`](https://github.com/kurrier-org/kurrier/commit/fe13570a9acb507df68fa23c1f5eba330e98bf53) Thanks [@krokhale](https://github.com/krokhale)! - Add generic inbound email ingestion with API-based RFC822/EML delivery, inbound identities, dashboard management, and documentation.
+
+### Patch Changes
+
+- [#521](https://github.com/kurrier-org/kurrier/pull/521) [`efe0182`](https://github.com/kurrier-org/kurrier/commit/efe018272634964cebfa7d781577df0762f21b1a) Thanks [@areacli](https://github.com/areacli)! - Fix DAV_URL in db/example.env defaulting to the internal Docker service name (http://dav:80), which is never reachable by an external CalDAV/CardDAV client. Defaults to http://localhost:5232 now, matching the exposed host port and the dev env template. Documented that hosted deployments need to set DAV_URL to their own public domain, same as WEB_URL.
+
+- [#517](https://github.com/kurrier-org/kurrier/pull/517) [`1a66cdd`](https://github.com/kurrier-org/kurrier/commit/1a66cdd01249d6802046b2c5f558b709065489b9) Thanks [@areacli](https://github.com/areacli)! - Fix workspace overview always showing 0 for Connected Providers, Active Identities, Verified Domains and Volumes due to an "owners"/"owner" string mismatch when checking the workspace role.
+
+- [#514](https://github.com/kurrier-org/kurrier/pull/514) [`3944f52`](https://github.com/kurrier-org/kurrier/commit/3944f52e5907eb826c998c10ef5b8120bb28f73c) Thanks [@areacli](https://github.com/areacli)! - Add OIDC_REQUIRE_VERIFIED_EMAIL to make the email_verified requirement optional for generic OIDC login, for IdPs that never set this claim to true.
+
 ## 3.3.0
 
 ### Minor Changes
