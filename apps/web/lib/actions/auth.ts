@@ -1,20 +1,19 @@
 "use server";
 
+import * as crypto from "node:crypto";
 import { APP_VERSION } from "@common";
-import { db, identities, users, workspaces, workspaceMembers } from "@db";
-import { FormState, getPublicEnv, getServerEnv } from "@schema";
+import { db, identities, users, workspaceMembers, workspaces } from "@db";
+import { type FormState, getPublicEnv, getServerEnv } from "@schema";
 import argon2 from "argon2";
 import { Queue, QueueEvents } from "bullmq";
 import { decode } from "decode-formdata";
 import { eq } from "drizzle-orm";
-import { jwtVerify, JWTPayload, SignJWT } from "jose";
+import { type JWTPayload, jwtVerify, SignJWT } from "jose";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import * as crypto from "node:crypto";
 import { getRedis } from "@/lib/actions/get-redis";
 import { updateWorkSpaceContext } from "@/lib/actions/workspace";
-import {withLocale} from "@/lib/utils";
-
+import { withLocale } from "@/lib/utils";
 
 const initProviders = async (userId: string, workspaceId: string) => {
 	const { REDIS_PASSWORD, REDIS_HOST, REDIS_PORT } = getServerEnv();
@@ -132,9 +131,13 @@ export async function createUserWithWorkspace(opts: {
 	return user;
 }
 
-export async function signInUserAndRedirect(user: typeof users.$inferSelect,  locale?: string) {
+export async function signInUserAndRedirect(
+	user: typeof users.$inferSelect,
+	locale?: string,
+) {
 	await createSessionForUser(user.id);
-	redirect(await getWorkspaceRedirectUrl(user));
+	const target = await getWorkspaceRedirectUrl(user);
+	redirect(locale ? withLocale(locale, target) : target);
 }
 
 export async function login(
@@ -181,10 +184,11 @@ export async function signup(
 		};
 	}
 
-	const { workspaceName, email, password } = decode(formData) as {
+	const { workspaceName, email, password, locale } = decode(formData) as {
 		email: string;
 		password: string;
 		workspaceName: string;
+		locale?: string;
 	};
 
 	if (!email || !password) {
@@ -203,7 +207,7 @@ export async function signup(
 		return { error: user.error };
 	}
 
-	await signInUserAndRedirect(user);
+	await signInUserAndRedirect(user, locale);
 
 	return { success: true, message: "Welcome!" };
 }
@@ -280,13 +284,12 @@ export const getGravatarUrl = async (email: string, size = 80) => {
 	return `https://www.gravatar.com/avatar/${hash}?s=${size}&d=identicon`;
 };
 
-
 export async function createSessionForUser(userId: string) {
 	const token = await signToken(userId);
 	await setAuthToken(token);
 }
 
-export async function getWorkspaceRedirectUrl(user: typeof users.$inferSelect, locale?: string) {
+export async function getWorkspaceRedirectUrl(user: typeof users.$inferSelect) {
 	const [workspace] = await db
 		.select()
 		.from(workspaces)
@@ -305,9 +308,36 @@ export async function getWorkspaceRedirectUrl(user: typeof users.$inferSelect, l
 			.where(eq(identities.id, workspace.defaultIdentityId));
 
 		if (defaultIdentity) {
-			if (locale) {
-				redirect(withLocale(locale,`/w/${workspace.publicId}/dashboard/platform/overview`));
-			}
+			return `/w/${workspace.publicId}/dashboard/mail/${defaultIdentity.publicId}/inbox`;
+		}
+	}
+
+	return `/w/${workspace.publicId}/dashboard/platform/overview`;
+}
+
+/**
+ * Read-only counterpart to getWorkspaceRedirectUrl: same target resolution,
+ * but never writes the workspace-context cookies (that's only legal from a
+ * Server Action or Route Handler). Safe to call from a plain page/layout
+ * render to figure out where to redirect an already-signed-in user.
+ */
+export async function getDefaultWorkspacePath(user: typeof users.$inferSelect) {
+	const [workspace] = await db
+		.select()
+		.from(workspaces)
+		.where(eq(workspaces.ownerId, user.id));
+
+	if (!workspace) {
+		return "/auth/login";
+	}
+
+	if (workspace.defaultIdentityId) {
+		const [defaultIdentity] = await db
+			.select()
+			.from(identities)
+			.where(eq(identities.id, workspace.defaultIdentityId));
+
+		if (defaultIdentity) {
 			return `/w/${workspace.publicId}/dashboard/mail/${defaultIdentity.publicId}/inbox`;
 		}
 	}
