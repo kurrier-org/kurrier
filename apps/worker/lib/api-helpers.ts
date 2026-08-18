@@ -127,7 +127,17 @@ export async function validateApiKey(event: H3Event) {
 	}
 
 	const actualSecret = await getSecretAdmin(secretMeta.id);
-	if (!actualSecret?.vault || !safeEqual(String(actualSecret.vault), token)) {
+
+	if (!actualSecret?.vault?.decrypted_secret) {
+		throw createError({
+			statusCode: 401,
+			statusMessage: "API key secret not found",
+		});
+	}
+
+	const { rawKey } = JSON.parse(actualSecret.vault.decrypted_secret);
+
+	if (!rawKey || !safeEqual(rawKey, token)) {
 		throw createError({
 			statusCode: 401,
 			statusMessage: "Invalid API key",
@@ -136,7 +146,7 @@ export async function validateApiKey(event: H3Event) {
 
 	return {
 		apiKey: key,
-		secret: actualSecret.vault,
+		secret: rawKey,
 		ownerId: key.ownerId,
 	};
 }

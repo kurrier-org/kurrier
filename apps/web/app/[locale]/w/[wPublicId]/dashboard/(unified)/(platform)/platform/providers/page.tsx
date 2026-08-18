@@ -1,14 +1,20 @@
+import { smtpAccountSecrets } from "@db";
+import { PROVIDERS } from "@schema";
 import * as React from "react";
 import { Container } from "@/components/common/containers";
-import { PROVIDERS } from "@schema";
-import SMTPCard from "@/components/dashboard/providers/smtp-card";
-import {fetchDecryptedSecrets, fetchGoogleAccounts, syncProviders} from "@/lib/actions/dashboard";
-import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
-import { smtpAccountSecrets } from "@db";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
-import {fetchWorkspace} from "@/lib/actions/workspace";
 import GoogleCard from "@/components/dashboard/providers/google-card";
+import InboundCard from "@/components/dashboard/providers/inbound-card";
+import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
+import SMTPCard from "@/components/dashboard/providers/smtp-card";
+import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import {
+	fetchDecryptedSecrets,
+	fetchGoogleAccounts,
+	fetchInboundIdentities,
+	syncProviders,
+} from "@/lib/actions/dashboard";
+import { fetchWorkspace } from "@/lib/actions/workspace";
 import { getDictionary } from "@/lib/dictionaries";
 
 export default async function ProvidersPage({
@@ -28,6 +34,7 @@ export default async function ProvidersPage({
 
 	const googleAccounts = await fetchGoogleAccounts();
 	const workspaceId = await fetchWorkspace().then((workspace) => workspace.id);
+	const inboundIdentities = await fetchInboundIdentities();
 
 	return (
 		<>
@@ -43,7 +50,9 @@ export default async function ProvidersPage({
 			<div className="flex flex-1 flex-col gap-4 p-4 pt-0">
 				<Container variant="wide">
 					<div className="flex items-center justify-between my-4">
-						<h1 className="text-xl font-bold text-foreground">{dict.platform.providers}</h1>
+						<h1 className="text-xl font-bold text-foreground">
+							{dict.platform.providers}
+						</h1>
 					</div>
 
 					<p className="max-w-prose text-sm text-muted-foreground my-6">
@@ -63,6 +72,7 @@ export default async function ProvidersPage({
 					<div className="grid gap-6 lg:grid-cols-2 my-8">
 						<SMTPCard smtpSecrets={smtpSecrets} />
 						<GoogleCard googleAccounts={googleAccounts} />
+						<InboundCard inboundIdentities={inboundIdentities} />
 					</div>
 				</Container>
 			</div>
