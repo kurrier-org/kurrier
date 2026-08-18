@@ -301,6 +301,13 @@ export default defineNitroPlugin(async (nitroApp) => {
 				html,
 				ownerId: mailbox.identity.ownerId,
 				seen: true,
+				headersJson: data.mode === "forward"
+				? {
+					"X-Kurrier-Forward-Count": String(
+						(Number(origRow?.message?.headersJson?.["X-Kurrier-Forward-Count"]) || 0) + 1,
+					),
+				}
+				: undefined,
 			});
 			if (decodedForm.apiMessageId) {
 				newMessageBody.id = String(decodedForm.apiMessageId);
@@ -313,6 +320,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 				html: newMessageBody.html ?? "",
 				inReplyTo: inReplyTo ?? "",
 				references: references,
+				headers: newMessageBody.headersJson ?? undefined,
 				attachments: attachmentBlobs.map((att) => ({
 					name: att.name,
 					content: att.blob,

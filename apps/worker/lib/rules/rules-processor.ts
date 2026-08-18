@@ -4,6 +4,8 @@ import { MailRuleMatchV1, mailRulesFieldsList, mailRulesOpsList } from "@schema"
 import { markAsRead } from "./rule-items/mark-read";
 import { toggleStar } from "./rule-items/mark-flag";
 import { moveToTrash } from "./rule-items/move-to-trash";
+import { forwardMessage } from "./rule-items/forward-message";
+
 
 type AddressValue = { address?: string | null; name?: string | null };
 type AddressObjectLike =
@@ -272,6 +274,14 @@ export const processRules = async ({ messageId }: { messageId: string }) => {
                     })
                     break;
                 }
+		case "forward": {
+    const forwardTo = (act.params as any)?.forwardTo as string[] | undefined;
+    if (!forwardTo?.length) break;
+    const forwardCount = Number((message.headersJson as any)?.["X-Kurrier-Forward-Count"]) || 0;
+    if (forwardCount >= 5) break;
+    await forwardMessage(message.id, forwardTo, identity.id);
+    break;
+}
                 default: {
                     break;
                 }

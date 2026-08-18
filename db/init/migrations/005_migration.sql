@@ -1,0 +1,1 @@
+ALTER TYPE "public"."mail_rule_action_type" ADD VALUE 'forward';--> statement-breakpoint
