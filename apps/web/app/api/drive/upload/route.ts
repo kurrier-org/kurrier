@@ -4,10 +4,15 @@ import { and, eq, gt, isNull } from "drizzle-orm";
 import { driveUploadIntents, driveVolumes } from "@db";
 import { s3 } from "@/lib/create-s3-client";
 import { rlsClient } from "@/lib/actions/clients";
+import { SITE_FEATURES } from "@/lib/site-features";
 
 const trimSlashes = (s: string) => s.replace(/^\/+|\/+$/g, "");
 
 export async function POST(req: NextRequest) {
+    if (!SITE_FEATURES.drive) {
+        return NextResponse.json({ error: "Drive is disabled" }, { status: 404 });
+    }
+
     const formData = await req.formData();
 
     const file = formData.get("file") as File | null;

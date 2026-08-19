@@ -22,12 +22,14 @@ import { Separator } from "@/components/ui/separator";
 import React from "react";
 import { getWorkspacePublicId, getWorkspaceRole } from "@/lib/actions/clients";
 import { fetchWorkspace } from "@/lib/actions/workspace";
+import { SITE_FEATURES } from "@/lib/site-features";
 
 export default async function Page() {
 	const { data: statsData } = await getDashboardStats();
 	const workspacePublicId = await getWorkspacePublicId();
 	const workspaceRole = await getWorkspaceRole();
 	const workspace = await fetchWorkspace();
+	const driveEnabled = SITE_FEATURES.drive;
 
 	const isOwner = workspaceRole === "owner";
 	const base = `/w/${workspacePublicId}/dashboard/platform`;
@@ -38,7 +40,9 @@ export default async function Page() {
 				icon: <Plug className="size-5 text-primary" />,
 				label: "Connected Providers",
 				value: statsData?.connectedProviders || 0,
-				hint: "Sending and storage integrations",
+				hint: driveEnabled
+					? "Sending and storage integrations"
+					: "Connected integrations",
 			},
 			{
 				icon: <Send className="size-5 text-primary" />,
@@ -109,13 +113,15 @@ export default async function Page() {
 			done: Number(statsData?.activeIdentities || 0) > 0,
 			href: `${base}/identities`,
 		},
-		{
+	];
+	if (driveEnabled) {
+		setupItems.push({
 			title: "Create a storage volume",
 			description: "Add a Drive volume for workspace files.",
 			done: Number(statsData?.volumeCount || 0) > 0,
 			href: `${base}/storage`,
-		},
-	];
+		});
+	}
 
 	const quickActions = [
 		{
@@ -128,11 +134,15 @@ export default async function Page() {
 			title: "Identities",
 			href: `${base}/identities`,
 		},
-		{
+	];
+	if (driveEnabled) {
+		quickActions.push({
 			icon: <HardDrive className="size-4" />,
 			title: "Storage",
 			href: `${base}/storage`,
-		},
+		});
+	}
+	quickActions.push(
 		{
 			icon: <Webhook className="size-4" />,
 			title: "Webhooks",
@@ -143,7 +153,45 @@ export default async function Page() {
 			title: "Sync services",
 			href: `${base}/sync-services`,
 		},
+	);
+	const ownerStorageRows: [string, string][] = [
+		["Raw EML", formatBytes(statsData?.rawMessageBytes || 0)],
+		["Attachments", formatBytes(statsData?.attachmentBytes || 0)],
 	];
+	if (driveEnabled) {
+		ownerStorageRows.push([
+			"Drive files",
+			formatBytes(statsData?.driveStorageBytes || 0),
+		]);
+	}
+	ownerStorageRows.push([
+		"Total",
+		formatBytes(
+			statsData?.totalStorageBytes || statsData?.storageBytesUsed || 0,
+		),
+	]);
+	const ownerConfigurationRows: [string, string][] = [
+		["Providers", formatNumber(statsData?.connectedProviders || 0)],
+		["Verified domains", formatNumber(statsData?.verifiedDomains || 0)],
+		["Identities", formatNumber(statsData?.activeIdentities || 0)],
+	];
+	if (driveEnabled) {
+		ownerConfigurationRows.push([
+			"Volumes",
+			formatNumber(statsData?.volumeCount || 0),
+		]);
+	}
+	const ownerRecordRows: [string, string][] = [
+		["Messages", formatNumber(statsData?.emailsProcessedTotal || 0)],
+		["Threads", formatNumber(statsData?.threadCount || 0)],
+		["Drafts", formatNumber(statsData?.draftCount || 0)],
+	];
+	if (driveEnabled) {
+		ownerRecordRows.push([
+			"Drive entries",
+			formatNumber(statsData?.driveEntryCount || 0),
+		]);
+	}
 
 	return (
 		<>
@@ -177,7 +225,9 @@ export default async function Page() {
 
 									<p className="mt-2 text-sm leading-6 text-muted-foreground">
 										{isOwner
-											? "Track setup, mail volume, stored messages, Drive files and workspace storage from one place."
+											? driveEnabled
+												? "Track setup, mail volume, stored messages, Drive files and workspace storage from one place."
+												: "Track setup, mail volume and stored messages from one place."
 											: "Track your accessible mail, threads, drafts and stored messages from one place."}
 									</p>
 								</div>
@@ -295,28 +345,7 @@ export default async function Page() {
 								title="Storage"
 								rows={
 									isOwner
-										? [
-											[
-												"Raw EML",
-												formatBytes(statsData?.rawMessageBytes || 0),
-											],
-											[
-												"Attachments",
-												formatBytes(statsData?.attachmentBytes || 0),
-											],
-											[
-												"Drive files",
-												formatBytes(statsData?.driveStorageBytes || 0),
-											],
-											[
-												"Total",
-												formatBytes(
-													statsData?.totalStorageBytes ||
-													statsData?.storageBytesUsed ||
-													0,
-												),
-											],
-										]
+										? ownerStorageRows
 										: [
 											[
 												"Raw EML",
@@ -342,21 +371,7 @@ export default async function Page() {
 								<MiniPanel
 									icon={<Globe className="size-4" />}
 									title="Configuration"
-									rows={[
-										[
-											"Providers",
-											formatNumber(statsData?.connectedProviders || 0),
-										],
-										[
-											"Verified domains",
-											formatNumber(statsData?.verifiedDomains || 0),
-										],
-										[
-											"Identities",
-											formatNumber(statsData?.activeIdentities || 0),
-										],
-										["Volumes", formatNumber(statsData?.volumeCount || 0)],
-									]}
+									rows={ownerConfigurationRows}
 								/>
 							) : null}
 
@@ -365,24 +380,7 @@ export default async function Page() {
 								title="Records"
 								rows={
 									isOwner
-										? [
-											[
-												"Messages",
-												formatNumber(statsData?.emailsProcessedTotal || 0),
-											],
-											[
-												"Threads",
-												formatNumber(statsData?.threadCount || 0),
-											],
-											[
-												"Drafts",
-												formatNumber(statsData?.draftCount || 0),
-											],
-											[
-												"Drive entries",
-												formatNumber(statsData?.driveEntryCount || 0),
-											],
-										]
+										? ownerRecordRows
 										: [
 											[
 												"Messages",

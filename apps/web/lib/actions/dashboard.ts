@@ -60,6 +60,7 @@ import {
 import {workspaceIdentityMembers} from "@db";
 import {s3} from "@/lib/create-s3-client";
 import {CreateBucketCommand} from "@aws-sdk/client-s3";
+import { SITE_FEATURES } from "@/lib/site-features";
 
 const DASHBOARD_PATH = "/w/[workspaceId]/dashboard/providers";
 const CURRENT_API_VERSION = 1;
@@ -85,6 +86,17 @@ export async function upsertProviderAccount(
 		const parsed = ProviderAccountFormSchema.parse(data);
 
 		const rls = await rlsClient();
+		if (!SITE_FEATURES.drive) {
+			const [provider] = await rls((tx) =>
+				tx
+					.select({ type: providers.type })
+					.from(providers)
+					.where(eq(providers.id, String(parsed.providerId))),
+			);
+			if (provider?.type === "s3") {
+				throw new Error("Drive is disabled");
+			}
+		}
 		const [providerSecret] = await rls((tx) =>
 			tx
 				.select()
@@ -1421,6 +1433,10 @@ export const regenerateDavPassword = async () => {
 
 export async function addNewVolume(_prev: FormState, formData: FormData) {
 	return handleAction(async () => {
+		if (!SITE_FEATURES.drive) {
+			throw new Error("Drive is disabled");
+		}
+
 		const rls = await rlsClient();
 		const data = decode(formData);
 		const user = await isSignedIn();

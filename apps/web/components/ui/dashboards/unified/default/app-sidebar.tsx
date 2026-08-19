@@ -23,6 +23,7 @@ import Link from "next/link";
 import { useMediaQuery } from "@mantine/hooks";
 import { Divider } from "@mantine/core";
 import { IconFrame } from "@tabler/icons-react";
+import { useSiteFeatures } from "@/components/providers/site-features-provider";
 
 type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	navUserContent: React.ReactNode;
@@ -32,6 +33,7 @@ type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
 };
 
 export function AppSidebar({ ...props }: UnifiedSidebarProps) {
+	const { drive } = useSiteFeatures();
 	const {
 		sidebarSectionContent,
 		sidebarTopContent,
@@ -62,12 +64,16 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				icon: Calendar,
 				isActive: true,
 			},
-			{
-				title: "Drive",
-				url: `/w/${workspacePublicId}/dashboard/drive`,
-				icon: HardDrive,
-				isActive: true,
-			},
+			...(drive
+				? [
+						{
+							title: "Drive",
+							url: `/w/${workspacePublicId}/dashboard/drive`,
+							icon: HardDrive,
+							isActive: true,
+						},
+					]
+				: []),
 			{
 				title: "Platform",
 				url: `/w/${workspacePublicId}/dashboard/platform/overview`,

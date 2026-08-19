@@ -13,11 +13,17 @@ import {getWorkspacePublicId, rlsClient} from "@/lib/actions/clients";
 import { driveVolumes, providerSecrets, smtpAccountSecrets } from "@db";
 import { parseSecret } from "@/lib/utils";
 import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
+import { redirect } from "next/navigation";
+import { SITE_FEATURES } from "@/lib/site-features";
 
 export default async function ProvidersPage() {
+	const workspacePublicId = await getWorkspacePublicId()
+	if (!SITE_FEATURES.drive) {
+		redirect(`/w/${workspacePublicId}/dashboard/platform/overview`);
+	}
+
 	const userProviders = await syncProviders();
 	const rls = await rlsClient();
-	const workspacePublicId = await getWorkspacePublicId()
 	const vols = await rls((tx) => tx.select().from(driveVolumes));
 	const [, userProviderAccounts] = await Promise.all([
 		fetchDecryptedSecrets({
