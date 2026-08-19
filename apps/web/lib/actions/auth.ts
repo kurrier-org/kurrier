@@ -321,7 +321,7 @@ export async function getWorkspaceRedirectUrl(user: typeof users.$inferSelect) {
  * Server Action or Route Handler). Safe to call from a plain page/layout
  * render to figure out where to redirect an already-signed-in user.
  */
-export async function getDefaultWorkspacePath(user: typeof users.$inferSelect) {
+export async function getDefaultWorkspacePath(user: { id: string }) {
 	const [workspace] = await db
 		.select()
 		.from(workspaces)
