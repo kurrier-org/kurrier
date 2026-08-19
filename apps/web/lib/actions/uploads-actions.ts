@@ -6,8 +6,9 @@ import {getServerEnv} from "@schema";
 import {GetObjectCommand, PutObjectCommand} from "@aws-sdk/client-s3";
 import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
 import {s3} from "@/lib/create-s3-client";
-import {db, messages} from "@db";
+import {messages} from "@db";
 import {eq} from "drizzle-orm";
+import {rlsClient} from "@/lib/actions/clients";
 
 export async function createAttachmentUploadUrl(input: {
     fileName: string;
@@ -60,17 +61,25 @@ export async function createAttachmentDownloadUrl(path: string) {
 }
 
 export async function getRawMessageDownloadUrl(messageId: string) {
-    const [message] = await db.select().from(messages).where(eq(messages.id, messageId))
-    if (!message?.rawStorageKey) return { url: null };
+    const rls = await rlsClient();
+    const [message] = await rls((tx) =>
+        tx
+            .select()
+            .from(messages)
+            .where(eq(messages.id, messageId))
+            .limit(1),
+    );
+    if (!message?.rawStorageKey) {
+        return { url: null };
+    }
     const { S3_BUCKET } = getServerEnv();
-
     const command = new GetObjectCommand({
-        Bucket: S3_BUCKET,
+        Bucket: S3_BUCKET!,
         Key: message.rawStorageKey,
     });
-
-    const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
-
+    const url = await getSignedUrl(s3, command, {
+        expiresIn: 300,
+    });
     return { url };
 }
 

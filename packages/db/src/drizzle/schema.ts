@@ -116,6 +116,10 @@ export const googleAccountStatusEnum = pgEnum("google_account_status", [
 	"revoked",
 	"error",
 ]);
+export const SecretManagedByEnum = pgEnum("secret_managed_by", [
+	"system",
+	"user",
+]);
 
 
 
@@ -299,6 +303,10 @@ export const secretsMeta = pgTable(
 		iv: text("iv").notNull(),
 		authTag: text("auth_tag").notNull(),
 
+		managedBy: SecretManagedByEnum("managed_by")
+			.notNull()
+			.default("system"),
+
 		keyVersion: integer("key_version").notNull().default(1),
 
 		workspaceId: uuid("workspace_id")
@@ -309,6 +317,10 @@ export const secretsMeta = pgTable(
 	(t) => [
 		index("ix_secrets_meta_workspace").on(t.workspaceId),
 		index("ix_secrets_meta_owner").on(t.ownerId),
+		index("ix_secrets_meta_managed_by").on(
+			t.workspaceId,
+			t.managedBy,
+		),
 		uniqueIndex("ux_secrets_meta_workspace_name").on(
 			t.workspaceId,
 			t.name

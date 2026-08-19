@@ -2,7 +2,7 @@
 
 import { isSignedIn } from "@/lib/actions/auth";
 import {
-	driveEntries, DriveVolumeEntity,
+	driveEntries, driveUploadIntents, DriveVolumeEntity,
 	driveVolumes
 } from "@db";
 import { rlsClient } from "@/lib/actions/clients";
@@ -342,7 +342,6 @@ function joinPaths(base: string, leaf: string) {
 	return out === "" ? "/" : out;
 }
 
-
 export async function getCloudUploadUrl(
 	ctx: DriveRouteContext,
 	input: {
@@ -370,6 +369,20 @@ export async function getCloudUploadUrl(
 	const relativeKey = fullPath.replace(/^\/+/, "");
 	const key = `${volumePrefix}${relativeKey}`;
 
+	const uploadToken = crypto.randomUUID();
+
+	const rls = await rlsClient();
+
+	await rls((tx) =>
+		tx.insert(driveUploadIntents).values({
+			volumeId: volume.id,
+			token: uploadToken,
+			targetPath: fullPath,
+			singleUse: true,
+			expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+		}),
+	);
+
 	const url = await getSignedUrl(
 		s3,
 		new PutObjectCommand({
@@ -392,6 +405,7 @@ export async function getCloudUploadUrl(
 		relativeKey,
 		method: "PUT",
 		url,
+		uploadToken,
 		headers: {
 			"Content-Type": input.contentType || "application/octet-stream",
 		},
