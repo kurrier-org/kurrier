@@ -30,9 +30,11 @@ import {
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSiteFeatures } from "@/components/providers/site-features-provider";
 
 export function NavMain({workspacePublicId, workspaceRole}: {workspacePublicId?: string, workspaceRole?: string}) {
 	const pathname = usePathname();
+	const { drive } = useSiteFeatures();
 
 	const navPlatformItems: {
 		title: string;
@@ -70,12 +72,16 @@ export function NavMain({workspacePublicId, workspaceRole}: {workspacePublicId?:
 					icon: Blocks,
 					items: [],
 				},
-				{
-					title: "Storage",
-					url: `/w/${workspacePublicId}/dashboard/platform/storage`,
-					icon: HardDrive,
-					items: [],
-				},
+				...(drive
+					? [
+							{
+								title: "Storage",
+								url: `/w/${workspacePublicId}/dashboard/platform/storage`,
+								icon: HardDrive,
+								items: [],
+							},
+						]
+					: []),
 				{
 					title: "Vault",
 					url: `/w/${workspacePublicId}/dashboard/platform/vault`,

@@ -103,6 +103,21 @@ WEB_URL=https://www.yourdomain.com
     reverse-proxied path, e.g. `DAV_URL=https://dav.yourdomain.com`.
 </Callout>
 
+### Optional: hide Kurrier Drive
+
+If your organization uses a separate file platform, such as Nextcloud, you can
+hide Kurrier Drive and its storage-management UI:
+
+```bash
+DISABLE_DRIVE=true
+```
+
+Restart the web container after changing this value. This setting only disables
+Kurrier's Drive web interface. It does not disable the object storage used for
+email, raw EML files, or attachments, and it does not delete existing Drive
+data. Set the value back to `false` and restart the web container to restore the
+Drive interface.
+
 ---
 
 ✅ Once you are all set with your environment variables you are now ready to run
