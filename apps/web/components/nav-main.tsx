@@ -9,7 +9,7 @@ import {
 	LayoutDashboard,
 	type LucideIcon,
 	Plug,
-	Send, Webhook,
+	Send, Vault, Webhook,
 } from "lucide-react";
 
 import {
@@ -74,6 +74,12 @@ export function NavMain({workspacePublicId, workspaceRole}: {workspacePublicId?:
 					title: "Storage",
 					url: `/w/${workspacePublicId}/dashboard/platform/storage`,
 					icon: HardDrive,
+					items: [],
+				},
+				{
+					title: "Vault",
+					url: `/w/${workspacePublicId}/dashboard/platform/vault`,
+					icon: Vault,
 					items: [],
 				},
 				{

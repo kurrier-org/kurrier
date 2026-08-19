@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import {and, eq} from "drizzle-orm";
 import { createDrizzleClientInstance } from "./drizzle-client";
 import { secretsMeta } from "./schema";
 import { createDb } from "./init-db";
@@ -55,7 +55,7 @@ export async function listSecrets(session: string, workspaceId: string) {
 export async function createSecret(
 	session: string,
 	workspaceId: string,
-	input: { name: string; value: string },
+	input: { name: string; value: string; description?: string | null; managedBy?: "system" | "user";},
 ) {
 	const db = await createDrizzleClientInstance(session, { workspaceId });
 	const { rls } = db;
@@ -67,6 +67,8 @@ export async function createSecret(
 			.insert(secretsMeta)
 			.values({
 				name: input.name,
+				description: input.description ?? null,
+				managedBy: input.managedBy ?? "system",
 				encryptedValue: enc.encryptedValue,
 				iv: enc.iv,
 				authTag: enc.authTag,
@@ -84,6 +86,7 @@ export async function createSecretAdmin(input: {
 	name: string;
 	value: string;
 	description?: string | null;
+	managedBy?: "system" | "user";
 }) {
 	const db = createDb();
 	const enc = encrypt(input.value);
@@ -95,6 +98,7 @@ export async function createSecretAdmin(input: {
 			workspaceId: input.workspaceId,
 			name: input.name,
 			description: input.description ?? null,
+			managedBy: input.managedBy ?? "system",
 			encryptedValue: enc.encryptedValue,
 			iv: enc.iv,
 			authTag: enc.authTag,
@@ -166,7 +170,7 @@ export async function updateSecret(
 	session: string,
 	workspaceId: string,
 	id: string,
-	input: { value?: string; name?: string },
+	input: { value?: string; name?: string, description?: string | null; },
 ) {
 	const db = await createDrizzleClientInstance(session, { workspaceId });
 	const { rls } = db;
@@ -178,6 +182,7 @@ export async function updateSecret(
 
 	const patch: Record<string, any> = {};
 	if (input.name !== undefined) patch.name = input.name;
+	if (input.description !== undefined) patch.description = input.description;
 	if (input.value !== undefined) {
 		const enc = encrypt(input.value);
 		patch.encryptedValue = enc.encryptedValue;
@@ -262,3 +267,65 @@ export async function deleteSecretAdmin(id: string) {
 	await db.delete(secretsMeta).where(eq(secretsMeta.id, id));
 }
 
+export async function getUserManagedSecret(
+	session: string,
+	id: string,
+	workspaceId: string,
+) {
+	const result = await getSecret(session, id, workspaceId);
+
+	if (result.metaSecret.managedBy !== "user") {
+		throw new Error("Secret is not user-managed");
+	}
+
+	return result;
+}
+
+export async function listUserManagedSecrets(
+	session: string,
+	workspaceId: string,
+) {
+
+	const db = await createDrizzleClientInstance(session, { workspaceId });
+	return db.rls((tx) =>
+		tx
+			.select()
+			.from(secretsMeta)
+			.where(eq(secretsMeta.managedBy, "user")),
+	);
+}
+
+
+export async function getUserManagedSecretByName(
+	session: string,
+	workspaceId: string,
+	name: string,
+) {
+	const db = await createDrizzleClientInstance(session, { workspaceId });
+
+	const meta = await db.rls((tx) =>
+		tx
+			.select()
+			.from(secretsMeta)
+			.where(
+				and(
+					eq(secretsMeta.workspaceId, workspaceId),
+					eq(secretsMeta.name, name),
+					eq(secretsMeta.managedBy, "user"),
+				),
+			)
+			.limit(1),
+	).then((rows) => rows[0]);
+
+	if (!meta) {
+		throw new Error(`Secret ${name} not found`);
+	}
+
+	const value = decrypt({
+		encryptedValue: meta.encryptedValue,
+		iv: meta.iv,
+		authTag: meta.authTag,
+	});
+
+	return value;
+}
