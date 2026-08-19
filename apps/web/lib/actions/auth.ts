@@ -136,7 +136,8 @@ export async function signInUserAndRedirect(
 	locale?: string,
 ) {
 	await createSessionForUser(user.id);
-	redirect(await getWorkspaceRedirectUrl(user));
+	const target = await getWorkspaceRedirectUrl(user);
+	redirect(locale ? withLocale(locale, target) : target);
 }
 
 export async function login(
@@ -183,10 +184,11 @@ export async function signup(
 		};
 	}
 
-	const { workspaceName, email, password } = decode(formData) as {
+	const { workspaceName, email, password, locale } = decode(formData) as {
 		email: string;
 		password: string;
 		workspaceName: string;
+		locale?: string;
 	};
 
 	if (!email || !password) {
@@ -205,7 +207,7 @@ export async function signup(
 		return { error: user.error };
 	}
 
-	await signInUserAndRedirect(user);
+	await signInUserAndRedirect(user, locale);
 
 	return { success: true, message: "auth.welcome" };
 }
@@ -287,11 +289,7 @@ export async function createSessionForUser(userId: string) {
 	await setAuthToken(token);
 }
 
-export async function getWorkspaceRedirectUrl(
-	user: typeof users.$inferSelect,
-	locale?: string,
-	skipContextUpdate?: boolean,
-) {
+export async function getWorkspaceRedirectUrl(user: typeof users.$inferSelect) {
 	const [workspace] = await db
 		.select()
 		.from(workspaces)
@@ -301,8 +299,36 @@ export async function getWorkspaceRedirectUrl(
 		return "/auth/login";
 	}
 
-	if (!skipContextUpdate) {
-		await updateWorkSpaceContext(workspace.publicId, workspace.id, user);
+	await updateWorkSpaceContext(workspace.publicId, workspace.id, user);
+
+	if (workspace.defaultIdentityId) {
+		const [defaultIdentity] = await db
+			.select()
+			.from(identities)
+			.where(eq(identities.id, workspace.defaultIdentityId));
+
+		if (defaultIdentity) {
+			return `/w/${workspace.publicId}/dashboard/mail/${defaultIdentity.publicId}/inbox`;
+		}
+	}
+
+	return `/w/${workspace.publicId}/dashboard/platform/overview`;
+}
+
+/**
+ * Read-only counterpart to getWorkspaceRedirectUrl: same target resolution,
+ * but never writes the workspace-context cookies (that's only legal from a
+ * Server Action or Route Handler). Safe to call from a plain page/layout
+ * render to figure out where to redirect an already-signed-in user.
+ */
+export async function getDefaultWorkspacePath(user: typeof users.$inferSelect) {
+	const [workspace] = await db
+		.select()
+		.from(workspaces)
+		.where(eq(workspaces.ownerId, user.id));
+
+	if (!workspace) {
+		return "/auth/login";
 	}
 
 	if (workspace.defaultIdentityId) {
@@ -312,14 +338,6 @@ export async function getWorkspaceRedirectUrl(
 			.where(eq(identities.id, workspace.defaultIdentityId));
 
 		if (defaultIdentity) {
-			if (locale) {
-				redirect(
-					withLocale(
-						locale,
-						`/w/${workspace.publicId}/dashboard/platform/overview`,
-					),
-				);
-			}
 			return `/w/${workspace.publicId}/dashboard/mail/${defaultIdentity.publicId}/inbox`;
 		}
 	}

@@ -2,4 +2,4 @@
 "@kurrier/repo": patch
 ---
 
-Fix two 404s introduced by the locale-routing merge: the locale root ("/{locale}") had no page to catch the post-login redirect, and the auth-pages guard for already-authenticated users pointed at a stale, non-localized, workspace-less path. Both now resolve the user's workspace and redirect correctly.
+Add missing default routes ([locale], [locale]/w, dashboard index), a branded not-found/error page instead of Next's default, and fix several places where a redirect dropped the current locale (post-signup/login, auth layout guards). Also removes the dead, unreachable app/page.tsx that pointed at a stale route shape.

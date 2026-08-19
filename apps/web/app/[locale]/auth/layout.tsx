@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getWorkspaceRedirectUrl, isSignedIn } from "@/lib/actions/auth";
+import { getDefaultWorkspacePath, isSignedIn } from "@/lib/actions/auth";
 import { withLocale } from "@/lib/utils";
 
 export default async function DashboardLayout({
@@ -13,9 +13,7 @@ export default async function DashboardLayout({
 	const user = await isSignedIn();
 
 	if (user) {
-		redirect(
-			withLocale(locale, await getWorkspaceRedirectUrl(user, undefined, true)),
-		);
+		redirect(withLocale(locale, await getDefaultWorkspacePath(user)));
 	}
 
 	return <>{children}</>;
