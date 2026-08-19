@@ -187,8 +187,7 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 
 				const formData = new FormData();
 				formData.append("file", file);
-				formData.append("bucket", presign.bucket);
-				formData.append("key", presign.key);
+				formData.append("uploadToken", presign.uploadToken);
 
 				xhr.send(formData);
 			}
