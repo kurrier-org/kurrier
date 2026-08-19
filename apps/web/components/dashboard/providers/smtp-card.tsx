@@ -44,10 +44,10 @@ export default function SMTPCard({
 					<CardHeader className="gap-2">
 						<div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
 							<div className="max-w-2xl">
-								<CardTitle className="text-xl">{SMTP_SPEC.name}</CardTitle>
+								<CardTitle className="text-xl">SMTP/IMAP Accounts</CardTitle>
 								<p className="text-sm text-muted-foreground mt-1">
-									Manage app-level SMTP accounts. Secrets are stored in your
-									vault and linked to accounts here.
+									Manage connected email accounts. Credentials are stored in your
+									vault.
 								</p>
 								<p className="text-xs text-muted-foreground/80 mt-1">
 									{SMTP_SPEC.help}
@@ -57,7 +57,7 @@ export default function SMTPCard({
 							<CardAction className="mt-3 lg:mt-0">
 								<Button size="sm" onClick={openAddModal} className="gap-2">
 									<Plus className="h-4 w-4" />
-									Add SMTP Account
+									Add Generic Account
 								</Button>
 							</CardAction>
 						</div>
@@ -81,7 +81,7 @@ export default function SMTPCard({
 									className="gap-2"
 								>
 									<Plus className="h-4 w-4" />
-									Add SMTP Account
+									Add Generic Account
 								</Button>
 							</div>
 						)}

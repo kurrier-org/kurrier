@@ -20,12 +20,15 @@ import {
 } from "@db";
 import {
 	apiScopeList,
+	CustomEmailProviderCredentialsSchema,
 	defaultImapQuota,
 	DomainIdentityFormSchema,
 	FormState,
 	getPublicEnv,
 	handleAction,
 	MailboxKindDisplay,
+	materializeCustomEmailProvider,
+	parseCustomEmailProviders,
 	ProviderAccountFormSchema,
 	Providers,
 	SmtpAccountFormSchema,
@@ -187,6 +190,53 @@ export async function upsertSMTPAccount(
 		return {
 			success: true,
 			message: "Done",
+		};
+	});
+}
+
+export async function createCustomProviderSMTPAccount(
+	_prev: FormState,
+	formData: FormData,
+): Promise<FormState> {
+	return handleAction(async () => {
+		const credentials = CustomEmailProviderCredentialsSchema.parse(
+			decode(formData),
+		);
+		const preset = parseCustomEmailProviders(
+			process.env.CUSTOM_EMAIL_PROVIDERS,
+		).find((provider) => provider.id === credentials.presetId);
+
+		if (!preset) {
+			throw new Error(
+				"This email provider is no longer available. Refresh the page and try again.",
+			);
+		}
+
+		const smtpConfig = materializeCustomEmailProvider(preset, credentials);
+		const session = await currentSession();
+		const workspaceId = await getWorkspaceId();
+		const rls = await rlsClient();
+
+		const secretMeta = await createSecret(session, workspaceId, {
+			name: smtpConfig.ulid,
+			value: JSON.stringify(smtpConfig),
+		});
+		const [smtpAccount] = await rls((tx) =>
+			tx.insert(smtpAccounts).values({}).returning(),
+		);
+
+		await rls((tx) =>
+			tx.insert(smtpAccountSecrets).values({
+				accountId: smtpAccount.id,
+				secretId: secretMeta.id,
+			}),
+		);
+
+		revalidatePath(DASHBOARD_PATH);
+
+		return {
+			success: true,
+			message: `Added ${preset.name} account`,
 		};
 	});
 }
