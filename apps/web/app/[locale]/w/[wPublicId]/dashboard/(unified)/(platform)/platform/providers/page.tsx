@@ -56,7 +56,7 @@ export default async function ProvidersPage() {
 						<section className="mb-8">
 							<div className="mb-4">
 								<h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-									Company email providers
+									Configured email providers
 								</h2>
 								<p className="mt-1 text-xs text-muted-foreground">
 									Server settings are managed by your administrator.
