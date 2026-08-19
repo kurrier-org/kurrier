@@ -1,5 +1,11 @@
 # web
 
+## 2.2.3
+
+### Patch Changes
+
+- [#560](https://github.com/kurrier-org/kurrier/pull/560) [`d533d67`](https://github.com/kurrier-org/kurrier/commit/d533d672e65552feefdc4ec9fafeb70b94c9292a) Thanks [@krokhale](https://github.com/krokhale)! - Security hardening for file uploads, message access, workspace data, and destructive mailbox actions.
+
 ## 2.2.2
 
 ### Patch Changes
