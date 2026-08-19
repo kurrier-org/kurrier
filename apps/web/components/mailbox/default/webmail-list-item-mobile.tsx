@@ -7,9 +7,13 @@ import { usePathname, useRouter } from "next/navigation";
 import React from "react";
 import { toast } from "sonner";
 import LabelRowTag from "@/components/dashboard/labels/label-row-tag";
+import ThreadLabelHoverButtons from "@/components/dashboard/labels/thread-label-hover-buttons";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
-import type { FetchMailboxThreadLabelsResult } from "@/lib/actions/labels";
+import type {
+	FetchLabelsResult,
+	FetchMailboxThreadLabelsResult,
+} from "@/lib/actions/labels";
 import {
 	type FetchMailboxThreadsResult,
 	markAsRead,
@@ -24,6 +28,7 @@ type Props = {
 	identityPublicId: string;
 	mailboxSync: MailboxSyncEntity | undefined;
 	labelsByThreadId: FetchMailboxThreadLabelsResult;
+	globalLabels: FetchLabelsResult;
 };
 
 export default function WebmailListItemMobile({
@@ -32,6 +37,7 @@ export default function WebmailListItemMobile({
 	identityPublicId,
 	mailboxSync,
 	labelsByThreadId,
+	globalLabels,
 }: Props) {
 	const router = useRouter();
 	const dict = useOptionalDictionary();
@@ -186,6 +192,16 @@ export default function WebmailListItemMobile({
 				<time className="whitespace-nowrap text-sm text-foreground">
 					{dateLabel}
 				</time>
+				<div onClick={(e) => e.stopPropagation()}>
+					<ThreadLabelHoverButtons
+						mailboxThreadItem={{
+							threadId: mailboxThreadItem.threadId,
+							mailboxId: activeMailbox.id,
+						}}
+						allLabels={globalLabels}
+						labelsByThreadId={labelsByThreadId}
+					/>
+				</div>
 			</div>
 
 			{/* hover actions */}

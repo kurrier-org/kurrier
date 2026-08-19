@@ -1,9 +1,17 @@
-import React, {Suspense} from "react";
-import {fetchMailbox, fetchThreadMailSubscriptions, fetchWebMailThreadDetail} from "@/lib/actions/mailbox";
-import ThreadItem from "@/components/mailbox/default/thread-item";
+import type { MessageEntity } from "@db";
 import { Divider } from "@mantine/core";
-import {MessageEntity} from "@db";
+import React, { Suspense } from "react";
 import Loading from "@/app/loading";
+import ThreadItem from "@/components/mailbox/default/thread-item";
+import {
+	fetchLabelsByIdentityPublicId,
+	fetchMailboxThreadLabels,
+} from "@/lib/actions/labels";
+import {
+	fetchMailbox,
+	fetchThreadMailSubscriptions,
+	fetchWebMailThreadDetail,
+} from "@/lib/actions/mailbox";
 
 async function Page({
 	params,
@@ -22,14 +30,20 @@ async function Page({
 
 	const activeThread = await fetchWebMailThreadDetail(threadId);
 
-    const { byMessageId } = await fetchThreadMailSubscriptions({
-        ownerId: activeMailbox.ownerId,
-        messages:
-            activeThread?.messages.map((m: MessageEntity) => ({
-                id: m.id,
-                headersJson: m.headersJson,
-            })) ?? [],
-    });
+	const { byMessageId } = await fetchThreadMailSubscriptions({
+		ownerId: activeMailbox.ownerId,
+		messages:
+			activeThread?.messages.map((m: MessageEntity) => ({
+				id: m.id,
+				headersJson: m.headersJson,
+			})) ?? [],
+	});
+
+	const allLabels = await fetchLabelsByIdentityPublicId({
+		identityPublicId,
+		scope: "thread",
+	});
+	const labelsByThreadId = await fetchMailboxThreadLabels([{ threadId }]);
 
 	return (
 		<>
@@ -46,6 +60,8 @@ async function Page({
 								markSmtp={!!mailboxSync}
 								identityPublicId={identityPublicId}
 								mailSubscription={byMessageId.get(message.id) ?? null}
+								allLabels={allLabels}
+								labelsByThreadId={labelsByThreadId}
 							/>
 							<Divider className={"opacity-50 mb-6"} ml={"xl"} mr={"xl"} />
 						</div>

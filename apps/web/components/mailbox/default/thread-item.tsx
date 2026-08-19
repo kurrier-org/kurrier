@@ -1,19 +1,23 @@
-import React from "react";
-import { MessageEntity } from "@db";
-import EmailViewer from "@/components/mailbox/default/email-viewer";
-import EmailRenderer from "@/components/mailbox/default/email-renderer";
+import { getMessageAddress, getMessageName } from "@common/mail-client";
+import type { MessageEntity } from "@db";
 import { Avatar } from "@mantine/core";
+import { getPublicEnv } from "@schema";
+import React from "react";
+import { Container } from "@/components/common/containers";
+import EmailRenderer from "@/components/mailbox/default/email-renderer";
+import EmailViewer from "@/components/mailbox/default/email-viewer";
+import RenderInvite from "@/components/mailbox/default/render-invite";
+import { fetchEventPreviewItems } from "@/lib/actions/calendar";
+import type {
+	FetchLabelsResult,
+	FetchMailboxThreadLabelsResult,
+} from "@/lib/actions/labels";
 import {
+	type FetchThreadMailSubsResult,
 	fetchIdentityMailboxList,
 	fetchMessageAttachments,
-	FetchThreadMailSubsResult,
-	getSignedUrlsForMessage
+	getSignedUrlsForMessage,
 } from "@/lib/actions/mailbox";
-import { getPublicEnv } from "@schema";
-import { getMessageAddress, getMessageName } from "@common/mail-client";
-import { Container } from "@/components/common/containers";
-import RenderInvite from "@/components/mailbox/default/render-invite";
-import {fetchEventPreviewItems} from "@/lib/actions/calendar";
 
 export default async function ThreadItem({
 	message,
@@ -22,8 +26,10 @@ export default async function ThreadItem({
 	threadId,
 	activeMailboxId,
 	markSmtp,
-    identityPublicId,
-    mailSubscription
+	identityPublicId,
+	mailSubscription,
+	allLabels,
+	labelsByThreadId,
 }: {
 	message: MessageEntity;
 	threadIndex: number;
@@ -31,12 +37,14 @@ export default async function ThreadItem({
 	threadId: string;
 	activeMailboxId: string;
 	markSmtp: boolean;
-    identityPublicId: string;
-    mailSubscription: FetchThreadMailSubsResult["byMessageId"] | null;
+	identityPublicId: string;
+	mailSubscription: FetchThreadMailSubsResult["byMessageId"] | null;
+	allLabels: FetchLabelsResult;
+	labelsByThreadId: FetchMailboxThreadLabelsResult;
 }) {
-	const attachments = await getSignedUrlsForMessage(message.id)
+	const attachments = await getSignedUrlsForMessage(message.id);
 	const publicConfig = getPublicEnv();
-    const preview = await fetchEventPreviewItems(attachments, identityPublicId)
+	const preview = await fetchEventPreviewItems(attachments, identityPublicId);
 	const identityMailboxes = await fetchIdentityMailboxList();
 
 	return (
@@ -54,9 +62,15 @@ export default async function ThreadItem({
 						/>
 					</div>
 					<div className={"col-span-12 md:col-span-11"}>
-                        {preview?.calendarEvent && preview?.attendees && preview?.identity && (
-                            <RenderInvite calendarEvent={preview.calendarEvent} attendees={preview.attendees ?? []} identity={preview.identity}/>
-                        )}
+						{preview?.calendarEvent &&
+							preview?.attendees &&
+							preview?.identity && (
+								<RenderInvite
+									calendarEvent={preview.calendarEvent}
+									attendees={preview.attendees ?? []}
+									identity={preview.identity}
+								/>
+							)}
 
 						<EmailRenderer
 							threadIndex={threadIndex}
@@ -67,8 +81,10 @@ export default async function ThreadItem({
 							threadId={threadId}
 							markSmtp={markSmtp}
 							activeMailboxId={activeMailboxId}
-                            mailSubscription={mailSubscription}
+							mailSubscription={mailSubscription}
 							identityMailboxes={identityMailboxes}
+							allLabels={allLabels}
+							labelsByThreadId={labelsByThreadId}
 						>
 							<EmailViewer message={message} />
 						</EmailRenderer>

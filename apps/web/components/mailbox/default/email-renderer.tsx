@@ -12,10 +12,15 @@ import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import ThreadLabelHoverButtons from "@/components/dashboard/labels/thread-label-hover-buttons";
 import EditorAttachmentItem from "@/components/mailbox/default/editor/editor-attachment-item";
 import type { EmailEditorHandle } from "@/components/mailbox/default/editor/email-editor";
 import MailUnsubscriber from "@/components/mailbox/default/mail-unsubscriber";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import type {
+	FetchLabelsResult,
+	FetchMailboxThreadLabelsResult,
+} from "@/lib/actions/labels";
 import {
 	type FetchThreadMailSubsResult,
 	fetchMailbox,
@@ -111,6 +116,8 @@ function EmailRenderer({
 	activeMailboxId,
 	mailSubscription,
 	identityMailboxes,
+	allLabels,
+	labelsByThreadId,
 	children,
 }: {
 	threadIndex: number;
@@ -124,6 +131,8 @@ function EmailRenderer({
 	activeMailboxId: string;
 	mailSubscription: FetchThreadMailSubsResult["byMessageId"] | null;
 	identityMailboxes: FetchIdentityMailboxListResult;
+	allLabels: FetchLabelsResult;
+	labelsByThreadId: FetchMailboxThreadLabelsResult;
 	children?: React.ReactNode;
 }) {
 	const dict = useOptionalDictionary();
@@ -367,6 +376,11 @@ function EmailRenderer({
 				>
 					<div className={"text-xs "}>{formatted}</div>
 					<div className={"flex gap-1 justify-end items-center"}>
+						<ThreadLabelHoverButtons
+							mailboxThreadItem={{ threadId, mailboxId: activeMailboxId }}
+							allLabels={allLabels}
+							labelsByThreadId={labelsByThreadId}
+						/>
 						<ActionIcon
 							variant={"transparent"}
 							onClick={() => {
