@@ -8,9 +8,7 @@
 			"@db": ["../../packages/db/src/index.ts"],
 			"@db/*": ["../../packages/db/src/*"],
 			"@common": ["../../packages/common/src/index.ts"],
-			"@common/*": ["../../packages/common/src/*"],
-			"@jmap": ["../../packages/jmap/src/index.ts"],
-			"@jmap/*": ["../../packages/jmap/src/*"]
+			"@common/*": ["../../packages/common/src/*"]
 		}
 	},
 	"exclude": ["node_modules"]

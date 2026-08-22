@@ -82,13 +82,18 @@ export async function ensureParentChain(opts: {
 	return parentRow.id;
 }
 
-export function inferKind(mbxName: string, specialUse?: string): MailboxKind {
-	if (specialUse === "\\Inbox") return "inbox";
-	if (specialUse === "\\Sent") return "sent";
-	if (specialUse === "\\Drafts") return "drafts";
-	if (specialUse === "\\Junk") return "spam";
-	if (specialUse === "\\Trash") return "trash";
-	if (specialUse === "\\Archive") return "archive";
+export function inferKind(
+	mbxName: string,
+	specialUse?: string | null,
+): MailboxKind {
+	const role = specialUse?.toLowerCase();
+
+	if (role === "\\inbox" || role === "inbox") return "inbox";
+	if (role === "\\sent" || role === "sent") return "sent";
+	if (role === "\\drafts" || role === "drafts") return "drafts";
+	if (role === "\\junk" || role === "junk") return "spam";
+	if (role === "\\trash" || role === "trash") return "trash";
+	if (role === "\\archive" || role === "archive") return "archive";
 
 	const n = (mbxName || "").toLowerCase();
 

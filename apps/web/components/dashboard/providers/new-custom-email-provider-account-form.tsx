@@ -16,14 +16,17 @@ export default function NewCustomEmailProviderAccountForm({
 		{
 			name: "ulid",
 			props: { type: "hidden", defaultValue: ulid() },
+			wrapperClasses: "hidden"
 		},
 		{
 			name: "presetId",
 			props: { type: "hidden", defaultValue: provider.id },
+			wrapperClasses: "hidden"
 		},
 		{
 			name: "credentialMode",
 			props: { type: "hidden", defaultValue: provider.credentialMode },
+			wrapperClasses: "hidden"
 		},
 	];
 

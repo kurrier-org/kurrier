@@ -16,6 +16,8 @@ export const s3 = new S3Client({
     region: S3_REGION!,
     endpoint: S3_ENDPOINT,
     forcePathStyle: String(S3_FORCE_PATH_STYLE) === "true",
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
     credentials: {
         accessKeyId: S3_ACCESS_KEY!,
         secretAccessKey: S3_SECRET_KEY!,

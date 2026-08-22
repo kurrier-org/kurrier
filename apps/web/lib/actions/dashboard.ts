@@ -15,7 +15,7 @@ import {
 	providerSecrets,
 	secretsMeta,
 	smtpAccounts,
-	smtpAccountSecrets, threads,
+	smtpAccountSecrets,
 	updateSecret, WebhookInsertEntity, webhooks, workspaceMembers,
 } from "@db";
 import {
@@ -35,7 +35,7 @@ import {
 	SYSTEM_MAILBOXES,
 } from "@schema";
 import { currentSession, isSignedIn } from "@/lib/actions/auth";
-import {and, count, eq, sql, gte, desc, inArray, sum, countDistinct} from "drizzle-orm";
+import {and, count, eq, sql, gte, desc, sum, countDistinct} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { decode } from "decode-formdata";
 import { PgColumn, PgTable } from "drizzle-orm/pg-core";
@@ -55,11 +55,9 @@ import { kvGet } from "@common";
 import { nanoid } from "nanoid";
 import { getRedis } from "@/lib/actions/get-redis";
 import {
-	checkDefaultWorkspaceIdentity, fetchWorkspace
+	checkDefaultWorkspaceIdentity,
 } from "@/lib/actions/workspace";
 import {workspaceIdentityMembers} from "@db";
-import {s3} from "@/lib/create-s3-client";
-import {CreateBucketCommand} from "@aws-sdk/client-s3";
 import { SITE_FEATURES } from "@/lib/site-features";
 
 const DASHBOARD_PATH = "/w/[workspaceId]/dashboard/providers";
@@ -214,9 +212,7 @@ export async function createCustomProviderSMTPAccount(
 		const credentials = CustomEmailProviderCredentialsSchema.parse(
 			decode(formData),
 		);
-		const preset = parseCustomEmailProviders(
-			process.env.CUSTOM_EMAIL_PROVIDERS,
-		).find((provider) => provider.id === credentials.presetId);
+		const preset = parseCustomEmailProviders().find((provider) => provider.id === credentials.presetId);
 
 		if (!preset) {
 			throw new Error(
