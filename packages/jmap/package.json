@@ -1,0 +1,19 @@
+{
+	"name": "@kurrier/jmap-client",
+	"private": true,
+	"version": "1.0.0",
+	"description": "JMAP client for Kurrier",
+	"types": "src/index.ts",
+	"main": "src/index.ts",
+	"type": "module",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "Krishna Rokhale",
+	"license": "ISC",
+	"dependencies": {
+	},
+	"devDependencies": {
+	}
+}

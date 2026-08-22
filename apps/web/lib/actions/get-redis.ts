@@ -35,6 +35,9 @@ export const getRedis = async () => {
 	const commonWorkerQueue = new Queue("common-worker", redisConnection);
 	const commonWorkerEvents = new QueueEvents("common-worker", redisConnection);
 
+	const jmapQueue = new Queue("jmap-worker", redisConnection);
+	const jmapEvents = new QueueEvents("jmap-worker", redisConnection);
+
 	await Promise.all([
 		smtpEvents.waitUntilReady(),
 		sendMailEvents.waitUntilReady(),
@@ -42,7 +45,9 @@ export const getRedis = async () => {
 		davEvents.waitUntilReady(),
 		migrationWorkerEvents.waitUntilReady(),
 		commonWorkerEvents.waitUntilReady(),
-		gmailEvents.waitUntilReady()
+		gmailEvents.waitUntilReady(),
+		jmapEvents.waitUntilReady(),
+		jmapQueue.waitUntilReady()
 	])
 
 	return {
@@ -60,5 +65,7 @@ export const getRedis = async () => {
 		commonWorkerEvents,
 		gmailQueue,
 		gmailEvents,
+		jmapQueue,
+		jmapEvents
 	};
 };

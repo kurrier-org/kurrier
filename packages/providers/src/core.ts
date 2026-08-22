@@ -289,3 +289,22 @@ export const RawGoogleConfigSchema = z
 	});
 
 export type GoogleConfig = z.infer<typeof RawGoogleConfigSchema>;
+
+export const RawJmapConfigSchema = z
+	.object({
+		token: z.string(),
+		sessionUrl: z.string().url(),
+		accountId: z.string(),
+		username: z.string(),
+	})
+	.refine((r) => r.token.length > 0, {
+		message: "JMAP token is required",
+	})
+	.refine((r) => r.accountId.length > 0, {
+		message: "JMAP accountId is required",
+	})
+	.refine((r) => r.username.length > 0, {
+		message: "JMAP username is required",
+	});
+
+export type JmapConfig = z.infer<typeof RawJmapConfigSchema>;

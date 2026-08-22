@@ -75,9 +75,9 @@ type Warn = (message: string) => void;
 
 /** Parse non-secret instance-level email provider presets from an environment variable. */
 export function parseCustomEmailProviders(
-	raw: string | undefined,
 	warn: Warn = console.warn,
 ): CustomEmailProvider[] {
+	const raw = process.env.CUSTOM_EMAIL_PROVIDERS
 	if (!raw?.trim()) return [];
 
 	let input: unknown;

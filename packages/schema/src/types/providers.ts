@@ -8,7 +8,8 @@ export const providersList = [
 	"postmark",
 	"sendgrid",
 	"s3",
-	"inbound"
+	"inbound",
+	"jmap"
 ] as const;
 export const ProvidersEnum = z.enum(providersList);
 export type Providers = z.infer<typeof ProvidersEnum>;
@@ -22,6 +23,7 @@ export const ProviderLabels: Record<Providers, string> = {
 	sendgrid: "SendGrid",
 	google: "Google",
 	inbound: "Kurrier Inbound",
+	jmap: "JMAP",
 
 	s3: "S3 Compatible Storage",
 };
@@ -71,7 +73,6 @@ export const GOOGLE_SPEC = {
 		"Connect Gmail or Google Workspace accounts using OAuth. No app passwords or SMTP credentials required.",
 };
 
-
 export const SMTP_SPEC = {
 	key: "smtp" as const,
 	name: ProviderLabels.smtp,
@@ -112,3 +113,39 @@ export const INBOUND_SPEC = {
 	help:
 		"Receive email directly through Kurrier’s API without configuring an external mail provider.",
 };
+
+export type JmapPreset = {
+
+	key: string;
+	name: string;
+	sessionUrl: string;
+	docsUrl: string;
+	help: string;
+
+};
+
+export const JMAP_PRESETS = {
+
+	fastmail: {
+		key: "fastmail",
+		name: "Fastmail",
+		sessionUrl: "https://api.fastmail.com/jmap/session",
+		docsUrl: "https://www.fastmail.com/dev/",
+		help:
+			"Connect Fastmail using an API token and sync mail through JMAP Core, Mail, and Submission.",
+	},
+
+} satisfies Record<string, JmapPreset>;
+
+export type JmapPresetKey = keyof typeof JMAP_PRESETS;
+
+export const JMAP_SPEC = {
+	key: "jmap" as const,
+	name: ProviderLabels.jmap,
+	help:
+		"Connect accounts from JMAP-compatible mail providers using a session endpoint and API token.",
+};
+
+export const jmapPresetList = Object.keys(
+	JMAP_PRESETS,
+) as [JmapPresetKey, ...JmapPresetKey[]];
