@@ -4,7 +4,7 @@ import {
     getSecretAdmin,
     updateSecretAdmin,
     googleAccounts,
-    identities,
+    identities, secretsMeta,
 } from "@db";
 import { google } from "googleapis";
 
@@ -57,12 +57,7 @@ async function buildGoogleClientForAccount(
         throw new Error("Google refresh token not found. Please reconnect Google.");
     }
 
-    const clientId = process.env.OIDC_GOOGLE_CLIENT_ID;
-    const clientSecret = process.env.OIDC_GOOGLE_CLIENT_SECRET;
-
-    if (!clientId || !clientSecret) {
-        throw new Error("Missing Google OAuth client env vars");
-    }
+    const { clientId, clientSecret } = await resolveGoogleOAuthConfig(googleAccount.workspaceId);
 
     const refreshSecret = await getSecretAdmin(
         String(googleAccount.refreshTokenSecretId),
@@ -239,4 +234,66 @@ export async function gmailClientForGoogleAccount(googleAccountId: string) {
     if (!googleAccount) throw new Error("Google account not found");
 
     return buildGoogleClientForAccount(googleAccount);
+}
+
+
+type GoogleOAuthConfig = {
+    clientId: string;
+    clientSecret: string;
+};
+
+const GOOGLE_MAIL_OAUTH_SECRET_NAME = "GOOGLE_MAIL_OAUTH_CONFIG";
+
+export async function resolveGoogleOAuthConfig(
+    workspaceId: string,
+): Promise<GoogleOAuthConfig> {
+    const [secret] = await db
+        .select({
+            id: secretsMeta.id,
+        })
+        .from(secretsMeta)
+        .where(
+            and(
+                eq(secretsMeta.workspaceId, workspaceId),
+                eq(secretsMeta.name, GOOGLE_MAIL_OAUTH_SECRET_NAME),
+                eq(secretsMeta.managedBy, "user"),
+            ),
+        )
+        .limit(1);
+
+    if (secret) {
+        const { vault } = await getSecretAdmin(secret.id);
+
+        if (vault?.decrypted_secret) {
+            try {
+                const parsed = JSON.parse(vault.decrypted_secret);
+
+                if (parsed.clientId && parsed.clientSecret) {
+                    return {
+                        clientId: String(parsed.clientId),
+                        clientSecret: String(parsed.clientSecret),
+                    };
+                }
+            } catch {
+
+            }
+        }
+    }
+
+    const clientId =
+        process.env.GOOGLE_MAIL_CLIENT_ID ??
+        process.env.OIDC_GOOGLE_CLIENT_ID;
+
+    const clientSecret =
+        process.env.GOOGLE_MAIL_CLIENT_SECRET ??
+        process.env.OIDC_GOOGLE_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+        throw new Error("Google Mail OAuth is not configured");
+    }
+
+    return {
+        clientId,
+        clientSecret,
+    };
 }

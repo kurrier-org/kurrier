@@ -2,7 +2,13 @@ import * as React from "react";
 import { Container } from "@/components/common/containers";
 import { parseCustomEmailProviders, PROVIDERS } from "@schema";
 import SMTPCard from "@/components/dashboard/providers/smtp-card";
-import {fetchDecryptedSecrets, fetchGoogleAccounts, syncProviders, fetchInboundIdentities} from "@/lib/actions/dashboard";
+import {
+	fetchDecryptedSecrets,
+	fetchGoogleAccounts,
+	syncProviders,
+	fetchInboundIdentities,
+	fetchGoogleOAuthConfig, hasGoogleOAuthConfig
+} from "@/lib/actions/dashboard";
 import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
 import { smtpAccountSecrets } from "@db";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -22,11 +28,13 @@ export default async function ProvidersPage() {
 	});
 
 	const googleAccounts = await fetchGoogleAccounts();
+	const googleOAuthConfig = await fetchGoogleOAuthConfig();
 	const workspaceId = await fetchWorkspace().then((workspace) => workspace.id);
 	const inboundIdentities = await fetchInboundIdentities();
 	const customEmailProviders = parseCustomEmailProviders(
 		process.env.CUSTOM_EMAIL_PROVIDERS,
 	);
+	const googleOAuthConfigured = await hasGoogleOAuthConfig();
 
 	return (
 		<>
@@ -85,7 +93,7 @@ export default async function ProvidersPage() {
 					</div>
 					<div className="grid gap-6 lg:grid-cols-2 my-8">
 						<SMTPCard smtpSecrets={smtpSecrets} />
-						<GoogleCard googleAccounts={googleAccounts} />
+						<GoogleCard googleAccounts={googleAccounts} googleOAuthConfigured={googleOAuthConfigured} />
 						<InboundCard inboundIdentities={inboundIdentities} />
 					</div>
 				</Container>

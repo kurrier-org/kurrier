@@ -2,7 +2,7 @@ import * as client from "openid-client";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
-import { gmailClientForGoogleAccount } from "@providers";
+import { gmailClientForGoogleAccount, resolveGoogleOAuthConfig } from "@providers";
 import {
     createSecretAdmin,
     updateSecretAdmin,
@@ -33,10 +33,11 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(new URL("/auth/login", process.env.WEB_URL));
     }
 
+    const { clientId, clientSecret } = await resolveGoogleOAuthConfig(workspaceId);
     const config = await client.discovery(
         new URL("https://accounts.google.com"),
-        process.env.OIDC_GOOGLE_CLIENT_ID!,
-        process.env.OIDC_GOOGLE_CLIENT_SECRET!,
+        clientId,
+        clientSecret,
     );
 
     const callbackUrl = new URL(
