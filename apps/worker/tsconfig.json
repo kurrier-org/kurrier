@@ -37,7 +37,9 @@
 			"@providers": ["../../packages/providers/src/index.ts"],
 			"@providers/*": ["../../packages/providers/src/*"],
 			"@common": ["../../packages/common/src/index.ts"],
-			"@common/*": ["../../packages/common/src/*"]
+			"@common/*": ["../../packages/common/src/*"],
+			"@jmap": ["../../packages/jmap/src/index.ts"],
+			"@jmap/*": ["../../packages/jmap/src/*"]
 		}
 	}
 }

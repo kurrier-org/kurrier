@@ -7,34 +7,41 @@ import {
 	fetchGoogleAccounts,
 	syncProviders,
 	fetchInboundIdentities,
-	fetchGoogleOAuthConfig, hasGoogleOAuthConfig
+	hasGoogleOAuthConfig
 } from "@/lib/actions/dashboard";
 import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
-import { smtpAccountSecrets } from "@db";
+import {smtpAccountSecrets} from "@db";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import {fetchWorkspace} from "@/lib/actions/workspace";
 import GoogleCard from "@/components/dashboard/providers/google-card";
 import InboundCard from "@/components/dashboard/providers/inbound-card";
 import CustomEmailProviderCard from "@/components/dashboard/providers/custom-email-provider-card";
+import { fetchJmapAccounts } from "@/lib/actions/jmap-actions";
+import JmapCard from "@/components/dashboard/providers/jmap-card";
 
 export default async function ProvidersPage() {
-	const userProviders = await syncProviders();
 
-	const smtpSecrets = await fetchDecryptedSecrets({
-		linkTable: smtpAccountSecrets,
-		foreignCol: smtpAccountSecrets.accountId,
-		secretIdCol: smtpAccountSecrets.secretId,
-	});
+	const [
+		userProviders,
+		smtpSecrets,
+		googleAccounts,
+		inboundIdentities,
+		jmapAccounts,
+		googleOAuthConfigured
+	] = await Promise.all([
+		syncProviders(),
+		fetchDecryptedSecrets({
+			linkTable: smtpAccountSecrets,
+			foreignCol: smtpAccountSecrets.accountId,
+			secretIdCol: smtpAccountSecrets.secretId,
+		}),
+		fetchGoogleAccounts(),
+		fetchInboundIdentities(),
+		fetchJmapAccounts(),
+		hasGoogleOAuthConfig()
+	]);
+	const customEmailProviders = parseCustomEmailProviders()
 
-	const googleAccounts = await fetchGoogleAccounts();
-	const googleOAuthConfig = await fetchGoogleOAuthConfig();
-	const workspaceId = await fetchWorkspace().then((workspace) => workspace.id);
-	const inboundIdentities = await fetchInboundIdentities();
-	const customEmailProviders = parseCustomEmailProviders(
-		process.env.CUSTOM_EMAIL_PROVIDERS,
-	);
-	const googleOAuthConfigured = await hasGoogleOAuthConfig();
 
 	return (
 		<>
@@ -95,6 +102,7 @@ export default async function ProvidersPage() {
 						<SMTPCard smtpSecrets={smtpSecrets} />
 						<GoogleCard googleAccounts={googleAccounts} googleOAuthConfigured={googleOAuthConfigured} />
 						<InboundCard inboundIdentities={inboundIdentities} />
+						<JmapCard jmapAccounts={jmapAccounts} />
 					</div>
 				</Container>
 			</div>

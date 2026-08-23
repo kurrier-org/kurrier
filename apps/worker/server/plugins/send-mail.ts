@@ -26,6 +26,8 @@ import {
 	smtpAccounts,
 	smtpAccountSecrets,
 	threads,
+	getSecretAdmin,
+	jmapAccounts,
 } from "@db";
 import { createMailer } from "@providers";
 import { toArray } from "drizzle-orm/mysql-core";
@@ -36,7 +38,6 @@ import { getRedis } from "../../lib/get-redis";
 import {GetObjectCommand, PutObjectCommand} from "@aws-sdk/client-s3";
 import {s3} from "../../lib/create-s3-client";
 import MailComposer from "nodemailer/lib/mail-composer/index.js";
-// import MailComposer from "nodemailer/lib/mail-composer";
 const connection = new IORedis({
 	maxRetriesPerRequest: null,
 	password: serverConfig.REDIS_PASSWORD,
@@ -60,9 +61,18 @@ export default defineNitroPlugin(async (nitroApp) => {
 				case "send-scheduled-draft":
 					await processDraft(job.data);
 					return { success: true };
-				case "send-and-reconcile":
-					await send(job.data);
-					return { success: true };
+				// case "send-and-reconcile":
+				// 	await send(job.data);
+				// 	return { success: true };
+				case "send-and-reconcile": {
+					const result = await send(job.data);
+					if (!result.success) {
+						throw new Error(
+							result.error ?? "Failed to send email",
+						);
+					}
+					return result;
+				}
 				default:
 					return { success: true };
 			}
@@ -196,30 +206,81 @@ export default defineNitroPlugin(async (nitroApp) => {
 				throw new Error("Mailbox not found");
 			}
 
-			const [secrets] = mailbox.identity.providerId
-				? await decryptAdminSecrets({
-					linkTable: providerSecrets,
-					foreignCol: providerSecrets.providerId,
-					secretIdCol: providerSecrets.secretId,
-					ownerId: mailbox.identity.ownerId,
-					parentId: String(mailbox.identity.providerId),
-				})
-				: await decryptAdminSecrets({
-					linkTable: smtpAccountSecrets,
-					foreignCol: smtpAccountSecrets.accountId,
-					secretIdCol: smtpAccountSecrets.secretId,
-					ownerId: mailbox.identity.ownerId,
-					parentId: String(mailbox.identity.smtpAccountId),
-				});
+			const providerType =
+				mailbox.provider?.type ?? "smtp";
 
-			const credentials = secrets?.vault?.decrypted_secret
-				? JSON.parse(secrets.vault.decrypted_secret)
-				: {};
+			let credentials: Record<string, unknown>;
+
+			if (providerType === "jmap") {
+				const [jmapAccount] = await tx
+					.select()
+					.from(jmapAccounts)
+					.where(
+						and(
+							eq(
+								jmapAccounts.identityId,
+								mailbox.identity.id,
+							),
+							eq(
+								jmapAccounts.workspaceId,
+								mailbox.identity.workspaceId,
+							),
+						),
+					)
+					.limit(1);
+
+				if (!jmapAccount) {
+					throw new Error(
+						"JMAP account not found for identity",
+					);
+				}
+
+				const { vault } = await getSecretAdmin(
+					jmapAccount.tokenSecretId,
+				);
+
+				credentials = {
+					token: vault.decrypted_secret,
+					sessionUrl: jmapAccount.sessionUrl,
+					accountId: jmapAccount.accountId,
+					username: jmapAccount.username,
+				};
+			} else {
+				const [secrets] = mailbox.identity.providerId
+					? await decryptAdminSecrets({
+						linkTable: providerSecrets,
+						foreignCol: providerSecrets.providerId,
+						secretIdCol: providerSecrets.secretId,
+						ownerId: mailbox.identity.ownerId,
+						parentId: String(
+							mailbox.identity.providerId,
+						),
+					})
+					: await decryptAdminSecrets({
+						linkTable: smtpAccountSecrets,
+						foreignCol: smtpAccountSecrets.accountId,
+						secretIdCol: smtpAccountSecrets.secretId,
+						ownerId: mailbox.identity.ownerId,
+						parentId: String(
+							mailbox.identity.smtpAccountId,
+						),
+					});
+
+				credentials =
+					secrets?.vault?.decrypted_secret
+						? JSON.parse(
+							secrets.vault.decrypted_secret,
+						)
+						: {};
+			}
 
 			const mailer = createMailer(
-				mailbox.provider ? mailbox.provider.type : "smtp",
+				providerType,
 				credentials,
 			);
+
+			//
+
 
 			const attachmentBlobs = await fetchAttachmentBlobs(
 				decodedForm.attachments as string,
