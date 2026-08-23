@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { isSignedIn } from "@/lib/actions/auth";
 import {getWorkspaceId, getWorkspacePublicId} from "@/lib/actions/clients";
+import { resolveGoogleOAuthConfig } from "@providers";
 
 export async function GET() {
     const user = await isSignedIn();
@@ -16,10 +17,11 @@ export async function GET() {
     const workspaceId = await getWorkspaceId();
     const workspacePublicId = await getWorkspacePublicId();
 
+    const { clientId, clientSecret } = await resolveGoogleOAuthConfig(workspaceId);
     const config = await client.discovery(
         new URL("https://accounts.google.com"),
-        process.env.OIDC_GOOGLE_CLIENT_ID!,
-        process.env.OIDC_GOOGLE_CLIENT_SECRET!,
+        clientId,
+        clientSecret,
     );
 
     const codeVerifier = client.randomPKCECodeVerifier();

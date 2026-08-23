@@ -1839,3 +1839,130 @@ export const deleteInboundIdentity = async (
 		};
 	});
 };
+
+
+export type GoogleOAuthConfig = {
+	clientId: string;
+	clientSecret: string;
+};
+
+const GOOGLE_MAIL_OAUTH_SECRET_NAME = "GOOGLE_MAIL_OAUTH_CONFIG";
+
+export async function fetchGoogleOAuthConfig(): Promise<GoogleOAuthConfig | null> {
+	const rls = await rlsClient();
+	const session = await currentSession();
+	const workspaceId = await getWorkspaceId();
+
+	const [row] = await rls((tx) =>
+		tx
+			.select({
+				id: secretsMeta.id,
+			})
+			.from(secretsMeta)
+			.where(
+				and(
+					eq(secretsMeta.workspaceId, workspaceId),
+					eq(secretsMeta.name, GOOGLE_MAIL_OAUTH_SECRET_NAME),
+					eq(secretsMeta.managedBy, "user"),
+				),
+			)
+			.limit(1),
+	);
+
+	if (!row) return null;
+
+	const { vault } = await getSecret(session, row.id, workspaceId);
+
+	if (!vault?.decrypted_secret) return null;
+
+	try {
+		const parsed = JSON.parse(vault.decrypted_secret);
+
+		if (!parsed?.clientId || !parsed?.clientSecret) {
+			return null;
+		}
+
+		return {
+			clientId: String(parsed.clientId),
+			clientSecret: String(parsed.clientSecret),
+		};
+	} catch {
+		return null;
+	}
+}
+
+export async function hasGoogleOAuthConfig(): Promise<boolean> {
+	const config = await fetchGoogleOAuthConfig();
+
+	if (config) {
+		return true;
+	}
+
+	return Boolean(
+		process.env.GOOGLE_MAIL_CLIENT_ID &&
+		process.env.GOOGLE_MAIL_CLIENT_SECRET,
+	);
+}
+
+export async function saveGoogleOAuthConfig(
+	_prev: FormState,
+	formData: FormData,
+): Promise<FormState> {
+	return handleAction(async () => {
+		const data = decode(formData);
+
+		const clientId = String(data.clientId ?? "").trim();
+		const clientSecret = String(data.clientSecret ?? "").trim();
+
+		if (!clientId || !clientSecret) {
+			return {
+				success: false,
+				error: "Google Client ID and Client Secret are required.",
+			};
+		}
+
+		const session = await currentSession();
+		const workspaceId = await getWorkspaceId();
+		const rls = await rlsClient();
+
+		const [existing] = await rls((tx) =>
+			tx
+				.select()
+				.from(secretsMeta)
+				.where(
+					and(
+						eq(secretsMeta.workspaceId, workspaceId),
+						eq(secretsMeta.name, GOOGLE_MAIL_OAUTH_SECRET_NAME),
+						eq(secretsMeta.managedBy, "user"),
+					),
+				)
+				.limit(1),
+		);
+
+		const value = JSON.stringify({
+			clientId,
+			clientSecret,
+		});
+
+		if (existing) {
+			await updateSecret(session, workspaceId, existing.id, {
+				value,
+				description: "Google Mail OAuth credentials"
+			});
+		} else {
+			await createSecret(session, workspaceId, {
+				name: GOOGLE_MAIL_OAUTH_SECRET_NAME,
+				value,
+				description: "Google Mail OAuth credentials",
+				managedBy: "user",
+			});
+		}
+
+		revalidatePath(DASHBOARD_PATH);
+
+		return {
+			success: true,
+			message: "Google Mail OAuth configuration saved."
+		};
+	});
+}
