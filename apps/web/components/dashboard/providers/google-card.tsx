@@ -13,10 +13,12 @@ import * as React from "react";
 import { Button } from "@mantine/core";
 import GoogleAccountCard from "@/components/dashboard/providers/google-account-card";
 import { FetchGoogleAccountsResult } from "@/lib/actions/dashboard";
+import GoogleOAuthConfigButton from "@/components/dashboard/providers/google-oauth-config-form";
 
-export default function GoogleCard({ googleAccounts,
+export default function GoogleCard({ googleAccounts, googleOAuthConfigured
                                    }: {
     googleAccounts: FetchGoogleAccountsResult;
+    googleOAuthConfigured: boolean;
 }) {
 
 
@@ -36,15 +38,19 @@ export default function GoogleCard({ googleAccounts,
                         </div>
 
                         <CardAction className="mt-3 lg:mt-0">
-                            <Button
-                                size="sm"
-                                className="gap-2"
-                                component="a"
-                                href={"/api/oauth/google/connect"}
-                            >
-                                <Plus className="h-4 w-4" />
-                                Add Google Account
-                            </Button>
+                            {googleOAuthConfigured ? (
+                                <Button
+                                    size="sm"
+                                    className="gap-2"
+                                    component="a"
+                                    href="/api/oauth/google/connect"
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    Add Google Account
+                                </Button>
+                            ) : (
+                                <GoogleOAuthConfigButton />
+                            )}
                         </CardAction>
                     </div>
                 </CardHeader>
@@ -54,23 +60,32 @@ export default function GoogleCard({ googleAccounts,
                         <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground text-center flex flex-col items-center gap-4 bg-muted">
                             <div>
                                 <div className="font-medium text-card-foreground">
-                                    No Google accounts connected
+                                    {googleOAuthConfigured
+                                        ? "No Google accounts connected"
+                                        : "Google OAuth is not configured"}
                                 </div>
+
                                 <div className="text-xs text-card-foreground mt-1">
-                                    Connect Gmail or Google Workspace to send and sync mail.
+                                    {googleOAuthConfigured
+                                        ? "Connect Gmail or Google Workspace to send and sync mail."
+                                        : "Configure your Google OAuth application before connecting accounts."}
                                 </div>
                             </div>
 
-                            <Button
-                                variant="default"
-                                size="sm"
-                                className="gap-2"
-                                component="a"
-                                href={"/api/oauth/google/connect"}
-                            >
-                                <Plus className="h-4 w-4" />
-                                Add Google Account
-                            </Button>
+                            {googleOAuthConfigured ? (
+                                <Button
+                                    variant="default"
+                                    size="sm"
+                                    className="gap-2"
+                                    component="a"
+                                    href="/api/oauth/google/connect"
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    Add Google Account
+                                </Button>
+                            ) : (
+                                <GoogleOAuthConfigButton />
+                            )}
                         </div>
                     )}
 

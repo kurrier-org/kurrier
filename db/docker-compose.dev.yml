@@ -3,6 +3,7 @@ version: "3.9"
 services:
   redis:
     image: redis:8.2.2
+    restart: unless-stopped
     command: [ "redis-server", "--appendonly", "yes", "--stop-writes-on-bgsave-error","no", "--requirepass", "${REDIS_PASSWORD}" ]
     healthcheck:
       test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "PING" ]
@@ -25,7 +26,7 @@ services:
 
   typesense:
     image: typesense/typesense:29.0
-    restart: on-failure
+    restart: unless-stopped
     ports:
       - ${TYPESENSE_PORT}:${TYPESENSE_PORT}
     volumes:
@@ -61,7 +62,7 @@ services:
       --default-bucket  
 
   baikal-postgres:
-    image: postgres:18
+    image: postgres:18-bookworm
     restart: unless-stopped
     environment:
       POSTGRES_USER: baikal
@@ -78,7 +79,7 @@ services:
       -c work_mem=4MB
 
   postgres:
-    image: postgres:18
+    image: postgres:18-bookworm
     container_name: app-postgres
     restart: unless-stopped
     environment:
@@ -102,7 +103,7 @@ services:
       -c work_mem=4MB
 
   migrate:
-    image: postgres:18
+    image: postgres:18-bookworm
     depends_on:
       - postgres
     environment:
@@ -114,6 +115,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       PGDATABASE: postgres
     volumes:
-      - ../init:/scripts
+      - ./init:/scripts
     entrypoint: [ "/bin/bash", "/scripts/db-bootstrap.sh" ]
     restart: "no"

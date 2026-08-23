@@ -2,7 +2,13 @@ import * as React from "react";
 import { Container } from "@/components/common/containers";
 import { parseCustomEmailProviders, PROVIDERS } from "@schema";
 import SMTPCard from "@/components/dashboard/providers/smtp-card";
-import {fetchDecryptedSecrets, fetchGoogleAccounts, syncProviders, fetchInboundIdentities} from "@/lib/actions/dashboard";
+import {
+	fetchDecryptedSecrets,
+	fetchGoogleAccounts,
+	syncProviders,
+	fetchInboundIdentities,
+	hasGoogleOAuthConfig
+} from "@/lib/actions/dashboard";
 import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
 import {smtpAccountSecrets} from "@db";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -14,12 +20,14 @@ import { fetchJmapAccounts } from "@/lib/actions/jmap-actions";
 import JmapCard from "@/components/dashboard/providers/jmap-card";
 
 export default async function ProvidersPage() {
+
 	const [
 		userProviders,
 		smtpSecrets,
 		googleAccounts,
 		inboundIdentities,
-		jmapAccounts
+		jmapAccounts,
+		googleOAuthConfigured
 	] = await Promise.all([
 		syncProviders(),
 		fetchDecryptedSecrets({
@@ -29,9 +37,11 @@ export default async function ProvidersPage() {
 		}),
 		fetchGoogleAccounts(),
 		fetchInboundIdentities(),
-		fetchJmapAccounts()
+		fetchJmapAccounts(),
+		hasGoogleOAuthConfig()
 	]);
 	const customEmailProviders = parseCustomEmailProviders()
+
 
 	return (
 		<>
@@ -90,7 +100,7 @@ export default async function ProvidersPage() {
 					</div>
 					<div className="grid gap-6 lg:grid-cols-2 my-8">
 						<SMTPCard smtpSecrets={smtpSecrets} />
-						<GoogleCard googleAccounts={googleAccounts} />
+						<GoogleCard googleAccounts={googleAccounts} googleOAuthConfigured={googleOAuthConfigured} />
 						<InboundCard inboundIdentities={inboundIdentities} />
 						<JmapCard jmapAccounts={jmapAccounts} />
 					</div>

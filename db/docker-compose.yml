@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   web:
-    image: ghcr.io/kurrier-org/kurrier-web:v3.4.1
+    image: ghcr.io/kurrier-org/kurrier-web:v3.5.0
     restart: unless-stopped
     env_file:
       - .env
@@ -12,7 +12,7 @@ services:
       postgres:
         condition: service_healthy
   worker:
-    image: ghcr.io/kurrier-org/kurrier-worker:v3.4.1
+    image: ghcr.io/kurrier-org/kurrier-worker:v3.5.0
     restart: unless-stopped
     env_file:
       - .env
@@ -23,6 +23,7 @@ services:
         condition: service_healthy
   redis:
     image: redis:8.2.2
+    restart: unless-stopped
     command: [ "redis-server", "--appendonly", "yes", "--stop-writes-on-bgsave-error","no", "--requirepass", "${REDIS_PASSWORD}" ]
     healthcheck:
       test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "PING" ]
@@ -45,7 +46,7 @@ services:
 
   typesense:
     image: typesense/typesense:29.0
-    restart: on-failure
+    restart: unless-stopped
     ports:
       - ${TYPESENSE_PORT}:${TYPESENSE_PORT}
     volumes:
