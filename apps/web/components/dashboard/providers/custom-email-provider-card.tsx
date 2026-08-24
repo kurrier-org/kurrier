@@ -4,6 +4,7 @@ import { Button } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import type { CustomEmailProvider } from "@schema";
 import { Inbox, Mail, Plus, Send } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
 import NewCustomEmailProviderAccountForm from "@/components/dashboard/providers/new-custom-email-provider-account-form";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import {
@@ -45,6 +46,9 @@ export default function CustomEmailProviderCard({
 	provider: CustomEmailProvider;
 }) {
 	const dict = useOptionalDictionary();
+	const params = useParams<{ wPublicId: string }>();
+	const router = useRouter();
+
 	const openAddModal = () => {
 		const modalId = modals.open({
 			title: (
@@ -60,7 +64,15 @@ export default function CustomEmailProviderCard({
 				<div className="p-2">
 					<NewCustomEmailProviderAccountForm
 						provider={provider}
-						onCompleted={() => modals.close(modalId)}
+						onCompleted={(data) => {
+							modals.close(modalId);
+							if (data?.identityPublicId && data.mailboxSlug) {
+								router.push(
+									`/w/${params.wPublicId}/dashboard/mail/${data.identityPublicId}/${data.mailboxSlug}`,
+								);
+								router.refresh();
+							}
+						}}
 					/>
 				</div>
 			),
@@ -114,7 +126,9 @@ export default function CustomEmailProviderCard({
 					leftSection={<Plus className="size-4" />}
 					onClick={openAddModal}
 				>
-					{dict?.platform?.addAccount ?? "Add account"}
+					{provider.imap
+						? (dict?.platform?.addMailbox ?? "Add mailbox")
+						: (dict?.platform?.addAccount ?? "Add account")}
 				</Button>
 			</CardContent>
 		</Card>

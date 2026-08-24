@@ -355,6 +355,8 @@
 	"separateLoginsBadge": "Logins separados",
 	"connectProviderPrefix": "Conectar ",
 	"addAccount": "Adicionar conta",
+	"addMailbox": "Adicionar caixa de entrada",
+	"connectMailbox": "Conectar caixa de entrada",
 	"mailboxEmail": "E-mail da caixa de entrada",
 	"mailboxEmailUsedForBothHelp": "Usado como nome de usuário para SMTP e IMAP.",
 	"mailboxEmailUsedForSmtpHelp": "Usado como nome de usuário do SMTP.",
@@ -364,5 +366,9 @@
 	"customProviderIncomingMailTitle": "E-mail de entrada",
 	"customProviderSeparateImapHelp": "Este provedor usa credenciais IMAP separadas.",
 	"customProviderImapUsername": "Nome de usuário do IMAP",
-	"customProviderImapPassword": "Senha do IMAP"
+	"customProviderImapPassword": "Senha do IMAP",
+	"customProviderMailboxIdentityTitle": "Identidade da caixa de entrada",
+	"customProviderMailboxIdentityHelp": "O Kurrier criará a identidade de e-mail e começará a sincronizar suas caixas de entrada automaticamente.",
+	"customProviderDisplayNamePlaceholder": "Seu nome",
+	"customProviderDisplayNameHelp": "Exibido aos destinatários quando você envia e-mails."
 }

@@ -20,6 +20,19 @@ When you add an SMTP/IMAP account in Kurrier, two connections are created:
 
 You can configure only SMTP (for outbound mail) or both SMTP + IMAP (for full two-way sync).
 
+### Accounts, identities, and mailboxes
+
+Kurrier stores the connection, address, and synchronized folders separately:
+
+- an **SMTP/IMAP account** contains the encrypted server credentials;
+- an **email identity** contains the address and display name used by Kurrier;
+- **mailboxes** are the folders discovered from the IMAP server for that identity.
+
+This separation allows SMTP-only sending accounts, aliases, and advanced
+multi-identity configurations. The manual Generic SMTP flow therefore creates
+the account first and lets you create its identity separately under
+**Identities**.
+
 ---
 
 ## 2. Adding Your Account
@@ -177,3 +190,29 @@ Generic SMTP remains available.
 The selected server settings are copied into the account when it is created.
 Changing or removing a preset does not change existing accounts; it only affects
 future connections after the web container is restarted.
+
+### Connecting a preset mailbox
+
+When a preset includes IMAP, its card displays **Add mailbox**. The user enters
+their mailbox credentials, display name, and daily IMAP quota once. Kurrier then:
+
+1. stores an encrypted snapshot of the SMTP/IMAP connection in the Vault;
+2. verifies the connection and removes the account if verification fails;
+3. creates the linked email identity through the same lifecycle used by the
+   manual Identity flow;
+4. discovers the IMAP folders and starts backfill and IDLE synchronization;
+5. opens the connected Inbox.
+
+If the email identity is already connected in the workspace, Kurrier reuses it
+instead of creating a duplicate account or identity.
+
+An SMTP-only preset continues to display **Add account**. It stores an outbound
+connection but does not create an inbox; an identity can still be configured
+separately for an advanced sending-only setup.
+
+The worker service must be running while an IMAP mailbox is connected so Kurrier
+can discover its folders and start synchronization:
+
+```bash
+docker compose logs -f worker
+```

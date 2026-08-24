@@ -172,7 +172,7 @@ export async function upsertSMTPAccount(
 	});
 }
 
-export async function createCustomProviderSMTPAccount(
+export async function connectCustomEmailProvider(
 	_prev: FormState,
 	formData: FormData,
 ): Promise<FormState> {
@@ -180,39 +180,125 @@ export async function createCustomProviderSMTPAccount(
 		const credentials = CustomEmailProviderCredentialsSchema.parse(
 			decode(formData),
 		);
-		const preset = parseCustomEmailProviders().find((provider) => provider.id === credentials.presetId);
+		const preset = parseCustomEmailProviders().find(
+			(provider) => provider.id === credentials.presetId,
+		);
 
 		if (!preset) {
-			throw new Error(
-				"This email provider is no longer available. Refresh the page and try again.",
-			);
+			throw new Error("dashboard.customProviderUnavailable");
 		}
 
 		const smtpConfig = materializeCustomEmailProvider(preset, credentials);
-		const session = await currentSession();
+		const displayName = credentials.displayName ?? "";
 		const workspaceId = await getWorkspaceId();
 		const rls = await rlsClient();
 
-		const secretMeta = await createSecret(session, workspaceId, {
-			name: smtpConfig.ulid,
-			value: JSON.stringify(smtpConfig),
+		if (preset.imap) {
+			if (!displayName) {
+				throw new Error("dashboard.displayNameRequired");
+			}
+
+			const [existingIdentity] = await rls((tx) =>
+				tx
+					.select({
+						publicId: identities.publicId,
+						mailboxSlug: mailboxes.slug,
+					})
+					.from(identities)
+					.leftJoin(
+						mailboxes,
+						and(
+							eq(mailboxes.identityId, identities.id),
+							eq(mailboxes.kind, "inbox"),
+						),
+					)
+					.where(
+						and(
+							eq(identities.workspaceId, workspaceId),
+							eq(identities.kind, "email"),
+							eq(identities.value, smtpConfig.SMTP_USERNAME),
+						),
+					)
+					.limit(1),
+			);
+
+			if (existingIdentity) {
+				return {
+					success: true,
+					message: "dashboard.mailboxAlreadyConnected",
+					data: {
+						identityPublicId: existingIdentity.publicId,
+						mailboxSlug: existingIdentity.mailboxSlug ?? undefined,
+					},
+				};
+			}
+		}
+
+		const { label, ulid, ...connectionConfig } = smtpConfig;
+		const accountResult = await createSMTPAccount({
+			label,
+			ulid,
+			required: connectionConfig,
 		});
-		const [smtpAccount] = await rls((tx) =>
-			tx.insert(smtpAccounts).values({}).returning(),
+
+		if (!accountResult.success || !accountResult.data?.accountId) {
+			return accountResult;
+		}
+		const accountId = accountResult.data.accountId;
+
+		if (!preset.imap) {
+			revalidatePath(DASHBOARD_PATH);
+			return {
+				success: true,
+				message: "dashboard.customProviderAccountAdded",
+			};
+		}
+
+		const identityResult = await createEmailIdentity({
+			dailyQuota: credentials.dailyQuota,
+			displayName,
+			email: smtpConfig.SMTP_USERNAME,
+			smtpAccountId: accountId,
+		});
+
+		if (!identityResult.success) {
+			await deleteSmtpAccount(accountId);
+			return identityResult;
+		}
+
+		const [emailIdentity] = await rls((tx) =>
+			tx
+				.select({
+					publicId: identities.publicId,
+					mailboxSlug: mailboxes.slug,
+				})
+				.from(identities)
+				.leftJoin(
+					mailboxes,
+					and(
+						eq(mailboxes.identityId, identities.id),
+						eq(mailboxes.kind, "inbox"),
+					),
+				)
+				.where(eq(identities.smtpAccountId, accountId))
+				.limit(1),
 		);
 
-		await rls((tx) =>
-			tx.insert(smtpAccountSecrets).values({
-				accountId: smtpAccount.id,
-				secretId: secretMeta.id,
-			}),
-		);
-
+		const mailboxSlug = emailIdentity?.mailboxSlug ?? undefined;
 		revalidatePath(DASHBOARD_PATH);
+		revalidatePath("/w/[wPublicId]/dashboard/mail", "layout");
 
 		return {
 			success: true,
-			message: `Added ${preset.name} account`,
+			message: mailboxSlug
+				? "dashboard.customProviderMailboxConnected"
+				: "dashboard.customProviderMailboxSyncing",
+			data: emailIdentity?.publicId
+				? {
+						identityPublicId: emailIdentity.publicId,
+						mailboxSlug,
+					}
+				: undefined,
 		};
 	});
 }
@@ -567,8 +653,6 @@ export const assignIdentityToAllWorkspaceMembers = async (
 		)
 	);
 };
-
-
 export async function addNewEmailIdentity(
 	_prev: FormState,
 	formData: FormData,

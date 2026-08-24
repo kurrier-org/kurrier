@@ -1,17 +1,25 @@
 "use client";
 
-import type { CustomEmailProvider, FieldConfig } from "@schema";
+import {
+	type CustomEmailProvider,
+	defaultImapQuota,
+	type FieldConfig,
+	imapQuotaList,
+} from "@schema";
 import { ulid } from "ulid";
 import { ReusableForm } from "@/components/common/reusable-form";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
-import { createCustomProviderSMTPAccount } from "@/lib/actions/dashboard";
+import { connectCustomEmailProvider } from "@/lib/actions/dashboard";
 
 export default function NewCustomEmailProviderAccountForm({
 	provider,
 	onCompleted,
 }: {
 	provider: CustomEmailProvider;
-	onCompleted?: () => void;
+	onCompleted?: (data?: {
+		identityPublicId?: string;
+		mailboxSlug?: string;
+	}) => void;
 }) {
 	const dict = useOptionalDictionary();
 	const fields: FieldConfig[] = [
@@ -124,13 +132,64 @@ export default function NewCustomEmailProviderAccountForm({
 		}
 	}
 
+	if (provider.imap) {
+		fields.push(
+			{
+				el: (
+					<div className="border-t pt-4">
+						<p className="text-sm font-medium">
+							{dict?.platform?.customProviderMailboxIdentityTitle ??
+								"Mailbox identity"}
+						</p>
+						<p className="mt-1 text-xs text-muted-foreground">
+							{dict?.platform?.customProviderMailboxIdentityHelp ??
+								"Kurrier will create the email identity and start syncing its mailboxes automatically."}
+						</p>
+					</div>
+				),
+			},
+			{
+				name: "displayName",
+				label: dict?.platform?.displayName ?? "Display name",
+				props: {
+					autoComplete: "name",
+					required: true,
+					placeholder:
+						dict?.platform?.customProviderDisplayNamePlaceholder ?? "Your name",
+				},
+				bottomStartPrefix: (
+					<span className="text-xs text-muted-foreground">
+						{dict?.platform?.customProviderDisplayNameHelp ??
+							"Shown to recipients when you send email."}
+					</span>
+				),
+			},
+			{
+				name: "dailyQuota",
+				label: dict?.platform?.dailyImapQuota ?? "Daily IMAP quota",
+				kind: "select",
+				options: imapQuotaList.map((quota) => ({
+					label: quota.label,
+					value: String(quota.value),
+				})),
+				props: {
+					className: "w-full",
+					defaultValue: String(defaultImapQuota),
+				},
+			},
+		);
+	}
+
 	return (
 		<ReusableForm
-			action={createCustomProviderSMTPAccount}
+			action={connectCustomEmailProvider}
 			onSuccess={onCompleted}
 			fields={fields}
+			notify={{ kind: "toast" }}
 			submitButtonProps={{
-				submitLabel: dict?.platform?.addAccount ?? "Add account",
+				submitLabel: provider.imap
+					? (dict?.platform?.connectMailbox ?? "Connect mailbox")
+					: (dict?.platform?.addAccount ?? "Add account"),
 				wrapperClasses: "mt-6",
 				fullWidth: true,
 			}}
