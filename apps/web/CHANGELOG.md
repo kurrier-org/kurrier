@@ -1,5 +1,11 @@
 # web
 
+## 2.3.0
+
+### Minor Changes
+
+- [`9bdb9d7`](https://github.com/kurrier-org/kurrier/commit/9bdb9d7c5a5a5268481cee42dc8b7cbebea67965) Thanks [@krokhale](https://github.com/krokhale)! - Add JMAP mail provider (BETA) support and workspace-managed Google Mail OAuth credentials
+
 ## 2.2.3
 
 ### Patch Changes
