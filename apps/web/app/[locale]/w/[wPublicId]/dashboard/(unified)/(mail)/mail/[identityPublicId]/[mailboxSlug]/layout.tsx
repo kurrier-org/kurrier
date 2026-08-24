@@ -1,4 +1,5 @@
-import React, { ReactNode } from "react";
+import React, { type ReactNode } from "react";
+import ThreadSlotReset from "@/components/mailbox/default/thread-slot-reset";
 import MailboxSearchHeader from "@/components/mailbox/mailbox-search-header";
 
 type LayoutProps = {
@@ -15,14 +16,11 @@ export default async function DashboardLayout({
 	thread,
 	params,
 }: LayoutProps) {
-
-
-
 	return (
 		<>
-            <MailboxSearchHeader params={params} />
+			<MailboxSearchHeader params={params} />
 
-			{thread}
+			<ThreadSlotReset>{thread}</ThreadSlotReset>
 			{children}
 		</>
 	);
