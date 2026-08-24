@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 3.6.0
+
+### Minor Changes
+
+- [`67389e3`](https://github.com/kurrier-org/kurrier/commit/67389e3775a9faa76bbd6a23454d4b3dbeb8578a) Thanks [@krokhale](https://github.com/krokhale)! - Add JMAP mail provider (BETA) support and workspace-managed Google Mail OAuth credentials
+
 ## 3.5.0
 
 ### Minor Changes
