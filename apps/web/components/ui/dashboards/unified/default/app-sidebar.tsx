@@ -1,9 +1,8 @@
 "use client";
 
 import { Divider } from "@mantine/core";
-import { useMediaQuery } from "@mantine/hooks";
 import { IconFrame } from "@tabler/icons-react";
-import { Calendar, Contact, HardDrive, Inbox, MailOpen } from "lucide-react";
+import { Calendar, Contact, HardDrive, Inbox, MailOpen, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
@@ -12,6 +11,7 @@ import ThemeColorPicker from "@/components/common/theme-color-picker";
 import ThemeSwitch from "@/components/common/theme-switch";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import { useSiteFeatures } from "@/components/providers/site-features-provider";
+import { Button } from "@/components/ui/button";
 import {
 	Sidebar,
 	SidebarContent,
@@ -41,8 +41,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 		navUserContent,
 		...restProps
 	} = props;
-
-	const isMobile = useMediaQuery("(max-width: 768px)");
+	const { isMobile, setOpen, setOpenMobile, toggleSidebar } = useSidebar();
 	const dict = useOptionalDictionary();
 
 	const data = {
@@ -85,7 +84,6 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 	};
 
 	const pathName = usePathname();
-	const isOnMail = pathName?.includes("/mail");
 	const isOnPlatform = pathName?.includes("/platform");
 	const isOnContacts = pathName?.includes("/contacts");
 	const isOnCalendar = pathName?.includes("/calendar");
@@ -128,6 +126,12 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 	});
 
 	React.useEffect(() => {
+		if (isMobile && pathName) {
+			setOpenMobile(false);
+		}
+	}, [isMobile, pathName, setOpenMobile]);
+
+	React.useEffect(() => {
 		if (section === "platform") {
 			setActiveItem(
 				data.navMain.find((i) => i.url.includes("/platform")) ??
@@ -152,9 +156,8 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				data.navMain.find((i) => i.url.includes("/mail")) ?? data.navMain[0],
 			);
 		}
-	}, [section, pathName, data.navMain]);
+	}, [section, data.navMain]);
 
-	const { setOpen, toggleSidebar } = useSidebar();
 	const router = useRouter();
 
 	return (
@@ -168,10 +171,28 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 			{/* This will make the sidebar appear as icons. */}
 			<Sidebar
 				collapsible="none"
-				className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r"
+				className="w-full! border-r md:w-[calc(var(--sidebar-width-icon)+1px)]!"
 			>
-				<SidebarHeader>
-					<SidebarMenu>
+				<SidebarHeader className="border-b md:border-b-0">
+					<div className="flex items-center justify-between px-1 py-1 md:hidden">
+						<Link
+							href={`/w/${workspacePublicId}/dashboard/mail`}
+							className="flex items-center gap-2"
+						>
+							<KurrierLogo size={30} />
+							<span className="text-base font-semibold">kurrier</span>
+						</Link>
+						<Button
+							variant="ghost"
+							size="icon"
+							onClick={() => setOpenMobile(false)}
+							aria-label="Close navigation"
+						>
+							<X className="size-5" />
+						</Button>
+					</div>
+
+					<SidebarMenu className="hidden md:flex">
 						<SidebarMenuItem>
 							<SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
 								<Link
@@ -189,7 +210,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 					</SidebarMenu>
 				</SidebarHeader>
 				<SidebarContent className={"relative"}>
-					<SidebarGroup className={"mt-8"}>
+					<SidebarGroup className="mt-2 md:mt-8">
 						<SidebarGroupContent className="px-1.5 md:px-0">
 							<SidebarMenu>
 								{data.navMain.map((item) => (
@@ -226,21 +247,20 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 									</SidebarMenuItem>
 								))}
 
-								{isMobile ? (
-									<>
-										<Divider variant={"dashed"} my={"xl"} />
-										{sidebarSectionContent}
-									</>
-								) : (
-									<hr className="my-2 border-border" />
-								)}
+								{!isMobile && <hr className="my-2 border-border" />}
 							</SidebarMenu>
+							{isMobile && (
+								<div className="mt-2">
+									<Divider variant="dashed" my="lg" />
+									{sidebarSectionContent}
+								</div>
+							)}
 						</SidebarGroupContent>
 					</SidebarGroup>
 					<div
 						className={
 							isMobile
-								? "absolute top-0 mx-4 flex gap-2 justify-center items-center"
+								? "mt-auto flex items-center justify-center gap-3 border-t px-4 py-3"
 								: "absolute bottom-28 rotate-90 flex justify-start items-center w-full gap-2"
 						}
 					>
@@ -256,7 +276,9 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 						/>
 					</div>
 				</SidebarContent>
-				<SidebarFooter>{navUserContent}</SidebarFooter>
+				<SidebarFooter className="border-t md:border-t-0">
+					{navUserContent}
+				</SidebarFooter>
 			</Sidebar>
 
 			{/* This is the second sidebar */}
