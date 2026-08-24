@@ -42,11 +42,19 @@ export const workspaceIdentityAssignments = async () => {
     const workspace = await fetchWorkspace();
 
     return await db
-        .select()
+        .select({
+            workspace_identity_members: workspaceIdentityMembers,
+            users: {
+                id: users.id,
+                email: users.email
+            },
+        })
         .from(workspaceIdentityMembers)
         .leftJoin(users, eq(workspaceIdentityMembers.userId, users.id))
         .where(eq(workspaceIdentityMembers.workspaceId, workspace.id));
 };
+
+
 export type FetchAdminWorkspaceIdentitiesResult = Awaited<
     ReturnType<typeof workspaceIdentityAssignments>
 >;
@@ -71,7 +79,14 @@ export type FetchWorkspacesResult = Awaited<
 
 export const fetchWorkspaceMembers = async (id: string) => {
     return await db
-        .select()
+        .select({
+            workspace_members: workspaceMembers,
+            users: {
+                id: users.id,
+                email: users.email,
+                createdAt: users.createdAt,
+            },
+        })
         .from(workspaceMembers)
         .leftJoin(users, eq(workspaceMembers.userId, users.id))
         .where(eq(workspaceMembers.workspaceId, id));

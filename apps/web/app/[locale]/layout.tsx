@@ -14,6 +14,7 @@ import {
 } from "@schema/types/themes";
 import { AppearanceProvider } from "@/components/providers/appearance-provider";
 import { ConfigProvider } from "@/components/providers/config-provider";
+import { SiteFeaturesProvider } from "@/components/providers/site-features-provider";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import {
@@ -25,6 +26,7 @@ import { ModalsProvider } from "@mantine/modals";
 import { DictionaryProvider } from "@/components/providers/dictionary-provider";
 import { getDictionary, hasLocale } from "@/lib/dictionaries";
 import { createMantineTheme } from "@/lib/mantine-theme";
+import { SITE_FEATURES } from "@/lib/site-features";
 
 const jakartaSans = Plus_Jakarta_Sans({
 	variable: "--font-sans",
@@ -91,14 +93,16 @@ export default async function RootLayout({
 			>
 				<AppearanceProvider initialTheme={theme} initialMode={mode}>
 					<ConfigProvider value={publicConfig}>
-						<MantineProvider
-							theme={mantineTheme}
-							defaultColorScheme={colorScheme}
-						>
-							<DictionaryProvider dict={dict}>
-								<ModalsProvider>{children}</ModalsProvider>
-							</DictionaryProvider>
-						</MantineProvider>
+						<SiteFeaturesProvider value={SITE_FEATURES}>
+							<MantineProvider
+								theme={mantineTheme}
+								defaultColorScheme={colorScheme}
+							>
+								<DictionaryProvider dict={dict}>
+									<ModalsProvider>{children}</ModalsProvider>
+								</DictionaryProvider>
+							</MantineProvider>
+						</SiteFeaturesProvider>
 					</ConfigProvider>
 				</AppearanceProvider>
 			</body>

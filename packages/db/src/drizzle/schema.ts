@@ -38,6 +38,7 @@ import {
     messageStatesList,
     providersList,
     webHookList,
+	jmapPresetList,
 } from "@schema";
 import { DnsRecord } from "@providers";
 import { nanoid } from "nanoid";
@@ -116,7 +117,14 @@ export const googleAccountStatusEnum = pgEnum("google_account_status", [
 	"revoked",
 	"error",
 ]);
-
+export const SecretManagedByEnum = pgEnum("secret_managed_by", [
+	"system",
+	"user",
+]);
+export const JmapPresetEnum = pgEnum(
+	"jmap_preset",
+	jmapPresetList,
+);
 
 
 export const workspaces = pgTable(
@@ -299,6 +307,10 @@ export const secretsMeta = pgTable(
 		iv: text("iv").notNull(),
 		authTag: text("auth_tag").notNull(),
 
+		managedBy: SecretManagedByEnum("managed_by")
+			.notNull()
+			.default("system"),
+
 		keyVersion: integer("key_version").notNull().default(1),
 
 		workspaceId: uuid("workspace_id")
@@ -309,6 +321,10 @@ export const secretsMeta = pgTable(
 	(t) => [
 		index("ix_secrets_meta_workspace").on(t.workspaceId),
 		index("ix_secrets_meta_owner").on(t.ownerId),
+		index("ix_secrets_meta_managed_by").on(
+			t.workspaceId,
+			t.managedBy,
+		),
 		uniqueIndex("ux_secrets_meta_workspace_name").on(
 			t.workspaceId,
 			t.name
@@ -1930,5 +1946,82 @@ export const googleAccounts = pgTable(
 		index("ix_google_accounts_status").on(t.workspaceId, t.status),
 
 		...workspaceCrudPolicies(t, "google_accounts"),
+	],
+).enableRLS();
+
+
+export const jmapAccounts = pgTable(
+	"jmap_accounts",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+
+		workspaceId: uuid("workspace_id")
+			.references(() => workspaces.id, { onDelete: "cascade" })
+			.notNull()
+			.default(authWorkspaceId),
+
+		ownerId: uuid("owner_id")
+			.references(() => users.id, { onDelete: "cascade" })
+			.notNull()
+			.default(authUid),
+
+		providerId: uuid("provider_id")
+			.references(() => providers.id, { onDelete: "cascade" })
+			.notNull(),
+
+		identityId: uuid("identity_id")
+			.references(() => identities.id, { onDelete: "set null" })
+			.default(sql`null`),
+
+		accountId: text("account_id").notNull(),
+		username: text("username").notNull(),
+
+		sessionUrl: text("session_url").notNull(),
+
+		preset: JmapPresetEnum("preset"),
+
+		syncState: jsonb("sync_state")
+			.$type<{
+				email?: string;
+				mailbox?: string;
+				thread?: string;
+				submission?: string;
+			}>()
+			.default(sql`'{}'::jsonb`)
+			.notNull(),
+		tokenSecretId: uuid("token_secret_id")
+			.references(() => secretsMeta.id, { onDelete: "cascade" })
+			.notNull(),
+
+		metaData: jsonb("meta")
+			.$type<Record<string, any> | null>()
+			.default(sql`null`),
+
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		uniqueIndex("ux_jmap_accounts_provider_account").on(
+
+			t.providerId,
+			t.accountId,
+		),
+		uniqueIndex("ux_jmap_accounts_identity")
+			.on(t.identityId)
+			.where(sql`${t.identityId} IS NOT NULL`),
+		index("ix_jmap_accounts_workspace").on(t.workspaceId),
+		index("ix_jmap_accounts_owner").on(t.ownerId),
+		index("ix_jmap_accounts_provider").on(t.providerId),
+		pgPolicy("jmap_accounts_select", {
+			for: "select",
+			to: "kurrier",
+			using: identitySelectCondition(t, t.identityId),
+		}),
+		...workspaceMutationPolicies(t, "jmap_accounts"),
 	],
 ).enableRLS();

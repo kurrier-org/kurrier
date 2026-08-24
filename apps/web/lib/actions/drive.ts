@@ -2,7 +2,7 @@
 
 import { isSignedIn } from "@/lib/actions/auth";
 import {
-	driveEntries, DriveVolumeEntity,
+	driveEntries, driveUploadIntents, DriveVolumeEntity,
 	driveVolumes
 } from "@db";
 import { rlsClient } from "@/lib/actions/clients";
@@ -20,11 +20,19 @@ import {
 } from "@aws-sdk/client-s3";
 import {s3} from "@/lib/create-s3-client";
 import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
+import { SITE_FEATURES } from "@/lib/site-features";
 
 
 const trimSlashes = (s: string) => s.replace(/^\/+|\/+$/g, "");
 
+function assertDriveEnabled() {
+	if (!SITE_FEATURES.drive) {
+		throw new Error("Drive is disabled");
+	}
+}
+
 export const normalizeWithinPath = async (segments: string[]) => {
+	assertDriveEnabled();
 	const cleaned = (segments ?? [])
 		.filter(Boolean)
 		.map((s) => trimSlashes(decodeURIComponent(s)));
@@ -56,6 +64,7 @@ export const normalizeWithinPath = async (segments: string[]) => {
 };
 
 export const fetchVolumes = async () => {
+	assertDriveEnabled();
 	const user = await isSignedIn();
 	const rls = await rlsClient();
 	return rls((tx) =>
@@ -67,6 +76,7 @@ export const fetchVolumes = async () => {
 };
 
 export const normalizeWithinPathString = async (path: unknown) => {
+	assertDriveEnabled();
 	const raw = typeof path === "string" ? path : "/";
 	const cleaned = "/" + trimSlashes(decodeURIComponent(raw));
 	return cleaned === "/" ? "/" : cleaned;
@@ -95,6 +105,7 @@ export async function addNewFolder(
 	formData: FormData,
 ): Promise<FormState> {
 	return handleAction(async () => {
+		assertDriveEnabled();
 		const decodedForm = decode(formData) as Record<string, unknown>;
 
 		const name =
@@ -221,6 +232,7 @@ export async function addNewFolder(
 
 
 export const refreshViewAfterUpload = async () => {
+	assertDriveEnabled();
 	return revalidatePath("/w/[workspaceId]/dashboard/drive");
 };
 
@@ -229,6 +241,7 @@ function getVolumePrefix(volume: DriveVolumeEntity) {
 }
 
 export async function fetchCloudListPath(ctx: DriveRouteContext) {
+	assertDriveEnabled();
 	const volume = ctx.driveVolume;
 	if (!volume) return [];
 
@@ -342,7 +355,6 @@ function joinPaths(base: string, leaf: string) {
 	return out === "" ? "/" : out;
 }
 
-
 export async function getCloudUploadUrl(
 	ctx: DriveRouteContext,
 	input: {
@@ -351,6 +363,7 @@ export async function getCloudUploadUrl(
 		contentType?: string | null;
 	},
 ) {
+	assertDriveEnabled();
 	const volume = ctx.driveVolume;
 	if (!volume) throw new Error("Missing driveVolume");
 
@@ -369,6 +382,20 @@ export async function getCloudUploadUrl(
 	const fullPath = joinPaths(withinPath, filename);
 	const relativeKey = fullPath.replace(/^\/+/, "");
 	const key = `${volumePrefix}${relativeKey}`;
+
+	const uploadToken = crypto.randomUUID();
+
+	const rls = await rlsClient();
+
+	await rls((tx) =>
+		tx.insert(driveUploadIntents).values({
+			volumeId: volume.id,
+			token: uploadToken,
+			targetPath: fullPath,
+			singleUse: true,
+			expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+		}),
+	);
 
 	const url = await getSignedUrl(
 		s3,
@@ -392,6 +419,7 @@ export async function getCloudUploadUrl(
 		relativeKey,
 		method: "PUT",
 		url,
+		uploadToken,
 		headers: {
 			"Content-Type": input.contentType || "application/octet-stream",
 		},
@@ -400,6 +428,7 @@ export async function getCloudUploadUrl(
 
 
 export async function getDriveDownloadUrl(entryId: string) {
+	assertDriveEnabled();
 
 	const rls = await rlsClient();
 	const [entry] = await rls((tx) =>
@@ -424,6 +453,7 @@ export async function getDriveDownloadUrl(entryId: string) {
 
 export async function deleteDriveEntry(entryId: string) {
 	return handleAction(async () => {
+		assertDriveEnabled();
 		const rls = await rlsClient();
 
 		const [entry] = await rls((tx) =>

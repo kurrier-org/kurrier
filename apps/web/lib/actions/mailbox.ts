@@ -1076,38 +1076,114 @@ export async function deleteForever(
 	refresh = true,
 	opts?: { emptyAll?: boolean },
 ) {
+	const user = await isSignedIn();
+
+	if (!user?.id) {
+		throw new Error("Unauthorized");
+	}
+
+	if (!mailboxId) {
+		throw new Error("Mailbox is required");
+	}
+
+	const rls = await rlsClient();
 	const { emptyAll = false } = opts ?? {};
+
+	// Verify that this mailbox is accessible to the current user/workspace.
+	const [allowedMailbox] = await rls((tx) =>
+		tx
+			.select({
+				id: mailboxes.id,
+				identityId: mailboxes.identityId,
+			})
+			.from(mailboxes)
+			.innerJoin(
+				identities,
+				eq(mailboxes.identityId, identities.id),
+			)
+			.where(eq(mailboxes.id, mailboxId))
+			.limit(1),
+	);
+
+	if (!allowedMailbox) {
+		throw new Error("Mailbox not found or access denied");
+	}
+
 	const { smtpQueue, searchIngestQueue } = await getRedis();
 
 	if (emptyAll) {
 		await smtpQueue.add(
 			"mail:delete-permanent",
-			{ mailboxId, emptyAll: true, imapDelete },
+			{
+				mailboxId: allowedMailbox.id,
+				emptyAll: true,
+				imapDelete,
+			},
 			{
 				attempts: 3,
-				backoff: { type: "exponential", delay: 1500 },
+				backoff: {
+					type: "exponential",
+					delay: 1500,
+				},
 				removeOnComplete: true,
 				removeOnFail: true,
 			},
 		);
-		if (refresh) revalidatePath("/mail");
+
+		if (refresh) {
+			revalidatePath("/mail");
+		}
+
 		return;
 	}
 
-	const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
+	const requestedIds = (
+		Array.isArray(threadIds)
+			? threadIds
+			: [threadIds]
+	)
 		.filter(Boolean)
 		.map(String);
 
-	if (!ids.length || !mailboxId) return;
+	if (!requestedIds.length) {
+		return;
+	}
+
+	const allowedThreads = await rls((tx) =>
+		tx
+			.select({
+				threadId: mailboxThreads.threadId,
+			})
+			.from(mailboxThreads)
+			.where(
+				and(
+					eq(mailboxThreads.mailboxId, allowedMailbox.id),
+					inArray(mailboxThreads.threadId, requestedIds),
+				),
+			),
+	);
+
+	const allowedIds = allowedThreads.map((row) => row.threadId);
+
+	if (allowedIds.length !== requestedIds.length) {
+		throw new Error("One or more threads were not found or access was denied");
+	}
 
 	await Promise.all(
-		ids.map(async (threadId) => {
+		allowedIds.map(async (threadId) => {
 			await smtpQueue.add(
 				"mail:delete-permanent",
-				{ threadId, mailboxId, imapDelete },
+				{
+					threadId,
+					mailboxId: allowedMailbox.id,
+					imapDelete,
+				},
 				{
 					attempts: 3,
-					backoff: { type: "exponential", delay: 1500 },
+					backoff: {
+						type: "exponential",
+						delay: 1500,
+					},
 					removeOnComplete: true,
 					removeOnFail: true,
 				},
@@ -1121,13 +1197,18 @@ export async function deleteForever(
 					removeOnComplete: true,
 					removeOnFail: false,
 					attempts: 3,
-					backoff: { type: "exponential", delay: 1500 },
+					backoff: {
+						type: "exponential",
+						delay: 1500,
+					},
 				},
 			);
 		}),
 	);
 
-	if (refresh) revalidatePath("/mail");
+	if (refresh) {
+		revalidatePath("/mail");
+	}
 }
 
 export async function addNewMailboxFolder(

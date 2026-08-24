@@ -10,12 +10,19 @@ import {Suspense} from "react";
 import Loading from "@/app/loading";
 import NavUserWrapper from "@/components/ui/dashboards/workspace/nav-user-wrapper";
 import {getWorkspacePublicId} from "@/lib/actions/clients";
+import { redirect } from "next/navigation";
+import { SITE_FEATURES } from "@/lib/site-features";
 
 export default async function DriveLayout({
                                               children,
                                           }: {
     children: React.ReactNode;
 }) {
+    const workspacePublicId = await getWorkspacePublicId();
+    if (!SITE_FEATURES.drive) {
+        redirect(`/w/${workspacePublicId}/dashboard/mail`);
+    }
+
     const vols = await fetchVolumes();
     const userId = await isSignedIn();
     const initialState: DriveState = {
@@ -24,8 +31,6 @@ export default async function DriveLayout({
         driveRouteContext: null,
         userId: String(userId?.id),
     };
-    const workspacePublicId = await getWorkspacePublicId();
-
     return (
         <>
             <DynamicContextProvider initialState={initialState}>

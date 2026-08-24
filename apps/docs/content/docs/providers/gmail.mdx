@@ -1,81 +1,17 @@
 ---
 title: Google
-description: Connecting your Google account
+description: Connecting Gmail and Google Workspace accounts to Kurrier
 ---
 
 # Google
 
-Kurrier can connect directly to your **Google (Gmail)** account using Google's secure OAuth sign-in flow.
+Kurrier can connect directly to **Gmail** and **Google Workspace** accounts using Google's OAuth flow.
 
-Unlike SMTP/IMAP, no app passwords, server names, or API keys are required.
+Unlike SMTP/IMAP, users do not need app passwords, server names, or individual mail credentials.
 
-Make sure to have
-
-**OIDC_GOOGLE_CLIENT_ID**
-
-
-**OIDC_GOOGLE_CLIENT_SECRET**
-
-set in your environment variables before connecting your Google account.
+Kurrier uses the Gmail API to send and synchronize mail.
 
 ---
-
-
-## 3. Self-Hosting with Your Own Google OAuth App
-
-If you're self-hosting Kurrier, you'll need to create your own Google OAuth application.
-
-### Create a Google Cloud Project
-
-1. Visit the Google Cloud Console:
-
-https://console.cloud.google.com/
-
-2. Create a new project (or select an existing one).
-
-3. Enable the **Gmail API** for your project.
-
-4. Configure the **OAuth Consent Screen**.
-
-5. Create an **OAuth 2.0 Client ID** for a Web Application.
-
-6. Configure the redirect URI to point to your Kurrier instance.
-
-For example:
-
-```text
-
-https://mail.example.com/api/oauth/google/callback
-
-```
-
-Replace the domain with your own Kurrier installation.
-
----
-
-## 4. Required OAuth Scopes
-
-Kurrier requires the following Google OAuth scopes:
-
-| Scope | Purpose |
-
-|--------|---------|
-
-| `openid` | Authenticate the user |
-
-| `email` | Read the connected email address |
-
-| `profile` | Basic profile information |
-
-| `https://www.googleapis.com/auth/gmail.modify` | Read emails, modify labels, archive, trash, mark read/unread |
-
-| `https://www.googleapis.com/auth/gmail.send` | Send emails |
-
-These are the minimum permissions required for a complete Gmail experience.
-
----
-
-
 
 ## 1. Overview
 
@@ -88,93 +24,214 @@ When you connect a Google account, Kurrier uses the official Gmail API to:
 - Receive new emails
 - Keep your mailbox synchronized automatically
 
-Your Google password is **never stored** by Kurrier. Authentication is handled entirely through Google OAuth.
+Your Google password is **never stored** by Kurrier. Authentication is handled through Google OAuth.
 
 ---
 
-## 2. Connecting Your Google Account
+## 2. Configure Google OAuth
 
-In Kurrier, go to:
+Before connecting Google accounts, Kurrier needs OAuth credentials for a Google OAuth application.
 
-> **Dashboard → Providers → Add Provider → Google**
+### Configure from the Kurrier dashboard
+
+Workspace administrators can configure these credentials directly from:
+
+> **Dashboard → Providers → Google**
+
+If Google Mail OAuth has not yet been configured, Kurrier will display a configuration option.
+
+Enter your:
+
+- **Google Client ID**
+- **Google Client Secret**
+
+The credentials are encrypted and stored in the workspace Vault.
+
+Once configured, members of the workspace can connect Google accounts without needing to enter OAuth application credentials themselves.
+
+### Configure using environment variables
+
+Self-hosted installations can alternatively configure Google Mail OAuth using environment variables:
+
+```
+GOOGLE_MAIL_CLIENT_ID=your_google_client_id
+GOOGLE_MAIL_CLIENT_SECRET=your_google_client_secret
+```
+
+Kurrier resolves Google Mail OAuth credentials in the following order:
+
+1. Workspace Google Mail OAuth credentials stored in the Vault
+2. `GOOGLE_MAIL_CLIENT_ID` and `GOOGLE_MAIL_CLIENT_SECRET`
+3. Legacy `OIDC_GOOGLE_CLIENT_ID` and `OIDC_GOOGLE_CLIENT_SECRET`
+
+The `OIDC_GOOGLE_*` fallback is maintained for backward compatibility with existing installations.
+
+`GOOGLE_MAIL_CLIENT_ID` and `GOOGLE_MAIL_CLIENT_SECRET` are specifically for connecting Google accounts as mail providers.
+
+`OIDC_GOOGLE_CLIENT_ID` and `OIDC_GOOGLE_CLIENT_SECRET` may still be used separately for signing into Kurrier with Google.
+
+---
+
+## 3. Create a Google OAuth Application
+
+If you're self-hosting Kurrier and do not already have a Google OAuth application, you'll need to create one.
+
+### Create a Google Cloud project
+
+1. Visit the Google Cloud Console:
+
+`https://console.cloud.google.com/`
+
+2. Create a new project or select an existing project.
+
+3. Enable the **Gmail API** for the project.
+
+4. Configure the **OAuth consent screen**.
+
+5. Create an **OAuth 2.0 Client ID** for a **Web application**.
+
+6. Add your Kurrier Google callback URL as an authorized redirect URI.
+
+For example:
+
+```text
+https://mail.example.com/api/oauth/google/callback
+```
+
+Replace `mail.example.com` with the domain of your Kurrier installation.
+
+Use the generated Client ID and Client Secret either in the Kurrier dashboard or through the `GOOGLE_MAIL_*` environment variables.
+
+---
+
+## 4. Required OAuth Scopes
+
+Kurrier requests the following Google OAuth scopes:
+
+| Scope | Purpose |
+| --- | --- |
+| `openid` | Identify the connected Google account |
+| `email` | Read the connected email address |
+| `profile` | Read basic profile information |
+| `https://www.googleapis.com/auth/gmail.modify` | Read mail and manage mailbox state and labels |
+| `https://www.googleapis.com/auth/gmail.send` | Send emails |
+
+These permissions provide the functionality required for Gmail synchronization and sending.
+
+---
+
+## 5. Connecting a Google Account
+
+Once Google Mail OAuth is configured, go to:
+
+> **Dashboard → Providers → Google**
 
 Click:
 
-> **Sign in with Google**
+> **Add Google Account**
 
-You'll be redirected to Google's secure authentication page.
+You'll be redirected to Google's authorization page.
 
-After signing in and granting permission, you'll be returned to Kurrier automatically.
+Sign in with the Gmail or Google Workspace account you want to connect and grant the requested permissions.
 
-Once connected, the provider will display a **Verified** status.
+After authorization, Google redirects you back to Kurrier and the account is added to your workspace.
 
----
-
-## 3. Required Permissions
-
-Kurrier requests the minimum Google permissions required to provide a complete email experience.
-
-These permissions allow Kurrier to:
-
-- Read your mailbox
-- Send emails on your behalf
-- Create, modify and delete drafts
-- Read and manage labels
-- Keep your mailbox synchronized
-
-Kurrier only accesses the Google account(s) that you explicitly connect.
+You can connect multiple Google accounts using the same workspace OAuth configuration.
 
 ---
 
-## 4. Verification
+## 6. Verification
 
-After connecting your account, Kurrier automatically verifies the connection by communicating with the Gmail API.
+After connecting an account, Kurrier verifies the connection using the Gmail API.
 
-If successful, the provider card will display:
+The Google account card displays the current connection status and available capabilities.
 
-- ✅ Verified
-- Connected Google email address
-- Mailbox information
+You can also use **Verify Connection** to test the connection manually.
 
----
-
-## 5. Disconnecting
-
-You can disconnect your Google account at any time by removing the identity from Kurrier.
-
-If you would also like to revoke Kurrier's access completely, visit:
-
-> https://myaccount.google.com/permissions
-
-Locate **Kurrier** in the list of connected applications and choose **Remove Access**.
+If the OAuth token has expired or been revoked, Kurrier will mark the connection accordingly and allow you to reconnect it.
 
 ---
 
-## 6. Troubleshooting
+## 7. Reconnecting an Account
+
+Google access and refresh tokens are stored securely in the Kurrier Vault.
+
+Kurrier automatically refreshes access tokens when required.
+
+If Google revokes the refresh token or the authorization otherwise becomes invalid, select:
+
+> **Reconnect**
+
+from the Google account card and complete the Google authorization flow again.
+
+---
+
+## 8. Disconnecting
+
+You can disconnect a Google account from Kurrier by removing the associated account or identity.
+
+To revoke Kurrier's access from Google as well, visit:
+
+`https://myaccount.google.com/permissions`
+
+Locate the OAuth application used by your Kurrier installation and choose **Remove Access**.
+
+---
+
+## 9. Troubleshooting
+
+### Google Mail OAuth is not configured
+
+Configure a Google Client ID and Client Secret from:
+
+> **Dashboard → Providers → Google**
+
+Alternatively, configure:
+
+```
+GOOGLE_MAIL_CLIENT_ID=...
+GOOGLE_MAIL_CLIENT_SECRET=...
+```
+
+Existing installations using `OIDC_GOOGLE_CLIENT_ID` and `OIDC_GOOGLE_CLIENT_SECRET` continue to work through the legacy fallback.
 
 ### Authentication failed
 
-Try signing in again and ensure you complete the Google consent flow.
+Try connecting the account again and make sure the Google consent flow is completed.
+
+Also verify that the callback URL configured in Google Cloud exactly matches:
+
+```text
+https://your-kurrier-domain/api/oauth/google/callback
+```
 
 ### Permission denied
 
-If you denied one or more permissions, remove the existing connection and reconnect the account.
+If one or more requested permissions were denied, reconnect the account and grant the required permissions.
+
+### Google did not return a refresh token
+
+Google may not return a new refresh token if the application has already been authorized.
+
+Revoke the application's access from your Google Account and then connect the account again.
 
 ### Account disconnected
 
-If your Google refresh token is revoked or expires, Kurrier will notify you that the provider needs to be reconnected.
+If the Google refresh token is revoked or becomes invalid, Kurrier will mark the account as requiring reconnection.
+
+Use **Reconnect** from the Google account card to authorize it again.
 
 ---
 
-## 7. Why use Google instead of SMTP?
+## 10. Why use Google instead of SMTP/IMAP?
 
-Using the Gmail API provides several advantages over SMTP/IMAP:
+Using the Gmail API provides several advantages for Gmail and Google Workspace accounts:
 
-- No App Passwords required
+- No app passwords
 - Secure OAuth authentication
-- Automatic token refresh
-- Better Gmail compatibility
-- Reliable mailbox synchronization
-- Supports Gmail labels natively
+- Automatic access token refresh
+- Native Gmail label support
+- Gmail-specific mailbox synchronization
+- No SMTP or IMAP credentials to manage
 
-For Gmail accounts, connecting through **Google** is the recommended option over SMTP/IMAP.
+For Gmail and Google Workspace accounts, connecting through the **Google** provider is the recommended option.

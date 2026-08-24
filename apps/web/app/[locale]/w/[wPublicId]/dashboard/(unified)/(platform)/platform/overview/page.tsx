@@ -1,3 +1,4 @@
+import { Button } from "@mantine/core";
 import {
 	Activity,
 	ArrowRight,
@@ -14,15 +15,15 @@ import {
 	Webhook,
 } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@mantine/core";
-import { getDashboardStats } from "@/lib/actions/dashboard";
+import type React from "react";
 import { Container } from "@/components/common/containers";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import React from "react";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { getWorkspacePublicId, getWorkspaceRole } from "@/lib/actions/clients";
+import { getDashboardStats } from "@/lib/actions/dashboard";
 import { fetchWorkspace } from "@/lib/actions/workspace";
 import { getDictionary } from "@/lib/dictionaries";
+import { SITE_FEATURES } from "@/lib/site-features";
 
 export default async function Page({
 	params,
@@ -30,76 +31,84 @@ export default async function Page({
 	params: Promise<{ locale: string }>;
 }) {
 	const { locale } = await params;
-	const [{ data: statsData }, workspacePublicId, workspaceRole, workspace, dict] =
-		await Promise.all([
-			getDashboardStats(),
-			getWorkspacePublicId(),
-			getWorkspaceRole(),
-			fetchWorkspace(),
-			getDictionary(locale),
-		]);
+	const [
+		{ data: statsData },
+		workspacePublicId,
+		workspaceRole,
+		workspace,
+		dict,
+	] = await Promise.all([
+		getDashboardStats(),
+		getWorkspacePublicId(),
+		getWorkspaceRole(),
+		fetchWorkspace(),
+		getDictionary(locale),
+	]);
 	const p = dict.platform;
+	const driveEnabled = SITE_FEATURES.drive;
 
 	const isOwner = workspaceRole === "owner";
 	const base = `/w/${workspacePublicId}/dashboard/platform`;
 
 	const statCards = isOwner
 		? [
-			{
-				icon: <Plug className="size-5 text-primary" />,
-				label: p.connectedProviders,
-				value: statsData?.connectedProviders || 0,
-				hint: p.sendingAndStorageIntegrations,
-			},
-			{
-				icon: <Send className="size-5 text-primary" />,
-				label: p.activeIdentities,
-				value: statsData?.activeIdentities || 0,
-				hint: p.mailboxesAndSenders,
-			},
-			{
-				icon: <Mail className="size-5 text-primary" />,
-				label: p.messagesStored,
-				value: statsData?.emailsProcessedTotal || 0,
-				hint: `${statsData?.emailsProcessed24h || 0} ${p.inLast24h}`,
-			},
-			{
-				icon: <HardDrive className="size-5 text-primary" />,
-				label: p.storageUsed,
-				value: formatBytes(
-					statsData?.totalStorageBytes || statsData?.storageBytesUsed || 0,
-				),
-				hint: statsData?.isStorageOverLimit
-					? p.overStorageLimit
-					: p.withinPlanLimit,
-			},
-		]
+				{
+					icon: <Plug className="size-5 text-primary" />,
+					label: p.connectedProviders,
+					value: statsData?.connectedProviders || 0,
+					hint: driveEnabled
+						? p.sendingAndStorageIntegrations
+						: "Connected integrations",
+				},
+				{
+					icon: <Send className="size-5 text-primary" />,
+					label: p.activeIdentities,
+					value: statsData?.activeIdentities || 0,
+					hint: p.mailboxesAndSenders,
+				},
+				{
+					icon: <Mail className="size-5 text-primary" />,
+					label: p.messagesStored,
+					value: statsData?.emailsProcessedTotal || 0,
+					hint: `${statsData?.emailsProcessed24h || 0} ${p.inLast24h}`,
+				},
+				{
+					icon: <HardDrive className="size-5 text-primary" />,
+					label: p.storageUsed,
+					value: formatBytes(
+						statsData?.totalStorageBytes || statsData?.storageBytesUsed || 0,
+					),
+					hint: statsData?.isStorageOverLimit
+						? p.overStorageLimit
+						: p.withinPlanLimit,
+				},
+			]
 		: [
-			{
-				icon: <Mail className="size-5 text-primary" />,
-				label: p.messages,
-				value: statsData?.emailsProcessedTotal || 0,
-				hint: `${statsData?.emailsProcessed24h || 0} ${p.inLast24h}`,
-			},
-			{
-				icon: <FileText className="size-5 text-primary" />,
-				label: p.threads,
-				value: statsData?.threadCount || 0,
-				hint: p.accessibleConversations,
-			},
-			{
-				icon: <Database className="size-5 text-primary" />,
-				label: p.drafts,
-				value: statsData?.draftCount || 0,
-				hint: `${statsData?.scheduledDraftCount || 0} ${p.scheduled}`,
-			},
-			{
-				icon: <HardDrive className="size-5 text-primary" />,
-				label: p.mailStorage,
-				value: formatBytes(statsData?.rawMessageBytes || 0),
-				hint: p.accessibleStoredMail,
-			},
-		];
+				{
+					icon: <Mail className="size-5 text-primary" />,
+					label: p.messages,
+					value: statsData?.emailsProcessedTotal || 0,
+					hint: `${statsData?.emailsProcessed24h || 0} ${p.inLast24h}`,
+				},
+				{
+					icon: <FileText className="size-5 text-primary" />,
+					label: p.threads,
+					value: statsData?.threadCount || 0,
+					hint: p.accessibleConversations,
+				},
+				{
+					icon: <Database className="size-5 text-primary" />,
+					label: p.drafts,
+					value: statsData?.draftCount || 0,
+					hint: `${statsData?.scheduledDraftCount || 0} ${p.scheduled}`,
+				},
+				{
+					icon: <HardDrive className="size-5 text-primary" />,
+					label: p.mailStorage,
+					value: formatBytes(statsData?.rawMessageBytes || 0),
+					hint: p.accessibleStoredMail,
+				},
+			];
 
 	const setupItems = [
 		{
@@ -120,13 +129,15 @@ export default async function Page({
 			done: Number(statsData?.activeIdentities || 0) > 0,
 			href: `${base}/identities`,
 		},
-		{
+	];
+	if (driveEnabled) {
+		setupItems.push({
 			title: p.createAStorageVolume,
 			description: p.createAStorageVolumeDescription,
 			done: Number(statsData?.volumeCount || 0) > 0,
 			href: `${base}/storage`,
-		},
-	];
+		});
+	}
 
 	const quickActions = [
 		{
@@ -139,11 +150,15 @@ export default async function Page({
 			title: p.identities,
 			href: `${base}/identities`,
 		},
-		{
+	];
+	if (driveEnabled) {
+		quickActions.push({
 			icon: <HardDrive className="size-4" />,
 			title: p.storage,
 			href: `${base}/storage`,
-		},
+		});
+	}
+	quickActions.push(
 		{
 			icon: <Webhook className="size-4" />,
 			title: p.webhooks,
@@ -154,7 +169,45 @@ export default async function Page({
 			title: p.syncServices,
 			href: `${base}/sync-services`,
 		},
+	);
+	const ownerStorageRows: [string, string][] = [
+		[p.rawEml, formatBytes(statsData?.rawMessageBytes || 0)],
+		[p.attachments, formatBytes(statsData?.attachmentBytes || 0)],
 	];
+	if (driveEnabled) {
+		ownerStorageRows.push([
+			p.driveFiles,
+			formatBytes(statsData?.driveStorageBytes || 0),
+		]);
+	}
+	ownerStorageRows.push([
+		p.total,
+		formatBytes(
+			statsData?.totalStorageBytes || statsData?.storageBytesUsed || 0,
+		),
+	]);
+	const ownerConfigurationRows: [string, string][] = [
+		[p.providers, formatNumber(statsData?.connectedProviders || 0)],
+		[p.verifiedDomains, formatNumber(statsData?.verifiedDomains || 0)],
+		[p.identities, formatNumber(statsData?.activeIdentities || 0)],
+	];
+	if (driveEnabled) {
+		ownerConfigurationRows.push([
+			p.volumes,
+			formatNumber(statsData?.volumeCount || 0),
+		]);
+	}
+	const ownerRecordRows: [string, string][] = [
+		[p.messages, formatNumber(statsData?.emailsProcessedTotal || 0)],
+		[p.threads, formatNumber(statsData?.threadCount || 0)],
+		[p.drafts, formatNumber(statsData?.draftCount || 0)],
+	];
+	if (driveEnabled) {
+		ownerRecordRows.push([
+			p.driveEntries,
+			formatNumber(statsData?.driveEntryCount || 0),
+		]);
+	}
 
 	return (
 		<>
@@ -188,7 +241,9 @@ export default async function Page({
 
 									<p className="mt-2 text-sm leading-6 text-muted-foreground">
 										{isOwner
-											? p.ownerOverviewSubtitle
+											? driveEnabled
+												? p.ownerOverviewSubtitle
+												: "Track setup, mail volume and stored messages from one place."
 											: p.memberOverviewSubtitle}
 									</p>
 								</div>
@@ -298,7 +353,9 @@ export default async function Page({
 
 						<div
 							className={
-								isOwner ? "grid gap-4 xl:grid-cols-3" : "grid gap-4 xl:grid-cols-2"
+								isOwner
+									? "grid gap-4 xl:grid-cols-3"
+									: "grid gap-4 xl:grid-cols-2"
 							}
 						>
 							<MiniPanel
@@ -306,46 +363,25 @@ export default async function Page({
 								title={p.storage}
 								rows={
 									isOwner
-										? [
-											[
-												p.rawEml,
-												formatBytes(statsData?.rawMessageBytes || 0),
-											],
-											[
-												p.attachments,
-												formatBytes(statsData?.attachmentBytes || 0),
-											],
-											[
-												p.driveFiles,
-												formatBytes(statsData?.driveStorageBytes || 0),
-											],
-											[
-												p.total,
-												formatBytes(
-													statsData?.totalStorageBytes ||
-													statsData?.storageBytesUsed ||
-													0,
-												),
-											],
-										]
+										? ownerStorageRows
 										: [
-											[
-												p.rawEml,
-												formatBytes(statsData?.rawMessageBytes || 0),
-											],
-											[
-												p.attachments,
-												formatBytes(statsData?.attachmentBytes || 0),
-											],
-											[
-												p.total,
-												formatBytes(
-													statsData?.totalStorageBytes ||
-													statsData?.storageBytesUsed ||
-													0,
-												),
-											],
-										]
+												[
+													p.rawEml,
+													formatBytes(statsData?.rawMessageBytes || 0),
+												],
+												[
+													p.attachments,
+													formatBytes(statsData?.attachmentBytes || 0),
+												],
+												[
+													p.total,
+													formatBytes(
+														statsData?.totalStorageBytes ||
+															statsData?.storageBytesUsed ||
+															0,
+													),
+												],
+											]
 								}
 							/>
 
@@ -353,21 +389,7 @@ export default async function Page({
 								<MiniPanel
 									icon={<Globe className="size-4" />}
 									title={p.configuration}
-									rows={[
-										[
-											p.providers,
-											formatNumber(statsData?.connectedProviders || 0),
-										],
-										[
-											p.verifiedDomains,
-											formatNumber(statsData?.verifiedDomains || 0),
-										],
-										[
-											p.identities,
-											formatNumber(statsData?.activeIdentities || 0),
-										],
-										[p.volumes, formatNumber(statsData?.volumeCount || 0)],
-									]}
+									rows={ownerConfigurationRows}
 								/>
 							) : null}
 
@@ -376,38 +398,15 @@ export default async function Page({
 								title={p.records}
 								rows={
 									isOwner
-										? [
-											[
-												p.messages,
-												formatNumber(statsData?.emailsProcessedTotal || 0),
-											],
-											[
-												p.threads,
-												formatNumber(statsData?.threadCount || 0),
-											],
-											[
-												p.drafts,
-												formatNumber(statsData?.draftCount || 0),
-											],
-											[
-												p.driveEntries,
-												formatNumber(statsData?.driveEntryCount || 0),
-											],
-										]
+										? ownerRecordRows
 										: [
-											[
-												p.messages,
-												formatNumber(statsData?.emailsProcessedTotal || 0),
-											],
-											[
-												p.threads,
-												formatNumber(statsData?.threadCount || 0),
-											],
-											[
-												p.drafts,
-												formatNumber(statsData?.draftCount || 0),
-											],
-										]
+												[
+													p.messages,
+													formatNumber(statsData?.emailsProcessedTotal || 0),
+												],
+												[p.threads, formatNumber(statsData?.threadCount || 0)],
+												[p.drafts, formatNumber(statsData?.draftCount || 0)],
+											]
 								}
 							/>
 						</div>
@@ -438,11 +437,11 @@ export default async function Page({
 }
 
 function StatCard({
-					  icon,
-					  label,
-					  value,
-					  hint,
-				  }: {
+	icon,
+	label,
+	value,
+	hint,
+}: {
 	icon: React.ReactNode;
 	label: string;
 	value: string | number;
@@ -463,10 +462,10 @@ function StatCard({
 }
 
 function Panel({
-				   title,
-				   description,
-				   children,
-			   }: {
+	title,
+	description,
+	children,
+}: {
 	title: string;
 	description: string;
 	children: React.ReactNode;
@@ -498,10 +497,10 @@ function MetricGrid({ rows }: { rows: [string, string][] }) {
 }
 
 function MiniPanel({
-					   icon,
-					   title,
-					   rows,
-				   }: {
+	icon,
+	title,
+	rows,
+}: {
 	icon: React.ReactNode;
 	title: string;
 	rows: [string, string][];
@@ -528,10 +527,10 @@ function MiniPanel({
 }
 
 function QuickAction({
-						 icon,
-						 title,
-						 href,
-					 }: {
+	icon,
+	title,
+	href,
+}: {
 	icon: React.ReactNode;
 	title: string;
 	href: string;

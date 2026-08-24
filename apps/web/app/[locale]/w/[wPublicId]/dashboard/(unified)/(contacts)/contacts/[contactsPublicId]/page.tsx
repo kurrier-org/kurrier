@@ -55,7 +55,6 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 
 	if (contact.profilePicture) {
 		profilePictureUrl = await generateSignedUrl(contact.profilePicture)
-		console.log("profilePictureUrl", profilePictureUrl)
 	}
 
 	const onDeleteAction = async (id: string) => {

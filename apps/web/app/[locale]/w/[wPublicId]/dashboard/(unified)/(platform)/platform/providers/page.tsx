@@ -1,9 +1,11 @@
 import { smtpAccountSecrets } from "@db";
-import { PROVIDERS } from "@schema";
+import { PROVIDERS, parseCustomEmailProviders } from "@schema";
 import * as React from "react";
 import { Container } from "@/components/common/containers";
+import CustomEmailProviderCard from "@/components/dashboard/providers/custom-email-provider-card";
 import GoogleCard from "@/components/dashboard/providers/google-card";
 import InboundCard from "@/components/dashboard/providers/inbound-card";
+import JmapCard from "@/components/dashboard/providers/jmap-card";
 import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
 import SMTPCard from "@/components/dashboard/providers/smtp-card";
 import { Separator } from "@/components/ui/separator";
@@ -12,9 +14,10 @@ import {
 	fetchDecryptedSecrets,
 	fetchGoogleAccounts,
 	fetchInboundIdentities,
+	hasGoogleOAuthConfig,
 	syncProviders,
 } from "@/lib/actions/dashboard";
-import { fetchWorkspace } from "@/lib/actions/workspace";
+import { fetchJmapAccounts } from "@/lib/actions/jmap-actions";
 import { getDictionary } from "@/lib/dictionaries";
 
 export default async function ProvidersPage({
@@ -24,17 +27,27 @@ export default async function ProvidersPage({
 }) {
 	const { locale } = await params;
 	const dict = await getDictionary(locale);
-	const userProviders = await syncProviders();
 
-	const smtpSecrets = await fetchDecryptedSecrets({
-		linkTable: smtpAccountSecrets,
-		foreignCol: smtpAccountSecrets.accountId,
-		secretIdCol: smtpAccountSecrets.secretId,
-	});
-
-	const googleAccounts = await fetchGoogleAccounts();
-	const workspaceId = await fetchWorkspace().then((workspace) => workspace.id);
-	const inboundIdentities = await fetchInboundIdentities();
+	const [
+		userProviders,
+		smtpSecrets,
+		googleAccounts,
+		inboundIdentities,
+		jmapAccounts,
+		googleOAuthConfigured,
+	] = await Promise.all([
+		syncProviders(),
+		fetchDecryptedSecrets({
+			linkTable: smtpAccountSecrets,
+			foreignCol: smtpAccountSecrets.accountId,
+			secretIdCol: smtpAccountSecrets.secretId,
+		}),
+		fetchGoogleAccounts(),
+		fetchInboundIdentities(),
+		fetchJmapAccounts(),
+		hasGoogleOAuthConfig(),
+	]);
+	const customEmailProviders = parseCustomEmailProviders();
 
 	return (
 		<>
@@ -59,6 +72,27 @@ export default async function ProvidersPage({
 						{dict.platform.providersPageDescription}
 					</p>
 
+					{customEmailProviders.length > 0 ? (
+						<section className="mb-8">
+							<div className="mb-4">
+								<h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+									Configured email providers
+								</h2>
+								<p className="mt-1 text-xs text-muted-foreground">
+									Server settings are managed by your administrator.
+								</p>
+							</div>
+							<div className="grid gap-6">
+								{customEmailProviders.map((provider) => (
+									<CustomEmailProviderCard
+										key={provider.id}
+										provider={provider}
+									/>
+								))}
+							</div>
+						</section>
+					) : null}
+
 					<div className="grid gap-6 lg:grid-cols-2">
 						{PROVIDERS.map((p) => (
 							<ProviderCardShell
@@ -71,8 +105,12 @@ export default async function ProvidersPage({
 					</div>
 					<div className="grid gap-6 lg:grid-cols-2 my-8">
 						<SMTPCard smtpSecrets={smtpSecrets} />
-						<GoogleCard googleAccounts={googleAccounts} />
+						<GoogleCard
+							googleAccounts={googleAccounts}
+							googleOAuthConfigured={googleOAuthConfigured}
+						/>
 						<InboundCard inboundIdentities={inboundIdentities} />
+						<JmapCard jmapAccounts={jmapAccounts} />
 					</div>
 				</Container>
 			</div>

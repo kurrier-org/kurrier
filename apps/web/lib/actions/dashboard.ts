@@ -15,24 +15,27 @@ import {
 	providerSecrets,
 	secretsMeta,
 	smtpAccounts,
-	smtpAccountSecrets, threads,
+	smtpAccountSecrets,
 	updateSecret, WebhookInsertEntity, webhooks, workspaceMembers,
 } from "@db";
 import {
 	apiScopeList,
+	CustomEmailProviderCredentialsSchema,
 	defaultImapQuota,
 	DomainIdentityFormSchema,
 	FormState,
 	getPublicEnv,
 	handleAction,
 	MailboxKindDisplay,
+	materializeCustomEmailProvider,
+	parseCustomEmailProviders,
 	ProviderAccountFormSchema,
 	Providers,
 	SmtpAccountFormSchema,
 	SYSTEM_MAILBOXES,
 } from "@schema";
 import { currentSession, isSignedIn } from "@/lib/actions/auth";
-import {and, count, eq, sql, gte, desc, inArray, sum, countDistinct} from "drizzle-orm";
+import {and, count, eq, sql, gte, desc, sum, countDistinct} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { decode } from "decode-formdata";
 import { PgColumn, PgTable } from "drizzle-orm/pg-core";
@@ -52,11 +55,10 @@ import { kvGet } from "@common";
 import { nanoid } from "nanoid";
 import { getRedis } from "@/lib/actions/get-redis";
 import {
-	checkDefaultWorkspaceIdentity, fetchWorkspace
+	checkDefaultWorkspaceIdentity,
 } from "@/lib/actions/workspace";
 import {workspaceIdentityMembers} from "@db";
-import {s3} from "@/lib/create-s3-client";
-import {CreateBucketCommand} from "@aws-sdk/client-s3";
+import { SITE_FEATURES } from "@/lib/site-features";
 
 const DASHBOARD_PATH = "/w/[workspaceId]/dashboard/providers";
 const CURRENT_API_VERSION = 1;
@@ -82,6 +84,17 @@ export async function upsertProviderAccount(
 		const parsed = ProviderAccountFormSchema.parse(data);
 
 		const rls = await rlsClient();
+		if (!SITE_FEATURES.drive) {
+			const [provider] = await rls((tx) =>
+				tx
+					.select({ type: providers.type })
+					.from(providers)
+					.where(eq(providers.id, String(parsed.providerId))),
+			);
+			if (provider?.type === "s3") {
+				throw new Error("Drive is disabled");
+			}
+		}
 		const [providerSecret] = await rls((tx) =>
 			tx
 				.select()
@@ -187,6 +200,51 @@ export async function upsertSMTPAccount(
 		return {
 			success: true,
 			message: "dashboard.done",
+		};
+	});
+}
+
+export async function createCustomProviderSMTPAccount(
+	_prev: FormState,
+	formData: FormData,
+): Promise<FormState> {
+	return handleAction(async () => {
+		const credentials = CustomEmailProviderCredentialsSchema.parse(
+			decode(formData),
+		);
+		const preset = parseCustomEmailProviders().find((provider) => provider.id === credentials.presetId);
+
+		if (!preset) {
+			throw new Error(
+				"This email provider is no longer available. Refresh the page and try again.",
+			);
+		}
+
+		const smtpConfig = materializeCustomEmailProvider(preset, credentials);
+		const session = await currentSession();
+		const workspaceId = await getWorkspaceId();
+		const rls = await rlsClient();
+
+		const secretMeta = await createSecret(session, workspaceId, {
+			name: smtpConfig.ulid,
+			value: JSON.stringify(smtpConfig),
+		});
+		const [smtpAccount] = await rls((tx) =>
+			tx.insert(smtpAccounts).values({}).returning(),
+		);
+
+		await rls((tx) =>
+			tx.insert(smtpAccountSecrets).values({
+				accountId: smtpAccount.id,
+				secretId: secretMeta.id,
+			}),
+		);
+
+		revalidatePath(DASHBOARD_PATH);
+
+		return {
+			success: true,
+			message: `Added ${preset.name} account`,
 		};
 	});
 }
@@ -1371,6 +1429,10 @@ export const regenerateDavPassword = async () => {
 
 export async function addNewVolume(_prev: FormState, formData: FormData) {
 	return handleAction(async () => {
+		if (!SITE_FEATURES.drive) {
+			throw new Error("Drive is disabled");
+		}
+
 		const rls = await rlsClient();
 		const data = decode(formData);
 		const user = await isSignedIn();
@@ -1773,3 +1835,130 @@ export const deleteInboundIdentity = async (
 		};
 	});
 };
+
+
+export type GoogleOAuthConfig = {
+	clientId: string;
+	clientSecret: string;
+};
+
+const GOOGLE_MAIL_OAUTH_SECRET_NAME = "GOOGLE_MAIL_OAUTH_CONFIG";
+
+export async function fetchGoogleOAuthConfig(): Promise<GoogleOAuthConfig | null> {
+	const rls = await rlsClient();
+	const session = await currentSession();
+	const workspaceId = await getWorkspaceId();
+
+	const [row] = await rls((tx) =>
+		tx
+			.select({
+				id: secretsMeta.id,
+			})
+			.from(secretsMeta)
+			.where(
+				and(
+					eq(secretsMeta.workspaceId, workspaceId),
+					eq(secretsMeta.name, GOOGLE_MAIL_OAUTH_SECRET_NAME),
+					eq(secretsMeta.managedBy, "user"),
+				),
+			)
+			.limit(1),
+	);
+
+	if (!row) return null;
+
+	const { vault } = await getSecret(session, row.id, workspaceId);
+
+	if (!vault?.decrypted_secret) return null;
+
+	try {
+		const parsed = JSON.parse(vault.decrypted_secret);
+
+		if (!parsed?.clientId || !parsed?.clientSecret) {
+			return null;
+		}
+
+		return {
+			clientId: String(parsed.clientId),
+			clientSecret: String(parsed.clientSecret),
+		};
+	} catch {
+		return null;
+	}
+}
+
+export async function hasGoogleOAuthConfig(): Promise<boolean> {
+	const config = await fetchGoogleOAuthConfig();
+
+	if (config) {
+		return true;
+	}
+
+	return Boolean(
+		process.env.GOOGLE_MAIL_CLIENT_ID &&
+		process.env.GOOGLE_MAIL_CLIENT_SECRET,
+	);
+}
+
+export async function saveGoogleOAuthConfig(
+	_prev: FormState,
+	formData: FormData,
+): Promise<FormState> {
+	return handleAction(async () => {
+		const data = decode(formData);
+
+		const clientId = String(data.clientId ?? "").trim();
+		const clientSecret = String(data.clientSecret ?? "").trim();
+
+		if (!clientId || !clientSecret) {
+			return {
+				success: false,
+				error: "Google Client ID and Client Secret are required.",
+			};
+		}
+
+		const session = await currentSession();
+		const workspaceId = await getWorkspaceId();
+		const rls = await rlsClient();
+
+		const [existing] = await rls((tx) =>
+			tx
+				.select()
+				.from(secretsMeta)
+				.where(
+					and(
+						eq(secretsMeta.workspaceId, workspaceId),
+						eq(secretsMeta.name, GOOGLE_MAIL_OAUTH_SECRET_NAME),
+						eq(secretsMeta.managedBy, "user"),
+					),
+				)
+				.limit(1),
+		);
+
+		const value = JSON.stringify({
+			clientId,
+			clientSecret,
+		});
+
+		if (existing) {
+			await updateSecret(session, workspaceId, existing.id, {
+				value,
+				description: "Google Mail OAuth credentials"
+			});
+		} else {
+			await createSecret(session, workspaceId, {
+				name: GOOGLE_MAIL_OAUTH_SECRET_NAME,
+				value,
+				description: "Google Mail OAuth credentials",
+				managedBy: "user",
+			});
+		}
+
+		revalidatePath(DASHBOARD_PATH);
+
+		return {
+			success: true,
+			message: "Google Mail OAuth configuration saved."
+		};
+	});
+}

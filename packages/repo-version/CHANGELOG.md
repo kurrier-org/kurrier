@@ -1,5 +1,17 @@
 # @kurrier/repo
 
+## 3.5.0
+
+### Minor Changes
+
+- [`c7d7c0f`](https://github.com/kurrier-org/kurrier/commit/c7d7c0f9c5e817347365c09743c98d2d7cd26ca0) Thanks [@krokhale](https://github.com/krokhale)! - Add Kurrier Vault UI and workspace-wide custom SMTP/IMAP provider configuration
+
+## 3.4.1
+
+### Patch Changes
+
+- [#560](https://github.com/kurrier-org/kurrier/pull/560) [`d533d67`](https://github.com/kurrier-org/kurrier/commit/d533d672e65552feefdc4ec9fafeb70b94c9292a) Thanks [@krokhale](https://github.com/krokhale)! - Security hardening for file uploads, message access, workspace data, and destructive mailbox actions.
+
 ## 3.4.0
 
 ### Minor Changes

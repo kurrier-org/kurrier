@@ -16,9 +16,11 @@ export default defineNitroConfig({
 		"@common": "../../packages/common/src/index.ts",
 		"@common/*": "../../packages/common/src/*",
 		"@common/mail-client": "../../packages/common/src/mail-client.ts",
+		"@jmap": "../../packages/jmap/src/index.ts",
+		"@jmap/*": "../../packages/jmap/src/*",
 	},
 	externals: {
-		inline: ["@db", "@schema", "@providers", "@common", "@common/mail-client"],
+		inline: ["@db", "@schema", "@providers", "@common", "@common/mail-client", "@jmap"],
 	},
 	routeRules: {
 		"/**": {

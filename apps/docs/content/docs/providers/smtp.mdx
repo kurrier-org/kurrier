@@ -141,3 +141,39 @@ If you’re connecting to your own mail server (e.g., Postfix/Dovecot):
 
 
 **Tip:** You can create multiple SMTP/IMAP accounts in Kurrier — one for each mailbox or domain you manage.
+
+## 8. Instance-wide provider presets
+
+Self-hosted administrators can publish company SMTP/IMAP settings on the
+**Providers** page. Users then select the company provider and enter only their
+own mailbox credentials.
+
+Set `CUSTOM_EMAIL_PROVIDERS` to a JSON array in the environment of the Kurrier
+web container:
+
+```bash
+CUSTOM_EMAIL_PROVIDERS='[{"id":"company-mail","name":"Company Mail","description":"Corporate email","credentialMode":"shared","smtp":{"host":"smtp.example.com","port":465,"secure":true},"imap":{"host":"imap.example.com","port":993,"secure":true}}]'
+```
+
+Each provider supports these fields:
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `id` | Yes | Unique lowercase identifier containing letters, numbers, `_`, or `-` |
+| `name` | Yes | Name displayed to users |
+| `description` | No | Short help text displayed on the provider card |
+| `credentialMode` | Yes | `shared` uses one login for SMTP and IMAP; `separate` requests each login separately |
+| `smtp` | Yes | `host`, `port`, `secure`, and optional `pool` settings |
+| `imap` | No | `host`, `port`, and `secure` settings for incoming mail |
+
+Do not put passwords or other credentials in this variable. Preset objects are
+strictly validated, unknown fields are rejected, and user credentials continue
+to be encrypted in the Kurrier Vault.
+
+Kurrier skips malformed entries and duplicate IDs while logging a warning. If
+the whole value is malformed JSON, no custom providers are displayed and
+Generic SMTP remains available.
+
+The selected server settings are copied into the account when it is created.
+Changing or removing a preset does not change existing accounts; it only affects
+future connections after the web container is restarted.

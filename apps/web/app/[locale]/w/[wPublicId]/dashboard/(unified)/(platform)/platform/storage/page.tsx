@@ -1,19 +1,21 @@
+import { driveVolumes, providerSecrets, smtpAccountSecrets } from "@db";
+import { ProviderLabels, STORAGE_PROVIDERS } from "@schema";
+import { redirect } from "next/navigation";
 import * as React from "react";
 import { Container } from "@/components/common/containers";
-import { ProviderLabels, STORAGE_PROVIDERS } from "@schema";
+import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
+import VolumesManager from "@/components/dashboard/storage/volumes-manager";
+import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { getWorkspacePublicId, rlsClient } from "@/lib/actions/clients";
 import {
 	fetchDecryptedSecrets,
 	getProviderById,
 	syncProviders,
 } from "@/lib/actions/dashboard";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
-import VolumesManager from "@/components/dashboard/storage/volumes-manager";
-import {getWorkspacePublicId, rlsClient} from "@/lib/actions/clients";
-import { driveVolumes, providerSecrets, smtpAccountSecrets } from "@db";
-import { parseSecret } from "@/lib/utils";
-import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
 import { getDictionary } from "@/lib/dictionaries";
+import { SITE_FEATURES } from "@/lib/site-features";
+import { parseSecret } from "@/lib/utils";
 
 export default async function ProvidersPage({
 	params,
@@ -22,9 +24,13 @@ export default async function ProvidersPage({
 }) {
 	const { locale } = await params;
 	const dict = await getDictionary(locale);
+	const workspacePublicId = await getWorkspacePublicId();
+	if (!SITE_FEATURES.drive) {
+		redirect(`/${locale}/w/${workspacePublicId}/dashboard/platform/overview`);
+	}
+
 	const userProviders = await syncProviders();
 	const rls = await rlsClient();
-	const workspacePublicId = await getWorkspacePublicId()
 	const vols = await rls((tx) => tx.select().from(driveVolumes));
 	const [, userProviderAccounts] = await Promise.all([
 		fetchDecryptedSecrets({
@@ -50,7 +56,8 @@ export default async function ProvidersPage({
 				? `providerName${provider.type.charAt(0).toUpperCase()}${provider.type.slice(1)}`
 				: null;
 			const providerName =
-				(providerTypeKey && (dict.platform as Record<string, string>)[providerTypeKey]) ||
+				(providerTypeKey &&
+					(dict.platform as Record<string, string>)[providerTypeKey]) ||
 				ProviderLabels[provider?.type || "unknown"] ||
 				dict.platform.unknownProvider;
 			if (provider) {

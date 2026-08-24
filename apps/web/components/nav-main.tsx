@@ -11,11 +11,13 @@ import {
 	type LucideIcon,
 	Plug,
 	Send,
+	Vault,
 	Webhook,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useDictionary } from "@/components/providers/dictionary-provider";
+import { useSiteFeatures } from "@/components/providers/site-features-provider";
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -42,6 +44,7 @@ export function NavMain({
 }) {
 	const pathname = usePathname();
 	const dict = useDictionary();
+	const { drive } = useSiteFeatures();
 
 	const navPlatformItems: {
 		title: string;
@@ -79,10 +82,20 @@ export function NavMain({
 						icon: Blocks,
 						items: [],
 					},
+					...(drive
+						? [
+								{
+									title: dict.platform.storage,
+									url: `/w/${workspacePublicId}/dashboard/platform/storage`,
+									icon: HardDrive,
+									items: [],
+								},
+							]
+						: []),
 					{
-						title: dict.platform.storage,
-						url: `/w/${workspacePublicId}/dashboard/platform/storage`,
-						icon: HardDrive,
+						title: "Vault",
+						url: `/w/${workspacePublicId}/dashboard/platform/vault`,
+						icon: Vault,
 						items: [],
 					},
 					{
