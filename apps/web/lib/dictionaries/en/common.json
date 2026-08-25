@@ -17,5 +17,10 @@
 	"error": "Error",
 	"requiredField": "This field is required",
 	"language": "Language",
-	"pickValue": "Pick value"
+	"pickValue": "Pick value",
+	"connect": "Connect",
+	"switchToLightMode": "Switch to light mode",
+	"switchToDarkMode": "Switch to dark mode",
+	"switchToThemePrefix": "Switch to ",
+	"switchToThemeSuffix": " theme"
 }

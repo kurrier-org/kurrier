@@ -282,5 +282,10 @@
 	"hasAttachmentLabel": "Has attachment:",
 	"unreadOnlyLabel": "Unread only:",
 	"starredOnlyLabel": "Starred only:",
-	"useGlobalSearchBox": "Use the global search box above to run a query."
+	"useGlobalSearchBox": "Use the global search box above to run a query.",
+	"identitySettingsDescription": "Identity settings for this mailbox",
+	"identity": "Identity",
+	"noScheduledMessages": "No scheduled messages",
+	"loadRemoteImagesOnce": "Load remote images once",
+	"alwaysLoadForThisSender": "Always load for this sender"
 }

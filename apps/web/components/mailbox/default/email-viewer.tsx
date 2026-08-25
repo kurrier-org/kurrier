@@ -1,11 +1,12 @@
 // @ts-nocheck
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import DOMPurify from "dompurify";
 import type { MessageEntity } from "@db";
 import { ActionIcon, Button } from "@mantine/core";
+import DOMPurify from "dompurify";
 import { Ellipsis } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 const BASE_CSS = `
 :host {
@@ -103,6 +104,7 @@ div[style*="border-left"][style*="solid"] blockquote {
 `;
 
 export default function EmailViewer({ message }: { message: MessageEntity }) {
+	const dict = useOptionalDictionary();
 	const hostRef = useRef<HTMLDivElement>(null);
 	const [hideQuotes, setHideQuotes] = useState(true);
 
@@ -123,7 +125,10 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 				if (!allowImages) {
 					img.setAttribute("data-blocked-src", src);
 					img.removeAttribute("src");
-					img.setAttribute("alt", img.getAttribute("alt") || "Remote image blocked");
+					img.setAttribute(
+						"alt",
+						img.getAttribute("alt") || "Remote image blocked",
+					);
 				}
 			}
 		});
@@ -148,7 +153,9 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 
 	useEffect(() => {
 		if (!senderEmail || senderEmail === "unknown") return;
-		setShowRemoteImages(localStorage.getItem(remoteImagePreferenceKey) === "true");
+		setShowRemoteImages(
+			localStorage.getItem(remoteImagePreferenceKey) === "true",
+		);
 	}, [remoteImagePreferenceKey, senderEmail]);
 
 	const allowRemoteImagesForSender = () => {
@@ -209,7 +216,7 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 						variant="default"
 						onClick={() => setShowRemoteImages(true)}
 					>
-						Load remote images once
+						{dict?.mailbox?.loadRemoteImagesOnce ?? "Load remote images once"}
 					</Button>
 
 					<Button
@@ -217,7 +224,8 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 						variant="default"
 						onClick={allowRemoteImagesForSender}
 					>
-						Always load for this sender
+						{dict?.mailbox?.alwaysLoadForThisSender ??
+							"Always load for this sender"}
 					</Button>
 				</div>
 			)}

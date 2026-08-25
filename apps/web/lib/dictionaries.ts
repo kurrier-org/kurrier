@@ -13,6 +13,7 @@ async function loadEn() {
 		dashboard,
 		validation,
 		actions,
+		vault,
 	] = await Promise.all([
 		import("@/lib/dictionaries/en/common.json").then((m) => m.default),
 		import("@/lib/dictionaries/en/auth.json").then((m) => m.default),
@@ -24,6 +25,7 @@ async function loadEn() {
 		import("@/lib/dictionaries/en/dashboard.json").then((m) => m.default),
 		import("@/lib/dictionaries/en/validation.json").then((m) => m.default),
 		import("@/lib/dictionaries/en/actions.json").then((m) => m.default),
+		import("@/lib/dictionaries/en/vault.json").then((m) => m.default),
 	]);
 
 	return {
@@ -38,6 +40,7 @@ async function loadEn() {
 		dashboard,
 		validation,
 		actions,
+		vault,
 	};
 }
 
@@ -57,6 +60,7 @@ async function loadPtBr(): Promise<Dictionary> {
 		dashboard,
 		validation,
 		actions,
+		vault,
 	] = await Promise.all([
 		import("@/lib/dictionaries/pt-BR/common.json").then((m) => m.default),
 		import("@/lib/dictionaries/pt-BR/auth.json").then((m) => m.default),
@@ -68,6 +72,7 @@ async function loadPtBr(): Promise<Dictionary> {
 		import("@/lib/dictionaries/pt-BR/dashboard.json").then((m) => m.default),
 		import("@/lib/dictionaries/pt-BR/validation.json").then((m) => m.default),
 		import("@/lib/dictionaries/pt-BR/actions.json").then((m) => m.default),
+		import("@/lib/dictionaries/pt-BR/vault.json").then((m) => m.default),
 	]);
 
 	return {
@@ -82,6 +87,7 @@ async function loadPtBr(): Promise<Dictionary> {
 		dashboard,
 		validation,
 		actions,
+		vault,
 	} as Dictionary;
 }
 
@@ -97,6 +103,7 @@ async function loadKo(): Promise<Dictionary> {
 		dashboard,
 		validation,
 		actions,
+		vault,
 	] = await Promise.all([
 		import("@/lib/dictionaries/ko/common.json").then((m) => m.default),
 		import("@/lib/dictionaries/ko/auth.json").then((m) => m.default),
@@ -108,6 +115,7 @@ async function loadKo(): Promise<Dictionary> {
 		import("@/lib/dictionaries/ko/dashboard.json").then((m) => m.default),
 		import("@/lib/dictionaries/ko/validation.json").then((m) => m.default),
 		import("@/lib/dictionaries/ko/actions.json").then((m) => m.default),
+		import("@/lib/dictionaries/ko/vault.json").then((m) => m.default),
 	]);
 
 	return {
@@ -122,6 +130,7 @@ async function loadKo(): Promise<Dictionary> {
 		dashboard,
 		validation,
 		actions,
+		vault,
 	} as Dictionary;
 }
 

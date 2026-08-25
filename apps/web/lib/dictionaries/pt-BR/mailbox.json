@@ -282,5 +282,10 @@
 	"hasAttachmentLabel": "Com anexo:",
 	"unreadOnlyLabel": "Somente não lidas:",
 	"starredOnlyLabel": "Somente favoritas:",
-	"useGlobalSearchBox": "Use a busca global acima para pesquisar."
+	"useGlobalSearchBox": "Use a busca global acima para pesquisar.",
+	"identitySettingsDescription": "Configurações de identidade desta caixa de entrada",
+	"identity": "Identidade",
+	"noScheduledMessages": "Nenhuma mensagem agendada",
+	"loadRemoteImagesOnce": "Carregar imagens remotas uma vez",
+	"alwaysLoadForThisSender": "Sempre carregar deste remetente"
 }

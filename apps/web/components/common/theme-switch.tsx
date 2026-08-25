@@ -1,10 +1,12 @@
-import React, {useEffect, useMemo, useState} from "react";
-import { IconMoonStars, IconSun } from "@tabler/icons-react";
 import { Switch } from "@mantine/core";
+import { IconMoonStars, IconSun } from "@tabler/icons-react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useAppearance } from "@/components/providers/appearance-provider";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function ThemeSwitch({ onComplete }: { onComplete?: () => void }) {
 	const { mode, setMode } = useAppearance();
+	const dict = useOptionalDictionary();
 
 	const [mounted, setMounted] = useState(false);
 
@@ -35,9 +37,13 @@ function ThemeSwitch({ onComplete }: { onComplete?: () => void }) {
 			}}
 			onLabel={<IconSun size={16} stroke={2.5} />}
 			offLabel={<IconMoonStars size={16} stroke={2.5} />}
-			aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+			aria-label={
+				isDark
+					? (dict?.common?.switchToLightMode ?? "Switch to light mode")
+					: (dict?.common?.switchToDarkMode ?? "Switch to dark mode")
+			}
 		/>
 	);
 }
 
-export default ThemeSwitch
+export default ThemeSwitch;

@@ -4,12 +4,7 @@ import dayjs from "dayjs";
 import { createContext, useContext, useEffect } from "react";
 import "dayjs/locale/pt-br";
 import type { Dictionary } from "@/lib/dictionaries";
-
-const DAYJS_LOCALES: Record<string, string> = {
-	en: "en",
-	"pt-BR": "pt-br",
-	ko: "en",
-};
+import { DAYJS_LOCALES } from "@/lib/locale";
 
 const Ctx = createContext<Dictionary | null>(null);
 
