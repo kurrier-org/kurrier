@@ -186,7 +186,9 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 							variant="ghost"
 							size="icon"
 							onClick={() => setOpenMobile(false)}
-							aria-label="Close navigation"
+							aria-label={
+								dict?.dashboard?.closeNavigation ?? "Close navigation"
+							}
 						>
 							<X className="size-5" />
 						</Button>
