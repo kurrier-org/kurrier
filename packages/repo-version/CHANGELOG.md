@@ -1,5 +1,31 @@
 # @kurrier/repo
 
+## 3.8.0
+
+### Minor Changes
+
+- [#555](https://github.com/kurrier-org/kurrier/pull/555) [`a925c9c`](https://github.com/kurrier-org/kurrier/commit/a925c9c9cacfde3892cb1cbf80801c7e79a9de91) Thanks [@areacli](https://github.com/areacli)! - Add i18n dictionary architecture (namespaced JSON files per locale, a DictionaryProvider/useDictionary() hook so client components can access translations without prop-drilling, and a check-locales script to catch key drift), the language switcher UI, and a new Brazilian Portuguese (br) locale with full common+auth coverage. First step of a series of PRs adding full pt-BR translation across the app.
+
+- [#555](https://github.com/kurrier-org/kurrier/pull/555) [`a925c9c`](https://github.com/kurrier-org/kurrier/commit/a925c9c9cacfde3892cb1cbf80801c7e79a9de91) Thanks [@areacli](https://github.com/areacli)! - Wire dictionary-based translation resolution into the shared ReusableForm/ReusableFormItems components (used by nearly every form in the app), so server-action and validation messages can be translated by returning dotted keys instead of literal English. Purely additive — no behavior change today since the action/validation namespaces are still empty.
+
+- [#555](https://github.com/kurrier-org/kurrier/pull/555) [`a925c9c`](https://github.com/kurrier-org/kurrier/commit/a925c9c9cacfde3892cb1cbf80801c7e79a9de91) Thanks [@areacli](https://github.com/areacli)! - Translate the dashboard nav/sidebar shell (top-level navigation, log out, storage-over-limit banner) shared across mail, contacts, calendar, drive and platform sections.
+
+- [#555](https://github.com/kurrier-org/kurrier/pull/555) [`a925c9c`](https://github.com/kurrier-org/kurrier/commit/a925c9c9cacfde3892cb1cbf80801c7e79a9de91) Thanks [@areacli](https://github.com/areacli)! - Translate the mailbox area: compose, thread list/search, mail rules, labels, and the message inspector (headers/SMTP/JSON/raw/HTML/plain-text/delivery panes).
+
+- [#555](https://github.com/kurrier-org/kurrier/pull/555) [`a925c9c`](https://github.com/kurrier-org/kurrier/commit/a925c9c9cacfde3892cb1cbf80801c7e79a9de91) Thanks [@areacli](https://github.com/areacli)! - Translate the platform/settings area: overview dashboard, providers, mail identities, storage volumes, API keys, webhooks, sync services (CalDAV/CardDAV), and workspace settings.
+
+- [#555](https://github.com/kurrier-org/kurrier/pull/555) [`a925c9c`](https://github.com/kurrier-org/kurrier/commit/a925c9c9cacfde3892cb1cbf80801c7e79a9de91) Thanks [@areacli](https://github.com/areacli)! - Translate the Contacts area: contact list/detail views, new/edit contact form, delete confirmation, sidebar navigation, and label assignment.
+
+- [#555](https://github.com/kurrier-org/kurrier/pull/555) [`a925c9c`](https://github.com/kurrier-org/kurrier/commit/a925c9c9cacfde3892cb1cbf80801c7e79a9de91) Thanks [@areacli](https://github.com/areacli)! - Translate the Calendar area: day/week/month grid views, event creation/editing, recurrence rules, guest invitations, and calendar settings. Also wires dayjs locale switching so weekday and month names follow the active language.
+
+- [#555](https://github.com/kurrier-org/kurrier/pull/555) [`a925c9c`](https://github.com/kurrier-org/kurrier/commit/a925c9c9cacfde3892cb1cbf80801c7e79a9de91) Thanks [@areacli](https://github.com/areacli)! - Translate the Drive area: file/folder browsing, upload progress and errors, file-type badges, breadcrumbs, and folder creation/deletion.
+
+- [#555](https://github.com/kurrier-org/kurrier/pull/555) [`a925c9c`](https://github.com/kurrier-org/kurrier/commit/a925c9c9cacfde3892cb1cbf80801c7e79a9de91) Thanks [@areacli](https://github.com/areacli)! - Convert remaining server-action result messages (labels, mail rules, mailbox folders/unsubscribe, dashboard providers/identities/API keys/volumes/webhooks, workspace) to dictionary keys, and teach ReusableFormButton to resolve them the same way ReusableForm already does.
+
+### Patch Changes
+
+- [#555](https://github.com/kurrier-org/kurrier/pull/555) [`a925c9c`](https://github.com/kurrier-org/kurrier/commit/a925c9c9cacfde3892cb1cbf80801c7e79a9de91) Thanks [@areacli](https://github.com/areacli)! - Add missing default routes ([locale], [locale]/w, dashboard index), a branded not-found/error page instead of Next's default, and fix several places where a redirect dropped the current locale (post-signup/login, auth layout guards). Also removes the dead, unreachable app/page.tsx that pointed at a stale route shape.
+
 ## 3.7.0
 
 ### Minor Changes
