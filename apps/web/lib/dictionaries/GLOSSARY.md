@@ -32,6 +32,30 @@ Keep these consistent everywhere a term appears, across all namespaces.
 When a new recurring term comes up in a later translation phase, add it here
 so subsequent PRs stay consistent instead of re-deciding it per file.
 
+## Russian (`ru`)
+
+- **Tone**: neutral and concise; address the user without gendered wording.
+- **Buttons and actions**: use the infinitive — «Сохранить», «Удалить»,
+  «Отправить».
+- **Typography**: use «ёлочки» for user-facing quotations and the letter «ё»
+  where appropriate.
+
+### Fixed terms
+
+| English | Russian | Notes |
+|---|---|---|
+| mailbox | почтовый ящик | Use «ящик» only where the mail context is clear |
+| thread | цепочка | A group of related messages |
+| identity | почтовый адрес | Prefer the user-facing concept over literal «идентичность» |
+| workspace | рабочее пространство | |
+| draft | черновик | |
+| label | метка | |
+| provider | провайдер | |
+| webhook | вебхук | |
+| API key | ключ API | |
+| snoozed | отложенный | |
+| scheduled | запланированный | |
+
 ## Adding a new locale
 
 1. Create `apps/web/lib/dictionaries/<code>/` with one `.json` file per

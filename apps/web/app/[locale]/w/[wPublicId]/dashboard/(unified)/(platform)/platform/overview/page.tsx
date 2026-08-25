@@ -58,7 +58,7 @@ export default async function Page({
 					value: statsData?.connectedProviders || 0,
 					hint: driveEnabled
 						? p.sendingAndStorageIntegrations
-						: "Connected integrations",
+						: p.connectedIntegrations,
 				},
 				{
 					icon: <Send className="size-5 text-primary" />,
@@ -243,7 +243,7 @@ export default async function Page({
 										{isOwner
 											? driveEnabled
 												? p.ownerOverviewSubtitle
-												: "Track setup, mail volume and stored messages from one place."
+												: p.ownerMailOverviewSubtitle
 											: p.memberOverviewSubtitle}
 									</p>
 								</div>

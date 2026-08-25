@@ -1,4 +1,4 @@
-export const LOCALES = ["en", "pt-BR", "ko"] as const;
+export const LOCALES = ["en", "pt-BR", "ko", "ru"] as const;
 
 export type Locale = (typeof LOCALES)[number];
 
@@ -12,4 +12,5 @@ export const DAYJS_LOCALES: Record<Locale, string> = {
 	en: "en",
 	"pt-BR": "pt-br",
 	ko: "en",
+	ru: "ru",
 };
