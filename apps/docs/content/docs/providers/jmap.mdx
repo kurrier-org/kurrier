@@ -1,0 +1,220 @@
+---
+title: JMAP
+description: Connect JMAP-compatible email accounts to Kurrier
+---
+
+# JMAP
+
+> **Beta:** JMAP support is currently in beta. Fastmail is the first provider preset, with generic JMAP configuration and additional provider presets coming soon.
+
+Kurrier supports connecting email accounts using **JMAP (JSON Meta Application Protocol)**, a modern HTTP/JSON-based alternative to traditional IMAP.
+
+JMAP provides a standardized API for synchronizing mailboxes, messages, and account state.
+
+---
+
+## 1. Current Support
+
+JMAP support in Kurrier is currently **Beta**.
+
+At this stage:
+
+- **Fastmail** is available as the first supported provider preset
+- Mailboxes and messages can be synchronized through JMAP
+- Email can be sent through JMAP
+- JMAP state changes are used for mailbox synchronization
+- Generic JMAP server configuration is coming soon
+- Additional provider presets will be added over time
+
+The underlying integration uses the standard JMAP protocol, so support is not intended to be Fastmail-specific.
+
+---
+
+## 2. Adding a Fastmail Account
+
+In Kurrier, go to:
+
+> **Dashboard → Providers → JMAP**
+
+Click:
+
+> **Add JMAP Account**
+
+Select **Fastmail** and enter your Fastmail API token.
+
+Kurrier already knows the Fastmail JMAP session endpoint:
+
+```text
+https://api.fastmail.com/jmap/session
+```
+
+Your API token is encrypted and stored securely in the Kurrier Vault.
+
+---
+
+## 3. Create a Fastmail API Token
+
+Sign in to Fastmail and create an API token with access to your mail.
+
+Copy the token and enter it when adding the account in Kurrier.
+
+Kurrier uses the token to authenticate with Fastmail:
+
+```http
+Authorization: Bearer YOUR_API_TOKEN
+```
+
+Your Fastmail password is not stored by Kurrier.
+
+---
+
+## 4. How JMAP Works
+
+JMAP starts with a **session endpoint**.
+
+For Fastmail:
+
+```text
+https://api.fastmail.com/jmap/session
+```
+
+Kurrier requests this endpoint to discover:
+
+- Available accounts
+- JMAP capabilities
+- Mail capabilities
+- API endpoint
+- Upload and download endpoints
+- Account information
+
+A simplified session response looks like:
+
+```json
+{
+  "apiUrl": "https://api.example.com/jmap/api/",
+  "downloadUrl": "https://api.example.com/jmap/download/{accountId}/{blobId}/{name}",
+  "uploadUrl": "https://api.example.com/jmap/upload/{accountId}/",
+  "accounts": {
+    "ACCOUNT_ID": {
+      "name": "user@example.com",
+      "isPersonal": true
+    }
+  }
+}
+```
+
+Kurrier uses this information to configure the connection automatically.
+
+---
+
+## 5. Verification
+
+When a JMAP account is added, Kurrier verifies the connection against the JMAP session endpoint.
+
+Verification checks that:
+
+- Authentication succeeds
+- The JMAP session is available
+- A usable account can be discovered
+- Required mail capabilities are available
+
+Once verification succeeds, the account will appear as **Connected** in the Providers page.
+
+---
+
+## 6. Mail Synchronization
+
+After connecting the account, Kurrier initializes the available mailboxes and begins synchronization.
+
+JMAP exposes structured objects for mailboxes and messages and provides state values that allow Kurrier to retrieve changes since the previous synchronization.
+
+This avoids maintaining a traditional long-running IMAP connection.
+
+---
+
+## 7. Updating Your Token
+
+If your Fastmail API token is revoked or replaced, go to:
+
+> **Dashboard → Providers → JMAP**
+
+Find the account and select:
+
+> **Update Token**
+
+Enter the new API token and save it.
+
+---
+
+## 8. Generic JMAP Providers
+
+Generic JMAP configuration is **coming soon**.
+
+This will allow you to provide a JMAP session URL and credentials directly instead of selecting a predefined provider.
+
+Additional JMAP provider presets will also be added as compatibility is tested.
+
+Because Kurrier's implementation uses the standard JMAP protocol, the goal is to support any sufficiently compatible JMAP mail server.
+
+---
+
+## 9. Troubleshooting
+
+### Authentication failed
+
+Check that your Fastmail API token is valid and has permission to access mail.
+
+If necessary, create a new token and use **Update Token** in Kurrier.
+
+### Account does not connect
+
+Make sure the API token has the required permissions and has not been revoked.
+
+You can try generating a new Fastmail API token and reconnecting the account.
+
+### Something doesn't work as expected
+
+JMAP support is currently in **Beta**.
+
+If you encounter compatibility or synchronization problems, please report them through the Kurrier GitHub repository.
+
+---
+
+## 10. JMAP vs SMTP/IMAP
+
+| JMAP | SMTP/IMAP |
+| --- | --- |
+| HTTP + JSON | SMTP and IMAP protocols |
+| Single session discovery | Separate SMTP and IMAP configuration |
+| Structured email objects | MIME and protocol commands |
+| State-based synchronization | IMAP UID/state synchronization |
+| API tokens commonly used | Passwords or app passwords commonly used |
+| Modern standardized API | Universally supported legacy protocols |
+
+If you're using Fastmail, JMAP is the recommended way to try the new integration.
+
+For other providers, continue using [SMTP/IMAP](/docs/providers/smtp) until generic JMAP support or an appropriate provider preset is available.
+
+---
+
+## 11. JMAP Standards
+
+JMAP is an open IETF standard.
+
+The primary specifications used for mail are:
+
+- **RFC 8620** — JMAP Core
+- **RFC 8621** — JMAP for Mail
+
+JMAP Core defines sessions, capabilities, requests, responses, and state management.
+
+JMAP Mail defines operations including:
+
+- `Mailbox/get`
+- `Mailbox/changes`
+- `Email/get`
+- `Email/query`
+- `Email/changes`
+- `EmailSubmission`
+
+Kurrier's JMAP integration is built around these standards rather than a Fastmail-specific mail API.
