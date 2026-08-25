@@ -230,7 +230,6 @@ export async function fetchDecryptedSecrets({
 }) {
 	const rls = await rlsClient();
 	const session = await currentSession();
-	// const workspaceId = await getWorkspaceId();
 
 	const rows = await rls((tx) => {
 		let q = tx
@@ -249,14 +248,6 @@ export async function fetchDecryptedSecrets({
 		if (parentId) {
 			q = q.where(eq(foreignCol, parentId));
 		}
-		// if (parentId) {
-		// 	q = q.where(and(
-		// 		eq(foreignCol, parentId),
-		// 		eq(secretsMeta.workspaceId, workspaceId)
-		// 	));
-		// } else {
-		// 	q = q.where(eq(secretsMeta.workspaceId, workspaceId));
-		// }
 
 		return q;
 	});
@@ -428,7 +419,6 @@ export async function verifyDomainIdentity(
 	providerAccount: FetchDecryptedSecretsResult[number] | undefined,
 ): Promise<FormState<DomainIdentity>> {
 	return handleAction(async () => {
-		// const decrypted = parseSecret(providerAccount);
 		const decrypted = providerAccount?.parsedSecret;
 		const mailer = createMailer(
 			providerAccount?.provider?.type as Providers,
@@ -701,36 +691,6 @@ export async function addNewEmailIdentity(
 		}
 
 		if (data.smtpAccountId) {
-			// const identityData = IdentityInsertSchema.parse({
-			// 	workspaceId,
-			// 	ownerId: userId,
-			// 	...data,
-			// });
-			//
-			// identityData.sharedWithWorkspace = sharedWithWorkspace;
-			// identityData.metaData = {
-			// 	dailyQuota: Number(data.dailyQuota) || defaultImapQuota,
-			// 	sharedWithWorkspace,
-			// };
-			//
-			// const [identity] = await db
-			// 	.insert(identities)
-			// 	.values(identityData as IdentityCreate)
-			// 	.returning();
-			//
-			// await checkDefaultWorkspaceIdentity();
-			//
-			// if (sharedWithWorkspace) {
-			// 	await assignIdentityToAllWorkspaceMembers(identity);
-			// } else {
-			// 	await assignWorkspaceMembersToIdentity(
-			// 		identity,
-			// 		data.workspaceMembers as string,
-			// 	);
-			// }
-			//
-			// await initializeMailboxes(identity, userId, workspaceId);
-
 			const result = await createEmailIdentity({
 				email: String(data.value),
 				displayName: data.displayName
