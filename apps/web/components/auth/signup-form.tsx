@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signup } from "@/lib/actions/auth";
 import type { Dictionary } from "@/lib/dictionaries";
+import { resolveDictMessage } from "@/lib/resolve-dict-message";
 import { cn } from "@/lib/utils";
 
 export function SignupForm({
@@ -36,11 +37,11 @@ export function SignupForm({
 			return;
 		}
 		if (pass !== re) {
-			retypeRef.current?.setCustomValidity("Passwords do not match");
+			retypeRef.current?.setCustomValidity(dict.auth.passwordsDoNotMatch);
 		} else {
 			retypeRef.current?.setCustomValidity("");
 		}
-	}, []);
+	}, [dict.auth.passwordsDoNotMatch]);
 
 	const [formState, formAction, isPending] = useActionState<
 		FormState,
@@ -64,7 +65,7 @@ export function SignupForm({
 							component="a"
 							leftSection={<IconBrandGoogle />}
 						>
-							Signup with Google
+							{dict.auth.signupWithGoogle}
 						</Button>
 					)}
 					{oidc?.genericEnabled && (
@@ -76,7 +77,8 @@ export function SignupForm({
 							component="a"
 							leftSection={<IconLogin2 />}
 						>
-							Signup with {oidc?.genericName || "SSO"}
+							{dict.auth.signupWithProviderPrefix}
+							{oidc?.genericName || "SSO"}
 						</Button>
 					)}
 					{!oidc?.googleEnabled && !oidc?.genericEnabled && (
@@ -174,7 +176,7 @@ export function SignupForm({
 								{formState.error && (
 									<div className={"text-center"}>
 										<span className="text-sm text-red-600">
-											{formState.error}
+											{resolveDictMessage(dict.actions, formState.error)}
 										</span>
 									</div>
 								)}

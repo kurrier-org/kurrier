@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login } from "@/lib/actions/auth";
 import type { Dictionary } from "@/lib/dictionaries";
+import { resolveDictMessage } from "@/lib/resolve-dict-message";
 import { cn } from "@/lib/utils";
 
 export function LoginForm({
@@ -44,7 +45,9 @@ export function LoginForm({
 				<CardHeader className="text-center">
 					<CardTitle className="text-xl">{dict.auth.welcomeBack}</CardTitle>
 					{(oidc?.googleEnabled || oidc?.genericEnabled) && (
-						<CardDescription>Login with your existing account</CardDescription>
+						<CardDescription>
+							{dict.auth.loginWithExistingAccount}
+						</CardDescription>
 					)}
 					{oidc?.googleEnabled && (
 						<Button
@@ -55,7 +58,7 @@ export function LoginForm({
 							component="a"
 							leftSection={<IconBrandGoogle />}
 						>
-							Login with Google
+							{dict.auth.loginWithGoogle}
 						</Button>
 					)}
 					{oidc?.genericEnabled && (
@@ -67,7 +70,8 @@ export function LoginForm({
 							component="a"
 							leftSection={<IconLogin2 />}
 						>
-							Login with {oidc?.genericName || "SSO"}
+							{dict.auth.loginWithProviderPrefix}
+							{oidc?.genericName || "SSO"}
 						</Button>
 					)}
 					{!oidc?.googleEnabled && !oidc?.genericEnabled && (
@@ -136,14 +140,14 @@ export function LoginForm({
 								{formState?.error && (
 									<div className="text-center">
 										<span className="text-sm text-red-600">
-											{formState.error}
+											{resolveDictMessage(dict.actions, formState.error)}
 										</span>
 									</div>
 								)}
 								{formState?.message && !formState.error && (
 									<div className="text-center">
 										<span className="text-sm text-green-600">
-											{formState.message}
+											{resolveDictMessage(dict.actions, formState.message)}
 										</span>
 									</div>
 								)}
@@ -152,7 +156,7 @@ export function LoginForm({
 									{isPending && (
 										<Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
 									)}
-									Login
+									{dict.auth.login}
 								</Button>
 							</div>
 

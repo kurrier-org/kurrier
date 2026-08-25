@@ -41,7 +41,8 @@
 	"mailbox": {
 		"folderNameRequired": "Folder name is required",
 		"invalidParentFolder": "Invalid parent folder",
-		"subscriptionNotFound": "Subscription not found"
+		"subscriptionNotFound": "Subscription not found",
+		"displayNameUpdated": "Display name updated."
 	},
 	"dashboard": {
 		"providerAccountUpdated": "Successfully updated provider account",

@@ -22,9 +22,11 @@ import {
 	MantineProvider,
 	mantineHtmlProps,
 } from "@mantine/core";
+import { DatesProvider } from "@mantine/dates";
 import { ModalsProvider } from "@mantine/modals";
 import { DictionaryProvider } from "@/components/providers/dictionary-provider";
 import { getDictionary, hasLocale } from "@/lib/dictionaries";
+import { DAYJS_LOCALES } from "@/lib/locale";
 import { createMantineTheme } from "@/lib/mantine-theme";
 import { SITE_FEATURES } from "@/lib/site-features";
 
@@ -98,9 +100,11 @@ export default async function RootLayout({
 								theme={mantineTheme}
 								defaultColorScheme={colorScheme}
 							>
-								<DictionaryProvider dict={dict}>
-									<ModalsProvider>{children}</ModalsProvider>
-								</DictionaryProvider>
+								<DatesProvider settings={{ locale: DAYJS_LOCALES[lang] }}>
+									<DictionaryProvider dict={dict}>
+										<ModalsProvider>{children}</ModalsProvider>
+									</DictionaryProvider>
+								</DatesProvider>
 							</MantineProvider>
 						</SiteFeaturesProvider>
 					</ConfigProvider>

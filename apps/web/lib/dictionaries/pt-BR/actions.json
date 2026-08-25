@@ -41,7 +41,8 @@
 	"mailbox": {
 		"folderNameRequired": "O nome da pasta é obrigatório",
 		"invalidParentFolder": "Pasta pai inválida",
-		"subscriptionNotFound": "Inscrição não encontrada"
+		"subscriptionNotFound": "Inscrição não encontrada",
+		"displayNameUpdated": "Nome de exibição atualizado."
 	},
 	"dashboard": {
 		"providerAccountUpdated": "Conta do provedor atualizada com sucesso",
