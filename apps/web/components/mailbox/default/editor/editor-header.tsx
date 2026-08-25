@@ -16,8 +16,10 @@ import { useMediaQuery } from "@mantine/hooks";
 import EmailHeaderContacts from "@/components/mailbox/default/editor/email-header-contacts";
 import {FetchIdentityMailboxListResult} from "@/lib/actions/mailbox";
 import {useParams} from "next/navigation";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
+	const dict = useOptionalDictionary();
 	const { state } = useDynamicContext<{
 		isPending: boolean;
 		message: MessageEntity;
@@ -33,10 +35,10 @@ function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 
 	const options = useMemo(
 		() => [
-			{ value: "reply", label: "Reply", Icon: Reply },
-			{ value: "forward", label: "Forward", Icon: Forward },
+			{ value: "reply", label: dict?.mailbox?.reply ?? "Reply", Icon: Reply },
+			{ value: "forward", label: dict?.mailbox?.forward ?? "Forward", Icon: Forward },
 		],
-		[],
+		[dict],
 	);
 
 	const toEmail = useMemo(() => {
@@ -64,10 +66,10 @@ function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 
 		const cleaned = original.replace(/^(re|fwd)\s*:\s*/gi, "");
 
-		if (mode === "reply") return `Re: ${cleaned}`;
-		if (mode === "forward") return `Fwd: ${cleaned}`;
+		if (mode === "reply") return `${dict?.mailbox?.replyPrefix ?? "Re: "}${cleaned}`;
+		if (mode === "forward") return `${dict?.mailbox?.forwardPrefix ?? "Fwd: "}${cleaned}`;
 		return cleaned;
-	}, [state.message, mode]);
+	}, [state.message, mode, dict]);
 
 	const [subject, setSubject] = useState(computedSubject);
 
@@ -124,7 +126,7 @@ function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 
 				<div className="grid items-center gap-2 sm:grid-cols-[40px,1fr]">
 					<span className="text-[13px] text-muted-foreground sm:text-right leading-6">
-						To
+						{dict?.mailbox?.to ?? "To"}
 					</span>
 					<EmailHeaderContacts
 						name={"to"}
@@ -144,10 +146,10 @@ function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 							type="button"
 							onClick={() => setCcActive(true)}
 							className="hover:underline"
-							aria-label="Add Cc"
-							title="Add Cc"
+							aria-label={dict?.mailbox?.addCc ?? "Add Cc"}
+							title={dict?.mailbox?.addCc ?? "Add Cc"}
 						>
-							Cc
+							{dict?.mailbox?.cc ?? "Cc"}
 						</button>
 					)}
 					{!bccActive && (
@@ -155,10 +157,10 @@ function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 							type="button"
 							onClick={() => setBccActive(true)}
 							className="hover:underline"
-							aria-label="Add Bcc"
-							title="Add Bcc"
+							aria-label={dict?.mailbox?.addBcc ?? "Add Bcc"}
+							title={dict?.mailbox?.addBcc ?? "Add Bcc"}
 						>
-							Bcc
+							{dict?.mailbox?.bcc ?? "Bcc"}
 						</button>
 					)}
 				</div>
@@ -167,7 +169,7 @@ function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 			{ccActive && (
 				<div className="border-b px-3 py-2 grid items-center gap-2 sm:grid-cols-[72px,1fr]">
 					<span className="text-[13px] text-muted-foreground sm:text-right leading-6">
-						Cc
+						{dict?.mailbox?.cc ?? "Cc"}
 					</span>
 					<EmailHeaderContacts
 						name={"cc"}
@@ -184,7 +186,7 @@ function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 			{bccActive && (
 				<div className="border-b px-3 py-2 grid items-center gap-2 sm:grid-cols-[72px,1fr]">
 					<span className="text-[13px] text-muted-foreground sm:text-right leading-6">
-						Bcc
+						{dict?.mailbox?.bcc ?? "Bcc"}
 					</span>
 					<EmailHeaderContacts
 						name={"bcc"}
@@ -200,7 +202,7 @@ function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 
 			<div className="border-b px-3 py-2 grid items-center gap-2 sm:grid-cols-[72px,1fr]">
 				<span className="text-[13px] text-muted-foreground sm:text-right leading-6">
-					Subject
+					{dict?.mailbox?.subject ?? "Subject"}
 				</span>
 				<Input
 					variant="unstyled"
@@ -212,11 +214,11 @@ function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 			</div>
 			<div className="border-b px-3 py-2 grid items-center gap-2 sm:grid-cols-[72px,1fr]">
 				<span className="text-[13px] text-muted-foreground sm:text-right leading-6">
-					From
+					{dict?.mailbox?.from ?? "From"}
 				</span>
 				<div className={"my-2"}>
 					<Select
-						placeholder="Pick value"
+						placeholder={dict?.mailbox?.pickValue ?? "Pick value"}
 						size="sm"
 						variant="unstyled"
 						w={260}
@@ -266,7 +268,7 @@ function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 				<div className="flex-grow flex justify-between">
 					<div className="flex gap- items-stretch flex-col justify-start">
 						<div className="flex items-center gap-2">
-							<span className="text-sm text-muted-foreground">To</span>
+							<span className="text-sm text-muted-foreground">{dict?.mailbox?.to ?? "To"}</span>
 							<EmailHeaderContacts
 								name={"to"}
 								maxTags={1}
@@ -281,7 +283,7 @@ function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 
 						{ccActive && (
 							<div className="flex items-center gap-2">
-								<span className="text-sm text-muted-foreground">Cc</span>
+								<span className="text-sm text-muted-foreground">{dict?.mailbox?.cc ?? "Cc"}</span>
 								<EmailHeaderContacts
 									name={"cc"}
 									toEmail={toEmail}
@@ -296,7 +298,7 @@ function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 
 						{bccActive && (
 							<div className="flex items-center gap-2">
-								<span className="text-sm text-muted-foreground">Bcc</span>
+								<span className="text-sm text-muted-foreground">{dict?.mailbox?.bcc ?? "Bcc"}</span>
 								<EmailHeaderContacts
 									name={"bcc"}
 									toEmail={toEmail}
@@ -316,7 +318,7 @@ function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 								onClick={() => setCcActive(true)}
 								variant="transparent"
 							>
-								Cc
+								{dict?.mailbox?.cc ?? "Cc"}
 							</ActionIcon>
 						)}
 						{!bccActive && (
@@ -324,14 +326,14 @@ function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 								onClick={() => setBccActive(true)}
 								variant="transparent"
 							>
-								Bcc
+								{dict?.mailbox?.bcc ?? "Bcc"}
 							</ActionIcon>
 						)}
 					</div>
 				</div>
 			</div>
 			<div className={"border-b flex justify-start items-center px-2 gap-2"}>
-				<span className="text-sm text-muted-foreground">Subject</span>
+				<span className="text-sm text-muted-foreground">{dict?.mailbox?.subject ?? "Subject"}</span>
 				<FocusTrap active={subjectFocus}>
 					<Input
 						variant={"unstyled"}
@@ -350,10 +352,10 @@ function EditorHeader({ focusOnSubject }: { focusOnSubject?: () => void }) {
 				</FocusTrap>
 			</div>
 			<div className={"border-b flex justify-start items-center px-2 gap-2"}>
-				<span className="text-sm text-muted-foreground">From</span>
+				<span className="text-sm text-muted-foreground">{dict?.mailbox?.from ?? "From"}</span>
 				<div className={"my-2"}>
 					<Select
-						placeholder="Pick value"
+						placeholder={dict?.mailbox?.pickValue ?? "Pick value"}
 						size="sm"
 						variant="unstyled"
 						w={260}

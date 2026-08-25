@@ -13,6 +13,7 @@ import {
 import { IconLabel, IconLabelFilled } from "@tabler/icons-react";
 import { LabelEntity } from "@db";
 import type { LabelScope } from "@schema";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 type LabelAssignPopoverProps = {
 	title: string;
@@ -32,6 +33,7 @@ export function LabelAssignPopover({
 	selectedLabelIds,
 	onToggleLabel,
 }: LabelAssignPopoverProps) {
+	const dict = useOptionalDictionary();
 	const [opened, setOpened] = useState(false);
 	const [query, setQuery] = useState("");
 
@@ -62,7 +64,7 @@ export function LabelAssignPopover({
 			radius="md"
 		>
 			<Popover.Target>
-				<Tooltip label="Add or remove labels" withArrow>
+				<Tooltip label={dict?.mailbox?.addOrRemoveLabels ?? "Add or remove labels"} withArrow>
 					<ActionIcon
 						onClick={(e) => {
 							e.stopPropagation();
@@ -84,7 +86,7 @@ export function LabelAssignPopover({
 					<TextInput
 						size="xs"
 						radius="md"
-						placeholder="Search labels…"
+						placeholder={dict?.mailbox?.searchLabelsPlaceholder ?? "Search labels…"}
 						value={query}
 						onChange={(event) => setQuery(event.currentTarget.value)}
 					/>
@@ -92,7 +94,7 @@ export function LabelAssignPopover({
 					<ScrollArea.Autosize mah={220} className="mt-1.5">
 						{filteredLabels.length === 0 ? (
 							<div className="px-1.5 py-2 text-xs text-muted-foreground">
-								No labels found
+								{dict?.mailbox?.noLabelsFound ?? "No labels found"}
 							</div>
 						) : (
 							<div className="flex flex-col gap-0.5">

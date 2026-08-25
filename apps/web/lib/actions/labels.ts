@@ -1,26 +1,26 @@
 "use server";
 
-import { FormState, handleAction, LabelScope } from "@schema";
-import { getWorkspaceId, rlsClient } from "@/lib/actions/clients";
+import { isGmailIdentity } from "@common";
+import { PAGE_SIZE } from "@common/mail-client";
 import {
 	contactLabels,
 	db,
 	identities,
-	LabelCreate,
-	LabelEntity,
+	type LabelCreate,
+	type LabelEntity,
 	LabelInsertSchema,
 	labels,
 	mailboxThreadLabels,
 	mailboxThreads,
 } from "@db";
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
-import { decode } from "decode-formdata";
+import { type FormState, handleAction, type LabelScope } from "@schema";
 import slugify from "@sindresorhus/slugify";
+import { decode } from "decode-formdata";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { PAGE_SIZE } from "@common/mail-client";
-import type { FetchMailboxThreadsResult } from "@/lib/actions/mailbox";
+import { getWorkspaceId, rlsClient } from "@/lib/actions/clients";
 import { getRedis } from "@/lib/actions/get-redis";
-import { isGmailIdentity } from "@common";
+import type { FetchMailboxThreadsResult } from "@/lib/actions/mailbox";
 
 const DEFAULT_JOB_OPTS = {
 	attempts: 3,
@@ -30,9 +30,9 @@ const DEFAULT_JOB_OPTS = {
 };
 
 export const fetchLabelsByIdentityPublicId = async ({
-														identityPublicId,
-														scope,
-													}: {
+	identityPublicId,
+	scope,
+}: {
 	identityPublicId: string;
 	scope?: LabelScope;
 }): Promise<LabelEntity[]> => {
@@ -56,7 +56,9 @@ export const fetchLabelsByIdentityPublicId = async ({
 	return rows.map((r) => r.label);
 };
 
-export const fetchLabels = async (scope?: LabelScope): Promise<LabelEntity[]> => {
+export const fetchLabels = async (
+	scope?: LabelScope,
+): Promise<LabelEntity[]> => {
 	const selectedScope = scope ?? "thread";
 	const workspaceId = await getWorkspaceId();
 
@@ -64,10 +66,7 @@ export const fetchLabels = async (scope?: LabelScope): Promise<LabelEntity[]> =>
 		.select()
 		.from(labels)
 		.where(
-			and(
-				eq(labels.scope, selectedScope),
-				eq(labels.workspaceId, workspaceId),
-			),
+			and(eq(labels.scope, selectedScope), eq(labels.workspaceId, workspaceId)),
 		)
 		.orderBy(asc(labels.name));
 
@@ -210,7 +209,7 @@ export async function addNewLabel(
 				.limit(1);
 
 			if (!identity) {
-				return { success: false, error: "Invalid identity" };
+				return { success: false, error: "labels.invalidIdentity" };
 			}
 
 			payload.identityId = identity.id;
@@ -240,10 +239,10 @@ export async function addNewLabel(
 }
 
 export async function addLabelToThread({
-										   threadId,
-										   mailboxId,
-										   labelId,
-									   }: {
+	threadId,
+	mailboxId,
+	labelId,
+}: {
 	threadId: string;
 	mailboxId: string;
 	labelId: string;
@@ -307,10 +306,10 @@ export async function addLabelToThread({
 }
 
 export async function removeLabelFromThread({
-												threadId,
-												mailboxId,
-												labelId,
-											}: {
+	threadId,
+	mailboxId,
+	labelId,
+}: {
 	threadId: string;
 	mailboxId: string;
 	labelId: string;
@@ -355,9 +354,9 @@ export async function removeLabelFromThread({
 }
 
 export async function addLabelToContact({
-											contactId,
-											labelId,
-										}: {
+	contactId,
+	labelId,
+}: {
 	contactId: string;
 	labelId: string;
 }): Promise<FormState> {
@@ -377,9 +376,9 @@ export async function addLabelToContact({
 }
 
 export async function removeLabelFromContact({
-												 contactId,
-												 labelId,
-											 }: {
+	contactId,
+	labelId,
+}: {
 	contactId: string;
 	labelId: string;
 }): Promise<FormState> {
@@ -403,7 +402,7 @@ export async function removeLabelFromContact({
 }
 
 export const fetchMailboxThreadLabels = async (
-	threads: FetchMailboxThreadsResult,
+	threads: FetchMailboxThreadsResult | { threadId: string }[],
 ) => {
 	const rls = await rlsClient();
 	const threadIds = threads.map((t) => t.threadId).filter(Boolean);
@@ -574,9 +573,7 @@ export const deleteLabel = async ({ id }: { id: string }) => {
 				.delete(contactLabels)
 				.where(inArray(contactLabels.labelId, labelIdsToDelete));
 
-			await tx
-				.delete(labels)
-				.where(inArray(labels.id, labelIdsToDelete));
+			await tx.delete(labels).where(inArray(labels.id, labelIdsToDelete));
 		});
 
 		revalidatePath("/");
@@ -587,13 +584,12 @@ export const deleteLabel = async ({ id }: { id: string }) => {
 	}
 };
 
-
 export const updateLabel = async ({
-									  id,
-									  name,
-									  parentId,
-									  color,
-								  }: {
+	id,
+	name,
+	parentId,
+	color,
+}: {
 	id: string;
 	name: string;
 	parentId: string | null;
@@ -642,12 +638,11 @@ export const updateLabel = async ({
 	}
 };
 
-
 export async function getOrCreateSystemLabel({
-												 name,
-												 scope,
-												 colorBg,
-											 }: {
+	name,
+	scope,
+	colorBg,
+}: {
 	name: string;
 	scope: LabelScope;
 	colorBg?: string | null;

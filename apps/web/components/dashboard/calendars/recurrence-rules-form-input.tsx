@@ -1,16 +1,27 @@
 "use client";
-import React, { useMemo, useState } from "react";
-import { ReusableFormItems } from "@/components/common/reusable-form-items";
+import { Checkbox, NumberInput, Select } from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
 import {
-	BaseFormProps,
-	Freq,
-	ParsedRRuleState,
-	RecurrenceRulesFormInputProps,
-	UntilMode,
+	type BaseFormProps,
+	type Freq,
+	type ParsedRRuleState,
+	type RecurrenceRulesFormInputProps,
+	type UntilMode,
 	WEEKDAY_OPTIONS,
 } from "@schema";
-import { Select, NumberInput, Checkbox } from "@mantine/core";
-import { DatePickerInput } from "@mantine/dates";
+import React, { useMemo, useState } from "react";
+import { ReusableFormItems } from "@/components/common/reusable-form-items";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+
+const WEEKDAY_LABEL_KEYS: Record<string, string> = {
+	MO: "weekdayMon",
+	TU: "weekdayTue",
+	WE: "weekdayWed",
+	TH: "weekdayThu",
+	FR: "weekdayFri",
+	SA: "weekdaySat",
+	SU: "weekdaySun",
+};
 
 function parseInitialRrule(value?: string | null): ParsedRRuleState {
 	const base: ParsedRRuleState = {
@@ -92,6 +103,7 @@ function RecurrenceRulesFormInput({
 	name,
 	defaultValue,
 }: RecurrenceRulesFormInputProps) {
+	const dict = useOptionalDictionary();
 	const initial = useMemo(
 		() => parseInitialRrule(defaultValue),
 		[defaultValue],
@@ -137,13 +149,13 @@ function RecurrenceRulesFormInput({
 
 	const intervalUnitLabel =
 		freq === "DAILY"
-			? "day(s)"
+			? (dict?.calendar?.intervalDays ?? "day(s)")
 			: freq === "WEEKLY"
-				? "week(s)"
+				? (dict?.calendar?.intervalWeeks ?? "week(s)")
 				: freq === "MONTHLY"
-					? "month(s)"
+					? (dict?.calendar?.intervalMonths ?? "month(s)")
 					: freq === "YEARLY"
-						? "year(s)"
+						? (dict?.calendar?.intervalYears ?? "year(s)")
 						: "";
 
 	const fields: BaseFormProps["fields"] = [
@@ -159,7 +171,7 @@ function RecurrenceRulesFormInput({
 
 		{
 			name: `${name}_freq`,
-			label: "Repeat",
+			label: dict?.calendar?.repeat ?? "Repeat",
 			kind: "custom",
 			component: Select,
 			wrapperClasses: freq === "none" ? "col-span-12" : "col-span-4",
@@ -178,11 +190,14 @@ function RecurrenceRulesFormInput({
 					}
 				},
 				data: [
-					{ value: "none", label: "Does not repeat" },
-					{ value: "DAILY", label: "Daily" },
-					{ value: "WEEKLY", label: "Weekly" },
-					{ value: "MONTHLY", label: "Monthly" },
-					{ value: "YEARLY", label: "Yearly" },
+					{
+						value: "none",
+						label: dict?.calendar?.doesNotRepeat ?? "Does not repeat",
+					},
+					{ value: "DAILY", label: dict?.calendar?.daily ?? "Daily" },
+					{ value: "WEEKLY", label: dict?.calendar?.weekly ?? "Weekly" },
+					{ value: "MONTHLY", label: dict?.calendar?.monthly ?? "Monthly" },
+					{ value: "YEARLY", label: dict?.calendar?.yearly ?? "Yearly" },
 				],
 				withCheckIcon: false,
 				checkIconPosition: "right",
@@ -198,7 +213,7 @@ function RecurrenceRulesFormInput({
 						kind: "custom" as const,
 						component: NumberInput,
 						wrapperClasses: "col-span-4",
-						label: "Repeat every",
+						label: dict?.calendar?.repeatEvery ?? "Repeat every",
 						bottomEndSuffix: intervalUnitLabel && (
 							<span className="text-neutral-600 dark:text-neutral-200 mt-1 text-xs">
 								{intervalUnitLabel}
@@ -226,7 +241,7 @@ function RecurrenceRulesFormInput({
 			? [
 					{
 						name: `${name}_ends`,
-						label: "Ends",
+						label: dict?.calendar?.ends ?? "Ends",
 						kind: "custom" as const,
 						component: Select,
 						wrapperClasses: "col-span-4",
@@ -246,9 +261,13 @@ function RecurrenceRulesFormInput({
 								}
 							},
 							data: [
-								{ value: "never", label: "Never" },
-								{ value: "on", label: "On date" },
-								{ value: "after", label: "After N occurrences" },
+								{ value: "never", label: dict?.calendar?.never ?? "Never" },
+								{ value: "on", label: dict?.calendar?.onDate ?? "On date" },
+								{
+									value: "after",
+									label:
+										dict?.calendar?.afterNOccurrences ?? "After N occurrences",
+								},
 							],
 							withCheckIcon: false,
 							checkIconPosition: "right",
@@ -263,14 +282,14 @@ function RecurrenceRulesFormInput({
 			? [
 					{
 						name: `${name}_untilDate`,
-						label: "End date",
+						label: dict?.calendar?.endDate ?? "End date",
 						kind: "custom" as const,
 						component: DatePickerInput,
 						wrapperClasses: "col-span-12",
 						props: {
 							value: untilDate,
 							onChange: (d: Date | null) => setUntilDate(d ?? null),
-							placeholder: "Select end date",
+							placeholder: dict?.calendar?.selectEndDate ?? "Select end date",
 							valueFormat: "DD MMM YYYY",
 							clearable: true,
 						},
@@ -282,7 +301,7 @@ function RecurrenceRulesFormInput({
 			? [
 					{
 						name: `${name}_byday`,
-						label: "On",
+						label: dict?.calendar?.on ?? "On",
 						kind: "custom" as const,
 						component: Checkbox.Group,
 						wrapperClasses: "col-span-12",
@@ -295,7 +314,11 @@ function RecurrenceRulesFormInput({
 										<Checkbox
 											key={opt.value}
 											value={opt.value}
-											label={opt.label}
+											label={
+												(
+													dict?.calendar as Record<string, string> | undefined
+												)?.[WEEKDAY_LABEL_KEYS[opt.value]] ?? opt.label
+											}
 											size="xs"
 										/>
 									))}
@@ -310,7 +333,7 @@ function RecurrenceRulesFormInput({
 			? [
 					{
 						name: `${name}_count`,
-						label: "Occurrences",
+						label: dict?.calendar?.occurrences ?? "Occurrences",
 						kind: "custom" as const,
 						component: NumberInput,
 						wrapperClasses: "col-span-4",

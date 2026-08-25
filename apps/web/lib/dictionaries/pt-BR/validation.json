@@ -1,0 +1,10 @@
+{
+	"mailRules": {
+		"nameRequired": "O nome da regra é obrigatório.",
+		"priorityNonNegative": "A prioridade deve ser um número não negativo.",
+		"atLeastOneCriteria": "Adicione pelo menos um critério.",
+		"atLeastOneAction": "Selecione pelo menos uma ação.",
+		"labelIdRequired": "O ID da etiqueta é obrigatório quando Aplicar etiqueta está ativado.",
+		"nameMustBeUnique": "O nome da regra deve ser único por identidade."
+	}
+}

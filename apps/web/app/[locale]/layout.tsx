@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { cookies } from "next/headers";
-import "./globals.css";
+import "../globals.css";
 import { getPublicEnv } from "@schema";
 import {
 	MODE_COOKIE,
@@ -23,6 +23,8 @@ import {
 	mantineHtmlProps,
 } from "@mantine/core";
 import { ModalsProvider } from "@mantine/modals";
+import { DictionaryProvider } from "@/components/providers/dictionary-provider";
+import { getDictionary, hasLocale } from "@/lib/dictionaries";
 import { createMantineTheme } from "@/lib/mantine-theme";
 import { SITE_FEATURES } from "@/lib/site-features";
 
@@ -42,9 +44,16 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({
 	children,
+	params,
 }: {
 	children: React.ReactNode;
+	params: Promise<{ locale: string }>;
 }) {
+	const { locale: urlLocale } = await params;
+	// The [locale] URL segment is the canonical source of truth. proxy.ts
+	// already validates/redirects to a known locale before any route here
+	// ever matches, so this fallback is just defensive.
+	const lang = hasLocale(urlLocale) ? urlLocale : "en";
 	const jar = await cookies();
 	const theme: ThemeName = ThemeNameSchema.catch("indigo").parse(
 		jar.get(THEME_COOKIE)?.value,
@@ -64,10 +73,11 @@ export default async function RootLayout({
 		theme,
 		mode,
 	});
+	const dict = await getDictionary(lang);
 
 	return (
 		<html
-			lang="en"
+			lang={lang}
 			data-theme={theme}
 			className={`${initialDark ? "dark" : ""}`}
 			{...mantineHtmlProps}
@@ -88,7 +98,9 @@ export default async function RootLayout({
 								theme={mantineTheme}
 								defaultColorScheme={colorScheme}
 							>
-								<ModalsProvider>{children}</ModalsProvider>
+								<DictionaryProvider dict={dict}>
+									<ModalsProvider>{children}</ModalsProvider>
+								</DictionaryProvider>
 							</MantineProvider>
 						</SiteFeaturesProvider>
 					</ConfigProvider>

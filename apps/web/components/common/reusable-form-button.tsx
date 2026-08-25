@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useMemo, useRef } from "react";
 import Form from "next/form";
 import type { FormState } from "@schema";
 import {
@@ -12,6 +12,8 @@ import {
 } from "@mantine/core";
 import {NotifyProps} from "@/components/common/reusable-form";
 import {toast} from "sonner";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { resolveDictMessage } from "@/lib/resolve-dict-message";
 
 type ReusableFormButtonProps = {
 	action: (prevState: FormState, formData: FormData) => Promise<FormState>;
@@ -46,6 +48,23 @@ export function ReusableFormButton({
 	const formRef = useRef<HTMLFormElement>(null);
 	const hasSubmittedRef = useRef(false);
 
+	const dict = useOptionalDictionary();
+
+	const resolvedError = useMemo(
+		() =>
+			formState?.error
+				? resolveDictMessage(dict?.actions, formState.error)
+				: null,
+		[formState, dict],
+	);
+	const resolvedMessage = useMemo(
+		() =>
+			formState?.message
+				? resolveDictMessage(dict?.actions, formState.message)
+				: null,
+		[formState, dict],
+	);
+
 	useEffect(() => {
 		if (!isPending && formState?.success && onSuccess) {
 			onSuccess && onSuccess(formState.data);
@@ -61,14 +80,14 @@ export function ReusableFormButton({
 		if (!formState) return;
 
 		if (formState.success) {
-			const msg = notify?.successMessage ?? formState.message;
+			const msg = notify?.successMessage ?? resolvedMessage;
 			if (msg) toast.success(msg, notify?.toastProps);
 			return;
 		}
 
-		const err = formState.error ?? notify?.errorMessage;
+		const err = resolvedError ?? notify?.errorMessage;
 		if (err) toast.error(err, notify?.toastProps);
-	}, [notifyKind, isPending, formState, notify, formKey]);
+	}, [notifyKind, isPending, formState, notify, formKey, resolvedMessage, resolvedError]);
 
 	return (
 		<Form

@@ -9,6 +9,7 @@ import {
 import type { MessageEntity } from "@db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 type HeadersPaneProps = {
     message?: MessageEntity;
@@ -211,6 +212,7 @@ function HeaderRowView({
 export default function HeadersPane({
                                         message,
                                     }: HeadersPaneProps) {
+    const dict = useOptionalDictionary();
     const [copied, setCopied] = useState(false);
 
     const rows = useMemo(() => {
@@ -245,11 +247,11 @@ export default function HeadersPane({
     if (!message) {
         return (
             <InspectorPlaceholder
-                title="Headers"
-                description="Parsed message headers will be shown here."
+                title={dict?.mailbox?.tabHeaders ?? "Headers"}
+                description={dict?.mailbox?.headersPlaceholder ?? "Parsed message headers will be shown here."}
             >
                 <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                    No message selected.
+                    {dict?.mailbox?.noMessageSelected ?? "No message selected."}
                 </div>
             </InspectorPlaceholder>
         );
@@ -257,18 +259,18 @@ export default function HeadersPane({
 
     return (
         <InspectorPlaceholder
-            title="Headers"
-            description="Parsed message headers from the original message."
+            title={dict?.mailbox?.tabHeaders ?? "Headers"}
+            description={dict?.mailbox?.headersDescription ?? "Parsed message headers from the original message."}
         >
             <div className="flex h-full min-h-0 w-full flex-col gap-4 overflow-hidden p-4">
                 <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                         <Badge variant="secondary">
-                            {rows.length} headers
+                            {rows.length} {dict?.mailbox?.headersLabel ?? "headers"}
                         </Badge>
 
                         <span className="text-xs text-muted-foreground">
-							Values are shown exactly as parsed where available.
+							{dict?.mailbox?.valuesShownAsParsed ?? "Values are shown exactly as parsed where available."}
 						</span>
                     </div>
 
@@ -284,7 +286,7 @@ export default function HeadersPane({
                             <Clipboard className="mr-2 size-4" />
                         )}
 
-                        {copied ? "Copied" : "Copy headers"}
+                        {copied ? (dict?.mailbox?.copied ?? "Copied") : (dict?.mailbox?.copyHeaders ?? "Copy headers")}
                     </Button>
                 </div>
 
@@ -298,7 +300,7 @@ export default function HeadersPane({
                         ))
                     ) : (
                         <div className="flex h-full items-center justify-center p-8 text-sm text-muted-foreground">
-                            No parsed headers available.
+                            {dict?.mailbox?.noParsedHeadersAvailable ?? "No parsed headers available."}
                         </div>
                     )}
                 </div>

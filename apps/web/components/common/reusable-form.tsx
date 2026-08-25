@@ -14,6 +14,8 @@ import { Button as MantineButton, Alert } from "@mantine/core";
 import { IconLoader2 } from "@tabler/icons-react";
 import { ReusableFormItems } from "@/components/common/reusable-form-items";
 import {toast} from "sonner";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { resolveDictMessage } from "@/lib/resolve-dict-message";
 
 export type ReusableFormProps = BaseFormProps & {
 	submitButtonProps?: SubmitButtonProps;
@@ -57,9 +59,23 @@ export function ReusableForm({
 	const formRef = useRef<HTMLFormElement>(null);
 	const hasSubmittedRef = useRef(false);
 
+	const dict = useOptionalDictionary();
+
 	const errors = useMemo(() => formState?.errors || {}, [formState]);
-	const error = useMemo(() => formState?.error || null, [formState]);
-	const message = useMemo(() => formState?.message || null, [formState]);
+	const error = useMemo(
+		() =>
+			formState?.error
+				? resolveDictMessage(dict?.actions, formState.error)
+				: null,
+		[formState, dict],
+	);
+	const message = useMemo(
+		() =>
+			formState?.message
+				? resolveDictMessage(dict?.actions, formState.message)
+				: null,
+		[formState, dict],
+	);
 
 	useEffect(() => {
 		if (!isPending && formState?.success && onSuccess) {
@@ -95,15 +111,14 @@ export function ReusableForm({
 		if (!formState) return;
 
 		if (formState.success) {
-			const msg = notify?.successMessage ?? formState.message;
+			const msg = notify?.successMessage ?? message;
 			if (msg) toast.success(msg, notify?.toastProps);
 			return;
 		}
 
-		// const err = notify?.errorMessage ?? formState.error;
-		const err = formState.error ?? notify?.errorMessage;
+		const err = error ?? notify?.errorMessage;
 		if (err) toast.error(err, notify?.toastProps);
-	}, [notifyKind, isPending, formState, notify, formKey]);
+	}, [notifyKind, isPending, formState, notify, formKey, message, error]);
 
 	return (
 		<Form

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useMemo, useState } from "react";
 import { ComboboxItem } from "@mantine/core";
 import { Users } from "lucide-react";
@@ -8,6 +10,7 @@ import GuestList, {
 	UiGuest,
 	UiGuestStatus,
 } from "@/components/dashboard/calendars/guest-list";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 type SearchableContactsOption = ComboboxItem & {
 	row?: {
@@ -25,6 +28,7 @@ function AddGuests({
 	name: string;
 	onChange?: (value: string[]) => void;
 }) {
+	const dict = useOptionalDictionary();
 	const { state } = useDynamicContext<CalendarState>();
 	const editEvent = state.activePopoverEditEvent;
 	const editEventId = editEvent?.id || "";
@@ -123,7 +127,7 @@ function AddGuests({
 
 	return (
 		<>
-			<div className="text-sm my-1.5 font-medium">Add guests</div>
+			<div className="text-sm my-1.5 font-medium">{dict?.calendar?.addGuests ?? "Add guests"}</div>
 
 			<SearchableContacts onChange={handleAddGuest} />
 
@@ -139,7 +143,7 @@ function AddGuests({
 			<div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
 				<Users size={14} className="shrink-0" />
 				<span className="font-medium">
-					{guestCount === 1 ? "1 guest" : `${guestCount} guests`}
+					{guestCount === 1 ? (dict?.calendar?.oneGuest ?? "1 guest") : `${guestCount} ${dict?.calendar?.guestsPlural ?? "guests"}`}
 				</span>
 			</div>
 		</>

@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { ContactEntity } from "@db";
 import {uploadContactProfileAction} from "@/lib/actions/uploads-actions";
 import {FetchIsSignedInResult} from "@/lib/actions/auth";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export default function NewContactForm({
 	contact = null,
@@ -37,6 +38,7 @@ export default function NewContactForm({
 	workspacePublicId: string;
 	publicConfig: PublicConfig;
 }) {
+	const dict = useOptionalDictionary();
 	const [preview, setPreview] = React.useState<string | null>(
 		profilePictureUrl ?? null,
 	);
@@ -193,7 +195,7 @@ export default function NewContactForm({
 							}
 							unoptimized={true}
 							className="object-cover rounded-full border w-36 h-36 object-top-left"
-							alt="Profile"
+							alt={dict?.contacts?.profileAlt ?? "Profile"}
 						/>
 					</button>
 					{contact?.profilePicture ? (
@@ -221,13 +223,13 @@ export default function NewContactForm({
 
 		{
 			name: "firstName",
-			label: "First name",
+			label: dict?.contacts?.firstName ?? "First name",
 			wrapperClasses: "col-span-12 md:col-span-6",
 			props: { required: true, defaultValue: contact?.firstName || "" },
 		},
 		{
 			name: "lastName",
-			label: "Last name",
+			label: dict?.contacts?.lastName ?? "Last name",
 			wrapperClasses: "col-span-12 md:col-span-6",
 			props: { defaultValue: contact?.lastName || "" },
 		},
@@ -237,25 +239,25 @@ export default function NewContactForm({
 			el: (
 				<div className="mt-4 flex items-center gap-2 text-md font-medium text-brand dark:text-brand-foreground">
 					<Building size={18} />
-					Organization
+					{dict?.contacts?.organization ?? "Organization"}
 				</div>
 			),
 		},
 		{
 			name: "company",
-			label: "Company",
+			label: dict?.contacts?.company ?? "Company",
 			wrapperClasses: "col-span-12",
 			props: { defaultValue: contact?.company || "" },
 		},
 		{
 			name: "jobTitle",
-			label: "Job title",
+			label: dict?.contacts?.jobTitle ?? "Job title",
 			wrapperClasses: "col-span-12",
 			props: { defaultValue: contact?.jobTitle || "" },
 		},
 		{
 			name: "department",
-			label: "Department",
+			label: dict?.contacts?.department ?? "Department",
 			wrapperClasses: "col-span-12",
 			props: { defaultValue: contact?.department || "" },
 		},
@@ -265,7 +267,7 @@ export default function NewContactForm({
 			el: (
 				<div className="mt-4 flex items-center gap-2 text-md font-medium text-brand dark:text-brand-foreground">
 					<Mail size={18} />
-					Email
+					{dict?.contacts?.email ?? "Email"}
 				</div>
 			),
 		},
@@ -273,7 +275,7 @@ export default function NewContactForm({
 		...emailRows.flatMap<FieldConfig>((id, index) => [
 			{
 				name: `emails.${id}.address`,
-				label: index === 0 ? "Email" : `Email ${index + 1}`,
+				label: index === 0 ? (dict?.contacts?.email ?? "Email") : `${dict?.contacts?.email ?? "Email"} ${index + 1}`,
 				wrapperClasses: "col-span-12",
 				props: {
 					type: "email",
@@ -286,7 +288,7 @@ export default function NewContactForm({
 							onClick={() => removeEmailRow(id)}
 							className="text-xs text-muted-foreground hover:underline"
 						>
-							Remove
+							{dict?.contacts?.remove ?? "Remove"}
 						</button>
 					) : undefined,
 			},
@@ -302,7 +304,7 @@ export default function NewContactForm({
 					fullWidth
 					onClick={addEmailRow}
 				>
-					Add email
+					{dict?.contacts?.addEmail ?? "Add email"}
 				</Button>
 			),
 		},
@@ -312,7 +314,7 @@ export default function NewContactForm({
 			el: (
 				<div className="mt-4 flex items-center gap-2 text-md font-medium text-brand dark:text-brand-foreground">
 					<Phone size={18} />
-					Phone
+					{dict?.contacts?.phone ?? "Phone"}
 				</div>
 			),
 		},
@@ -320,7 +322,7 @@ export default function NewContactForm({
 		...phoneRows.flatMap<FieldConfig>((id, index) => [
 			{
 				name: `phones.${id}.code`,
-				label: "Country code",
+				label: dict?.contacts?.countryCode ?? "Country code",
 				wrapperClasses: "col-span-4 md:col-span-3",
 				kind: "select",
 				options: countryPhoneOptions,
@@ -332,7 +334,7 @@ export default function NewContactForm({
 			},
 			{
 				name: `phones.${id}.number`,
-				label: index === 0 ? "Phone" : `Phone ${index + 1}`,
+				label: index === 0 ? (dict?.contacts?.phone ?? "Phone") : `${dict?.contacts?.phone ?? "Phone"} ${index + 1}`,
 				wrapperClasses: "col-span-8 md:col-span-9",
 				props: {
 					required: index === 0,
@@ -345,7 +347,7 @@ export default function NewContactForm({
 							onClick={() => removePhoneRow(id)}
 							className="text-xs text-muted-foreground hover:underline"
 						>
-							Remove
+							{dict?.contacts?.remove ?? "Remove"}
 						</button>
 					) : undefined,
 			},
@@ -361,7 +363,7 @@ export default function NewContactForm({
 					fullWidth
 					onClick={addPhoneRow}
 				>
-					Add phone
+					{dict?.contacts?.addPhone ?? "Add phone"}
 				</Button>
 			),
 		},
@@ -371,7 +373,7 @@ export default function NewContactForm({
 			el: (
 				<div className="mt-4 flex items-center gap-2 text-md font-medium text-brand dark:text-brand-foreground">
 					<MapPinPlus size={18} />
-					Address
+					{dict?.contacts?.address ?? "Address"}
 				</div>
 			),
 		},
@@ -379,7 +381,7 @@ export default function NewContactForm({
 		...addressRows.flatMap<FieldConfig>((id, index) => [
 			{
 				name: `addresses.${id}.country`,
-				label: index === 0 ? "Country" : `Country (${index + 1})`,
+				label: index === 0 ? (dict?.contacts?.country ?? "Country") : `${dict?.contacts?.country ?? "Country"} (${index + 1})`,
 				wrapperClasses: "col-span-12",
 				kind: "select",
 				options: countryOptions,
@@ -391,7 +393,7 @@ export default function NewContactForm({
 			},
 			{
 				name: `addresses.${id}.streetAddress`,
-				label: "Street address",
+				label: dict?.contacts?.streetAddress ?? "Street address",
 				wrapperClasses: "col-span-12",
 				props: {
 					defaultValue: addresses[id]?.streetAddress ?? "",
@@ -399,7 +401,7 @@ export default function NewContactForm({
 			},
 			{
 				name: `addresses.${id}.streetAddressLine2`,
-				label: "Street address line 2",
+				label: dict?.contacts?.streetAddressLine2 ?? "Street address line 2",
 				wrapperClasses: "col-span-12",
 				props: {
 					defaultValue: addresses[id]?.streetAddressLine2 ?? "",
@@ -407,7 +409,7 @@ export default function NewContactForm({
 			},
 			{
 				name: `addresses.${id}.city`,
-				label: "City",
+				label: dict?.contacts?.city ?? "City",
 				wrapperClasses: "col-span-12",
 				props: {
 					defaultValue: addresses[id]?.city ?? "",
@@ -415,7 +417,7 @@ export default function NewContactForm({
 			},
 			{
 				name: `addresses.${id}.state`,
-				label: "State",
+				label: dict?.contacts?.state ?? "State",
 				wrapperClasses: "col-span-6",
 				props: {
 					defaultValue: addresses[id]?.state ?? "",
@@ -423,7 +425,7 @@ export default function NewContactForm({
 			},
 			{
 				name: `addresses.${id}.code`,
-				label: "Postal / ZIP code",
+				label: dict?.contacts?.postalZipCode ?? "Postal / ZIP code",
 				wrapperClasses: "col-span-6",
 				bottomEndSuffix:
 					addressRows.length > 1 ? (
@@ -432,7 +434,7 @@ export default function NewContactForm({
 							onClick={() => removeAddressRow(id)}
 							className="text-xs text-muted-foreground hover:underline"
 						>
-							Remove
+							{dict?.contacts?.remove ?? "Remove"}
 						</button>
 					) : undefined,
 				props: {
@@ -451,7 +453,7 @@ export default function NewContactForm({
 					fullWidth
 					onClick={addAddressRow}
 				>
-					Add address
+					{dict?.contacts?.addAddress ?? "Add address"}
 				</Button>
 			),
 		},
@@ -461,7 +463,7 @@ export default function NewContactForm({
 			el: (
 				<div className="mt-4 flex items-center gap-2 text-md font-medium text-brand dark:text-brand-foreground">
 					<Cake size={18} />
-					Birthday
+					{dict?.contacts?.birthday ?? "Birthday"}
 				</div>
 			),
 		},
@@ -472,7 +474,7 @@ export default function NewContactForm({
 			component: ReusableFormCustomWrapper,
 			props: {
 				component: DatePickerInput,
-				placeholder: "Select date",
+				placeholder: dict?.contacts?.selectDate ?? "Select date",
 				defaultValue: contact?.dob ? contact.dob : null,
 			},
 		},
@@ -482,13 +484,13 @@ export default function NewContactForm({
 			el: (
 				<div className="mt-4 flex items-center gap-2 text-md font-medium text-brand dark:text-brand-foreground">
 					<File size={18} />
-					Notes
+					{dict?.contacts?.notes ?? "Notes"}
 				</div>
 			),
 		},
 		{
 			name: "notes",
-			label: "Notes",
+			label: dict?.contacts?.notes ?? "Notes",
 			wrapperClasses: "col-span-12",
 			kind: "textarea",
 			props: {
@@ -505,8 +507,8 @@ export default function NewContactForm({
 			<div className="flex items-center justify-between my-2 mb-8">
 				<h1 className="text-xl font-bold text-foreground">
 					{contact
-						? `Edit ${contact.firstName} ${contact?.lastName || ""}`
-						: "New Contact Form"}
+						? `${dict?.contacts?.editPrefix ?? "Edit "}${contact.firstName} ${contact?.lastName || ""}`
+						: (dict?.contacts?.newContactForm ?? "New Contact Form")}
 				</h1>
 			</div>
 			<ReusableForm

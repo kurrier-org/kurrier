@@ -7,8 +7,17 @@ import { useParams, useRouter } from "next/navigation";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { CalendarState, calendarViewsList, CalendarViewType } from "@schema";
 import { getDayjsTz } from "@common/day-js-extended";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+
+const VIEW_LABEL_KEYS: Record<string, string> = {
+	day: "viewDay",
+	week: "viewWeek",
+	month: "viewMonth",
+	year: "viewYear",
+};
 
 function CalendarTopBar({workspacePublicId}: {workspacePublicId: string}) {
+	const dict = useOptionalDictionary();
 	const { theme } = useAppearance();
 	const router = useRouter();
 	const { state, setState } = useDynamicContext<CalendarState>();
@@ -87,7 +96,7 @@ function CalendarTopBar({workspacePublicId}: {workspacePublicId: string}) {
 					variant="light"
 					className="rounded-full"
 				>
-					Today
+					{dict?.calendar?.today ?? "Today"}
 				</Button>
 
 				<div className="flex gap-2 items-center">
@@ -112,7 +121,7 @@ function CalendarTopBar({workspacePublicId}: {workspacePublicId: string}) {
 				value={String(activeView)}
 				color={theme}
 				data={calendarViewsList.map((item) => ({
-					label: <span className="capitalize">{item}</span>,
+					label: <span className="capitalize">{(dict?.calendar as Record<string, string> | undefined)?.[VIEW_LABEL_KEYS[item]] ?? item}</span>,
 					value: item,
 				}))}
 			/>

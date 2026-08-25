@@ -11,6 +11,7 @@ import {
 import type { MessageEntity } from "@db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 type JsonPaneProps = {
     message?: MessageEntity;
@@ -66,6 +67,7 @@ function createNormalizedMessageJson(message: MessageEntity) {
 export default function JsonPane({
                                      message,
                                  }: JsonPaneProps) {
+    const dict = useOptionalDictionary();
     const [copied, setCopied] = useState(false);
 
     const json = useMemo(() => {
@@ -93,11 +95,11 @@ export default function JsonPane({
     if (!message) {
         return (
             <InspectorPlaceholder
-                title="JSON"
-                description="The normalized Kurrier message object will be shown here."
+                title={dict?.mailbox?.tabJson ?? "JSON"}
+                description={dict?.mailbox?.jsonPlaceholder ?? "The normalized Kurrier message object will be shown here."}
             >
                 <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                    No message selected.
+                    {dict?.mailbox?.noMessageSelected ?? "No message selected."}
                 </div>
             </InspectorPlaceholder>
         );
@@ -105,8 +107,8 @@ export default function JsonPane({
 
     return (
         <InspectorPlaceholder
-            title="JSON"
-            description="The normalized Kurrier message object."
+            title={dict?.mailbox?.tabJson ?? "JSON"}
+            description={dict?.mailbox?.jsonDescription ?? "The normalized Kurrier message object."}
         >
             <div className="flex h-full min-h-0 w-full flex-col gap-4 overflow-hidden p-4">
                 <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
@@ -116,11 +118,11 @@ export default function JsonPane({
                             className="gap-1.5"
                         >
                             <Braces className="size-3" />
-                            Normalized message
+                            {dict?.mailbox?.normalizedMessage ?? "Normalized message"}
                         </Badge>
 
                         <span className="text-xs text-muted-foreground">
-							Parsed database representation
+							{dict?.mailbox?.parsedDatabaseRepresentation ?? "Parsed database representation"}
 						</span>
                     </div>
 
@@ -136,7 +138,7 @@ export default function JsonPane({
                             <Clipboard className="mr-2 size-4" />
                         )}
 
-                        {copied ? "Copied" : "Copy JSON"}
+                        {copied ? (dict?.mailbox?.copied ?? "Copied") : (dict?.mailbox?.copyJson ?? "Copy JSON")}
                     </Button>
                 </div>
 

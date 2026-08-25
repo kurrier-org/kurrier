@@ -14,6 +14,7 @@ import {
 	getCloudUploadUrl,
 	refreshViewAfterUpload,
 } from "@/lib/actions/drive";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export type DriveUploaderHandle = {
 	openPicker: () => void;
@@ -37,6 +38,7 @@ type DriveUploaderProps = {
 
 const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 	function DriveUploader({ uploadStrategy = "proxy" }, ref) {
+		const dict = useOptionalDictionary();
 		const { state } = useDynamicContext<DriveState>();
 		const ctx = state?.driveRouteContext;
 
@@ -74,7 +76,7 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 
 		async function startUpload(itemId: string, file: File) {
 			if (!ctx?.driveVolume || ctx.scope !== "cloud") {
-				throw new Error("Missing cloud volume");
+				throw new Error(dict?.drive?.missingCloudVolume ?? "Missing cloud volume");
 			}
 
 			const presign = await getCloudUploadUrl(ctx, {
@@ -145,7 +147,7 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 					setItems((prev) =>
 						prev.map((it) =>
 							it.id === itemId
-								? { ...it, state: "error", error: "Network error" }
+								? { ...it, state: "error", error: dict?.drive?.networkError ?? "Network error" }
 								: it,
 						),
 					);
@@ -219,7 +221,7 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 									error:
 										error instanceof Error
 											? error.message
-											: "Upload failed",
+											: (dict?.drive?.uploadFailed ?? "Upload failed"),
 								}
 								: it,
 						),
@@ -280,7 +282,7 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 
 										{item.state === "error" ? (
 											<div className="mt-1 text-[11px] text-red-600">
-												{item.error ?? "Upload failed"}
+												{item.error ?? (dict?.drive?.uploadFailed ?? "Upload failed")}
 											</div>
 										) : null}
 									</div>

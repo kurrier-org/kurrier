@@ -1,16 +1,18 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { useDisclosure } from "@mantine/hooks";
-import { Cog } from "lucide-react";
 import { ActionIcon, Popover, Select } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
+import type { BaseFormProps, CalendarState } from "@schema";
 import { getTimeZones } from "@vvo/tzdb";
-import { useDynamicContext } from "@/hooks/use-dynamic-context";
-import { CalendarState, BaseFormProps } from "@schema";
+import { Cog } from "lucide-react";
+import React, { useMemo } from "react";
 import { ReusableForm } from "@/components/common/reusable-form";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { updateCalendarTimezone } from "@/lib/actions/calendar";
 
 function CalendarSettings() {
+	const dict = useOptionalDictionary();
 	const { state } = useDynamicContext<CalendarState>();
 	const [opened, { close, open }] = useDisclosure(false);
 
@@ -40,7 +42,7 @@ function CalendarSettings() {
 		},
 		{
 			name: "timezone",
-			label: "Calendar time zone",
+			label: dict?.calendar?.calendarTimeZone ?? "Calendar time zone",
 			kind: "custom",
 			component: Select,
 			wrapperClasses: "col-span-12",
@@ -55,7 +57,8 @@ function CalendarSettings() {
 						? "Etc/UTC"
 						: calendar.timezone
 					: "UTC",
-				nothingFoundMessage: "No timezones found",
+				nothingFoundMessage:
+					dict?.calendar?.noTimezonesFound ?? "No timezones found",
 			},
 		},
 	];
@@ -73,7 +76,9 @@ function CalendarSettings() {
 				<ActionIcon
 					variant="subtle"
 					size="sm"
-					aria-label="Calendar settings"
+					aria-label={
+						dict?.calendar?.calendarSettingsAriaLabel ?? "Calendar settings"
+					}
 					onClick={open}
 				>
 					<Cog size={14} />
@@ -88,7 +93,7 @@ function CalendarSettings() {
 						close();
 					}}
 					submitButtonProps={{
-						submitLabel: "Save",
+						submitLabel: dict?.calendar?.save ?? "Save",
 						fullWidth: true,
 						wrapperClasses: "mt-3",
 					}}

@@ -4,16 +4,18 @@ import { deleteRule, FetchMailRulesResult, toggleRule } from "@/lib/actions/mail
 import { ReusableFormButton } from "@/components/common/reusable-form-button";
 import { Power, PowerOff, Trash2 } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function formatActionLabel(a: string) {
     return a.replaceAll("_", " ");
 }
 
 export default function MailRulesList({ rules }: { rules: FetchMailRulesResult }) {
+    const dict = useOptionalDictionary();
     if (!rules.length) {
         return (
             <div className="mt-6 rounded-xl border border-dashed border-neutral-200 dark:border-neutral-800 p-6 text-sm text-neutral-600 dark:text-neutral-400 mb-8">
-                No rules yet.
+                {dict?.mailbox?.noRulesYet ?? "No rules yet."}
             </div>
         );
     }
@@ -56,7 +58,7 @@ export default function MailRulesList({ rules }: { rules: FetchMailRulesResult }
                                                 : "bg-neutral-100 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-300",
                                         ].join(" ")}
                                     >
-                                        {r.enabled ? "Enabled" : "Disabled"}
+                                        {r.enabled ? (dict?.mailbox?.enabled ?? "Enabled") : (dict?.mailbox?.disabled ?? "Disabled")}
                                     </span>
 
                                     {/*{r.stopProcessing ? (*/}
@@ -67,7 +69,7 @@ export default function MailRulesList({ rules }: { rules: FetchMailRulesResult }
                                 </div>
 
                                 <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
-                                    <span>Priority {r.priority}</span>
+                                    <span>{dict?.mailbox?.priority ?? "Priority"} {r.priority}</span>
                                     {/*<span className="text-neutral-300 dark:text-neutral-700">•</span>*/}
                                     {/*<span>{r.stopProcessing ? "No further rules after match" : "Continue after match"}</span>*/}
                                 </div>
@@ -83,7 +85,7 @@ export default function MailRulesList({ rules }: { rules: FetchMailRulesResult }
                                         size: "sm",
                                         variant: "subtle",
                                         children: r.enabled ? <Power size={16} /> : <PowerOff size={16} />,
-                                        title: "Toggle rule",
+                                        title: dict?.mailbox?.toggleRule ?? "Toggle rule",
                                         className:
                                             "rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:bg-neutral-50 dark:hover:bg-neutral-900",
                                     }}
@@ -100,7 +102,7 @@ export default function MailRulesList({ rules }: { rules: FetchMailRulesResult }
                                         size: "sm",
                                         variant: "light",
                                         children: <Trash2 size={16} />,
-                                        title: "Delete rule",
+                                        title: dict?.mailbox?.deleteRule ?? "Delete rule",
                                         className:
                                             "rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:bg-neutral-50 dark:hover:bg-neutral-900",
                                     }}
@@ -113,14 +115,14 @@ export default function MailRulesList({ rules }: { rules: FetchMailRulesResult }
 
                         <div className="mt-4">
                             <div className="text-xs font-medium text-neutral-900 dark:text-neutral-100">
-                                Actions
+                                {dict?.mailbox?.actions ?? "Actions"}
                             </div>
 
                             {chips.length ? (
                                 <div className="mt-2 flex flex-wrap gap-2">{chips}</div>
                             ) : (
                                 <div className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">
-                                    None
+                                    {dict?.mailbox?.none ?? "None"}
                                 </div>
                             )}
                         </div>

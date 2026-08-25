@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Badge, Button } from "@mantine/core";
 import { Mail, Play, RefreshCw, ShieldCheck, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 type GoogleStatus = "connected" | "error" | "revoked";
 
@@ -17,6 +18,7 @@ export default function GoogleAccountCard({
                                           }: {
     googleAccount: FetchGoogleAccountsResultRow
 }) {
+    const dict = useOptionalDictionary();
 
     const [imageFailed, setImageFailed] = React.useState(false);
     const [testing, setTesting] = React.useState(false);
@@ -55,7 +57,7 @@ export default function GoogleAccountCard({
                 setLiveStatus("connected");
                 setLiveError(null);
 
-                toast.success("Google connection verified", {
+                toast.success(dict?.platform?.googleConnectionVerified ?? "Google connection verified", {
                     description: String(verify.meta?.email ?? googleAccount.email),
                 });
             } else {
@@ -63,23 +65,23 @@ export default function GoogleAccountCard({
                 const message =
                     verify?.message ||
                     res.error ||
-                    "Could not verify this Google account. Try reconnecting.";
+                    (dict?.platform?.couldNotVerifyGoogleAccount ?? "Could not verify this Google account. Try reconnecting.");
 
                 setLiveStatus(nextStatus);
                 setLiveError(message);
 
-                toast.error("Google verification failed", {
+                toast.error(dict?.platform?.googleVerificationFailed ?? "Google verification failed", {
                     description: message,
                 });
             }
         } catch (err: any) {
             const message =
-                err?.message ?? "Unexpected error during Google verification.";
+                err?.message ?? (dict?.platform?.unexpectedErrorGoogleVerification ?? "Unexpected error during Google verification.");
 
             setLiveStatus("error");
             setLiveError(message);
 
-            toast.error("Verification error", {
+            toast.error(dict?.platform?.verificationError ?? "Verification error", {
                 description: message,
             });
         } finally {
@@ -132,13 +134,13 @@ export default function GoogleAccountCard({
 
                         {canSend && (
                             <Badge size="sm" variant="light" color="blue">
-                                Send enabled
+                                {dict?.platform?.sendEnabled ?? "Send enabled"}
                             </Badge>
                         )}
 
                         {canSync && (
                             <Badge size="sm" variant="light" color="violet">
-                                Sync enabled
+                                {dict?.platform?.syncEnabled ?? "Sync enabled"}
                             </Badge>
                         )}
                     </div>
@@ -147,12 +149,12 @@ export default function GoogleAccountCard({
                         {isConnected ? (
                             <>
                                 <ShieldCheck className="h-3.5 w-3.5" />
-                                OAuth connected
+                                {dict?.platform?.oauthConnected ?? "OAuth connected"}
                             </>
                         ) : (
                             <>
                                 <ShieldAlert className="h-3.5 w-3.5 text-red-500" />
-                                OAuth needs reconnect
+                                {dict?.platform?.oauthNeedsReconnect ?? "OAuth needs reconnect"}
                             </>
                         )}
                     </div>
@@ -169,7 +171,7 @@ export default function GoogleAccountCard({
                             size="xs"
                             variant="filled"
                         >
-                            Verify Connection
+                            {dict?.platform?.verifyConnection ?? "Verify Connection"}
                         </Button>
 
                         <Button
@@ -179,7 +181,7 @@ export default function GoogleAccountCard({
                             size="xs"
                             variant="filled"
                         >
-                            Reconnect
+                            {dict?.platform?.reconnect ?? "Reconnect"}
                         </Button>
                     </div>
                 </div>

@@ -1243,7 +1243,7 @@ export async function addNewMailboxFolder(
 	} else {
 		const name = String(decodedForm.name ?? "").trim();
 		if (!name)
-			return { success: false, error: "Folder name is required" } as any;
+			return { success: false, error: "mailbox.folderNameRequired" } as any;
 
 		const ownerId = String(user?.id ?? "");
 		const identityId = String(decodedForm.identityId);
@@ -1260,7 +1260,7 @@ export async function addNewMailboxFolder(
 				.limit(1);
 
 			if (!parent || parent.identityId !== identityId) {
-				return { success: false, error: "Invalid parent folder" } as any;
+				return { success: false, error: "mailbox.invalidParentFolder" } as any;
 			}
 		}
 
@@ -1638,7 +1638,7 @@ export async function oneClickUnsubscribe(
 			.from(mailSubscriptions)
 			.where(and(eq(mailSubscriptions.id, id)))
 			.limit(1);
-		if (!sub?.unsubscribeHttpUrl) return { success: false, error: "Subscription not found" };
+		if (!sub?.unsubscribeHttpUrl) return { success: false, error: "mailbox.subscriptionNotFound" };
 		await fetch(sub.unsubscribeHttpUrl, {
 			method: "POST",
 			headers: { "Content-Type": "application/x-www-form-urlencoded" },

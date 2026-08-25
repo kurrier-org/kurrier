@@ -1,3 +1,5 @@
+"use client";
+
 import {
 	addNewDomainIdentity,
 	FetchDecryptedSecretsResult,
@@ -5,6 +7,7 @@ import {
 import { ReusableForm } from "@/components/common/reusable-form";
 import React from "react";
 import { FormState } from "@schema";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function AddDomainIdentityForm({
 	onCompleted,
@@ -15,6 +18,7 @@ function AddDomainIdentityForm({
 	providerOptions: { label: string; value: string }[];
 	providerAccounts: FetchDecryptedSecretsResult;
 }) {
+	const dict = useOptionalDictionary();
 	const [provider, setProvider] = React.useState<
 		FetchDecryptedSecretsResult[number] | null
 	>(null);
@@ -22,7 +26,8 @@ function AddDomainIdentityForm({
 	const fields = [
 		{
 			name: "providerOption",
-			label: "Choose a verified provider",
+			label:
+				dict?.platform?.chooseAVerifiedProvider ?? "Choose a verified provider",
 			kind: "select" as const,
 			options: providerOptions.filter((po) => !po.value.startsWith("smtp")),
 			wrapperClasses: "col-span-12",
@@ -42,13 +47,14 @@ function AddDomainIdentityForm({
 
 		{
 			name: "value",
-			label: "Domain name",
+			label: dict?.platform?.domainName ?? "Domain name",
 			required: true,
 			wrapperClasses: "col-span-12",
 			props: {
 				autoComplete: "off",
 				required: true,
-				placeholder: "e.g. example.com",
+				placeholder:
+					dict?.platform?.domainNamePlaceholder ?? "e.g. example.com",
 			},
 		},
 		{
@@ -70,18 +76,23 @@ function AddDomainIdentityForm({
 			? [
 					{
 						name: "mailFromSubdomain",
-						label: "MAIL FROM subdomain (optional for SPF/DMARC alignment)",
+						label:
+							dict?.platform?.mailFromSubdomain ??
+							"MAIL FROM subdomain (optional for SPF/DMARC alignment)",
 						wrapperClasses: "col-span-12",
 						props: {
 							autoComplete: "off",
-							placeholder: "e.g. mail.example.com",
-							title: "Enter a subdomain like mail.example.com",
+							placeholder:
+								dict?.platform?.mailFromSubdomainPlaceholder ??
+								"e.g. mail.example.com",
+							title:
+								dict?.platform?.mailFromSubdomainTitle ??
+								"Enter a subdomain like mail.example.com",
 						},
 						bottomStartPrefix: (
 							<p className="text-xs text-muted-foreground">
-								Improves SPF and DMARC alignment by ensuring your messages
-								appear to come directly from your domain, which helps reduce the
-								chance of emails being flagged as spam.
+								{dict?.platform?.mailFromSubdomainHelp ??
+									"Improves SPF and DMARC alignment by ensuring your messages appear to come directly from your domain, which helps reduce the chance of emails being flagged as spam."}
 							</p>
 						),
 					},

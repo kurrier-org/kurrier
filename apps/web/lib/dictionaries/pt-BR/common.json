@@ -1,0 +1,21 @@
+{
+	"save": "Salvar",
+	"cancel": "Cancelar",
+	"delete": "Excluir",
+	"edit": "Editar",
+	"close": "Fechar",
+	"confirm": "Confirmar",
+	"loading": "Carregando...",
+	"search": "Buscar",
+	"add": "Adicionar",
+	"remove": "Remover",
+	"yes": "Sim",
+	"no": "Não",
+	"back": "Voltar",
+	"next": "Avançar",
+	"success": "Sucesso",
+	"error": "Erro",
+	"requiredField": "Este campo é obrigatório",
+	"language": "Idioma",
+	"pickValue": "Selecione um valor"
+}

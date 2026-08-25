@@ -79,6 +79,7 @@ export default function WebmailListLabelSearch({
                                         identityPublicId={identityPublicId}
                                         mailboxSync={mailboxSync ?? undefined}
                                         labelsByThreadId={labelsByThreadId}
+                                        globalLabels={globalLabels}
                                     />
                                 ) : (
                                     <WebmailListItem

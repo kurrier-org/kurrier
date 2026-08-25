@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ActionIcon } from "@mantine/core";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Link from "next/link";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export default function NewContactButton({
 	hideOnMobile,
@@ -13,6 +14,7 @@ export default function NewContactButton({
 	hideOnMobile?: boolean;
 	workspacePublicId: string;
 }) {
+	const dict = useOptionalDictionary();
 	const isMobile = useIsMobile();
 
 	return (
@@ -27,7 +29,7 @@ export default function NewContactButton({
 				<Button asChild={true} hidden={!hideOnMobile} size="lg">
 					<Link href={`/w/${workspacePublicId}/dashboard/contacts/new`}>
 						<Plus className="h-5 w-5" />
-						Create Contact
+						{dict?.contacts?.createContact ?? "Create Contact"}
 					</Link>
 				</Button>
 			)}

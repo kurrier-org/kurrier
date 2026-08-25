@@ -16,6 +16,7 @@ import {FetchIdentityMailboxListResult, sendMail} from "@/lib/actions/mailbox";
 import type { FormState, PublicConfig } from "@schema";
 import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
 import { toast } from "sonner";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export type EmailEditorHandle = {
 	focus: () => void;
@@ -45,6 +46,7 @@ const EmailEditor = forwardRef<EmailEditorHandle, Props>(
 		},
 		ref,
 	) => {
+		const dict = useOptionalDictionary();
 		const textEditorRef = useRef<TextEditorHandle>(null);
 
 		useImperativeHandle(
@@ -68,12 +70,12 @@ const EmailEditor = forwardRef<EmailEditorHandle, Props>(
 
 		useEffect(() => {
 			if (formState.error) {
-				toast.error("Error", {
+				toast.error(dict?.common?.error ?? "Error", {
 					description: formState.error,
 				});
 			} else if (formState.success) {
 				handleClose();
-				toast.success("Success", {
+				toast.success(dict?.common?.success ?? "Success", {
 					description: formState.success,
 				});
 			}

@@ -1,4 +1,4 @@
-import { Providers } from "@schema";
+import type { Providers } from "@schema";
 
 export const PROVIDER_CONFIG: Record<
 	Providers,

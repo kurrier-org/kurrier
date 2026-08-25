@@ -24,23 +24,46 @@ import type { MessageEntity } from "@db";
 import type {
     InspectorView,
 } from "@/components/dashboard/inspector/inspector-views";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export type {
     InspectorView,
 } from "@/components/dashboard/inspector/inspector-views";
 
+function getTabLabel(
+    dict: ReturnType<typeof useOptionalDictionary>,
+    key: string,
+    fallback: string,
+) {
+    const map: Record<string, string | undefined> = {
+        preview: dict?.mailbox?.tabPreview,
+        html: dict?.mailbox?.tabHtml,
+        plain: dict?.mailbox?.tabPlainText,
+        raw: dict?.mailbox?.tabRaw,
+        headers: dict?.mailbox?.tabHeaders,
+        smtp: dict?.mailbox?.tabSmtp,
+        json: dict?.mailbox?.tabJson,
+        delivery: dict?.mailbox?.tabDelivery,
+    };
+    return map[key] ?? fallback;
+}
+
 function PaneLoading({
+                         paneKey,
                          title,
                      }: {
+    paneKey: string;
     title: string;
 }) {
+    const dict = useOptionalDictionary();
+    const label = getTabLabel(dict, paneKey, title);
     return (
         <InspectorPlaceholder
-            title={title}
-            description={`Loading ${title.toLowerCase()} inspection data…`}
+            title={label}
+            description={`${dict?.mailbox?.loadingPrefix ?? "Loading "}${label.toLowerCase()}${dict?.mailbox?.inspectionDataSuffix ?? " inspection data…"}`}
         >
             <div className="flex min-h-48 items-center justify-center text-sm text-muted-foreground">
-                Loading…
+                {dict?.mailbox?.loadingEllipsis ?? "Loading…"}
             </div>
         </InspectorPlaceholder>
     );
@@ -53,7 +76,7 @@ const HtmlPane = dynamic(
             ),
     {
         ssr: true,
-        loading: () => <PaneLoading title="HTML" />,
+        loading: () => <PaneLoading paneKey="html" title="HTML" />,
     },
 );
 
@@ -65,7 +88,7 @@ const TextPane = dynamic(
     {
         ssr: true,
         loading: () => (
-            <PaneLoading title="Plain text" />
+            <PaneLoading paneKey="plain" title="Plain text" />
         ),
     },
 );
@@ -77,7 +100,7 @@ const RawPane = dynamic(
             ),
     {
         ssr: true,
-        loading: () => <PaneLoading title="Raw" />,
+        loading: () => <PaneLoading paneKey="raw" title="Raw" />,
     },
 );
 
@@ -89,7 +112,7 @@ const HeadersPane = dynamic(
     {
         ssr: true,
         loading: () => (
-            <PaneLoading title="Headers" />
+            <PaneLoading paneKey="headers" title="Headers" />
         ),
     },
 );
@@ -101,7 +124,7 @@ const SmtpPane = dynamic(
             ),
     {
         ssr: true,
-        loading: () => <PaneLoading title="SMTP" />,
+        loading: () => <PaneLoading paneKey="smtp" title="SMTP" />,
     },
 );
 
@@ -112,7 +135,7 @@ const JsonPane = dynamic(
             ),
     {
         ssr: true,
-        loading: () => <PaneLoading title="JSON" />,
+        loading: () => <PaneLoading paneKey="json" title="JSON" />,
     },
 );
 
@@ -124,7 +147,7 @@ const DeliveryPane = dynamic(
     {
         ssr: true,
         loading: () => (
-            <PaneLoading title="Delivery" />
+            <PaneLoading paneKey="delivery" title="Delivery" />
         ),
     },
 );
@@ -214,6 +237,7 @@ export default function InspectorBar({
                                          onRefresh,
                                          children,
                                      }: InspectorBarProps) {
+    const dict = useOptionalDictionary();
     const [internalValue, setInternalValue] = useState<InspectorView>("preview");
 
     const activeValue = value ?? internalValue;
@@ -275,7 +299,7 @@ export default function InspectorBar({
                                         wrap="nowrap"
                                     >
                                         <span>
-                                            {tab.label}
+                                            {getTabLabel(dict, tab.value, tab.label)}
                                         </span>
 
                                         {tab.value ===
@@ -317,16 +341,16 @@ export default function InspectorBar({
 
                             <span className="truncate">
                                 {isParsed
-                                    ? "Message parsed successfully"
-                                    : "Message parsing incomplete"}
+                                    ? (dict?.mailbox?.messageParsedSuccessfully ?? "Message parsed successfully")
+                                    : (dict?.mailbox?.messageParsingIncomplete ?? "Message parsing incomplete")}
                             </span>
                         </div>
 
                         <div className="hidden items-center gap-3 md:flex">
                             <span>
                                 {rawSourceAvailable
-                                    ? "Raw source available"
-                                    : "Raw source unavailable"}
+                                    ? (dict?.mailbox?.rawSourceAvailable ?? "Raw source available")
+                                    : (dict?.mailbox?.rawSourceUnavailable ?? "Raw source unavailable")}
                             </span>
 
                             <span className="text-border">
@@ -334,7 +358,7 @@ export default function InspectorBar({
                             </span>
 
                             <span>
-                                {Object.keys(message?.headersJson || {}).length} headers
+                                {Object.keys(message?.headersJson || {}).length} {dict?.mailbox?.headersLabel ?? "headers"}
                             </span>
                         </div>
                     </div>
@@ -349,7 +373,7 @@ export default function InspectorBar({
                             onClick={onDownloadEml}
                             className="hidden sm:inline-flex"
                         >
-                            Download .eml
+                            {dict?.mailbox?.downloadEml ?? "Download .eml"}
                         </Button>
                     </div>
                 </div>

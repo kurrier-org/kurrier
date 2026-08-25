@@ -1,8 +1,16 @@
 import {type NextRequest, NextResponse} from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
-const locales = ["en", "ko"];
+const locales = ["en", "ko", "pt-BR"];
 const defaultLocale = "en";
+
+function normalizeLocale(tag: string): string | null {
+	const lower = tag.toLowerCase();
+	const exact = locales.find((l) => l.toLowerCase() === lower);
+	if (exact) return exact;
+	const primary = lower.split("-")[0];
+	return locales.find((l) => l.toLowerCase().split("-")[0] === primary) ?? null;
+}
 
 function getRedirectLocale(request: NextRequest) {
 
@@ -13,11 +21,16 @@ function getRedirectLocale(request: NextRequest) {
 			pathname.startsWith(`/${locale}/`),
 	);
 	if (pathnameHasLocale) return null;
-	const locale =
-		request.cookies.get("locale")?.value ||
-		request.headers.get("accept-language")?.split(",")[0]?.split("-")[0] ||
-		defaultLocale;
-	return locales.includes(locale) ? locale : defaultLocale;
+	const cookieLocale = request.cookies.get("locale")?.value;
+	const acceptLanguageTag = request.headers
+		.get("accept-language")
+		?.split(",")[0];
+
+	return (
+		(cookieLocale && normalizeLocale(cookieLocale)) ||
+		(acceptLanguageTag && normalizeLocale(acceptLanguageTag)) ||
+		defaultLocale
+	);
 
 }
 

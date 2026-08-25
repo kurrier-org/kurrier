@@ -16,6 +16,9 @@ import {
 import type { MessageEntity } from "@db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+
+type Dict = ReturnType<typeof useOptionalDictionary>;
 
 type SmtpPaneProps = {
     message?: MessageEntity;
@@ -108,7 +111,7 @@ function getAddressText(
     return value.text || "—";
 }
 
-function createSmtpData(message: MessageEntity) {
+function createSmtpData(message: MessageEntity, dict: Dict) {
     const headers =
         (message.headersJson as Record<string, unknown> | null) ?? {};
 
@@ -126,41 +129,43 @@ function createSmtpData(message: MessageEntity) {
             value,
         }));
 
+    const notAvailable = dict?.mailbox?.notAvailable ?? "Not available";
+
     const details: SmtpDetail[] = [
         {
-            label: "Envelope sender",
+            label: dict?.mailbox?.envelopeSender ?? "Envelope sender",
             value:
                 getHeader(headers, "return-path") ||
                 "—",
         },
         {
-            label: "Delivered to",
+            label: dict?.mailbox?.deliveredTo ?? "Delivered to",
             value:
                 getHeader(headers, "delivered-to") ||
                 getAddressText(message.to),
         },
         {
-            label: "From",
+            label: dict?.mailbox?.from ?? "From",
             value: getAddressText(message.from),
         },
         {
-            label: "Reply-To",
+            label: dict?.mailbox?.replyTo ?? "Reply-To",
             value:
                 getHeader(headers, "reply-to") ||
                 getAddressText(message?.replyTo as { text?: string | null }),
         },
         {
-            label: "Message ID",
+            label: dict?.mailbox?.messageId ?? "Message ID",
             value: message.messageId || "—",
         },
         {
-            label: "MIME version",
+            label: dict?.mailbox?.mimeVersion ?? "MIME version",
             value:
                 getHeader(headers, "mime-version") ||
                 "—",
         },
         {
-            label: "Content type",
+            label: dict?.mailbox?.contentType ?? "Content type",
             value:
                 getHeader(headers, "content-type") ||
                 "—",
@@ -169,34 +174,34 @@ function createSmtpData(message: MessageEntity) {
 
     const security: SmtpDetail[] = [
         {
-            label: "DKIM",
+            label: dict?.mailbox?.dkim ?? "DKIM",
             value:
                 getHeader(headers, "dkim-signature") ||
-                "Not available",
+                notAvailable,
         },
         {
-            label: "Spam result",
+            label: dict?.mailbox?.spamResult ?? "Spam result",
             value:
                 getHeader(headers, "x-spamd-result") ||
-                "Not available",
+                notAvailable,
         },
         {
-            label: "Spam action",
+            label: dict?.mailbox?.spamAction ?? "Spam action",
             value:
                 getHeader(headers, "x-rspamd-action") ||
-                "Not available",
+                notAvailable,
         },
         {
-            label: "Queue ID",
+            label: dict?.mailbox?.queueId ?? "Queue ID",
             value:
                 getHeader(headers, "x-rspamd-queue-id") ||
-                "Not available",
+                notAvailable,
         },
         {
-            label: "Filtering server",
+            label: dict?.mailbox?.filteringServer ?? "Filtering server",
             value:
                 getHeader(headers, "x-rspamd-server") ||
-                "Not available",
+                notAvailable,
         },
     ];
 
@@ -259,13 +264,14 @@ function DetailRow({
 export default function SmtpPane({
                                      message,
                                  }: SmtpPaneProps) {
+    const dict = useOptionalDictionary();
     const [copied, setCopied] = useState(false);
 
     const smtpData = useMemo(() => {
         if (!message) return null;
 
-        return createSmtpData(message);
-    }, [message]);
+        return createSmtpData(message, dict);
+    }, [message, dict]);
 
     const copySmtpData = async () => {
         if (!smtpData) return;
@@ -284,11 +290,11 @@ export default function SmtpPane({
     if (!message || !smtpData) {
         return (
             <InspectorPlaceholder
-                title="SMTP"
-                description="SMTP delivery and transport information will be shown here."
+                title={dict?.mailbox?.tabSmtp ?? "SMTP"}
+                description={dict?.mailbox?.smtpPlaceholder ?? "SMTP delivery and transport information will be shown here."}
             >
                 <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                    No message selected.
+                    {dict?.mailbox?.noMessageSelected ?? "No message selected."}
                 </div>
             </InspectorPlaceholder>
         );
@@ -296,8 +302,8 @@ export default function SmtpPane({
 
     return (
         <InspectorPlaceholder
-            title="SMTP"
-            description="Delivery route, envelope and mail authentication details."
+            title={dict?.mailbox?.tabSmtp ?? "SMTP"}
+            description={dict?.mailbox?.smtpDescription ?? "Delivery route, envelope and mail authentication details."}
         >
             <div className="flex h-full min-h-0 w-full flex-col gap-4 overflow-auto p-4">
                 <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
@@ -307,10 +313,10 @@ export default function SmtpPane({
                             className="gap-1.5"
                         >
                             <Route className="size-3" />
-                            {smtpData.hops.length} delivery{" "}
+                            {smtpData.hops.length} {dict?.mailbox?.deliveryLabel ?? "delivery"}{" "}
                             {smtpData.hops.length === 1
-                                ? "hop"
-                                : "hops"}
+                                ? (dict?.mailbox?.hop ?? "hop")
+                                : (dict?.mailbox?.hopsPlural ?? "hops")}
                         </Badge>
 
                         <Badge
@@ -318,7 +324,7 @@ export default function SmtpPane({
                             className="gap-1.5"
                         >
                             <MailCheck className="size-3" />
-                            SMTP received
+                            {dict?.mailbox?.smtpReceived ?? "SMTP received"}
                         </Badge>
                     </div>
 
@@ -335,8 +341,8 @@ export default function SmtpPane({
                         )}
 
                         {copied
-                            ? "Copied"
-                            : "Copy SMTP details"}
+                            ? (dict?.mailbox?.copied ?? "Copied")
+                            : (dict?.mailbox?.copySmtpDetails ?? "Copy SMTP details")}
                     </Button>
                 </div>
 
@@ -345,7 +351,7 @@ export default function SmtpPane({
                         <Server className="size-4 text-muted-foreground" />
 
                         <h3 className="text-sm font-semibold">
-                            Envelope and message
+                            {dict?.mailbox?.envelopeAndMessage ?? "Envelope and message"}
                         </h3>
                     </div>
 
@@ -365,7 +371,7 @@ export default function SmtpPane({
                         <Route className="size-4 text-muted-foreground" />
 
                         <h3 className="text-sm font-semibold">
-                            Delivery route
+                            {dict?.mailbox?.deliveryRoute ?? "Delivery route"}
                         </h3>
                     </div>
 
@@ -383,7 +389,7 @@ export default function SmtpPane({
 											</span>
 
                                             <span className="text-sm font-medium text-muted-foreground">
-												Received
+												{dict?.mailbox?.received ?? "Received"}
 											</span>
                                         </div>
                                     </div>
@@ -395,7 +401,7 @@ export default function SmtpPane({
                             ))
                         ) : (
                             <div className="p-6 text-sm text-muted-foreground">
-                                No Received headers are available.
+                                {dict?.mailbox?.noReceivedHeaders ?? "No Received headers are available."}
                             </div>
                         )}
                     </div>
@@ -406,7 +412,7 @@ export default function SmtpPane({
                         <ShieldCheck className="size-4 text-muted-foreground" />
 
                         <h3 className="text-sm font-semibold">
-                            Authentication and filtering
+                            {dict?.mailbox?.authenticationAndFiltering ?? "Authentication and filtering"}
                         </h3>
                     </div>
 

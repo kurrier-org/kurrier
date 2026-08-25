@@ -18,14 +18,12 @@ import {
 import CalendarEventsLayer from "@/components/dashboard/calendars/calendar-events-layer";
 import { getDayjsTz } from "@common/day-js-extended";
 import AllDayEventsRow from "@/components/dashboard/calendars/all-day-events-row";
+import dayjs from "dayjs";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 function formatHourLabel(hour: number) {
-	if (hour === 0) return "12 AM";
-	if (hour < 12) return `${hour} AM`;
-	if (hour === 12) return "12 PM";
-	return `${hour - 12} PM`;
+	return dayjs().hour(hour).minute(0).format("h A");
 }
 
 export function WeekGrid({

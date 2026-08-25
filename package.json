@@ -16,6 +16,7 @@
 		"deploy:db": "git subtree split --prefix=db -b deploy && git push origin deploy",
 		"lint": "biome check",
 		"format": "biome format --write",
+		"check:locales": "tsx scripts/check-locales.ts",
 		"changeset": "changeset",
 		"publish-packages": "changeset publish",
 		"version-packages": "changeset version && pnpm install -w --no-frozen-lockfile && git add -A"

@@ -1,24 +1,28 @@
 "use client";
+import { useMediaQuery } from "@mantine/hooks";
+import type { PublicConfig } from "@schema";
+import { useParams } from "next/navigation";
 import * as React from "react";
-import { PublicConfig } from "@schema";
-import {
-	FetchIdentityMailboxListResult, FetchMailboxResult,
-	FetchMailboxThreadsResult,
-} from "@/lib/actions/mailbox";
-import {
+import { use } from "react";
+import MailListHeader from "@/components/mailbox/default/mail-list-header";
+import WebmailListItem from "@/components/mailbox/default/webmail-list-item";
+import WebmailListItemMobile from "@/components/mailbox/default/webmail-list-item-mobile";
+import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
+import type {
 	FetchLabelsResult,
 	FetchMailboxThreadLabelsResult,
 } from "@/lib/actions/labels";
-import MailListHeader from "@/components/mailbox/default/mail-list-header";
-import WebmailListItem from "@/components/mailbox/default/webmail-list-item";
-import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
-import { useMediaQuery } from "@mantine/hooks";
-import WebmailListItemMobile from "@/components/mailbox/default/webmail-list-item-mobile";
-import { useParams } from "next/navigation";
-import {use} from "react";
+import type {
+	FetchIdentityMailboxListResult,
+	FetchMailboxResult,
+	FetchMailboxThreadsResult,
+} from "@/lib/actions/mailbox";
 
 type WebListProps = {
-	mailboxThreadPromise: Promise<{ mailboxThreads: FetchMailboxThreadsResult, labelsByThreadId: FetchMailboxThreadLabelsResult }>;
+	mailboxThreadPromise: Promise<{
+		mailboxThreads: FetchMailboxThreadsResult;
+		labelsByThreadId: FetchMailboxThreadLabelsResult;
+	}>;
 	publicConfig: PublicConfig;
 	identityPublicId: string;
 	identityMailboxesPromise: Promise<FetchIdentityMailboxListResult>;
@@ -34,12 +38,12 @@ export default function WebmailList({
 	identityMailboxesPromise,
 	globalLabelsPromise,
 	workspacePublicId,
-	fetchMailboxPromise
+	fetchMailboxPromise,
 }: WebListProps) {
-	const {labelsByThreadId, mailboxThreads} = use(mailboxThreadPromise)
-	const globalLabels = use(globalLabelsPromise)
-	const {mailboxSync, activeMailbox} = use(fetchMailboxPromise)
-	const identityMailboxes = use(identityMailboxesPromise)
+	const { labelsByThreadId, mailboxThreads } = use(mailboxThreadPromise);
+	const globalLabels = use(globalLabelsPromise);
+	const { mailboxSync, activeMailbox } = use(fetchMailboxPromise);
+	const identityMailboxes = use(identityMailboxesPromise);
 	const isMobile = useMediaQuery("(max-width: 768px)");
 	const params = useParams();
 
@@ -79,6 +83,7 @@ export default function WebmailList({
 										identityPublicId={identityPublicId}
 										mailboxSync={mailboxSync ?? undefined}
 										labelsByThreadId={labelsByThreadId}
+										globalLabels={globalLabels}
 									/>
 								) : (
 									<WebmailListItem

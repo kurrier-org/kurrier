@@ -4,6 +4,7 @@ import KurrierLogo from "@/components/common/kurrier-logo";
 import * as React from "react";
 import {getDictionary, Locale} from "@/lib/dictionaries";
 import { getGenericOidcSettings } from "@/lib/generic-oidc";
+import { LanguageSwitcher } from "@/components/common/language-switcher";
 
 export default async function LoginPage({ params, searchParams }: {
 	params: Promise<{ locale: Locale }>;
@@ -21,13 +22,16 @@ export default async function LoginPage({ params, searchParams }: {
 	return (
 		<div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
 			<div className="flex w-full max-w-sm flex-col gap-6">
-				<Link
-					href="/"
-					className="flex items-center gap-2 self-center font-medium"
-				>
-					<KurrierLogo size={56} />
-					<span className="truncate font-medium text-4xl">Kurrier</span>
-				</Link>
+				<div className="flex items-center justify-between">
+					<Link
+						href="/"
+						className="flex items-center gap-2 font-medium"
+					>
+						<KurrierLogo size={56} />
+						<span className="truncate font-medium text-4xl">Kurrier</span>
+					</Link>
+					<LanguageSwitcher />
+				</div>
 				{showSignupDisabledMessage && (
 					<div className="rounded-md bg-yellow-50 border border-yellow-200 p-3">
 						<p className="text-sm text-yellow-800">

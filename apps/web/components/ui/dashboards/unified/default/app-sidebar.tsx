@@ -1,8 +1,17 @@
 "use client";
 
-import * as React from "react";
+import { Divider } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
+import { IconFrame } from "@tabler/icons-react";
 import { Calendar, Contact, HardDrive, Inbox, MailOpen } from "lucide-react";
-
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import * as React from "react";
+import KurrierLogo from "@/components/common/kurrier-logo";
+import ThemeColorPicker from "@/components/common/theme-color-picker";
+import ThemeSwitch from "@/components/common/theme-switch";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useSiteFeatures } from "@/components/providers/site-features-provider";
 import {
 	Sidebar,
 	SidebarContent,
@@ -15,21 +24,12 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@/components/ui/sidebar";
-import { usePathname, useRouter } from "next/navigation";
-import KurrierLogo from "@/components/common/kurrier-logo";
-import ThemeColorPicker from "@/components/common/theme-color-picker";
-import ThemeSwitch from "@/components/common/theme-switch";
-import Link from "next/link";
-import { useMediaQuery } from "@mantine/hooks";
-import { Divider } from "@mantine/core";
-import { IconFrame } from "@tabler/icons-react";
-import { useSiteFeatures } from "@/components/providers/site-features-provider";
 
 type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	navUserContent: React.ReactNode;
 	sidebarSectionContent?: React.ReactNode;
 	sidebarTopContent?: React.ReactNode;
-	workspacePublicId?: string
+	workspacePublicId?: string;
 };
 
 export function AppSidebar({ ...props }: UnifiedSidebarProps) {
@@ -43,23 +43,24 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 	} = props;
 
 	const isMobile = useMediaQuery("(max-width: 768px)");
+	const dict = useOptionalDictionary();
 
 	const data = {
 		navMain: [
 			{
-				title: "All Mail",
+				title: dict?.dashboard?.navMail ?? "All Mail",
 				url: `/w/${workspacePublicId}/dashboard/mail`,
 				icon: Inbox,
 				isActive: true,
 			},
 			{
-				title: "Contacts",
+				title: dict?.dashboard?.navContacts ?? "Contacts",
 				url: `/w/${workspacePublicId}/dashboard/contacts`,
 				icon: Contact,
 				isActive: true,
 			},
 			{
-				title: "Calendar",
+				title: dict?.dashboard?.navCalendar ?? "Calendar",
 				url: `/w/${workspacePublicId}/dashboard/calendar`,
 				icon: Calendar,
 				isActive: true,
@@ -67,7 +68,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 			...(drive
 				? [
 						{
-							title: "Drive",
+							title: dict?.dashboard?.navDrive ?? "Drive",
 							url: `/w/${workspacePublicId}/dashboard/drive`,
 							icon: HardDrive,
 							isActive: true,
@@ -75,7 +76,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 					]
 				: []),
 			{
-				title: "Platform",
+				title: dict?.dashboard?.navPlatform ?? "Platform",
 				url: `/w/${workspacePublicId}/dashboard/platform/overview`,
 				icon: IconFrame,
 				isActive: false,
@@ -173,7 +174,9 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 					<SidebarMenu>
 						<SidebarMenuItem>
 							<SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
-								<Link href={`/w/${workspacePublicId}/dashboard/platform/overview`}>
+								<Link
+									href={`/w/${workspacePublicId}/dashboard/platform/overview`}
+								>
 									<div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
 										<MailOpen className="size-4" />
 									</div>
@@ -253,9 +256,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 						/>
 					</div>
 				</SidebarContent>
-				<SidebarFooter>
-					{navUserContent}
-				</SidebarFooter>
+				<SidebarFooter>{navUserContent}</SidebarFooter>
 			</Sidebar>
 
 			{/* This is the second sidebar */}

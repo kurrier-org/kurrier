@@ -12,6 +12,7 @@ import { ulid } from "ulid";
 import {FieldConfig, webHookListOptions} from "@schema";
 import {ReusableFormButton} from "@/components/common/reusable-form-button";
 import {X} from "lucide-react";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export default function ManageWebhooks({
 	hooksList,
@@ -21,6 +22,7 @@ export default function ManageWebhooks({
 	hooksList: FetchUserWebhooksResult;
 	identitiesOptions: { label: string; value: string }[];
 }) {
+	const dict = useOptionalDictionary();
 
 	const fields: FieldConfig[] = [
 		{
@@ -30,7 +32,7 @@ export default function ManageWebhooks({
 		},
 		{
 			name: "url",
-			label: "Endpoint URL",
+			label: dict?.platform?.endpointUrl ?? "Endpoint URL",
 			wrapperClasses: "col-span-12",
 			props: {
 				required: true,
@@ -39,7 +41,7 @@ export default function ManageWebhooks({
 		},
 		{
 			name: "identityId",
-			label: "Select Identity",
+			label: dict?.platform?.selectIdentity ?? "Select Identity",
 			wrapperClasses: "col-span-12 sm:col-span-6",
 			kind: "custom",
 			component: Select,
@@ -50,12 +52,12 @@ export default function ManageWebhooks({
 				allowDeselect: false,
 				clearable: false,
 				defaultValue: identitiesOptions[0]?.value,
-				nothingFoundMessage: "No identities found",
+				nothingFoundMessage: dict?.platform?.noIdentitiesFound ?? "No identities found",
 			},
 		},
 		{
 			name: `scope`,
-			label: "Scopes",
+			label: dict?.platform?.scopes ?? "Scopes",
 			kind: "custom" as const,
 			options: webHookListOptions,
 			component: TagsInput,
@@ -73,7 +75,7 @@ export default function ManageWebhooks({
 	];
 
 	function fmtTemporal(input?: Date | string | null) {
-		if (!input) return "-";
+		if (!input) return dict?.platform?.dashDash ?? "-";
 
 		const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 		const instant =
@@ -90,15 +92,15 @@ export default function ManageWebhooks({
 		<>
 			<Container variant="wide">
 				<div className="flex items-center justify-between my-4">
-					<h1 className="text-xl font-bold text-foreground">Webhooks</h1>
+					<h1 className="text-xl font-bold text-foreground">{dict?.platform?.webhooks ?? "Webhooks"}</h1>
 				</div>
 
 				<p className="max-w-prose text-sm text-muted-foreground my-6">
-					Webhooks allow you to receive real-time notifications when you receive new emails.
+					{dict?.platform?.webhooksDescription ?? "Webhooks allow you to receive real-time notifications when you receive new emails."}
 				</p>
 
 				{identitiesOptions.length === 0 ? <div className={"text-center my-24"}>
-					No identities available. Please create an identity to use webhooks.
+					{dict?.platform?.noIdentitiesAvailableForWebhooks ?? "No identities available. Please create an identity to use webhooks."}
 				</div> : <>
 
 					<Card className="shadow-none mt-4">
@@ -107,7 +109,7 @@ export default function ManageWebhooks({
 								action={addWebhook}
 								fields={fields}
 								submitButtonProps={{
-									submitLabel: "Create Webhook",
+									submitLabel: dict?.platform?.createWebhook ?? "Create Webhook",
 									wrapperClasses: "justify-center mt-6 flex",
 									fullWidth: true,
 								}}
@@ -119,17 +121,17 @@ export default function ManageWebhooks({
 						<div className="p-4">
 							{hooksList.length === 0 ? (
 								<div className="text-sm text-muted-foreground">
-									No webhooks yet.
+									{dict?.platform?.noWebhooksYet ?? "No webhooks yet."}
 								</div>
 							) : (
 								<Table verticalSpacing="sm" highlightOnHover>
 									<Table.Thead>
 										<Table.Tr>
-											<Table.Th>Endpoint URL</Table.Th>
-											<Table.Th>Identity</Table.Th>
-											<Table.Th>Scope</Table.Th>
-											<Table.Th>Created</Table.Th>
-											<Table.Th className="w-16 text-right">Actions</Table.Th>
+											<Table.Th>{dict?.platform?.endpointUrl ?? "Endpoint URL"}</Table.Th>
+											<Table.Th>{dict?.platform?.identity ?? "Identity"}</Table.Th>
+											<Table.Th>{dict?.platform?.scope ?? "Scope"}</Table.Th>
+											<Table.Th>{dict?.platform?.created ?? "Created"}</Table.Th>
+											<Table.Th className="w-16 text-right">{dict?.platform?.actions ?? "Actions"}</Table.Th>
 										</Table.Tr>
 									</Table.Thead>
 
@@ -141,7 +143,7 @@ export default function ManageWebhooks({
 												</Table.Td>
 
 												<Table.Td className="font-mono text-xs">
-													{hook.identities.value ?? "-"}
+													{hook.identities?.value ?? (dict?.platform?.dashDash ?? "-")}
 												</Table.Td>
 
 												<Table.Td>
@@ -157,7 +159,7 @@ export default function ManageWebhooks({
 												<Table.Td className="text-right">
 													<ReusableFormButton
 														action={deleteWebhook}
-														label="Delete"
+														label={dict?.platform?.delete ?? "Delete"}
 														buttonProps={{
 															leftSection: <X size={16} />,
 															size: "compact-xs",

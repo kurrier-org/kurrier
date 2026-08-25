@@ -1,25 +1,32 @@
+import { smtpAccountSecrets } from "@db";
+import { PROVIDERS, parseCustomEmailProviders } from "@schema";
 import * as React from "react";
 import { Container } from "@/components/common/containers";
-import { parseCustomEmailProviders, PROVIDERS } from "@schema";
+import CustomEmailProviderCard from "@/components/dashboard/providers/custom-email-provider-card";
+import GoogleCard from "@/components/dashboard/providers/google-card";
+import InboundCard from "@/components/dashboard/providers/inbound-card";
+import JmapCard from "@/components/dashboard/providers/jmap-card";
+import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
 import SMTPCard from "@/components/dashboard/providers/smtp-card";
+import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
 	fetchDecryptedSecrets,
 	fetchGoogleAccounts,
-	syncProviders,
 	fetchInboundIdentities,
-	hasGoogleOAuthConfig
+	hasGoogleOAuthConfig,
+	syncProviders,
 } from "@/lib/actions/dashboard";
-import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
-import {smtpAccountSecrets} from "@db";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
-import GoogleCard from "@/components/dashboard/providers/google-card";
-import InboundCard from "@/components/dashboard/providers/inbound-card";
-import CustomEmailProviderCard from "@/components/dashboard/providers/custom-email-provider-card";
 import { fetchJmapAccounts } from "@/lib/actions/jmap-actions";
-import JmapCard from "@/components/dashboard/providers/jmap-card";
+import { getDictionary } from "@/lib/dictionaries";
 
-export default async function ProvidersPage() {
+export default async function ProvidersPage({
+	params,
+}: {
+	params: Promise<{ locale: string }>;
+}) {
+	const { locale } = await params;
+	const dict = await getDictionary(locale);
 
 	const [
 		userProviders,
@@ -27,7 +34,7 @@ export default async function ProvidersPage() {
 		googleAccounts,
 		inboundIdentities,
 		jmapAccounts,
-		googleOAuthConfigured
+		googleOAuthConfigured,
 	] = await Promise.all([
 		syncProviders(),
 		fetchDecryptedSecrets({
@@ -38,10 +45,9 @@ export default async function ProvidersPage() {
 		fetchGoogleAccounts(),
 		fetchInboundIdentities(),
 		fetchJmapAccounts(),
-		hasGoogleOAuthConfig()
+		hasGoogleOAuthConfig(),
 	]);
-	const customEmailProviders = parseCustomEmailProviders()
-
+	const customEmailProviders = parseCustomEmailProviders();
 
 	return (
 		<>
@@ -57,14 +63,13 @@ export default async function ProvidersPage() {
 			<div className="flex flex-1 flex-col gap-4 p-4 pt-0">
 				<Container variant="wide">
 					<div className="flex items-center justify-between my-4">
-						<h1 className="text-xl font-bold text-foreground">Providers</h1>
+						<h1 className="text-xl font-bold text-foreground">
+							{dict.platform.providers}
+						</h1>
 					</div>
 
 					<p className="max-w-prose text-sm text-muted-foreground my-6">
-						Connect email providers directly from the dashboard — no manual
-						environment setup required. All provider credentials are securely
-						encrypted and stored in the Vault, never in plain text or source
-						code ensuring full control and privacy.
+						{dict.platform.providersPageDescription}
 					</p>
 
 					{customEmailProviders.length > 0 ? (
@@ -100,7 +105,10 @@ export default async function ProvidersPage() {
 					</div>
 					<div className="grid gap-6 lg:grid-cols-2 my-8">
 						<SMTPCard smtpSecrets={smtpSecrets} />
-						<GoogleCard googleAccounts={googleAccounts} googleOAuthConfigured={googleOAuthConfigured} />
+						<GoogleCard
+							googleAccounts={googleAccounts}
+							googleOAuthConfigured={googleOAuthConfigured}
+						/>
 						<InboundCard inboundIdentities={inboundIdentities} />
 						<JmapCard jmapAccounts={jmapAccounts} />
 					</div>

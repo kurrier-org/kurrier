@@ -1,14 +1,16 @@
-import { MailboxThreadEntity } from "@db";
+"use client";
+
+import { LabelAssignPopover } from "@/components/dashboard/labels/label-assign-popover";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import {
 	addLabelToThread,
+	type FetchLabelsResult,
+	type FetchMailboxThreadLabelsResult,
 	removeLabelFromThread,
-	FetchLabelsResult,
-	FetchMailboxThreadLabelsResult,
 } from "@/lib/actions/labels";
-import { LabelAssignPopover } from "@/components/dashboard/labels/label-assign-popover";
 
 type ThreadLabelHoverButtonsProps = {
-	mailboxThreadItem: MailboxThreadEntity;
+	mailboxThreadItem: { threadId: string; mailboxId: string };
 	allLabels: FetchLabelsResult;
 	labelsByThreadId: FetchMailboxThreadLabelsResult;
 };
@@ -18,6 +20,7 @@ export function ThreadLabelHoverButtons({
 	allLabels,
 	labelsByThreadId,
 }: ThreadLabelHoverButtonsProps) {
+	const dict = useOptionalDictionary();
 	const labelThreads = labelsByThreadId[mailboxThreadItem.threadId] || [];
 	const selectedLabelIds = labelThreads
 		.map((lt) => lt?.label?.id)
@@ -41,7 +44,7 @@ export function ThreadLabelHoverButtons({
 
 	return (
 		<LabelAssignPopover
-			title="Label message"
+			title={dict?.mailbox?.labelMessage ?? "Label message"}
 			scope="thread"
 			allLabels={allLabels}
 			selectedLabelIds={selectedLabelIds}

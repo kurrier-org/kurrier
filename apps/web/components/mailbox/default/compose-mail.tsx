@@ -12,6 +12,7 @@ import {FetchIdentityMailboxListResult, fetchMailbox} from "@/lib/actions/mailbo
 import { useParams } from "next/navigation";
 import { useMediaQuery } from "@mantine/hooks";
 import { ActionIcon } from "@mantine/core";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function Portal({ children }: { children: React.ReactNode }) {
 	const elRef = useRef<HTMLDivElement | null>(null);
@@ -47,6 +48,7 @@ export default function ComposeMail({
 	const editorRef = useRef<EmailEditorHandle>(null);
 	const params = useParams();
 	const isMobile = useMediaQuery("(max-width: 768px)");
+	const dict = useOptionalDictionary();
 
 	const fetchSentMailbox = async () => {
 		const { activeMailbox } = await fetchMailbox(
@@ -94,7 +96,7 @@ export default function ComposeMail({
 			) : (
 				<Button size="lg" onClick={handleOpen} disabled={!params.identityPublicId}>
 					<MailPlus className="h-5 w-5" />
-					Compose
+					{dict?.mailbox?.compose ?? "Compose"}
 				</Button>
 			)}
 
@@ -121,12 +123,12 @@ export default function ComposeMail({
 							onClick={(e) => e.stopPropagation()}
 						>
 							<div className="sticky top-0 z-10 flex items-center justify-between border-b px-4 py-3">
-								<div className="text-sm font-medium">New Message</div>
+								<div className="text-sm font-medium">{dict?.mailbox?.newMessage ?? "New Message"}</div>
 								<button
 									type="button"
 									onClick={handleClose}
-									aria-label="Close"
-									title="Close"
+									aria-label={dict?.mailbox?.close ?? "Close"}
+									title={dict?.mailbox?.close ?? "Close"}
 									className="p-2 rounded-md hover:bg-muted transition-colors"
 								>
 									<X className="h-5 w-5" />
@@ -170,12 +172,12 @@ export default function ComposeMail({
 								{/*<div className="text-sm font-medium">New Message</div>*/}
 								<div className="flex items-center gap-2">
 									<IconBtn
-										label={minimized ? "Restore" : "Minimize"}
+										label={minimized ? (dict?.mailbox?.restore ?? "Restore") : (dict?.mailbox?.minimize ?? "Minimize")}
 										onClick={() => setMinimized((v) => !v)}
 									>
 										<Minus className="h-4 w-4" />
 									</IconBtn>
-									<IconBtn label="Close" onClick={handleClose}>
+									<IconBtn label={dict?.mailbox?.close ?? "Close"} onClick={handleClose}>
 										<X className="h-4 w-4" />
 									</IconBtn>
 								</div>

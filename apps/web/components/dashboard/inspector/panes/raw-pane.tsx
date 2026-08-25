@@ -17,6 +17,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+
+type Dict = ReturnType<typeof useOptionalDictionary>;
 
 type RawPaneProps = {
     message?: MessageEntity;
@@ -139,7 +142,7 @@ function formatHeaderName(name: string): string {
         .join("-");
 }
 
-function createRawPreview(message: MessageEntity): string {
+function createRawPreview(message: MessageEntity, dict: Dict): string {
     const headers =
         (message.headersJson as Record<string, unknown> | null) ?? {};
 
@@ -247,7 +250,7 @@ function createRawPreview(message: MessageEntity): string {
         ? `${text.slice(
             0,
             MAX_TEXT_PREVIEW_LENGTH,
-        )}\n\n[Plain-text body truncated in preview]`
+        )}\n\n${dict?.mailbox?.plainTextBodyTruncated ?? "[Plain-text body truncated in preview]"}`
         : text;
 
     const htmlLength = message.html?.length ?? 0;
@@ -258,15 +261,15 @@ function createRawPreview(message: MessageEntity): string {
         'Content-Type: text/plain; charset="utf-8"',
         "Content-Transfer-Encoding: 8bit",
         "",
-        textPreview || "[No plain-text body]",
+        textPreview || (dict?.mailbox?.noPlainTextBody ?? "[No plain-text body]"),
         "",
         `--${boundary}`,
         'Content-Type: text/html; charset="utf-8"',
         "Content-Transfer-Encoding: omitted",
         "",
         htmlLength > 0
-            ? `[HTML body omitted from raw preview — ${htmlLength.toLocaleString()} characters. View the HTML tab.]`
-            : "[No HTML body]",
+            ? `${dict?.mailbox?.htmlBodyOmittedPrefix ?? "[HTML body omitted from raw preview — "}${htmlLength.toLocaleString()}${dict?.mailbox?.htmlBodyOmittedSuffix ?? " characters. View the HTML tab.]"}`
+            : (dict?.mailbox?.noHtmlBody ?? "[No HTML body]"),
     ];
 
     if (message.hasAttachments) {
@@ -277,7 +280,7 @@ function createRawPreview(message: MessageEntity): string {
             'Content-Disposition: attachment; filename="attachment"',
             "Content-Transfer-Encoding: base64",
             "",
-            "[Attachment metadata and encoded body omitted from preview]",
+            dict?.mailbox?.attachmentMetadataOmitted ?? "[Attachment metadata and encoded body omitted from preview]",
         );
     }
 
@@ -310,14 +313,15 @@ export default function RawPane({
                                     message,
                                     onDownloadRaw,
                                 }: RawPaneProps) {
+    const dict = useOptionalDictionary();
     const [copied, setCopied] = useState(false);
     const [downloading, setDownloading] = useState(false);
 
     const rawPreview = useMemo(() => {
         if (!message) return "";
 
-        return createRawPreview(message);
-    }, [message]);
+        return createRawPreview(message, dict);
+    }, [message, dict]);
 
     const copyRawPreview = async () => {
         if (!rawPreview) return;
@@ -345,11 +349,11 @@ export default function RawPane({
     if (!message) {
         return (
             <InspectorPlaceholder
-                title="Raw"
-                description="Message source preview with large MIME payloads omitted."
+                title={dict?.mailbox?.tabRaw ?? "Raw"}
+                description={dict?.mailbox?.rawPlaceholder ?? "Message source preview with large MIME payloads omitted."}
             >
                 <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                    No message selected.
+                    {dict?.mailbox?.noMessageSelected ?? "No message selected."}
                 </div>
             </InspectorPlaceholder>
         );
@@ -357,38 +361,38 @@ export default function RawPane({
 
     return (
         <InspectorPlaceholder
-            title="Raw"
-            description="Message source preview with large MIME payloads omitted."
+            title={dict?.mailbox?.tabRaw ?? "Raw"}
+            description={dict?.mailbox?.rawPlaceholder ?? "Message source preview with large MIME payloads omitted."}
         >
             <div className="flex h-full min-h-0 w-full flex-col gap-4 overflow-hidden p-4">
                 <div className="shrink-0 overflow-hidden rounded-xl border bg-card">
-                    <SummaryRow label="Message ID">
+                    <SummaryRow label={dict?.mailbox?.messageId ?? "Message ID"}>
 						<span className="break-all font-mono text-emerald-500">
 							{message.messageId || "—"}
 						</span>
                     </SummaryRow>
 
-                    <SummaryRow label="Created on">
+                    <SummaryRow label={dict?.mailbox?.createdOn ?? "Created on"}>
                         {formatDate(
                             message.date ??
                             message.createdAt,
                         )}
                     </SummaryRow>
 
-                    <SummaryRow label="From">
+                    <SummaryRow label={dict?.mailbox?.from ?? "From"}>
 						<span className="break-all">
 							{getAddressText(message.from)}
 						</span>
                     </SummaryRow>
 
-                    <SummaryRow label="To">
+                    <SummaryRow label={dict?.mailbox?.to ?? "To"}>
 						<span className="break-all">
 							{getAddressText(message.to)}
 						</span>
                     </SummaryRow>
 
-                    <SummaryRow label="Subject">
-                        {message.subject || "(no subject)"}
+                    <SummaryRow label={dict?.mailbox?.subject ?? "Subject"}>
+                        {message.subject || (dict?.mailbox?.noSubject ?? "(no subject)")}
                     </SummaryRow>
                 </div>
 
@@ -400,7 +404,7 @@ export default function RawPane({
                                 className="gap-1.5 border-white/10 bg-white/10 text-zinc-200"
                             >
                                 <FileText className="size-3" />
-                                Raw preview
+                                {dict?.mailbox?.rawPreview ?? "Raw preview"}
                             </Badge>
 
                             <span className="text-xs text-zinc-500">
@@ -413,13 +417,13 @@ export default function RawPane({
                                     className="gap-1.5 border-white/10 text-zinc-400"
                                 >
                                     <Paperclip className="size-3" />
-                                    Attachment bodies omitted
+                                    {dict?.mailbox?.attachmentBodiesOmitted ?? "Attachment bodies omitted"}
                                 </Badge>
                             )}
 
                             {message.rawStorageKey && (
                                 <span className="text-xs text-zinc-500">
-					Complete .eml stored
+					{dict?.mailbox?.completeEmlStored ?? "Complete .eml stored"}
 				</span>
                             )}
                         </div>
@@ -438,7 +442,7 @@ export default function RawPane({
                                     <Clipboard className="mr-2 size-4" />
                                 )}
 
-                                {copied ? "Copied" : "Copy preview"}
+                                {copied ? (dict?.mailbox?.copied ?? "Copied") : (dict?.mailbox?.copyPreview ?? "Copy preview")}
                             </Button>
 
                             {message.rawStorageKey && onDownloadRaw && (
@@ -451,7 +455,7 @@ export default function RawPane({
                                     onClick={downloadRaw}
                                 >
                                     <Download className="mr-2 size-4" />
-                                    {downloading ? "Downloading…" : "Download .eml"}
+                                    {downloading ? (dict?.mailbox?.downloadingEllipsis ?? "Downloading…") : (dict?.mailbox?.downloadEml ?? "Download .eml")}
                                 </Button>
                             )}
                         </div>

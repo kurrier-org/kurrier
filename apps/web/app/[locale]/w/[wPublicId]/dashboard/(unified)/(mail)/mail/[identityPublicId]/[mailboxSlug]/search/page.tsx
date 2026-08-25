@@ -1,25 +1,30 @@
+import { PAGE_SIZE } from "@common/mail-client";
+import { getPublicEnv, type ThreadHit } from "@schema";
+import SearchPagination from "@/components/mailbox/default/search-pagination";
+import WebmailListLabelSearch from "@/components/mailbox/default/webmail-list-label-search";
+import { getWorkspacePublicId } from "@/lib/actions/clients";
 import {
+	fetchLabelsByIdentityPublicId,
+	fetchMailboxThreadLabels,
+} from "@/lib/actions/labels";
+import {
+	type FetchMailboxThreadsByIdsResult,
 	fetchIdentityMailboxList,
 	fetchMailbox,
-	FetchMailboxThreadsByIdsResult,
 	fetchMailboxThreadsList,
 	initSearch,
 } from "@/lib/actions/mailbox";
-import {fetchLabelsByIdentityPublicId, fetchMailboxThreadLabels} from "@/lib/actions/labels";
-import { getPublicEnv, ThreadHit } from "@schema";
-import SearchPagination from "@/components/mailbox/default/search-pagination";
-import { PAGE_SIZE } from "@common/mail-client";
-import WebmailListLabelSearch from "@/components/mailbox/default/webmail-list-label-search";
-import {getWorkspacePublicId} from "@/lib/actions/clients";
+import { getDictionary, type Locale } from "@/lib/dictionaries";
 
 export default async function SearchPage({
-											 params,
-											 searchParams,
-										 }: {
-	params: {mailboxSlug: string; identityPublicId: string };
+	params,
+	searchParams,
+}: {
+	params: { mailboxSlug: string; identityPublicId: string; locale: Locale };
 	searchParams: Record<string, string | string[] | undefined>;
 }) {
-	const { identityPublicId, mailboxSlug } = await params;
+	const { identityPublicId, mailboxSlug, locale } = await params;
+	const dict = await getDictionary(locale);
 	const resolvedSearchParams = await searchParams;
 
 	const q = (resolvedSearchParams.q as string) ?? "";
@@ -28,12 +33,12 @@ export default async function SearchPage({
 	const starred = (resolvedSearchParams.starred as string) === "1";
 	const page = Math.max(1, Number((resolvedSearchParams.page as string) ?? 1));
 
-	const workspacePublicId = await getWorkspacePublicId()
+	const workspacePublicId = await getWorkspacePublicId();
 
 	if (!workspacePublicId) {
 		return (
 			<div className="p-4 text-sm text-muted-foreground">
-				Missing workspace context.
+				{dict.mailbox.missingWorkspaceContext}
 			</div>
 		);
 	}
@@ -84,37 +89,36 @@ export default async function SearchPage({
 	return (
 		<div className="p-4 space-y-4">
 			<header className="flex items-center justify-between">
-				<h1 className="text-lg font-semibold">Search</h1>
+				<h1 className="text-lg font-semibold">{dict.mailbox.searchTitle}</h1>
 				<div className="text-sm text-muted-foreground">
 					{q.trim()
-						? `Threads: ${totalThreads} • Messages: ${totalMessages}`
-						: "Type a query to search"}
+						? `${dict.mailbox.threadsMessagesCountPrefix}${totalThreads}${dict.mailbox.messagesCountMiddle}${totalMessages}`
+						: dict.mailbox.typeQueryToSearch}
 				</div>
 			</header>
 
 			<div className="text-sm text-muted-foreground">
-				<span className="font-medium">Query:</span> “{q || "—"}” ·{" "}
-				<span className="font-medium">Has attachment:</span>{" "}
-				{has ? "Yes" : "No"} ·{" "}
-				<span className="font-medium">Unread only:</span>{" "}
-				{unread ? "Yes" : "No"} ·{" "}
-				<span className="font-medium">Starred only:</span>{" "}
-				{starred ? "Yes" : "No"}
+				<span className="font-medium">{dict.mailbox.queryLabel}</span> “
+				{q || "—"}” ·{" "}
+				<span className="font-medium">{dict.mailbox.hasAttachmentLabel}</span>{" "}
+				{has ? dict.common.yes : dict.common.no} ·{" "}
+				<span className="font-medium">{dict.mailbox.unreadOnlyLabel}</span>{" "}
+				{unread ? dict.common.yes : dict.common.no} ·{" "}
+				<span className="font-medium">{dict.mailbox.starredOnlyLabel}</span>{" "}
+				{starred ? dict.common.yes : dict.common.no}
 			</div>
 
 			{!q.trim() ? (
 				<div className="text-sm text-muted-foreground">
-					Use the global search box above to run a query.
+					{dict.mailbox.useGlobalSearchBox}
 				</div>
 			) : items.length === 0 ? (
 				<div className="text-sm text-muted-foreground">
-					No results found.
+					{dict.mailbox.noResultsFound}
 				</div>
 			) : (
 				<WebmailListLabelSearch
-					mailboxThreads={
-						threads as FetchMailboxThreadsByIdsResult["threads"]
-					}
+					mailboxThreads={threads as FetchMailboxThreadsByIdsResult["threads"]}
 					workspacePublicId={workspacePublicId}
 					publicConfig={publicConfig}
 					activeMailbox={activeMailbox}
