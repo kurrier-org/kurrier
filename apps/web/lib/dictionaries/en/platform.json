@@ -355,6 +355,8 @@
 	"separateLoginsBadge": "Separate logins",
 	"connectProviderPrefix": "Connect ",
 	"addAccount": "Add account",
+	"addMailbox": "Add mailbox",
+	"connectMailbox": "Connect mailbox",
 	"mailboxEmail": "Mailbox email",
 	"mailboxEmailUsedForBothHelp": "Used as the username for both SMTP and IMAP.",
 	"mailboxEmailUsedForSmtpHelp": "Used as the SMTP username.",
@@ -364,5 +366,9 @@
 	"customProviderIncomingMailTitle": "Incoming mail",
 	"customProviderSeparateImapHelp": "This provider uses separate IMAP credentials.",
 	"customProviderImapUsername": "IMAP username",
-	"customProviderImapPassword": "IMAP password"
+	"customProviderImapPassword": "IMAP password",
+	"customProviderMailboxIdentityTitle": "Mailbox identity",
+	"customProviderMailboxIdentityHelp": "Kurrier will create the email identity and start syncing its mailboxes automatically.",
+	"customProviderDisplayNamePlaceholder": "Your name",
+	"customProviderDisplayNameHelp": "Shown to recipients when you send email."
 }

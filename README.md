@@ -84,6 +84,24 @@ Kurrier lets you:
 
 Whether you're running a personal server, a small-business mail setup, or a multi-domain environment, Kurrier gives you a **beautiful unified interface** without losing control of your data.
 
+### 📮 How mailbox connections work
+
+Kurrier keeps three email concepts separate internally:
+
+- an **SMTP/IMAP account** stores the encrypted connection credentials;
+- an **email identity** represents the address and display name used to send mail;
+- **mailboxes** are the Inbox, Sent, Trash, and other folders discovered from IMAP.
+
+For an instance-configured custom provider with IMAP, Kurrier creates all three
+as one **Add mailbox** flow. It verifies the connection before creating the
+email identity, then starts mailbox synchronization automatically.
+SMTP-only presets still create an account without an inbox, while the manual
+Generic SMTP and Identity screens remain available for aliases and advanced
+configurations.
+
+Mailbox discovery and synchronization are handled by the worker service, so the
+worker must be running when an IMAP mailbox is connected.
+
 ---
 
 ## 💡 Why Kurrier?
