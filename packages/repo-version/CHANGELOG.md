@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 3.9.0
+
+### Minor Changes
+
+- [`4baf594`](https://github.com/kurrier-org/kurrier/commit/4baf594415154632d7431fc5a6bbd14c8d5d738f) Thanks [@krokhale](https://github.com/krokhale)! - Harden IMAP sync and connection lifecycle, add one-step custom provider mailbox setup, improve mobile mailbox navigation, complete pt-BR localization, refactor SMTP account handling, and add JMAP provider documentation.
+
 ## 3.8.1
 
 ### Patch Changes
