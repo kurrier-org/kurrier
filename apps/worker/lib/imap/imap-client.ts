@@ -2,76 +2,37 @@ import { db, decryptAdminSecrets, identities, smtpAccountSecrets } from "@db";
 import { eq } from "drizzle-orm";
 import { ImapFlow } from "imapflow";
 
-const retryCounts = new Map<string, number>();
-const reconnectTimers = new Map<string, NodeJS.Timeout>();
-const MAX_RETRIES = 5;
-const BASE_DELAY = 5000;
-
-function safeReconnect(
-	identityId: string,
-	imapInstances: Map<string, ImapFlow>,
-) {
-	const currentRetries = retryCounts.get(identityId) ?? 0;
-
-	if (currentRetries >= MAX_RETRIES) {
-		console.error(`[IMAP:${identityId}] Max retries reached. Cooling down.`);
-		return;
-	}
-
-	const delay = BASE_DELAY * (currentRetries + 1);
-	retryCounts.set(identityId, currentRetries + 1);
-
-	const existing = imapInstances.get(identityId);
-	if (existing) {
-		try {
-			existing.removeAllListeners();
-			existing.logout().catch(() => {});
-		} catch {}
-		imapInstances.delete(identityId);
-	}
-
-	if (reconnectTimers.has(identityId)) {
-		clearTimeout(reconnectTimers.get(identityId)!);
-	}
-
-	const timer = setTimeout(() => {
-		reconnectTimers.delete(identityId);
-		initSmtpClient(identityId, imapInstances).catch(console.error);
-	}, delay);
-
-	reconnectTimers.set(identityId, timer);
-}
-
 export const initSmtpClient = async (
 	identityId: string,
 	imapInstances: Map<string, ImapFlow>,
 ) => {
-	try {
-		const existing = imapInstances.get(identityId);
-		if (existing && existing.authenticated && existing.usable) {
-			return existing;
-		}
+	const existing = imapInstances.get(identityId);
 
-		if (existing) {
-			try {
-				existing.removeAllListeners();
-				existing.logout().catch(() => {});
-			} catch {}
-			imapInstances.delete(identityId);
+	if (existing?.authenticated && existing?.usable) {
+		return existing;
+	}
+	if (existing) {
+		imapInstances.delete(identityId);
+
+		try {
+			existing.removeAllListeners();
+			existing.close();
+		} catch (err) {
+			console.warn(
+				`[IMAP:${identityId}] Failed to close stale client`,
+				err,
+			);
 		}
-	} catch (err) {
-		console.error(`[IMAP:${identityId}] Existing instance check failed`, err);
-		safeReconnect(identityId, imapInstances);
-		return;
 	}
 
 	try {
 		const [identity] = await db
 			.select()
 			.from(identities)
-			.where(eq(identities.id, identityId));
+			.where(eq(identities.id, identityId))
+			.limit(1);
 
-		if (!identity || !identity.smtpAccountId) {
+		if (!identity?.smtpAccountId) {
 			return;
 		}
 
@@ -89,71 +50,93 @@ export const initSmtpClient = async (
 
 		const client = new ImapFlow({
 			host: credentials.IMAP_HOST,
-			port: credentials.IMAP_PORT,
+			port: Number(credentials.IMAP_PORT),
 			secure:
-				credentials.IMAP_SECURE === "true" || credentials.IMAP_SECURE === true,
+				credentials.IMAP_SECURE === "true" ||
+				credentials.IMAP_SECURE === true,
+
 			auth: {
 				user: credentials.IMAP_USERNAME,
 				pass: credentials.IMAP_PASSWORD,
 			},
+
+			/*
+			 * Keep this unchanged for now.
+			 *
+			 * We'll deal with timeout behavior separately once the
+			 * reconnect ownership issue is fixed.
+			 */
 			socketTimeout: 60_000,
+
 			logger: {
 				error(data: any) {
-					console.error(`[IMAP:${identityId}]`, data.msg ?? data);
+					console.error(
+						`[IMAP:${identityId}]`,
+						data?.msg ?? data,
+					);
 				},
-				warn() {},
+				warn(data: any) {
+					console.warn(
+						`[IMAP:${identityId}]`,
+						data?.msg ?? data,
+					);
+				},
 				info() {},
 				debug() {},
 			},
+
 			logRaw: false,
+		});
+
+		/*
+		 * Register lifecycle handlers before connecting so we don't
+		 * miss an early close/error event.
+		 */
+		client.once("close", () => {
+			/*
+			 * Only remove this client if it is still the active client.
+			 * A newer connection may already have replaced it.
+			 */
+			if (imapInstances.get(identityId) === client) {
+				imapInstances.delete(identityId);
+			}
+
+			console.warn(`[IMAP:${identityId}] Disconnected (close)`);
+		});
+
+		client.once("error", (err) => {
+			console.error(`[IMAP:${identityId}] Error:`, err);
+
+			if (imapInstances.get(identityId) === client) {
+				imapInstances.delete(identityId);
+			}
 		});
 
 		try {
 			await client.connect();
-			retryCounts.set(identityId, 0);
 		} catch (err) {
-			console.error(`[IMAP:${identityId}] connect() failed:`, err);
-			safeReconnect(identityId, imapInstances);
-			return;
+			console.error(
+				`[IMAP:${identityId}] connect() failed:`,
+				err,
+			);
+
+			if (imapInstances.get(identityId) === client) {
+				imapInstances.delete(identityId);
+			}
+
+			try {
+				client.removeAllListeners();
+				client.close();
+			} catch {}
+
+			throw err;
 		}
 
 		imapInstances.set(identityId, client);
 
-		const noopInterval = setInterval(async () => {
-			try {
-				if (client.usable) {
-					await client.noop();
-				} else {
-					throw new Error("Client not usable");
-				}
-			} catch (err) {
-				console.error(`[IMAP:${identityId}] NOOP failed:`, err);
-				clearInterval(noopInterval);
-				safeReconnect(identityId, imapInstances);
-			}
-		}, 5 * 60 * 1000);
-
-		const cleanup = (reason: string) => {
-			clearInterval(noopInterval);
-			try {
-				client.removeAllListeners();
-				client.logout().catch(() => {});
-			} catch {}
-			imapInstances.delete(identityId);
-			console.warn(`[IMAP:${identityId}] Disconnected (${reason})`);
-			safeReconnect(identityId, imapInstances);
-		};
-
-		client.once("close", () => cleanup("close"));
-		client.once("error", (err) => {
-			console.error(`[IMAP:${identityId}] Error:`, err);
-			cleanup("error");
-		});
-
 		return client;
 	} catch (err) {
 		console.error(`[IMAP:${identityId}] init failed`, err);
-		safeReconnect(identityId, imapInstances);
-		return;
+		throw err;
 	}
 };
