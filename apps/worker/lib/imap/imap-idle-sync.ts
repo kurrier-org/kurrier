@@ -1,15 +1,17 @@
 import { db, identities, mailboxes, mailboxThreads, messages } from "@db";
 import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { initSmtpClient } from "./imap-client";
-import type { ImapFlow } from "imapflow";
-import type { FlagsEvent } from "imapflow";
+import type { FlagsEvent, ImapFlow } from "imapflow";
 import { deltaFetch } from "../../lib/imap/imap-delta-fetch";
-
 
 const MAX_RECONNECT_ATTEMPTS = 5;
 const RECONNECT_BACKOFFS_MS = [5000, 10000, 20000, 40000, 80000];
-const reconnectAttempts = new Map<string, number>();
 
+const reconnectAttempts = new Map<string, number>();
+const reconnectTimers = new Map<string, NodeJS.Timeout>();
+const stoppedIdentities = new Set<string>();
+
+let realtimeShuttingDown = false;
 
 async function handleFlagsUpdate(
 	identityId: string,
@@ -58,10 +60,11 @@ async function handleFlagsUpdate(
 			return;
 		}
 
-		if (message.flagged === isFlagged && message.seen === isSeen) {
-			console.log(
-				`[realtime:${identityId}] message ${message.id} already flagged=${isFlagged} seen=${isSeen}, skipping`,
-			);
+		if (
+			message.flagged === isFlagged &&
+			message.seen === isSeen &&
+			message.answered === isAnswered
+		) {
 			return;
 		}
 
@@ -79,8 +82,12 @@ async function handleFlagsUpdate(
 
 		const [agg] = await tx
 			.select({
-				unreadCount: sql<number>`count(*) filter (where ${messages.seen} = false)`,
-				anyFlagged: sql<boolean>`bool_or(${messages.flagged})`,
+				unreadCount: sql<number>`
+					count(*) filter (where ${messages.seen} = false)
+				`,
+				anyFlagged: sql<boolean>`
+					bool_or(${messages.flagged})
+				`,
 			})
 			.from(messages)
 			.where(
@@ -93,8 +100,8 @@ async function handleFlagsUpdate(
 		await tx
 			.update(mailboxThreads)
 			.set({
-				unreadCount: agg?.unreadCount ?? 0,
-				starred: agg?.anyFlagged ?? false,
+				unreadCount: Number(agg?.unreadCount ?? 0),
+				starred: Boolean(agg?.anyFlagged ?? false),
 				updatedAt: now,
 			})
 			.where(
@@ -103,10 +110,6 @@ async function handleFlagsUpdate(
 					eq(mailboxThreads.mailboxId, mailbox.id),
 				),
 			);
-
-		console.log(
-			`[realtime:${identityId}] updated mailboxThread for thread=${message.threadId} mailbox=${mailbox.id} unread=${agg?.unreadCount ?? 0} starred=${agg?.anyFlagged ?? false}`,
-		);
 	});
 }
 
@@ -154,13 +157,21 @@ async function handleExpunge(
 			return;
 		}
 
-		await tx.delete(messages).where(eq(messages.id, message.id));
+		await tx
+			.delete(messages)
+			.where(eq(messages.id, message.id));
 
 		const [agg] = await tx
 			.select({
-				unreadCount: sql<number>`count(*) filter (where ${messages.seen} = false)`,
-				anyFlagged: sql<boolean>`bool_or(${messages.flagged})`,
-				messageCount: sql<number>`count(*)`,
+				unreadCount: sql<number>`
+					count(*) filter (where ${messages.seen} = false)
+				`,
+				anyFlagged: sql<boolean>`
+					bool_or(${messages.flagged})
+				`,
+				messageCount: sql<number>`
+					count(*)
+				`,
 			})
 			.from(messages)
 			.where(
@@ -170,7 +181,7 @@ async function handleExpunge(
 				),
 			);
 
-		const remainingCount = agg?.messageCount ?? 0;
+		const remainingCount = Number(agg?.messageCount ?? 0);
 
 		if (remainingCount === 0) {
 			await tx
@@ -185,8 +196,8 @@ async function handleExpunge(
 			await tx
 				.update(mailboxThreads)
 				.set({
-					unreadCount: agg?.unreadCount ?? 0,
-					starred: agg?.anyFlagged ?? false,
+					unreadCount: Number(agg?.unreadCount ?? 0),
+					starred: Boolean(agg?.anyFlagged ?? false),
 					updatedAt: new Date(),
 				})
 				.where(
@@ -196,10 +207,6 @@ async function handleExpunge(
 					),
 				);
 		}
-
-		console.log(
-			`[realtime:${identityId}] expunge updated mailboxThreads for thread=${message.threadId} mailbox=${mailbox.id} remaining=${remainingCount}`,
-		);
 	});
 }
 
@@ -208,90 +215,213 @@ function attachRealtimeEventHandlers(
 	client: ImapFlow,
 	imapInstances: Map<string, ImapFlow>,
 ) {
-	client.on("exists", async (mailbox) => {
-		await deltaFetch(identityId, imapInstances);
+	client.on("exists", () => {
+		if (realtimeShuttingDown || stoppedIdentities.has(identityId)) {
+			return;
+		}
+
+		void deltaFetch(identityId, imapInstances).catch((err) => {
+			console.error(
+				`[realtime:${identityId}] delta fetch after EXISTS failed`,
+				err,
+			);
+		});
 	});
 
-	client.on("flags", async (ev: FlagsEvent) => {
-		let uid = (ev as any).uid as number | undefined;
-		if (!uid) {
-			const msg = await client.fetchOne(ev.seq, { uid: true });
-			if (msg) {
-				uid = msg.uid;
+	client.on("flags", (ev: FlagsEvent) => {
+		if (realtimeShuttingDown || stoppedIdentities.has(identityId)) {
+			return;
+		}
+
+		void (async () => {
+			try {
+				let uid = (ev as any).uid as number | undefined;
+
+				if (!uid) {
+					const msg = await client.fetchOne(ev.seq, {
+						uid: true,
+					});
+
+					if (msg) {
+						uid = msg.uid;
+					}
+				}
+
+				if (!uid) {
+					console.warn(
+						`[realtime:${identityId}] could not resolve UID for seq=${ev.seq}`,
+					);
+					return;
+				}
+
+				await handleFlagsUpdate(
+					identityId,
+					uid,
+					ev.path,
+					ev.flags.has("\\Flagged"),
+					ev.flags.has("\\Seen"),
+					ev.flags.has("\\Answered"),
+				);
+			} catch (err) {
+				if (!realtimeShuttingDown) {
+					console.error(
+						`[realtime:${identityId}] flags handler failed`,
+						err,
+					);
+				}
 			}
-		}
-		if (!uid) {
-			console.warn(
-				`[realtime:${identityId}] could not resolve UID for seq=${ev.seq}`,
-			);
-			return;
-		}
-		const isFlagged = ev.flags.has("\\Flagged");
-		const isSeen = ev.flags.has("\\Seen");
-		const isAnswered = ev.flags.has("\\Answered");
-		await handleFlagsUpdate(
-			identityId,
-			uid,
-			ev.path,
-			isFlagged,
-			isSeen,
-			isAnswered,
-		);
+		})();
 	});
 
-	client.on("expunge", async (ev) => {
-		console.log(`[realtime:${identityId}] EXPUNGE event`, ev);
-		const uid = (ev as any).uid as number | undefined;
-		if (!uid) {
-			console.warn(
-				`[realtime:${identityId}] expunge: missing uid for seq=${ev.seq}`,
-			);
+	client.on("expunge", (ev) => {
+		if (realtimeShuttingDown || stoppedIdentities.has(identityId)) {
 			return;
 		}
 
-		await handleExpunge(identityId, ev.path, uid);
+		void (async () => {
+			try {
+				const uid = (ev as any).uid as number | undefined;
+
+				if (!uid) {
+					console.warn(
+						`[realtime:${identityId}] expunge: missing uid for seq=${ev.seq}`,
+					);
+					return;
+				}
+
+				await handleExpunge(
+					identityId,
+					ev.path,
+					uid,
+				);
+			} catch (err) {
+				if (!realtimeShuttingDown) {
+					console.error(
+						`[realtime:${identityId}] expunge handler failed`,
+						err,
+					);
+				}
+			}
+		})();
 	});
 }
 
-async function idleForever(identityId: string, client: ImapFlow, idleImapInstances: Map<string, ImapFlow>, imapInstances: Map<string, ImapFlow>) {
-	console.log(`[realtime:${identityId}] entering idle loop...`);
-	while (client.authenticated && client.usable) {
-		try {
-			await client.idle();
-			reconnectAttempts.set(identityId, 0);
-		} catch (err) {
-			console.error(`[realtime:${identityId}] idle error`, err);
-		}
-	}
-	console.warn(`[realtime:${identityId}] idle loop ended (client closed)`);
+function clearReconnectTimer(identityId: string) {
+	const timer = reconnectTimers.get(identityId);
 
-	const attempts = reconnectAttempts.get(identityId) ?? 0;
-	if (attempts >= MAX_RECONNECT_ATTEMPTS) {
-		console.error(`[realtime:${identityId}] reconnect cap reached, giving up`);
+	if (timer) {
+		clearTimeout(timer);
+		reconnectTimers.delete(identityId);
+	}
+}
+
+function scheduleReconnect(
+	identityId: string,
+	idleImapInstances: Map<string, ImapFlow>,
+	imapInstances: Map<string, ImapFlow>,
+) {
+	if (realtimeShuttingDown) {
 		return;
 	}
 
-	const backoffMs = RECONNECT_BACKOFFS_MS[attempts];
+	if (stoppedIdentities.has(identityId)) {
+		return;
+	}
+
+	if (reconnectTimers.has(identityId)) {
+		return;
+	}
+
+	const attempts = reconnectAttempts.get(identityId) ?? 0;
+
+	if (attempts >= MAX_RECONNECT_ATTEMPTS) {
+		console.error(
+			`[realtime:${identityId}] reconnect cap reached; stopping automatic reconnect`,
+		);
+		return;
+	}
+
+	const backoffMs =
+		RECONNECT_BACKOFFS_MS[
+			Math.min(
+				attempts,
+				RECONNECT_BACKOFFS_MS.length - 1,
+			)
+			];
+
 	reconnectAttempts.set(identityId, attempts + 1);
 
-	try {
-		await client.logout();
-	} catch {}
-	idleImapInstances.delete(identityId);
-
-	console.log(
-		`[realtime:${identityId}] reconnecting in ${backoffMs / 1000}s (attempt ${attempts + 1}/${MAX_RECONNECT_ATTEMPTS})`,
+	console.warn(
+		`[realtime:${identityId}] reconnecting in ${backoffMs / 1000}s ` +
+		`(attempt ${attempts + 1}/${MAX_RECONNECT_ATTEMPTS})`,
 	);
 
-	setTimeout(() => {
-		startRealtimeForIdentity(
+	const timer = setTimeout(() => {
+		reconnectTimers.delete(identityId);
+
+		if (
+			realtimeShuttingDown ||
+			stoppedIdentities.has(identityId)
+		) {
+			return;
+		}
+
+		void startRealtimeForIdentity(
 			identityId,
 			idleImapInstances,
 			imapInstances,
-		).catch((err) =>
-			console.error(`[realtime:${identityId}] reconnect failed`, err),
-		);
+			true,
+		).catch((err) => {
+			console.error(
+				`[realtime:${identityId}] reconnect attempt failed`,
+				err,
+			);
+
+			scheduleReconnect(
+				identityId,
+				idleImapInstances,
+				imapInstances,
+			);
+		});
 	}, backoffMs);
+
+	reconnectTimers.set(identityId, timer);
+}
+
+async function idleForever(
+	identityId: string,
+	client: ImapFlow,
+) {
+	console.log(
+		`[realtime:${identityId}] entering idle loop`,
+	);
+
+	while (
+		!realtimeShuttingDown &&
+		!stoppedIdentities.has(identityId) &&
+		client.authenticated &&
+		client.usable
+		) {
+		try {
+			await client.idle();
+		} catch (err) {
+			if (
+				!realtimeShuttingDown &&
+				!stoppedIdentities.has(identityId)
+			) {
+				console.error(
+					`[realtime:${identityId}] IDLE failed`,
+					err,
+				);
+			}
+
+			break;
+		}
+	}
+
+	console.warn(
+		`[realtime:${identityId}] idle loop ended`,
+	);
 }
 
 async function startRealtimeSyncForIdentity(
@@ -300,15 +430,71 @@ async function startRealtimeSyncForIdentity(
 	idleImapInstances: Map<string, ImapFlow>,
 	imapInstances: Map<string, ImapFlow>,
 ) {
+	let lock: Awaited<
+		ReturnType<ImapFlow["getMailboxLock"]>
+	> | null = null;
+
 	try {
-		await client.getMailboxLock("INBOX");
-		attachRealtimeEventHandlers(identityId, client, imapInstances);
-		idleForever(identityId, client, idleImapInstances, imapInstances);
-	} catch (err) {
-		console.error(
-			`[realtime:${identityId}] failed to start realtime sync`,
-			err,
+		lock = await client.getMailboxLock("INBOX");
+
+		if (
+			realtimeShuttingDown ||
+			stoppedIdentities.has(identityId)
+		) {
+			return;
+		}
+
+		attachRealtimeEventHandlers(
+			identityId,
+			client,
+			imapInstances,
 		);
+
+		/*
+		 * A connection which successfully entered realtime is healthy.
+		 */
+		reconnectAttempts.set(identityId, 0);
+
+		await idleForever(
+			identityId,
+			client,
+		);
+	} catch (err) {
+		if (
+			!realtimeShuttingDown &&
+			!stoppedIdentities.has(identityId)
+		) {
+			console.error(
+				`[realtime:${identityId}] realtime sync failed`,
+				err,
+			);
+		}
+	} finally {
+		if (lock) {
+			try {
+				lock.release();
+			} catch {}
+		}
+
+		if (idleImapInstances.get(identityId) === client) {
+			idleImapInstances.delete(identityId);
+		}
+
+		try {
+			client.removeAllListeners();
+			client.close();
+		} catch {}
+
+		if (
+			!realtimeShuttingDown &&
+			!stoppedIdentities.has(identityId)
+		) {
+			scheduleReconnect(
+				identityId,
+				idleImapInstances,
+				imapInstances,
+			);
+		}
 	}
 }
 
@@ -316,27 +502,113 @@ export async function startRealtimeForIdentity(
 	identityId: string,
 	idleImapInstances: Map<string, ImapFlow>,
 	imapInstances: Map<string, ImapFlow>,
+	isReconnect = false,
 ) {
-	const client = await initSmtpClient(identityId, idleImapInstances);
-	if (!client?.authenticated || !client?.usable) {
-		console.log(`[startRealtimeForIdentity] identity=${identityId} not usable`);
+	if (realtimeShuttingDown) {
 		return;
 	}
 
-	if ((client as any).__kurrierRealtimeStarted) {
+	/*
+	 * An explicit start means this identity is allowed to run again.
+	 * A reconnect does not alter stop/start state.
+	 */
+	if (!isReconnect) {
+		stoppedIdentities.delete(identityId);
+		reconnectAttempts.set(identityId, 0);
+		clearReconnectTimer(identityId);
+	}
+
+	if (stoppedIdentities.has(identityId)) {
+		return;
+	}
+
+	const existing = idleImapInstances.get(identityId);
+
+	if (
+		existing?.authenticated &&
+		existing?.usable &&
+		(existing as any).__kurrierRealtimeStarted
+	) {
 		console.log(
-			`[startRealtimeForIdentity] identity=${identityId} realtime already active`,
+			`[realtime:${identityId}] realtime already active`,
 		);
 		return;
 	}
 
+	let client: ImapFlow | undefined;
+
+	try {
+		client = await initSmtpClient(
+			identityId,
+			idleImapInstances,
+		);
+	} catch (err) {
+		if (!realtimeShuttingDown) {
+			console.error(
+				`[realtime:${identityId}] failed to initialize IMAP client`,
+				err,
+			);
+
+			scheduleReconnect(
+				identityId,
+				idleImapInstances,
+				imapInstances,
+			);
+		}
+
+		return;
+	}
+
+	if (
+		realtimeShuttingDown ||
+		stoppedIdentities.has(identityId)
+	) {
+		if (client) {
+			try {
+				client.removeAllListeners();
+				client.close();
+			} catch {}
+		}
+
+		return;
+	}
+
+	if (!client?.authenticated || !client?.usable) {
+		console.warn(
+			`[realtime:${identityId}] IMAP client not usable`,
+		);
+
+		scheduleReconnect(
+			identityId,
+			idleImapInstances,
+			imapInstances,
+		);
+
+		return;
+	}
+
+	if ((client as any).__kurrierRealtimeStarted) {
+		return;
+	}
+
 	(client as any).__kurrierRealtimeStarted = true;
-	await startRealtimeSyncForIdentity(
+
+	/*
+	 * Do not await the lifetime of the IDLE connection.
+	 */
+	void startRealtimeSyncForIdentity(
 		identityId,
 		client,
 		idleImapInstances,
 		imapInstances,
-	);
+	).catch((err) => {
+		if (!realtimeShuttingDown) {
+			console.error(
+				`[realtime:${identityId}] realtime task failed`,
+				err,
+			);
+		}
+	});
 }
 
 export async function stopRealtimeForIdentity(
@@ -344,25 +616,63 @@ export async function stopRealtimeForIdentity(
 	idleImapInstances: Map<string, ImapFlow>,
 	imapInstances: Map<string, ImapFlow>,
 ) {
+	/*
+	 * Mark stopped before touching either connection.
+	 */
+	stoppedIdentities.add(identityId);
+
+	clearReconnectTimer(identityId);
+	reconnectAttempts.delete(identityId);
+
 	const idleClient = idleImapInstances.get(identityId);
 	const cmdClient = imapInstances.get(identityId);
 
+	idleImapInstances.delete(identityId);
+	imapInstances.delete(identityId);
+
 	if (idleClient) {
 		try {
+			idleClient.removeAllListeners();
 			await idleClient.logout();
-		} catch {}
-		idleImapInstances.delete(identityId);
+		} catch {
+			try {
+				idleClient.close();
+			} catch {}
+		}
 	}
 
-	if (cmdClient) {
+	if (cmdClient && cmdClient !== idleClient) {
 		try {
+			cmdClient.removeAllListeners();
 			await cmdClient.logout();
-		} catch {}
-		imapInstances.delete(identityId);
+		} catch {
+			try {
+				cmdClient.close();
+			} catch {}
+		}
 	}
 
 	console.log(
-		`[kurrier] Stopped realtime + command IMAP clients for identity ${identityId}`,
+		`[realtime:${identityId}] stopped realtime + command IMAP clients`,
+	);
+}
+
+export function beginRealtimeShutdown() {
+	if (realtimeShuttingDown) {
+		return;
+	}
+
+	realtimeShuttingDown = true;
+
+	for (const timer of reconnectTimers.values()) {
+		clearTimeout(timer);
+	}
+
+	reconnectTimers.clear();
+	reconnectAttempts.clear();
+
+	console.log(
+		"[realtime] shutdown started; reconnects disabled",
 	);
 }
 
@@ -370,6 +680,9 @@ export const imapIdleSync = async (
 	idleImapInstances: Map<string, ImapFlow>,
 	imapInstances: Map<string, ImapFlow>,
 ) => {
+	if (realtimeShuttingDown) {
+		return;
+	}
 
 	const identityRows = await db
 		.select()
@@ -377,6 +690,10 @@ export const imapIdleSync = async (
 		.where(isNotNull(identities.smtpAccountId));
 
 	for (const identity of identityRows) {
+		if (realtimeShuttingDown) {
+			break;
+		}
+
 		await startRealtimeForIdentity(
 			identity.id,
 			idleImapInstances,
