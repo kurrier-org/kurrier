@@ -30,6 +30,12 @@ const COPY: Record<
 		retry: "Try again",
 		back: "Back to Kurrier",
 	},
+	ru: {
+		title: "Что-то пошло не так",
+		body: "Произошла непредвиденная ошибка. Попробуйте ещё раз или вернитесь на главную страницу.",
+		retry: "Попробовать снова",
+		back: "Вернуться в Kurrier",
+	},
 };
 
 export default function GlobalError({
