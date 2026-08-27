@@ -1,6 +1,7 @@
 {
 	"connectedProviders": "Connected Providers",
 	"sendingAndStorageIntegrations": "Sending and storage integrations",
+	"connectedIntegrations": "Connected integrations",
 	"activeIdentities": "Active Identities",
 	"mailboxesAndSenders": "Mailboxes and senders",
 	"messagesStored": "Messages Stored",
@@ -31,6 +32,7 @@
 	"workspaceOverview": "Workspace overview",
 	"welcomeTo": "Welcome to",
 	"ownerOverviewSubtitle": "Track setup, mail volume, stored messages, Drive files and workspace storage from one place.",
+	"ownerMailOverviewSubtitle": "Track setup, mail volume and stored messages from one place.",
 	"memberOverviewSubtitle": "Track your accessible mail, threads, drafts and stored messages from one place.",
 	"addProvider": "Add Provider",
 	"createIdentity": "Create Identity",

@@ -1,6 +1,7 @@
 {
 	"connectedProviders": "Provedores conectados",
 	"sendingAndStorageIntegrations": "Integrações de envio e armazenamento",
+	"connectedIntegrations": "Integrações conectadas",
 	"activeIdentities": "Identidades ativas",
 	"mailboxesAndSenders": "Caixas de entrada e remetentes",
 	"messagesStored": "Mensagens armazenadas",
@@ -31,6 +32,7 @@
 	"workspaceOverview": "Visão geral do workspace",
 	"welcomeTo": "Bem-vindo ao",
 	"ownerOverviewSubtitle": "Acompanhe a configuração, o volume de e-mail, as mensagens armazenadas, os arquivos do Drive e o armazenamento do workspace em um só lugar.",
+	"ownerMailOverviewSubtitle": "Acompanhe a configuração, o volume de e-mail e as mensagens armazenadas em um só lugar.",
 	"memberOverviewSubtitle": "Acompanhe seus e-mails, conversas, rascunhos e mensagens armazenadas acessíveis em um só lugar.",
 	"addProvider": "Adicionar provedor",
 	"createIdentity": "Criar identidade",

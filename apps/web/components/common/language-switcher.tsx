@@ -22,6 +22,7 @@ const LOCALE_LABELS: Record<Locale, string> = {
 	en: "English",
 	ko: "한국어",
 	"pt-BR": "Português (Brasil)",
+	ru: "Русский",
 };
 
 const locales = Object.keys(LOCALE_LABELS) as Locale[];

@@ -32,11 +32,11 @@ import { SITE_FEATURES } from "@/lib/site-features";
 
 const jakartaSans = Plus_Jakarta_Sans({
 	variable: "--font-sans",
-	subsets: ["latin"],
+	subsets: ["cyrillic-ext", "latin"],
 });
 const jetbrains = JetBrains_Mono({
 	variable: "--font-mono",
-	subsets: ["latin"],
+	subsets: ["cyrillic", "latin"],
 });
 
 export const metadata: Metadata = {
