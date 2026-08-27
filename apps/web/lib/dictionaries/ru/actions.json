@@ -1,0 +1,69 @@
+{
+	"auth": {
+		"missingCredentials": "Укажите адрес электронной почты и пароль",
+		"invalidCredentials": "Неверные учётные данные",
+		"loggedIn": "Вход выполнен",
+		"accountAlreadyExists": "Учётная запись с таким адресом уже существует",
+		"welcome": "Добро пожаловать",
+		"signupDisabled": "Регистрация сейчас отключена. Обратитесь к администратору."
+	},
+	"contacts": {
+		"noDefaultAddressBook": "Для пользователя не найдена адресная книга по умолчанию."
+	},
+	"calendar": {
+		"missingCalendarId": "Не указан calendarId",
+		"failedToPersistEvent": "Не удалось сохранить событие календаря"
+	},
+	"drive": {
+		"folderNameRequired": "Укажите название папки",
+		"missingVolume": "Не указан том",
+		"volumeNotFound": "Том не найден",
+		"invalidVolumeType": "Недопустимый тип тома",
+		"cloudVolumeMissingBucket": "Для облачного тома не указан бакет",
+		"folderCreated": "Папка создана",
+		"deletedFolder": "Папка удалена",
+		"deletedFile": "Файл удалён"
+	},
+	"labels": {
+		"invalidIdentity": "Недопустимый почтовый адрес"
+	},
+	"mailRules": {
+		"nameRequired": "Укажите название правила.",
+		"priorityNonNegative": "Приоритет должен быть неотрицательным числом.",
+		"atLeastOneCriteria": "Добавьте хотя бы одно условие.",
+		"atLeastOneAction": "Выберите хотя бы одно действие.",
+		"labelIdRequired": "Для действия «Применить метку» необходимо указать ID метки.",
+		"duplicateName": "Правило с таким названием уже существует для этого адреса.",
+		"nameMustBeUnique": "Название правила должно быть уникальным для этого адреса.",
+		"validationErrorsOccurred": "Обнаружены ошибки проверки.",
+		"missingRuleId": "Не указан ruleId"
+	},
+	"mailbox": {
+		"folderNameRequired": "Укажите название папки",
+		"invalidParentFolder": "Недопустимая родительская папка",
+		"subscriptionNotFound": "Подписка не найдена",
+		"displayNameUpdated": "Отображаемое имя обновлено."
+	},
+	"dashboard": {
+		"providerAccountUpdated": "Учётная запись провайдера обновлена",
+		"done": "Готово",
+		"noProviderSecretFound": "Для выбранного провайдера не найден секрет",
+		"unsupportedProviderType": "Провайдер отсутствует или его тип не поддерживается",
+		"failedToAddIdentity": "Не удалось добавить почтовый адрес",
+		"addedNewIdentity": "Почтовый адрес добавлен",
+		"mustAssignAtLeastOneMember": "Назначьте хотя бы одного участника",
+		"notSignedIn": "Вход не выполнен",
+		"googleAccountNotFound": "Учётная запись Google не найдена",
+		"googleAccountNotConnected": "Учётная запись Google не подключена",
+		"addedGoogleEmailIdentity": "Почтовый адрес Google добавлен",
+		"apiKeyCreated": "Ключ API создан",
+		"volumeNameRequired": "Укажите название тома",
+		"invalidVolumeName": "Недопустимое название тома",
+		"s3BucketNotConfigured": "Переменная S3_BUCKET не настроена",
+		"addedNewVolume": "Новый том добавлен",
+		"webhookCreated": "Вебхук создан"
+	},
+	"workspace": {
+		"updated": "Рабочее пространство обновлено"
+	}
+}

@@ -134,10 +134,54 @@ async function loadKo(): Promise<Dictionary> {
 	} as Dictionary;
 }
 
+async function loadRu(): Promise<Dictionary> {
+	const [
+		common,
+		auth,
+		mailbox,
+		platform,
+		contacts,
+		calendar,
+		drive,
+		dashboard,
+		validation,
+		actions,
+		vault,
+	] = await Promise.all([
+		import("@/lib/dictionaries/ru/common.json").then((m) => m.default),
+		import("@/lib/dictionaries/ru/auth.json").then((m) => m.default),
+		import("@/lib/dictionaries/ru/mailbox.json").then((m) => m.default),
+		import("@/lib/dictionaries/ru/platform.json").then((m) => m.default),
+		import("@/lib/dictionaries/ru/contacts.json").then((m) => m.default),
+		import("@/lib/dictionaries/ru/calendar.json").then((m) => m.default),
+		import("@/lib/dictionaries/ru/drive.json").then((m) => m.default),
+		import("@/lib/dictionaries/ru/dashboard.json").then((m) => m.default),
+		import("@/lib/dictionaries/ru/validation.json").then((m) => m.default),
+		import("@/lib/dictionaries/ru/actions.json").then((m) => m.default),
+		import("@/lib/dictionaries/ru/vault.json").then((m) => m.default),
+	]);
+
+	return {
+		locale: "ru",
+		common,
+		auth,
+		mailbox,
+		platform,
+		contacts,
+		calendar,
+		drive,
+		dashboard,
+		validation,
+		actions,
+		vault,
+	} as Dictionary;
+}
+
 const dictionaries: Record<Locale, () => Promise<Dictionary>> = {
 	en: loadEn,
 	"pt-BR": loadPtBr,
 	ko: loadKo,
+	ru: loadRu,
 };
 
 export type { Locale };

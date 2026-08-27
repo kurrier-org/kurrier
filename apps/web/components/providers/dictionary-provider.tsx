@@ -3,6 +3,7 @@
 import dayjs from "dayjs";
 import { createContext, useContext, useEffect } from "react";
 import "dayjs/locale/pt-br";
+import "dayjs/locale/ru";
 import type { Dictionary } from "@/lib/dictionaries";
 import { DAYJS_LOCALES } from "@/lib/locale";
 

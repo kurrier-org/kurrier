@@ -8,6 +8,7 @@ import Form from "next/form";
 import Link from "next/link";
 import type * as React from "react";
 import { useActionState } from "react";
+import { useSiteFeatures } from "@/components/providers/site-features-provider";
 import {
 	Card,
 	CardContent,
@@ -34,6 +35,8 @@ export function LoginForm({
 		genericName?: string;
 	};
 } & { dict: Dictionary }) {
+	const { localLogin } = useSiteFeatures();
+	const oidcEnabled = Boolean(oidc?.googleEnabled || oidc?.genericEnabled);
 	const [formState, formAction, isPending] = useActionState<
 		FormState,
 		FormData
@@ -44,7 +47,7 @@ export function LoginForm({
 			<Card>
 				<CardHeader className="text-center">
 					<CardTitle className="text-xl">{dict.auth.welcomeBack}</CardTitle>
-					{(oidc?.googleEnabled || oidc?.genericEnabled) && (
+					{oidcEnabled && (
 						<CardDescription>
 							{dict.auth.loginWithExistingAccount}
 						</CardDescription>
@@ -74,14 +77,16 @@ export function LoginForm({
 							{oidc?.genericName || "SSO"}
 						</Button>
 					)}
-					{!oidc?.googleEnabled && !oidc?.genericEnabled && (
+					{!oidcEnabled && (
 						<div className={"text-sm text-center"}>
-							{dict.auth.noOidcEnabled}
+							{localLogin
+								? dict.auth.noOidcEnabled
+								: dict.auth.noLoginMethodsEnabled}
 						</div>
 					)}
 				</CardHeader>
 
-				<CardContent>
+				<CardContent hidden={!localLogin}>
 					<Form action={formAction}>
 						<input type="hidden" name="locale" value={dict.locale} />
 						<div className="grid gap-6">
