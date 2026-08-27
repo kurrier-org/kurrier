@@ -113,3 +113,7 @@ export default async function RootLayout({
 		</html>
 	);
 }
+
+export function generateStaticParams() {
+	return [{ locale: "en" }];
+}

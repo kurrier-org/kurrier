@@ -1,4 +1,5 @@
-import React from "react";
+import React, { Suspense } from "react";
+import { connection } from "next/server";
 import { WeekGrid } from "@/components/dashboard/calendars/week-view";
 import {
 	eventsByDayWithAllDay,
@@ -13,29 +14,43 @@ import type { CalendarViewType } from "@schema";
 import DayGrid from "@/components/dashboard/calendars/day-view";
 import MonthGrid from "@/components/dashboard/calendars/month-view";
 import DefaultCalendarContext from "@/components/dashboard/calendars/default-calendar-context";
-import {getWorkspacePublicId} from "@/lib/actions/clients";
+import { getWorkspacePublicId } from "@/lib/actions/clients";
+import Loading from "@/app/loading";
 
-async function Page({
-	params,
-}: {
-	params: {
-		calendarPublicId: string;
-		view: string;
-		year: string;
-		month: string;
-		day: string;
-	};
+type PageParams = Promise<{
+	calendarPublicId: string;
+	view: string;
+	year: string;
+	month: string;
+	day: string;
+}>;
+
+async function CalendarContent({
+								   params,
+							   }: {
+	params: PageParams;
 }) {
+	await connection();
+
 	const resolvedParams = await params;
-	const defaultCalendar = await fetchDefaultCalendar(resolvedParams.calendarPublicId);
+
+	const defaultCalendar = await fetchDefaultCalendar(
+		resolvedParams.calendarPublicId,
+	);
 
 	const view: CalendarViewType =
 		(resolvedParams.view as CalendarViewType) || "week";
 
 	const viewParams = {
-		year: resolvedParams.year ? Number(resolvedParams.year) : undefined,
-		month: resolvedParams.month ? Number(resolvedParams.month) : undefined,
-		day: resolvedParams.day ? Number(resolvedParams.day) : undefined,
+		year: resolvedParams.year
+			? Number(resolvedParams.year)
+			: undefined,
+		month: resolvedParams.month
+			? Number(resolvedParams.month)
+			: undefined,
+		day: resolvedParams.day
+			? Number(resolvedParams.day)
+			: undefined,
 	};
 
 	const { from, to } = await getRangeForCalendarView(
@@ -60,52 +75,68 @@ async function Page({
 		defaultCalendar.timezone,
 	);
 
-	const { timedByDay, allDayByDay } = await eventsByDayWithAllDay(
-		defaultCalendar.timezone,
-		expandedEvents,
+	const { timedByDay, allDayByDay } =
+		await eventsByDayWithAllDay(
+			defaultCalendar.timezone,
+			expandedEvents,
+		);
+
+	const masterIds = Array.from(
+		new Set(expandedEvents.map((e) => e.id)),
 	);
 
-	const masterIds = Array.from(new Set(expandedEvents.map((e) => e.id)));
 	const attendees = await fetchEventAttendees(masterIds);
+
 	const attendeeIds = Object.values(attendees).flatMap((list) =>
 		list.map((a) => a.id),
 	);
+
 	const contacts = getContactsForAttendeeIds(attendeeIds);
 
 	const workspacePublicId = await getWorkspacePublicId();
-	return <>
-		<DefaultCalendarContext defaultCalendar={defaultCalendar}>
-			{
-				view === "week" ? (
-					<WeekGrid
-						events={expandedEvents}
-						byDayMap={timedByDay}
-						attendees={attendees}
-						attendeeContacts={contacts}
-						allDayByDay={allDayByDay}
-					/>
-				) : view === "month" ? (
-					<MonthGrid
-						events={expandedEvents}
-						byDayMap={timedByDay}
-						attendees={attendees}
-						attendeeContacts={contacts}
-						allDayByDay={allDayByDay}
-						workspacePublicId={workspacePublicId}
-					/>
-				) : (
-					<DayGrid
-						events={expandedEvents}
-						byDayMap={timedByDay}
-						attendees={attendees}
-						attendeeContacts={contacts}
-						allDayByDay={allDayByDay}
-					/>
-				)
-			}
 
+	return (
+		<DefaultCalendarContext defaultCalendar={defaultCalendar}>
+			{view === "week" ? (
+				<WeekGrid
+					events={expandedEvents}
+					byDayMap={timedByDay}
+					attendees={attendees}
+					attendeeContacts={contacts}
+					allDayByDay={allDayByDay}
+				/>
+			) : view === "month" ? (
+				<MonthGrid
+					events={expandedEvents}
+					byDayMap={timedByDay}
+					attendees={attendees}
+					attendeeContacts={contacts}
+					allDayByDay={allDayByDay}
+					workspacePublicId={workspacePublicId}
+				/>
+			) : (
+				<DayGrid
+					events={expandedEvents}
+					byDayMap={timedByDay}
+					attendees={attendees}
+					attendeeContacts={contacts}
+					allDayByDay={allDayByDay}
+				/>
+			)}
 		</DefaultCalendarContext>
-	</>
+	);
+}
+
+function Page({
+				  params,
+			  }: {
+	params: PageParams;
+}) {
+	return (
+		<Suspense fallback={<Loading />}>
+			<CalendarContent params={params} />
+		</Suspense>
+	);
 }
 
 export default Page;

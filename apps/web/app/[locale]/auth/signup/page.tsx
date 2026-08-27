@@ -47,3 +47,7 @@ export default async function SignupPage({
 		</div>
 	);
 }
+
+export function generateStaticParams() {
+	return [{ locale: "en" }];
+}
