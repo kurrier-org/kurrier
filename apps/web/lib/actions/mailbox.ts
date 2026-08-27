@@ -78,17 +78,31 @@ function getTypeSenseClient(): Client {
 }
 
 
+type IdentityRow = typeof identities.$inferSelect;
+type MailboxRow = typeof mailboxes.$inferSelect;
+type MailboxSyncRow = typeof mailboxSync.$inferSelect;
+type FetchMailboxData = {
+	activeMailbox: MailboxRow;
+	mailboxList: MailboxRow[];
+	identity: IdentityRow;
+	count: number;
+	mailboxSync: MailboxSyncRow | null;
+};
+
 export const fetchMailbox = cache(
-	async (identityPublicId: string, mailboxSlug = "inbox") => {
+	async (
+		identityPublicId: string,
+		mailboxSlug = "inbox",
+	): Promise<FetchMailboxData> => {
 		const rls = await rlsClient();
 
-		const [identity] = await rls((tx) =>
+		const [identity] = (await rls((tx) =>
 			tx
 				.select()
 				.from(identities)
 				.where(eq(identities.publicId, identityPublicId))
-				.limit(1)
-		);
+				.limit(1),
+		)) as IdentityRow[];
 
 		if (!identity) throw new Error("Identity not found");
 
@@ -97,20 +111,22 @@ export const fetchMailbox = cache(
 				tx
 					.select()
 					.from(mailboxes)
-					.where(eq(mailboxes.identityId, identity.id))
-			),
+					.where(eq(mailboxes.identityId, identity.id)),
+			) as Promise<MailboxRow[]>,
 
-			rls((tx) =>
-				tx
-					.select()
-					.from(mailboxes)
-					.where(
-						and(
-							eq(mailboxes.identityId, identity.id),
-							eq(mailboxes.slug, mailboxSlug)
+			(
+				rls((tx) =>
+					tx
+						.select()
+						.from(mailboxes)
+						.where(
+							and(
+								eq(mailboxes.identityId, identity.id),
+								eq(mailboxes.slug, mailboxSlug),
+							),
 						)
-					)
-					.limit(1)
+						.limit(1),
+				) as Promise<MailboxRow[]>
 			).then((rows) => rows[0]),
 		]);
 
@@ -121,15 +137,17 @@ export const fetchMailbox = cache(
 				tx
 					.select({ count: count() })
 					.from(messages)
-					.where(eq(messages.mailboxId, activeMailbox.id))
+					.where(eq(messages.mailboxId, activeMailbox.id)),
 			).then((rows) => rows[0]),
 
-			rls((tx) =>
-				tx
-					.select()
-					.from(mailboxSync)
-					.where(eq(mailboxSync.mailboxId, activeMailbox.id))
-					.limit(1)
+			(
+				rls((tx) =>
+					tx
+						.select()
+						.from(mailboxSync)
+						.where(eq(mailboxSync.mailboxId, activeMailbox.id))
+						.limit(1),
+				) as Promise<MailboxSyncRow[]>
 			).then((rows) => rows[0] ?? null),
 		]);
 
@@ -140,7 +158,7 @@ export const fetchMailbox = cache(
 			count: Number(messagesCountRow?.count ?? 0),
 			mailboxSync: sync,
 		};
-	}
+	},
 );
 
 
