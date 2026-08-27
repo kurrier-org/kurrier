@@ -33,7 +33,6 @@ import { createMailer } from "@providers";
 import { toArray } from "drizzle-orm/mysql-core";
 import { and, eq } from "drizzle-orm";
 import addressparser from "addressparser";
-import { PgTransaction } from "drizzle-orm/pg-core";
 import { getRedis } from "../../lib/get-redis";
 import {GetObjectCommand, PutObjectCommand} from "@aws-sdk/client-s3";
 import {s3} from "../../lib/create-s3-client";
@@ -44,6 +43,10 @@ const connection = new IORedis({
 	host: serverConfig.REDIS_HOST || "redis",
 	port: Number(serverConfig.REDIS_PORT || 6379),
 });
+
+type DbTransaction = Parameters<
+	Parameters<typeof db.transaction>[0]
+>[0];
 
 type AttachmentDownload = {
 	item: ReturnType<typeof MessageAttachmentInsertSchema.parse>;
@@ -108,7 +111,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 
 	type GetOriginalMessageType = Awaited<ReturnType<typeof getOriginalMessage>>;
 
-	async function ensureThreadId(ownerId: string, workspaceId: string, tx: PgTransaction<any>) {
+	async function ensureThreadId(ownerId: string, workspaceId: string, tx: DbTransaction) {
 		const [t] = await tx
 			.insert(threads)
 			.values({
@@ -321,7 +324,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 				threadIdForMessage = await ensureThreadId(
 					mailbox.identity.ownerId,
 					mailbox.mailbox.workspaceId,
-					tx as PgTransaction<any>,
+					tx,
 				);
 			}
 

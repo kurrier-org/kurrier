@@ -1,16 +1,23 @@
-import React from 'react';
+import React from "react";
+import { connection } from "next/server";
 import SectionCard from "@/components/mailbox/settings/settings-section-card";
-import {ReusableForm} from "@/components/common/reusable-form";
-import {fetchWorkspace, updateWorkspace} from "@/lib/actions/workspace";
+import { ReusableForm } from "@/components/common/reusable-form";
+import {
+    fetchWorkspace,
+    updateWorkspace,
+} from "@/lib/actions/workspace";
 import { getDictionary } from "@/lib/dictionaries";
 import { cookies } from "next/headers";
 
-
 async function WorkspacesGeneral() {
+    await connection();
 
     const cookieStore = await cookies();
-    const dict = await getDictionary(cookieStore.get("locale")?.value ?? "en");
-    const workspace = await fetchWorkspace()
+
+    const [dict, workspace] = await Promise.all([
+        getDictionary(cookieStore.get("locale")?.value ?? "en"),
+        fetchWorkspace(),
+    ]);
 
     const fields = [
         {
@@ -19,16 +26,15 @@ async function WorkspacesGeneral() {
             wrapperClasses: "col-span-12",
             props: {
                 defaultValue: workspace.name,
-            }
-        }
+            },
+        },
     ];
 
-    return <>
+    return (
         <SectionCard
             title={dict.platform.workspaceDetails}
             description={dict.platform.workspaceDetailsDescription}
         >
-
             <ReusableForm
                 fields={fields}
                 action={updateWorkspace}
@@ -42,10 +48,8 @@ async function WorkspacesGeneral() {
                     submitLabel: dict.platform.save,
                 }}
             />
-
         </SectionCard>
-
-    </>
+    );
 }
 
 export default WorkspacesGeneral;

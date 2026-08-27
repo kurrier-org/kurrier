@@ -1,12 +1,13 @@
 import { identities } from "@db";
 import { eq } from "drizzle-orm";
 import { Mail } from "lucide-react";
-import React, { type ReactNode } from "react";
+import React, {type ReactNode, Suspense} from "react";
 import { Container } from "@/components/common/containers";
 import MailboxSearchHeader from "@/components/mailbox/mailbox-search-header";
 import SettingsTabs from "@/components/mailbox/settings/settings-tabs";
 import { getWorkspacePublicId, rlsClient } from "@/lib/actions/clients";
 import { getDictionary } from "@/lib/dictionaries";
+import Loading from "@/app/loading";
 
 type LayoutProps = {
 	children: ReactNode;
@@ -29,7 +30,9 @@ export default async function Layout({ children, params }: LayoutProps) {
 
 	return (
 		<>
-			<MailboxSearchHeader params={params} />
+			<Suspense fallback={<Loading />}>
+				<MailboxSearchHeader params={params} />
+			</Suspense>
 
 			<Container variant="wide" className="my-10">
 				<div className="mb-6">
