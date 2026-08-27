@@ -6,6 +6,7 @@ import CustomEmailProviderCard from "@/components/dashboard/providers/custom-ema
 import GoogleCard from "@/components/dashboard/providers/google-card";
 import InboundCard from "@/components/dashboard/providers/inbound-card";
 import JmapCard from "@/components/dashboard/providers/jmap-card";
+import MailtrapCardShell from "@/components/dashboard/providers/mailtrap-card-shell";
 import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
 import SMTPCard from "@/components/dashboard/providers/smtp-card";
 import { Separator } from "@/components/ui/separator";
@@ -13,7 +14,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
 	fetchDecryptedSecrets,
 	fetchGoogleAccounts,
-	fetchInboundIdentities,
+	fetchProviderIdentities,
 	hasGoogleOAuthConfig,
 	syncProviders,
 } from "@/lib/actions/dashboard";
@@ -34,6 +35,7 @@ export default async function ProvidersPage({
 		googleAccounts,
 		inboundIdentities,
 		jmapAccounts,
+		mailtrapIdentities,
 		googleOAuthConfigured,
 	] = await Promise.all([
 		syncProviders(),
@@ -43,8 +45,9 @@ export default async function ProvidersPage({
 			secretIdCol: smtpAccountSecrets.secretId,
 		}),
 		fetchGoogleAccounts(),
-		fetchInboundIdentities(),
+		fetchProviderIdentities("inbound"),
 		fetchJmapAccounts(),
+		fetchProviderIdentities("mailtrap"),
 		hasGoogleOAuthConfig(),
 	]);
 	const customEmailProviders = parseCustomEmailProviders();
@@ -111,6 +114,10 @@ export default async function ProvidersPage({
 						/>
 						<InboundCard inboundIdentities={inboundIdentities} />
 						<JmapCard jmapAccounts={jmapAccounts} />
+						<MailtrapCardShell
+							userProviders={userProviders}
+							mailtrapIdentities={mailtrapIdentities}
+						/>
 					</div>
 				</Container>
 			</div>

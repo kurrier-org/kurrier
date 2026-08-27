@@ -1644,32 +1644,51 @@ export const verifyGoogleAccount = async (googleAccountId: string) => {
 };
 
 
-export async function createInboundIdentity(
+// Providers whose identities are simple "one email value, one provider row
+// per workspace" records with no domain/OAuth flow of their own — currently
+// `inbound` (generates a `slug@inbound.kurrier` address from a label) and
+// `mailtrap` (takes a real external address as-is). Shared by the three
+// functions below instead of duplicating near-identical CRUD per provider.
+const INBOUND_IDENTITY_PROVIDERS = ["inbound", "mailtrap"] as const;
+type InboundIdentityProvider = (typeof INBOUND_IDENTITY_PROVIDERS)[number];
+
+function isInboundIdentityProvider(v: unknown): v is InboundIdentityProvider {
+	return INBOUND_IDENTITY_PROVIDERS.includes(v as InboundIdentityProvider);
+}
+
+export async function createProviderIdentity(
 	_prev: FormState,
 	formData: FormData,
 ): Promise<FormState> {
 	return handleAction(async () => {
 		const data = decode(formData);
+		const providerType = data.providerType;
 
-		const label = String(data.label || "").trim();
-
-		if (!label) {
-			return {
-				success: false,
-				error: "Identity label is required",
-			};
+		if (!isInboundIdentityProvider(providerType)) {
+			return { success: false, error: "Unknown provider type" };
 		}
 
-		const slug = slugify(label);
+		let value: string;
+		let displayName: string;
 
-		if (!slug) {
-			return {
-				success: false,
-				error: "Invalid identity label",
-			};
+		if (providerType === "inbound") {
+			const label = String(data.label || "").trim();
+			if (!label) {
+				return { success: false, error: "Identity label is required" };
+			}
+			const slug = slugify(label);
+			if (!slug) {
+				return { success: false, error: "Invalid identity label" };
+			}
+			value = `${slug}@inbound.kurrier`;
+			displayName = label;
+		} else {
+			value = String(data.value || "").trim().toLowerCase();
+			if (!value || !value.includes("@")) {
+				return { success: false, error: "A valid email address is required" };
+			}
+			displayName = value;
 		}
-
-		const value = `${slug}@inbound.kurrier`;
 
 		const workspaceId = await getWorkspaceId();
 		const user = await isSignedIn();
@@ -1684,7 +1703,7 @@ export async function createInboundIdentity(
 
 		const rls = await rlsClient();
 
-		const [inboundProvider] = await rls((tx) =>
+		const [provider] = await rls((tx) =>
 			tx
 				.select()
 				.from(providers)
@@ -1692,16 +1711,16 @@ export async function createInboundIdentity(
 					and(
 						eq(providers.workspaceId, workspaceId),
 						eq(providers.ownerId, userId),
-						eq(providers.type, "inbound"),
+						eq(providers.type, providerType),
 					),
 				)
 				.limit(1),
 		);
 
-		if (!inboundProvider) {
+		if (!provider) {
 			return {
 				success: false,
-				error: "Kurrier Inbound provider is not initialized",
+				error: `${providerType} provider is not initialized`,
 			};
 		}
 
@@ -1722,7 +1741,7 @@ export async function createInboundIdentity(
 		if (existingIdentity) {
 			return {
 				success: false,
-				error: `Inbound identity ${value} already exists`,
+				error: `Identity ${value} already exists`,
 			};
 		}
 
@@ -1731,12 +1750,12 @@ export async function createInboundIdentity(
 			ownerId: userId,
 			kind: "email",
 			value,
-			displayName: label,
-			providerId: inboundProvider.id,
+			displayName,
+			providerId: provider.id,
 			status: "verified",
 			sharedWithWorkspace: true,
 			metaData: {
-				provider: "inbound",
+				provider: providerType,
 			},
 		});
 
@@ -1758,8 +1777,9 @@ export async function createInboundIdentity(
 }
 
 
-export const fetchInboundIdentities = async () => {
-
+export const fetchProviderIdentities = async (
+	providerType: InboundIdentityProvider,
+) => {
 	const rls = await rlsClient();
 	return rls((tx) =>
 		tx
@@ -1772,20 +1792,20 @@ export const fetchInboundIdentities = async () => {
 			.where(
 				and(
 					eq(identities.kind, "email"),
-					eq(providers.type, "inbound"),
+					eq(providers.type, providerType),
 				),
 			)
 			.orderBy(desc(identities.createdAt)),
 	);
-
 };
 
-export type FetchInboundIdentitiesResult = Awaited<ReturnType<typeof fetchInboundIdentities>>;
-export type FetchInboundIdentitiesResultRow = FetchInboundIdentitiesResult[number];
+export type FetchProviderIdentitiesResult = Awaited<ReturnType<typeof fetchProviderIdentities>>;
+export type FetchProviderIdentitiesResultRow = FetchProviderIdentitiesResult[number];
 
 
-export const deleteInboundIdentity = async (
+export const deleteProviderIdentity = async (
 	identityId: string,
+	providerType: InboundIdentityProvider,
 ): Promise<FormState> => {
 	return handleAction(async () => {
 		const rls = await rlsClient();
@@ -1802,7 +1822,7 @@ export const deleteInboundIdentity = async (
 				.where(
 					and(
 						eq(identities.id, identityId),
-						eq(providers.type, "inbound"),
+						eq(providers.type, providerType),
 					),
 				)
 				.limit(1),
@@ -1811,7 +1831,7 @@ export const deleteInboundIdentity = async (
 		if (!identity) {
 			return {
 				success: false,
-				error: "Inbound identity not found",
+				error: `${providerType} identity not found`,
 			};
 		}
 
@@ -1831,10 +1851,32 @@ export const deleteInboundIdentity = async (
 
 		return {
 			success: true,
-			message: "Inbound identity deleted",
+			message: "Identity deleted",
 		};
 	});
 };
+
+
+// Back-compat wrappers around the generic functions above, keeping the
+// original "inbound"-specific names/signatures so InboundCard/
+// InboundIdentityCard/NewInboundIdentityForm stay untouched (smaller diff
+// against upstream, which also edits these files).
+export async function createInboundIdentity(
+	_prev: FormState,
+	formData: FormData,
+): Promise<FormState> {
+	const fd = new FormData();
+	formData.forEach((v, k) => fd.append(k, v));
+	fd.set("providerType", "inbound");
+	return createProviderIdentity(_prev, fd);
+}
+
+export const fetchInboundIdentities = () => fetchProviderIdentities("inbound");
+export type FetchInboundIdentitiesResult = FetchProviderIdentitiesResult;
+export type FetchInboundIdentitiesResultRow = FetchProviderIdentitiesResultRow;
+
+export const deleteInboundIdentity = (identityId: string) =>
+	deleteProviderIdentity(identityId, "inbound");
 
 
 export type GoogleOAuthConfig = {
@@ -1962,3 +2004,149 @@ export async function saveGoogleOAuthConfig(
 		};
 	});
 }
+
+
+export async function saveMailtrapCredentials(
+	_prev: FormState,
+	formData: FormData,
+): Promise<FormState> {
+	return handleAction(async () => {
+		const data = decode(formData);
+
+		const providerId = String(data.providerId || "").trim();
+		const apiToken = String(data.apiToken || "").trim();
+		const webhookSecret = String(data.webhookSecret || "").trim();
+
+		if (!providerId) {
+			return { success: false, error: "Missing provider id" };
+		}
+
+		if (!apiToken || !webhookSecret) {
+			return {
+				success: false,
+				error: "Mailtrap API token and webhook secret are required",
+			};
+		}
+
+		const session = await currentSession();
+		const workspaceId = await getWorkspaceId();
+		const rls = await rlsClient();
+
+		const value = JSON.stringify({
+			MAILTRAP_API_TOKEN: apiToken,
+			MAILTRAP_WEBHOOK_SECRET: webhookSecret,
+		});
+
+		const [existing] = await rls((tx) =>
+			tx
+				.select()
+				.from(providerSecrets)
+				.where(eq(providerSecrets.providerId, providerId)),
+		);
+
+		if (existing) {
+			await updateSecret(session, workspaceId, existing.secretId, { value });
+		} else {
+			const secret = await createSecret(session, workspaceId, {
+				name: `mailtrap-${providerId}`,
+				value,
+				description: "Mailtrap API token and webhook signing secret",
+			});
+
+			await rls((tx) =>
+				tx.insert(providerSecrets).values({
+					providerId,
+					secretId: secret.id,
+				}),
+			);
+		}
+
+		revalidatePath(DASHBOARD_PATH);
+
+		return {
+			success: true,
+			message: "Mailtrap credentials saved",
+		};
+	});
+}
+
+
+async function mailtrapGet(url: string, apiToken: string) {
+	const response = await fetch(url, { headers: { "Api-Token": apiToken } });
+
+	if (!response.ok) {
+		throw new Error(`Mailtrap API error: HTTP ${response.status}`);
+	}
+
+	return response.json();
+}
+
+async function listMailtrapInboxAddresses(
+	apiToken: string,
+): Promise<{ name: string; address: string }[]> {
+	const folders: { id: number }[] = await mailtrapGet(
+		"https://mailtrap.io/api/inbound/folders",
+		apiToken,
+	);
+
+	const inboxesByFolder = await Promise.all(
+		folders.map((folder) =>
+			mailtrapGet(
+				`https://mailtrap.io/api/inbound/folders/${folder.id}/inboxes`,
+				apiToken,
+			),
+		),
+	);
+
+	return inboxesByFolder.flat();
+}
+
+export const verifyMailtrapConnection = async (
+	providerSecret: FetchDecryptedSecretsResultRow,
+): Promise<FormState<VerifyResult>> => {
+	return handleAction(async () => {
+		const credentials = providerSecret.parsedSecret;
+		const apiToken = credentials?.MAILTRAP_API_TOKEN;
+
+		let res: VerifyResult;
+
+		if (!apiToken) {
+			res = { ok: false, message: "No Mailtrap API token configured" };
+		} else {
+			try {
+				const inboxes = await listMailtrapInboxAddresses(apiToken);
+
+				res = inboxes.length
+					? {
+						ok: true,
+						message: `Found ${inboxes.length} inbound inbox(es): ${inboxes
+							.map((i) => `${i.address} (${i.name})`)
+							.join(", ")}`,
+						meta: { inboxes },
+					}
+					: {
+						ok: true,
+						message:
+							"Token is valid, but no inbound inboxes exist on this account yet.",
+						meta: { inboxes: [] },
+					};
+			} catch (err: any) {
+				res = {
+					ok: false,
+					message: err?.message ?? "Could not reach the Mailtrap API",
+				};
+			}
+		}
+
+		const session = await currentSession();
+		const workspaceId = await getWorkspaceId();
+
+		await updateSecret(session, workspaceId, providerSecret.metaId, {
+			value: JSON.stringify({ ...credentials, verified: res.ok }),
+		});
+
+		revalidatePath(DASHBOARD_PATH);
+
+		return { success: true, data: res };
+	});
+};

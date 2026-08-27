@@ -73,4 +73,11 @@ export const PROVIDER_CONFIG: Record<
 		chipDark: "dark:bg-violet-500/10 dark:border-violet-900/40",
 		textDark: "dark:text-violet-300",
 	},
+	mailtrap: {
+		name: "Mailtrap",
+		dot: "bg-emerald-500",
+		chip: "bg-emerald-50 border-emerald-200 text-emerald-700",
+		chipDark: "dark:bg-emerald-500/10 dark:border-emerald-900/40",
+		textDark: "dark:text-emerald-300",
+	},
 };
