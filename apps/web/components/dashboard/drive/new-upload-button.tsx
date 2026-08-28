@@ -1,8 +1,9 @@
 "use client";
-import { Input, Menu, Modal } from "@mantine/core";
+import { Menu, Modal, TextInput } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import type { DriveState } from "@schema";
 import { FolderPlus, Plus, Upload } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { ReusableFormButton } from "@/components/common/reusable-form-button";
 import DriveUploader, {
@@ -22,11 +23,16 @@ export default function NewUploadButton({
 	className?: string;
 }) {
 	const dict = useOptionalDictionary();
+	const router = useRouter();
 	const [folderOpened, folderHandlers] = useDisclosure(false);
 	const { state } = useDynamicContext<DriveState>();
 	const uploaderRef = useRef<DriveUploaderHandle | null>(null);
 
 	const [menuOpened, setMenuOpened] = useState(false);
+	const canCreate = Boolean(
+		state?.driveRouteContext?.driveVolume &&
+			state.driveRouteContext.scope === "cloud",
+	);
 
 	return (
 		<>
@@ -41,7 +47,9 @@ export default function NewUploadButton({
 				<Menu.Target>
 					<Button
 						size={compact ? "icon" : "lg"}
-						className={cn(!compact && "w-full", className)}
+						disabled={!canCreate}
+						aria-label={compact ? (dict?.drive?.new ?? "New") : undefined}
+						className={cn(!compact && "w-full", compact && "size-9", className)}
 					>
 						<Plus />
 						<span className={compact ? "sr-only" : ""}>
@@ -53,24 +61,24 @@ export default function NewUploadButton({
 				<Menu.Dropdown>
 					<Menu.Item
 						leftSection={<Upload size={14} />}
-						disabled={!state?.driveRouteContext}
+						disabled={!canCreate}
 						onClick={() => {
 							setMenuOpened(false);
 							uploaderRef.current?.openPicker();
 						}}
 					>
-						{dict?.drive?.upload ?? "Upload"}
+						{dict?.drive?.uploadFiles ?? dict?.drive?.upload ?? "Upload files"}
 					</Menu.Item>
 
 					<Menu.Item
-						disabled={!state?.driveRouteContext}
+						disabled={!canCreate}
 						leftSection={<FolderPlus size={14} />}
 						onClick={() => {
 							setMenuOpened(false);
 							folderHandlers.open();
 						}}
 					>
-						{dict?.drive?.folder ?? "Folder"}
+						{dict?.drive?.createFolder ?? "Create folder"}
 					</Menu.Item>
 				</Menu.Dropdown>
 			</Menu>
@@ -83,20 +91,29 @@ export default function NewUploadButton({
 				title={dict?.drive?.newFolder ?? "New folder"}
 				centered
 				size={"xs"}
-				trapFocus={false}
+				trapFocus
 			>
 				<ReusableFormButton
 					action={addNewFolder}
 					label={dict?.drive?.createFolder ?? "Create Folder"}
 					formWrapperClasses={"flex justify-center flex-col"}
-					onSuccess={() => folderHandlers.close()}
+					onSuccess={() => {
+						folderHandlers.close();
+						router.refresh();
+					}}
 					buttonProps={{
 						leftSection: <Plus size={16} />,
 						size: "sm",
-						className: "w-full mt-4",
+						className: "mt-4 w-full",
 					}}
 				>
-					<Input autoFocus name="name" />
+					<TextInput
+						autoFocus
+						required
+						name="name"
+						label={dict?.drive?.folderName ?? "Folder name"}
+						placeholder={dict?.drive?.folderNamePlaceholder ?? "Project files"}
+					/>
 					<input
 						type="hidden"
 						name="path"
