@@ -1,21 +1,22 @@
-import { SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/ui/dashboards/unified/default/app-sidebar";
-import { fetchContactLabelsWithCounts } from "@/lib/actions/labels";
-import { LabelScope } from "@schema";
-import ContactsNav from "@/components/dashboard/contacts/contacts-sidebar";
-import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
-import * as React from "react";
-import NewContactButton from "@/components/dashboard/contacts/new-contact-button";
-import { getWorkspacePublicId } from "@/lib/actions/clients";
+import type { LabelScope } from "@schema";
+import type * as React from "react";
 import { Suspense } from "react";
-import { connection } from "next/server";
-import Loading from "@/app/loading";
-import NavUserWrapper from "@/components/ui/dashboards/workspace/nav-user-wrapper";
+import ContactsNav from "@/components/dashboard/contacts/contacts-sidebar";
+import NewContactButton from "@/components/dashboard/contacts/new-contact-button";
+import {
+	DashboardSidebarActionLoading,
+	DashboardSidebarFooterLoading,
+	DashboardSidebarLoading,
+} from "@/components/dashboard/dashboard-loading";
 import RenderContactsLabelHomeSidebar from "@/components/dashboard/labels/render-contacts-label-home-sidebar";
+import { AppSidebar } from "@/components/ui/dashboards/unified/default/app-sidebar";
+import NavUserWrapper from "@/components/ui/dashboards/workspace/nav-user-wrapper";
+import { SidebarInset } from "@/components/ui/sidebar";
+import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
+import { getWorkspacePublicId } from "@/lib/actions/clients";
+import { fetchContactLabelsWithCounts } from "@/lib/actions/labels";
 
 async function ContactsSidebar() {
-	await connection();
-
 	const [contactLabels, workspacePublicId] = await Promise.all([
 		fetchContactLabelsWithCounts(),
 		getWorkspacePublicId(),
@@ -25,7 +26,7 @@ async function ContactsSidebar() {
 		<AppSidebar
 			workspacePublicId={workspacePublicId}
 			sidebarTopContent={
-				<Suspense fallback={<Loading />}>
+				<Suspense fallback={<DashboardSidebarActionLoading />}>
 					<div className="-mt-1">
 						<NewContactButton
 							hideOnMobile
@@ -35,7 +36,7 @@ async function ContactsSidebar() {
 				</Suspense>
 			}
 			navUserContent={
-				<Suspense fallback={<Loading />}>
+				<Suspense fallback={<DashboardSidebarFooterLoading />}>
 					<NavUserWrapper />
 				</Suspense>
 			}
@@ -50,9 +51,7 @@ async function ContactsSidebar() {
 							workspacePublicId,
 						}}
 					>
-						<RenderContactsLabelHomeSidebar
-							globalLabels={contactLabels}
-						/>
+						<RenderContactsLabelHomeSidebar globalLabels={contactLabels} />
 					</DynamicContextProvider>
 				</>
 			}
@@ -61,13 +60,13 @@ async function ContactsSidebar() {
 }
 
 export default function DashboardLayout({
-											children,
-										}: {
+	children,
+}: {
 	children: React.ReactNode;
 }) {
 	return (
 		<>
-			<Suspense fallback={<Loading />}>
+			<Suspense fallback={<DashboardSidebarLoading />}>
 				<ContactsSidebar />
 			</Suspense>
 

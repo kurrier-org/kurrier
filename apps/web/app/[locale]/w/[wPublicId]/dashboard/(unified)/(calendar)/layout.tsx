@@ -1,14 +1,19 @@
 import type { CalendarState } from "@schema";
 import { getTimeZones } from "@vvo/tzdb";
 import { CalendarDays } from "lucide-react";
-import { connection } from "next/server";
 import type * as React from "react";
 import { Suspense } from "react";
-import Loading from "@/app/loading";
 import ContentPlaceholder from "@/components/common/content-placeholder";
 import CalendarSidebarWrapper from "@/components/dashboard/calendars/calendar-sidebar-wrapper";
 import CalendarTopBar from "@/components/dashboard/calendars/calendar-top-bar";
 import NewEventButton from "@/components/dashboard/calendars/new-event-button";
+import {
+	DASHBOARD_SIDEBAR_WIDTHS,
+	DashboardShellLoading,
+	DashboardSidebarActionLoading,
+	DashboardSidebarFooterLoading,
+	DashboardSidebarSectionLoading,
+} from "@/components/dashboard/dashboard-loading";
 import DashboardPageHeader from "@/components/dashboard/dashboard-page-header";
 import { AppSidebar } from "@/components/ui/dashboards/unified/default/app-sidebar";
 import NavUserWrapper from "@/components/ui/dashboards/workspace/nav-user-wrapper";
@@ -26,8 +31,6 @@ async function CalendarDashboard({
 	children: React.ReactNode;
 	params: Promise<{ locale: string }>;
 }) {
-	await connection();
-
 	const { locale } = await params;
 
 	const [defaultCalendar, organizers, workspacePublicId, dict] =
@@ -74,18 +77,23 @@ async function CalendarDashboard({
 		>
 			<AppSidebar
 				workspacePublicId={workspacePublicId}
+				style={
+					{
+						"--sidebar-width": DASHBOARD_SIDEBAR_WIDTHS.calendar,
+					} as React.CSSProperties
+				}
 				sidebarSectionContent={
-					<Suspense fallback={<Loading />}>
+					<Suspense fallback={<DashboardSidebarSectionLoading />}>
 						{defaultCalendar && <CalendarSidebarWrapper />}
 					</Suspense>
 				}
 				navUserContent={
-					<Suspense fallback={<Loading />}>
+					<Suspense fallback={<DashboardSidebarFooterLoading />}>
 						<NavUserWrapper />
 					</Suspense>
 				}
 				sidebarTopContent={
-					<Suspense fallback={<Loading />}>
+					<Suspense fallback={<DashboardSidebarActionLoading />}>
 						{defaultCalendar && (
 							<div className="-mt-1">
 								<NewEventButton
@@ -134,7 +142,13 @@ export default function DashboardLayout({
 	params: Promise<{ locale: string }>;
 }) {
 	return (
-		<Suspense fallback={<Loading />}>
+		<Suspense
+			fallback={
+				<DashboardShellLoading
+					sidebarWidth={DASHBOARD_SIDEBAR_WIDTHS.calendar}
+				/>
+			}
+		>
 			<CalendarDashboard params={params}>{children}</CalendarDashboard>
 		</Suspense>
 	);

@@ -1,11 +1,13 @@
+import { DASHBOARD_SIDEBAR_WIDTHS } from "@/components/dashboard/dashboard-loading";
+import { WorkspaceUnavailable } from "@/components/dashboard/workspace-unavailable";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { access } from "@/lib/actions/shared";
-import {WorkspaceUnavailable} from "@/components/dashboard/workspace-unavailable";
 
-export default async function DashboardLayout({ children }: {
+export default async function DashboardLayout({
+	children,
+}: {
 	children: React.ReactNode;
 }) {
-
 	const { canUseWorkspace, reason } = await access("canUseWorkspace");
 
 	if (!canUseWorkspace) {
@@ -16,10 +18,9 @@ export default async function DashboardLayout({ children }: {
 		<SidebarProvider
 			style={
 				{
-					"--sidebar-width": "250px",
+					"--sidebar-width": DASHBOARD_SIDEBAR_WIDTHS.default,
 				} as React.CSSProperties
 			}
-			className="sidebar-animation"
 		>
 			{children}
 		</SidebarProvider>
