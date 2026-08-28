@@ -2080,8 +2080,15 @@ export async function saveMailtrapCredentials(
 }
 
 
+// Mailtrap API helpers for verifying the connection and listing inboxes
+const MAILTRAP_TIMEOUT_MS = 10_000; // 10 seconds
+const MAILTRAP_MAX_FOLDERS_CHECKED = 5; // Limit the number of folders to check
+
 async function mailtrapGet(url: string, apiToken: string) {
-	const response = await fetch(url, { headers: { "Api-Token": apiToken } });
+	const response = await fetch(url, {
+		headers: { "Api-Token": apiToken },
+		signal: AbortSignal.timeout(MAILTRAP_TIMEOUT_MS),
+	});
 
 	if (!response.ok) {
 		throw new Error(`Mailtrap API error: HTTP ${response.status}`);
@@ -2090,16 +2097,23 @@ async function mailtrapGet(url: string, apiToken: string) {
 	return response.json();
 }
 
-async function listMailtrapInboxAddresses(
-	apiToken: string,
-): Promise<{ name: string; address: string }[]> {
+// List all inboxes in the Mailtrap account,
+// up to MAILTRAP_MAX_FOLDERS_CHECKED number of folders checked
+// (to avoid excessive API calls). 
+// Returns a `truncated` flag if there are more folders than checked.
+async function listMailtrapInboxAddresses(apiToken: string): Promise<{
+	inboxes: { name: string; address: string }[];
+	truncated: boolean;
+}> {
 	const folders: { id: number }[] = await mailtrapGet(
 		"https://mailtrap.io/api/inbound/folders",
 		apiToken,
 	);
 
+	const checkedFolders = folders.slice(0, MAILTRAP_MAX_FOLDERS_CHECKED);
+
 	const inboxesByFolder = await Promise.all(
-		folders.map((folder) =>
+		checkedFolders.map((folder) =>
 			mailtrapGet(
 				`https://mailtrap.io/api/inbound/folders/${folder.id}/inboxes`,
 				apiToken,
@@ -2107,7 +2121,10 @@ async function listMailtrapInboxAddresses(
 		),
 	);
 
-	return inboxesByFolder.flat();
+	return {
+		inboxes: inboxesByFolder.flat(),
+		truncated: folders.length > checkedFolders.length,
+	};
 }
 
 export const verifyMailtrapConnection = async (
@@ -2123,14 +2140,15 @@ export const verifyMailtrapConnection = async (
 			res = { ok: false, message: "No Mailtrap API token configured" };
 		} else {
 			try {
-				const inboxes = await listMailtrapInboxAddresses(apiToken);
+				const { inboxes, truncated } =
+					await listMailtrapInboxAddresses(apiToken);
 
 				res = inboxes.length
 					? {
 						ok: true,
-						message: `Found ${inboxes.length} inbound inbox(es): ${inboxes
-							.map((i) => `${i.address} (${i.name})`)
-							.join(", ")}`,
+						message: `Found ${inboxes.length} inbound inbox(es)${
+							truncated ? " (showing the first few folders)" : ""
+						}: ${inboxes.map((i) => `${i.address} (${i.name})`).join(", ")}`,
 						meta: { inboxes },
 					}
 					: {
