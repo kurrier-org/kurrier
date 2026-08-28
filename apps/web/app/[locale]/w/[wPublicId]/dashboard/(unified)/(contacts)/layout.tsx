@@ -6,7 +6,7 @@ import NewContactButton from "@/components/dashboard/contacts/new-contact-button
 import {
 	DashboardSidebarActionLoading,
 	DashboardSidebarFooterLoading,
-	DashboardSidebarLoading,
+	DashboardSidebarSectionLoading,
 } from "@/components/dashboard/dashboard-loading";
 import RenderContactsLabelHomeSidebar from "@/components/dashboard/labels/render-contacts-label-home-sidebar";
 import { AppSidebar } from "@/components/ui/dashboards/unified/default/app-sidebar";
@@ -16,46 +16,32 @@ import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
 import { getWorkspacePublicId } from "@/lib/actions/clients";
 import { fetchContactLabelsWithCounts } from "@/lib/actions/labels";
 
-async function ContactsSidebar() {
+async function ContactsSidebarAction() {
+	const workspacePublicId = await getWorkspacePublicId();
+
+	return (
+		<div className="-mt-1">
+			<NewContactButton hideOnMobile workspacePublicId={workspacePublicId} />
+		</div>
+	);
+}
+
+async function ContactsSidebarLabels() {
 	const [contactLabels, workspacePublicId] = await Promise.all([
 		fetchContactLabelsWithCounts(),
 		getWorkspacePublicId(),
 	]);
 
 	return (
-		<AppSidebar
-			workspacePublicId={workspacePublicId}
-			sidebarTopContent={
-				<Suspense fallback={<DashboardSidebarActionLoading />}>
-					<div className="-mt-1">
-						<NewContactButton
-							hideOnMobile
-							workspacePublicId={workspacePublicId}
-						/>
-					</div>
-				</Suspense>
-			}
-			navUserContent={
-				<Suspense fallback={<DashboardSidebarFooterLoading />}>
-					<NavUserWrapper />
-				</Suspense>
-			}
-			sidebarSectionContent={
-				<>
-					<ContactsNav workspacePublicId={workspacePublicId} />
-
-					<DynamicContextProvider
-						initialState={{
-							labels: contactLabels,
-							scope: "contact" as LabelScope,
-							workspacePublicId,
-						}}
-					>
-						<RenderContactsLabelHomeSidebar globalLabels={contactLabels} />
-					</DynamicContextProvider>
-				</>
-			}
-		/>
+		<DynamicContextProvider
+			initialState={{
+				labels: contactLabels,
+				scope: "contact" as LabelScope,
+				workspacePublicId,
+			}}
+		>
+			<RenderContactsLabelHomeSidebar globalLabels={contactLabels} />
+		</DynamicContextProvider>
 	);
 }
 
@@ -66,9 +52,26 @@ export default function DashboardLayout({
 }) {
 	return (
 		<>
-			<Suspense fallback={<DashboardSidebarLoading />}>
-				<ContactsSidebar />
-			</Suspense>
+			<AppSidebar
+				sidebarTopContent={
+					<Suspense fallback={<DashboardSidebarActionLoading />}>
+						<ContactsSidebarAction />
+					</Suspense>
+				}
+				navUserContent={
+					<Suspense fallback={<DashboardSidebarFooterLoading />}>
+						<NavUserWrapper />
+					</Suspense>
+				}
+				sidebarSectionContent={
+					<>
+						<ContactsNav />
+						<Suspense fallback={<DashboardSidebarSectionLoading />}>
+							<ContactsSidebarLabels />
+						</Suspense>
+					</>
+				}
+			/>
 
 			<SidebarInset>{children}</SidebarInset>
 		</>

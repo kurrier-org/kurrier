@@ -17,7 +17,7 @@ export default function ContactsNav({
 	onComplete,
 	workspacePublicId,
 }: {
-	workspacePublicId: string;
+	workspacePublicId?: string;
 	onComplete?: () => void;
 }) {
 	const dict = useOptionalDictionary();
