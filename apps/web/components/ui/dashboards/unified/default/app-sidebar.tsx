@@ -1,10 +1,9 @@
 "use client";
 
-import { Divider } from "@mantine/core";
 import { IconFrame } from "@tabler/icons-react";
 import { Calendar, Contact, HardDrive, Inbox, MailOpen, X } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import * as React from "react";
 import KurrierLogo from "@/components/common/kurrier-logo";
 import ThemeColorPicker from "@/components/common/theme-color-picker";
@@ -12,6 +11,7 @@ import ThemeSwitch from "@/components/common/theme-switch";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import { useSiteFeatures } from "@/components/providers/site-features-provider";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import {
 	Sidebar,
 	SidebarContent,
@@ -41,7 +41,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 		navUserContent,
 		...restProps
 	} = props;
-	const { isMobile, setOpen, setOpenMobile, toggleSidebar } = useSidebar();
+	const { setOpen, setOpenMobile } = useSidebar();
 	const dict = useOptionalDictionary();
 
 	const data = {
@@ -101,64 +101,15 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 					? "drive"
 					: "mail";
 
-	const [activeItem, setActiveItem] = React.useState(() => {
-		if (section === "platform") {
-			return (
-				data.navMain.find((i) => i.url.includes("/platform")) ?? data.navMain[0]
-			);
-		}
-		if (section === "contacts") {
-			return (
-				data.navMain.find((i) => i.url.includes("/contacts")) ?? data.navMain[0]
-			);
-		}
-		if (section === "calendar") {
-			return (
-				data.navMain.find((i) => i.url.includes("/calendar")) ?? data.navMain[0]
-			);
-		}
-		if (section === "drive") {
-			return (
-				data.navMain.find((i) => i.url.includes("/drive")) ?? data.navMain[0]
-			);
-		}
-		return data.navMain.find((i) => i.url.includes("/mail")) ?? data.navMain[0];
-	});
+	const activeItem =
+		data.navMain.find((item) => item.url.includes(`/${section}`)) ??
+		data.navMain[0];
 
 	React.useEffect(() => {
-		if (isMobile && pathName) {
+		if (pathName) {
 			setOpenMobile(false);
 		}
-	}, [isMobile, pathName, setOpenMobile]);
-
-	React.useEffect(() => {
-		if (section === "platform") {
-			setActiveItem(
-				data.navMain.find((i) => i.url.includes("/platform")) ??
-					data.navMain[0],
-			);
-		} else if (section === "calendar") {
-			setActiveItem(
-				data.navMain.find((i) => i.url.includes("/calendar")) ??
-					data.navMain[0],
-			);
-		} else if (section === "contacts") {
-			setActiveItem(
-				data.navMain.find((i) => i.url.includes("/contacts")) ??
-					data.navMain[0],
-			);
-		} else if (section === "drive") {
-			setActiveItem(
-				data.navMain.find((i) => i.url.includes("/drive")) ?? data.navMain[0],
-			);
-		} else {
-			setActiveItem(
-				data.navMain.find((i) => i.url.includes("/mail")) ?? data.navMain[0],
-			);
-		}
-	}, [section, data.navMain]);
-
-	const router = useRouter();
+	}, [pathName, setOpenMobile]);
 
 	return (
 		<Sidebar
@@ -216,66 +167,47 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 						<SidebarGroupContent className="px-1.5 md:px-0">
 							<SidebarMenu>
 								{data.navMain.map((item) => (
-									<SidebarMenuItem
-										key={item.title}
-										onClick={() => {
-											if (isMobile) {
-												toggleSidebar();
-											}
-										}}
-									>
+									<SidebarMenuItem key={item.title}>
 										<SidebarMenuButton
+											asChild
 											tooltip={{
 												children: item.title,
 												hidden: false,
 											}}
-											onClick={() => {
-												setActiveItem(item);
-												setOpen(true);
-												router.push(item.url);
-											}}
 											isActive={activeItem?.title === item.title}
 											className={"px-2.5 md:px-2"}
 										>
-											<item.icon
-												className={
-													item.title === activeItem?.title
-														? "text-brand dark:text-white"
-														: ""
-												}
-											/>
-											<span>{item.title}</span>
+											<Link
+												href={item.url}
+												onClick={() => {
+													setOpen(true);
+													setOpenMobile(false);
+												}}
+											>
+												<item.icon
+													className={
+														item.title === activeItem?.title
+															? "text-brand dark:text-white"
+															: ""
+													}
+												/>
+												<span>{item.title}</span>
+											</Link>
 										</SidebarMenuButton>
 									</SidebarMenuItem>
 								))}
 
-								{!isMobile && <hr className="my-2 border-border" />}
+								<Separator className="my-2 hidden md:block" />
 							</SidebarMenu>
-							{isMobile && (
-								<div className="mt-2">
-									<Divider variant="dashed" my="lg" />
-									{sidebarSectionContent}
-								</div>
-							)}
+							<div className="mt-2 md:hidden">
+								<Separator className="my-4" />
+								{sidebarSectionContent}
+							</div>
 						</SidebarGroupContent>
 					</SidebarGroup>
-					<div
-						className={
-							isMobile
-								? "mt-auto flex items-center justify-center gap-3 border-t px-4 py-3"
-								: "absolute bottom-28 rotate-90 flex justify-start items-center w-full gap-2"
-						}
-					>
-						<ThemeColorPicker
-							onComplete={() => {
-								isMobile && toggleSidebar();
-							}}
-						/>
-						<ThemeSwitch
-							onComplete={() => {
-								isMobile && toggleSidebar();
-							}}
-						/>
+					<div className="mt-auto flex items-center justify-center gap-3 border-t px-4 py-3 md:absolute md:bottom-28 md:w-full md:rotate-90 md:justify-start md:border-t-0 md:px-0 md:py-0">
+						<ThemeColorPicker onComplete={() => setOpenMobile(false)} />
+						<ThemeSwitch onComplete={() => setOpenMobile(false)} />
 					</div>
 				</SidebarContent>
 				<SidebarFooter className="border-t md:border-t-0">
