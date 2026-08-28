@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
             Body: buffer,
             ContentType: file.type || "application/octet-stream",
             Metadata: {
-                filename: file.name,
+                filename: encodeURIComponent(file.name),
                 volumeId: String(volume.id),
             },
         }),
