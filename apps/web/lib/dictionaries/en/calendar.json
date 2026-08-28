@@ -1,5 +1,7 @@
 {
 	"noCalendarFound": "No calendar found. Connect an identity to create one.",
+	"emptyTitle": "No calendar yet",
+	"emptyDescription": "Connect an email identity to create your calendar.",
 	"today": "Today",
 	"viewDay": "day",
 	"viewWeek": "week",

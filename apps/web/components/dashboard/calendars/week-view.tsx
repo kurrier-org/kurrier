@@ -1,24 +1,24 @@
 "use client";
-import React, { useEffect } from "react";
-import { useDynamicContext } from "@/hooks/use-dynamic-context";
-import {
+import { getDayjsTz } from "@common/day-js-extended";
+import type { CalendarEventAttendeeEntity, CalendarEventEntity } from "@db";
+import type {
 	AllDayFragment,
 	CalendarState,
 	ComposeContact,
 	EventSlotFragment,
 	EventSlotRenderFragment,
 } from "@schema";
+import dayjs from "dayjs";
 import { useParams } from "next/navigation";
+import React, { useEffect } from "react";
+import AllDayEventsRow from "@/components/dashboard/calendars/all-day-events-row";
 import CalendarDayHourBox from "@/components/dashboard/calendars/calendar-day-hour-box";
-import { CalendarEventAttendeeEntity, CalendarEventEntity } from "@db";
+import CalendarEventsLayer from "@/components/dashboard/calendars/calendar-events-layer";
 import {
 	layoutDayFragments,
 	splitFragmentIntoHours,
 } from "@/components/dashboard/calendars/client-helpers";
-import CalendarEventsLayer from "@/components/dashboard/calendars/calendar-events-layer";
-import { getDayjsTz } from "@common/day-js-extended";
-import AllDayEventsRow from "@/components/dashboard/calendars/all-day-events-row";
-import dayjs from "dayjs";
+import { useDynamicContext } from "@/hooks/use-dynamic-context";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
@@ -51,7 +51,7 @@ export function WeekGrid({
 			calendarEventAttendees: attendees,
 			attendeeContacts: contacts,
 		}));
-	}, [events, setState, attendees]);
+	}, [events, setState, attendees, contacts]);
 
 	const baseDay =
 		params.year && params.month && params.day
@@ -95,8 +95,8 @@ export function WeekGrid({
 	}
 
 	return (
-		<div className="w-full h-full">
-			<div className="overflow-hidden text-xs text-neutral-700">
+		<div className="h-full w-full overflow-x-auto">
+			<div className="min-w-[48rem] overflow-hidden text-xs text-neutral-700 xl:min-w-0">
 				<div className="grid grid-cols-[64px_repeat(7,1fr)] border-b dark:border-neutral-700 border-neutral-200 bg-neutral-50 dark:bg-neutral-800 w-full">
 					<div
 						className="flex items-center justify-start px-3 py-2 text-xxs text-neutral-500 dark:text-brand-foreground cursor-default"
@@ -135,7 +135,7 @@ export function WeekGrid({
 
 				<AllDayEventsRow weekDays={weekDays} allDayByDay={allDayByDay} />
 
-				<div className="flex flex-1 flex-col h-[calc(100vh-8rem)] overflow-y-auto">
+				<div className="flex h-[calc(100svh-8rem)] flex-1 flex-col overflow-y-auto">
 					<div className="grid grid-cols-[64px_repeat(7,1fr)]">
 						<div className="border-r border-neutral-200 bg-neutral-100 dark:bg-neutral-900 dark:border-neutral-700">
 							{HOURS.map((hour) => (

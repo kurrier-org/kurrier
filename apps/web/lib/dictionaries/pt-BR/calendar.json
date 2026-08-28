@@ -1,5 +1,7 @@
 {
 	"noCalendarFound": "Nenhum calendário encontrado. Conecte uma identidade para criar um.",
+	"emptyTitle": "Nenhum calendário ainda",
+	"emptyDescription": "Conecte uma identidade de e-mail para criar seu calendário.",
 	"today": "Hoje",
 	"viewDay": "dia",
 	"viewWeek": "semana",

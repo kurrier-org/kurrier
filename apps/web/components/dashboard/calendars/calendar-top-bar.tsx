@@ -1,13 +1,18 @@
 "use client";
-import React, { useEffect } from "react";
-import { ActionIcon, Button, SegmentedControl } from "@mantine/core";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useAppearance } from "@/components/providers/appearance-provider";
-import { useParams, useRouter } from "next/navigation";
-import { useDynamicContext } from "@/hooks/use-dynamic-context";
-import { CalendarState, calendarViewsList, CalendarViewType } from "@schema";
 import { getDayjsTz } from "@common/day-js-extended";
+import { ActionIcon, Button, SegmentedControl } from "@mantine/core";
+import {
+	type CalendarState,
+	type CalendarViewType,
+	calendarViewsList,
+} from "@schema";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect } from "react";
+import NewEventButton from "@/components/dashboard/calendars/new-event-button";
+import { useAppearance } from "@/components/providers/appearance-provider";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useDynamicContext } from "@/hooks/use-dynamic-context";
 
 const VIEW_LABEL_KEYS: Record<string, string> = {
 	day: "viewDay",
@@ -16,7 +21,7 @@ const VIEW_LABEL_KEYS: Record<string, string> = {
 	year: "viewYear",
 };
 
-function CalendarTopBar({workspacePublicId}: {workspacePublicId: string}) {
+function CalendarTopBar({ workspacePublicId }: { workspacePublicId: string }) {
 	const dict = useOptionalDictionary();
 	const { theme } = useAppearance();
 	const router = useRouter();
@@ -88,9 +93,10 @@ function CalendarTopBar({workspacePublicId}: {workspacePublicId: string}) {
 	};
 
 	return (
-		<div className="flex p-2 justify-between w-full">
-			<div className="flex gap-6">
+		<div className="flex min-w-0 w-full flex-col gap-3 p-1 sm:p-2 xl:flex-row xl:items-center xl:justify-between">
+			<div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-4 xl:flex-nowrap xl:gap-6">
 				<Button
+					w="auto"
 					onClick={goToToday}
 					size="sm"
 					variant="light"
@@ -108,23 +114,39 @@ function CalendarTopBar({workspacePublicId}: {workspacePublicId: string}) {
 					</ActionIcon>
 				</div>
 
-				<div className="flex justify-center items-center text-brand dark:text-brand-foreground font-medium text-2xl">
-					<h1>{currentViewTitle}</h1>
+				<div className="min-w-0 flex-1 text-brand dark:text-brand-foreground font-medium sm:flex-none">
+					<h1 className="truncate text-base sm:text-xl xl:text-2xl">
+						{currentViewTitle}
+					</h1>
 				</div>
+
+				<NewEventButton
+					compact
+					workspacePublicId={workspacePublicId}
+					className="ml-auto md:hidden"
+				/>
 			</div>
 
-			<SegmentedControl
-				onChange={switchView}
-				radius={20}
-				withItemsBorders={false}
-				size="sm"
-				value={String(activeView)}
-				color={theme}
-				data={calendarViewsList.map((item) => ({
-					label: <span className="capitalize">{(dict?.calendar as Record<string, string> | undefined)?.[VIEW_LABEL_KEYS[item]] ?? item}</span>,
-					value: item,
-				}))}
-			/>
+			<div className="max-w-full overflow-x-auto pb-1 xl:pb-0">
+				<SegmentedControl
+					onChange={switchView}
+					radius={20}
+					withItemsBorders={false}
+					size="sm"
+					value={String(activeView)}
+					color={theme}
+					data={calendarViewsList.map((item) => ({
+						label: (
+							<span className="capitalize">
+								{(dict?.calendar as Record<string, string> | undefined)?.[
+									VIEW_LABEL_KEYS[item]
+								] ?? item}
+							</span>
+						),
+						value: item,
+					}))}
+				/>
+			</div>
 		</div>
 	);
 }

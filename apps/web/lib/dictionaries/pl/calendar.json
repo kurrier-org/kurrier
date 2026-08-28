@@ -1,5 +1,7 @@
 {
 	"noCalendarFound": "Nie znaleziono kalendarza. Połącz tożsamość e-mail, aby go utworzyć.",
+	"emptyTitle": "Nie masz jeszcze kalendarza",
+	"emptyDescription": "Połącz tożsamość e-mail, aby utworzyć kalendarz.",
 	"today": "Dzisiaj",
 	"viewDay": "dzień",
 	"viewWeek": "tydzień",
