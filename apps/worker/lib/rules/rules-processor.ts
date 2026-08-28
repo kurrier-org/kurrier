@@ -264,12 +264,15 @@ export const processRules = async ({ messageId }: { messageId: string }) => {
                 case "add_label": {
                     const labelId = (act.params as any)?.labelId as string | undefined;
                     if (!labelId) break;
+
                     await db.insert(mailboxThreadLabels).values({
                         threadId: thread.id,
                         mailboxId: mailbox.id,
                         ownerId: mailbox.ownerId,
+                        workspaceId: thread.workspaceId,
                         labelId,
-                    })
+                    }).onConflictDoNothing();
+
                     break;
                 }
                 default: {

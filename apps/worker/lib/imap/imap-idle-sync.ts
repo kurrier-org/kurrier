@@ -480,10 +480,13 @@ async function startRealtimeSyncForIdentity(
 			idleImapInstances.delete(identityId);
 		}
 
-		try {
-			client.removeAllListeners();
-			client.close();
-		} catch {}
+		client.removeAllListeners();
+
+		if (client.usable) {
+			try {
+				client.close();
+			} catch {}
+		}
 
 		if (
 			!realtimeShuttingDown &&
