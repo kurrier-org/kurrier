@@ -1871,11 +1871,12 @@ export async function createInboundIdentity(
 	return createProviderIdentity(_prev, fd);
 }
 
-export const fetchInboundIdentities = () => fetchProviderIdentities("inbound");
+export const fetchInboundIdentities = async () =>
+	fetchProviderIdentities("inbound");
 export type FetchInboundIdentitiesResult = FetchProviderIdentitiesResult;
 export type FetchInboundIdentitiesResultRow = FetchProviderIdentitiesResultRow;
 
-export const deleteInboundIdentity = (identityId: string) =>
+export const deleteInboundIdentity = async (identityId: string) =>
 	deleteProviderIdentity(identityId, "inbound");
 
 
