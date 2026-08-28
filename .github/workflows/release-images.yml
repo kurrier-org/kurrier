@@ -82,6 +82,7 @@ jobs:
             docker.io/${{ secrets.DOCKERHUB_USERNAME }}/kurrier-${{ matrix.service }}:latest
           build-args: |
             NODE_ENV=production
+            WEB_URL=http://localhost:3000
             JWT_SECRET=build_dummy_jwt_secret
             APP_SECRET_ENCRYPTION_KEY=build_dummy_app_secret_encryption_key
             S3_REGION=garage
