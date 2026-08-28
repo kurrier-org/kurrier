@@ -262,12 +262,13 @@ export default function InspectorBar({
             onChange={handleChange}
             keepMounted={false}
         >
-            <div className="my-5 overflow-hidden rounded-xl border bg-card ">
+            <div className="my-4 overflow-hidden rounded-xl border bg-card sm:my-5">
                 <div className="border-b bg-muted/10">
                     <Tabs.List
                         classNames={{
                             list: [
-                                "flex flex-wrap border-0 px-2",
+                                "flex flex-nowrap overflow-x-auto border-0 px-1 sm:px-2",
+                                "overscroll-x-contain scroll-smooth",
                                 "before:hidden",
                             ].join(" "),
                         }}
@@ -286,7 +287,7 @@ export default function InspectorBar({
                                     disabled={disabled}
                                     leftSection={tab.icon}
                                     className={[
-                                        "h-14 shrink-0 px-4",
+                                        "h-12 shrink-0 px-3 sm:h-14 sm:px-4",
                                         "text-muted-foreground",
                                         "transition-colors",
                                         "hover:bg-muted/30",
@@ -327,7 +328,7 @@ export default function InspectorBar({
                     </Tabs.List>
                 </div>
 
-                <div className="flex min-h-12 items-center justify-between gap-4 px-3 py-2">
+                <div className="flex min-h-12 flex-col items-stretch gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-2">
                     <div className="flex min-w-0 items-center gap-4 text-xs text-muted-foreground">
                         <div className="flex min-w-0 items-center gap-2">
                             <span
@@ -371,7 +372,7 @@ export default function InspectorBar({
                                 <Download className="size-3.5" />
                             }
                             onClick={onDownloadEml}
-                            className="hidden sm:inline-flex"
+                            className="w-full sm:w-auto"
                         >
                             {dict?.mailbox?.downloadEml ?? "Download .eml"}
                         </Button>

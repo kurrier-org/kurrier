@@ -322,14 +322,14 @@ function EmailRenderer({
 				</div>
 			</Modal>
 
-			<div className={"grid grid-cols-12"}>
-				<div className={"col-span-12"}>
+			<div className="min-w-0">
+				<div className="min-w-0">
 					{threadIndex === 0 && (
-						<div className="flex min-w-0 flex-wrap items-center gap-3">
-							<div className="min-w-0 break-words text-lg font-base sm:text-xl">
+						<div className="flex min-w-0 flex-wrap items-start gap-2 sm:gap-3">
+							<h1 className="min-w-0 flex-1 break-words text-pretty text-lg font-semibold leading-7 sm:text-xl sm:leading-8">
 								{message.subject ||
 									(dict?.mailbox?.noSubjectTitle ?? "No Subject")}
-							</div>
+							</h1>
 							<MailUnsubscriber
 								mailSubscription={mailSubscription}
 								message={message}
@@ -338,53 +338,58 @@ function EmailRenderer({
 					)}
 				</div>
 
-				<div className="col-span-12 flex min-w-0 flex-col md:col-span-6">
-					<div className="mt-4 flex min-w-0 flex-wrap items-center gap-1">
-						<div className={"text-sm font-semibold capitalize"}>
-							{getMessageName(message, "from") ??
-								slugify(String(getMessageAddress(message, "from")), {
-									separator: " ",
-								})}
+				<div className="mt-4 flex min-w-0 flex-col gap-3 sm:mt-5 md:flex-row md:items-end md:justify-between">
+					<div className="min-w-0">
+						<div className="flex min-w-0 flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-2">
+							<div className="min-w-0 break-words text-sm font-semibold capitalize">
+								{getMessageName(message, "from") ??
+									slugify(String(getMessageAddress(message, "from")), {
+										separator: " ",
+									})}
+							</div>
+							<div className="min-w-0 break-all text-xs text-muted-foreground sm:truncate">
+								{`<${getMessageAddress(message, "from") ?? getMessageName(message, "from")}>`}
+							</div>
 						</div>
-						<div className="min-w-0 break-all text-xs">{`<${getMessageAddress(message, "from") ?? getMessageName(message, "from")}>`}</div>
-					</div>
-					<div className="flex min-w-0 items-center gap-1">
-						<div className="min-w-0 break-all text-xs">
+						<div className="mt-1 min-w-0 break-all text-xs text-muted-foreground">
 							{dict?.mailbox?.toLower ?? "to"}{" "}
 							{`<${getMessageAddress(message, "to") ?? getMessageName(message, "to")}>`}
 						</div>
 					</div>
-				</div>
 
-				{/*<div className={"col-span-6 my-1"}>*/}
-				{/*    <div className={"text-xs"}>{formatted}</div>*/}
-				{/*</div>*/}
-
-				<div
-					className={
-						"col-span-12 my-1 flex flex-wrap items-center justify-between gap-2 md:col-span-6 md:justify-end"
-					}
-				>
-					<div className={"text-xs "}>{formatted}</div>
-					<div className={"flex gap-1 justify-end items-center"}>
-						<ThreadLabelHoverButtons
-							mailboxThreadItem={{ threadId, mailboxId: activeMailboxId }}
-							allLabels={allLabels}
-							labelsByThreadId={labelsByThreadId}
-						/>
-						<ActionIcon
-							variant={"transparent"}
-							onClick={() => {
-								setShowEditor(!showEditor);
-							}}
+					<div className="flex min-w-0 items-center justify-between gap-3 border-t pt-2 md:shrink-0 md:border-0 md:pt-0">
+						<time
+							dateTime={message.createdAt.toISOString()}
+							className="min-w-0 text-xs text-muted-foreground sm:whitespace-nowrap"
 						>
-							<Reply size={18} />
-						</ActionIcon>
+							{formatted}
+						</time>
+						<div className="flex shrink-0 items-center justify-end gap-1">
+							<ThreadLabelHoverButtons
+								mailboxThreadItem={{ threadId, mailboxId: activeMailboxId }}
+								allLabels={allLabels}
+								labelsByThreadId={labelsByThreadId}
+							/>
+							<ActionIcon
+								variant={"transparent"}
+								size={44}
+								aria-label={dict?.mailbox?.reply ?? "Reply"}
+								onClick={() => {
+									setShowEditor(!showEditor);
+								}}
+							>
+								<Reply size={18} />
+							</ActionIcon>
 
-						<div className={"cursor-pointer"}>
-							<Menu shadow="md" width={175} position={"left-start"}>
+							<Menu shadow="md" width={175} position="bottom-end">
 								<Menu.Target>
-									<EllipsisVertical size={18} />
+									<ActionIcon
+										variant="transparent"
+										size={44}
+										aria-label={dict?.mailbox?.actions ?? "More actions"}
+									>
+										<EllipsisVertical size={18} />
+									</ActionIcon>
 								</Menu.Target>
 
 								<Menu.Dropdown>
