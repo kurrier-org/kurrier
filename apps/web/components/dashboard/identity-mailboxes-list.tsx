@@ -202,7 +202,7 @@ export default function IdentityMailboxesList({
 	};
 
 	useEffect(() => {
-		setSidebarWidth("290px");
+		setSidebarWidth("340px");
 		return () => setSidebarWidth("250px");
 	}, []);
 
@@ -226,6 +226,8 @@ export default function IdentityMailboxesList({
 	}) => {
 		const Icon = ICON[m.kind] ?? Folder;
 		const slug = m.slug ?? "inbox";
+		const itemLabel =
+			m.kind === "custom" ? (m.name ?? "Mailbox") : TITLE[m.kind];
 		const href = `/w/${workspacePublicId}/dashboard/mail/${identityPublicId}/${slug}`;
 
 		const isActive =
@@ -236,13 +238,13 @@ export default function IdentityMailboxesList({
 		const hasChildren = m.children.length > 0;
 
 		return (
-			<div>
-				<div className="flex items-center">
+			<div className="min-w-0">
+				<div className="flex min-w-0 items-center gap-1">
 					{hasChildren ? (
 						<button
 							type="button"
 							onClick={() => setOpen((v) => !v)}
-							className="mr-1 rounded p-0.5 hover:bg-sidebar-accent/60"
+							className="flex size-6 shrink-0 items-center justify-center rounded hover:bg-sidebar-accent/60"
 							aria-label={open ? "Collapse" : "Expand"}
 						>
 							{open ? (
@@ -252,12 +254,13 @@ export default function IdentityMailboxesList({
 							)}
 						</button>
 					) : (
-						<span className="w-4" />
+						<span className="w-6 shrink-0" />
 					)}
 
-					<div className="flex w-full items-start">
+					<div className="flex min-w-0 flex-1 items-start gap-1">
 						<Link
 							href={href}
+							title={itemLabel}
 							onClick={onComplete ? () => onComplete() : undefined}
 							aria-disabled={!m.selectable}
 							className={cn(
@@ -273,8 +276,8 @@ export default function IdentityMailboxesList({
 							style={{ paddingLeft: 8 + level * 8 }}
 						>
 							<Icon className="h-4 w-4 shrink-0" />
-							<span className="truncate">
-								{m.kind === "custom" ? (m.name ?? "Mailbox") : TITLE[m.kind]}
+							<span className="min-w-0 truncate">
+								{itemLabel}
 								{m.unread > 0 && <span> ({m.unread})</span>}
 							</span>
 						</Link>
@@ -286,7 +289,7 @@ export default function IdentityMailboxesList({
 										type="button"
 										onClick={(e) => e.stopPropagation()}
 										className={cn(
-											"rounded p-1 mt-1.25 transition",
+											"mt-1 flex size-7 shrink-0 items-center justify-center rounded transition",
 											"hover:bg-sidebar-accent/60",
 										)}
 										aria-label={`Actions for ${m.name ?? "folder"}`}
@@ -325,11 +328,21 @@ export default function IdentityMailboxesList({
 	};
 
 	return (
-		<div className="space-y-2 px-2">
-			<div className={"my-2"}>
+		<div className="min-w-0 space-y-2 px-3 pb-4">
+			<div className="my-2 min-w-0">
 				<Select
+					className="min-w-0"
 					placeholder={dict?.common?.pickValue ?? "Pick value"}
-					size={"xs"}
+					size="sm"
+					allowDeselect={false}
+					withCheckIcon={false}
+					styles={{
+						input: {
+							overflow: "hidden",
+							textOverflow: "ellipsis",
+							whiteSpace: "nowrap",
+						},
+					}}
 					onChange={(publicId) => {
 						router.push(
 							`/w/${workspacePublicId}/dashboard/mail/${publicId}/inbox`,
@@ -346,9 +359,11 @@ export default function IdentityMailboxesList({
 				const tree = buildTree(mailboxes as MailboxEntity[], unreadCounts);
 
 				return (
-					<div key={identity.id}>
-						<div className="px-1 mb-1 mt-2 text-xs font-semibold text-sidebar-foreground/60 flex items-center gap-1">
-							<span>{identity.value}</span>
+					<div key={identity.id} className="min-w-0">
+						<div className="mb-1 mt-3 flex min-w-0 items-center gap-2 px-1 text-xs font-semibold text-sidebar-foreground/60">
+							<span className="min-w-0 flex-1 truncate" title={identity.value}>
+								{identity.value}
+							</span>
 							<AddNewFolder mailboxes={mailboxes} identity={identity} />
 						</div>
 

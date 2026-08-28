@@ -218,7 +218,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 			{/* This is the second sidebar */}
 			{/* We disable collapsible and let it fill remaining space */}
 
-			<Sidebar collapsible="none" className="hidden flex-1 md:flex">
+			<Sidebar collapsible="none" className="hidden min-w-0 flex-1 md:flex">
 				<SidebarHeader className="gap-3.5 border-b p-4">
 					<div className="text-left font-sans flex items-center gap-1">
 						<KurrierLogo size={36} />
@@ -226,9 +226,11 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 					</div>
 					{sidebarTopContent}
 				</SidebarHeader>
-				<SidebarContent>
+				<SidebarContent className="min-w-0">
 					<SidebarGroup className="px-0">
-						<SidebarGroupContent>{sidebarSectionContent}</SidebarGroupContent>
+						<SidebarGroupContent className="min-w-0">
+							{sidebarSectionContent}
+						</SidebarGroupContent>
 					</SidebarGroup>
 				</SidebarContent>
 			</Sidebar>
