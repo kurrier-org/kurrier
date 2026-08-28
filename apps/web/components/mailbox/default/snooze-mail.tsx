@@ -11,12 +11,11 @@ import { CalendarClock, Clock4, X } from "lucide-react";
 import { snoozeThread } from "@/lib/actions/mailbox";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
-function formatWhen(d: Date) {
-	const pad = (n: number) => String(n).padStart(2, "0");
-	const h24 = d.getHours();
-	const h12 = ((h24 + 11) % 12) + 1;
-	const ampm = h24 >= 12 ? "PM" : "AM";
-	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${h12}:${pad(d.getMinutes())} ${ampm}`;
+function formatWhen(d: Date, locale?: string) {
+	return new Intl.DateTimeFormat(locale ?? "en", {
+		dateStyle: "medium",
+		timeStyle: "short",
+	}).format(d);
 }
 
 type Props = {
@@ -46,7 +45,10 @@ export default function SnoozeMail({
 
 	const presets = useMemo(
 		() => [
-			{ label: dict?.mailbox?.laterToday ?? "Later today", date: dayjsTz().add(2, "h") },
+			{
+				label: dict?.mailbox?.laterToday ?? "Later today",
+				date: dayjsTz().add(2, "h"),
+			},
 			{
 				label: dict?.mailbox?.tomorrowMorning ?? "Tomorrow morning",
 				date: dayjsTz().endOf("d").add(8, "h").add(1, "m"),
@@ -73,7 +75,7 @@ export default function SnoozeMail({
 
 	const label = useMemo(() => {
 		if (!snoozedUntil) return dict?.mailbox?.snooze ?? "Snooze";
-		return `${dict?.mailbox?.snoozedBullet ?? "Snoozed • "}${formatWhen(snoozedUntil)}`;
+		return `${dict?.mailbox?.snoozedBullet ?? "Snoozed • "}${formatWhen(snoozedUntil, dict?.locale)}`;
 	}, [snoozedUntil, dict]);
 
 	async function commit(next: Date | null) {
@@ -101,7 +103,9 @@ export default function SnoozeMail({
 				centered
 				opened={pickerOpened}
 				onClose={pickerDisclosure.close}
-				title={<span className="text-xl">{dict?.mailbox?.snooze ?? "Snooze"}</span>}
+				title={
+					<span className="text-xl">{dict?.mailbox?.snooze ?? "Snooze"}</span>
+				}
 				size="sm"
 				zIndex={1003}
 			>
@@ -114,13 +118,15 @@ export default function SnoozeMail({
 						const d = dayjsTz(val);
 						if (d.isValid()) setPickerValue(d);
 					}}
-					valueFormat="DD MMM hh:mm A"
+					valueFormat={
+						dict?.locale === "pl" ? "DD.MM.YYYY HH:mm" : "DD MMM hh:mm A"
+					}
 					popoverProps={{ zIndex: 1004 }}
 					className="my-4"
 					timePickerProps={{
 						withDropdown: true,
 						popoverProps: { withinPortal: false },
-						format: "12h",
+						format: dict?.locale === "pl" ? "24h" : "12h",
 					}}
 					disabled={saving}
 				/>
@@ -142,7 +148,9 @@ export default function SnoozeMail({
 				opened={presetsOpened}
 				closeOnClickOutside={false}
 				onClose={presetsDisclosure.close}
-				title={<span className="text-xl">{dict?.mailbox?.snooze ?? "Snooze"}</span>}
+				title={
+					<span className="text-xl">{dict?.mailbox?.snooze ?? "Snooze"}</span>
+				}
 				size="sm"
 				zIndex={1001}
 			>
@@ -159,7 +167,7 @@ export default function SnoozeMail({
 						onClick={() => commit(preset.date.toDate())}
 					>
 						<span className="my-1">{preset.label}</span>
-						<span>{preset.date.format("MMM DD, hh:mm A")}</span>
+						<span>{formatWhen(preset.date.toDate(), dict?.locale)}</span>
 					</button>
 				))}
 

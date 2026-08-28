@@ -12,6 +12,7 @@ import {
 import React, { useMemo, useState } from "react";
 import { ReusableFormItems } from "@/components/common/reusable-form-items";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { selectPolishPluralForm } from "@/lib/locale-format";
 
 const WEEKDAY_LABEL_KEYS: Record<string, string> = {
 	MO: "weekdayMon",
@@ -148,15 +149,25 @@ function RecurrenceRulesFormInput({
 	}, [freq, interval, untilMode, untilDate, count, byWeekdays]);
 
 	const intervalUnitLabel =
-		freq === "DAILY"
-			? (dict?.calendar?.intervalDays ?? "day(s)")
-			: freq === "WEEKLY"
-				? (dict?.calendar?.intervalWeeks ?? "week(s)")
-				: freq === "MONTHLY"
-					? (dict?.calendar?.intervalMonths ?? "month(s)")
-					: freq === "YEARLY"
-						? (dict?.calendar?.intervalYears ?? "year(s)")
-						: "";
+		dict?.locale === "pl"
+			? freq === "DAILY"
+				? selectPolishPluralForm(interval, { one: "dzień", few: "dni", many: "dni" })
+				: freq === "WEEKLY"
+					? selectPolishPluralForm(interval, { one: "tydzień", few: "tygodnie", many: "tygodni" })
+					: freq === "MONTHLY"
+						? selectPolishPluralForm(interval, { one: "miesiąc", few: "miesiące", many: "miesięcy" })
+						: freq === "YEARLY"
+							? selectPolishPluralForm(interval, { one: "rok", few: "lata", many: "lat" })
+							: ""
+			: freq === "DAILY"
+				? (dict?.calendar?.intervalDays ?? "day(s)")
+				: freq === "WEEKLY"
+					? (dict?.calendar?.intervalWeeks ?? "week(s)")
+					: freq === "MONTHLY"
+						? (dict?.calendar?.intervalMonths ?? "month(s)")
+						: freq === "YEARLY"
+							? (dict?.calendar?.intervalYears ?? "year(s)")
+							: "";
 
 	const fields: BaseFormProps["fields"] = [
 		{

@@ -27,6 +27,7 @@ import {
 	markAsRead,
 } from "@/lib/actions/mailbox";
 import { getRawMessageDownloadUrl } from "@/lib/actions/uploads-actions";
+import { formatPolishCount } from "@/lib/locale-format";
 
 const InspectorBar = dynamic(
 	() => import("@/components/dashboard/inspector/inspector-bar"),
@@ -138,13 +139,12 @@ function EmailRenderer({
 	const dict = useOptionalDictionary();
 	const formatted = Temporal.Instant.from(message.createdAt.toISOString())
 		.toZonedDateTimeISO(Temporal.Now.timeZoneId())
-		.toLocaleString("en-US", {
+		.toLocaleString(dict?.locale ?? "en", {
 			day: "2-digit",
 			month: "short",
 			year: "numeric",
 			hour: "2-digit",
 			minute: "2-digit",
-			hour12: true,
 		});
 
 	const [showEditor, setShowEditor] = useState<boolean>(false);
@@ -202,16 +202,14 @@ function EmailRenderer({
 	const formattedTime = useMemo(() => {
 		return Temporal.Instant.from(message.createdAt.toISOString())
 			.toZonedDateTimeISO(Temporal.Now.timeZoneId())
-			.toLocaleString("en-GB", {
+			.toLocaleString(dict?.locale ?? "en", {
 				day: "numeric",
 				month: "long",
 				year: "numeric",
 				hour: "2-digit",
 				minute: "2-digit",
-				hour12: false,
-			})
-			.replace(",", " at");
-	}, [message.createdAt]);
+			});
+	}, [dict?.locale, message.createdAt]);
 
 	return (
 		<>
@@ -442,8 +440,12 @@ function EmailRenderer({
 			{attachments?.length > 0 && (
 				<div className="border-t border-dotted py-4">
 					<div className="font-semibold mb-4">
-						{attachments.length}
-						{dict?.mailbox?.attachmentsCountSuffix ?? " attachments"}
+						{formatPolishCount(
+							dict?.locale,
+							attachments.length,
+							{ one: "załącznik", few: "załączniki", many: "załączników" },
+							dict?.mailbox?.attachmentsCountSuffix?.trim() ?? "attachments",
+						)}
 					</div>
 
 					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

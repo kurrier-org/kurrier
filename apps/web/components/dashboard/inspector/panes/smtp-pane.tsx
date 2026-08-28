@@ -17,6 +17,7 @@ import type { MessageEntity } from "@db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { formatPolishCount } from "@/lib/locale-format";
 
 type Dict = ReturnType<typeof useOptionalDictionary>;
 
@@ -313,10 +314,14 @@ export default function SmtpPane({
                             className="gap-1.5"
                         >
                             <Route className="size-3" />
-                            {smtpData.hops.length} {dict?.mailbox?.deliveryLabel ?? "delivery"}{" "}
-                            {smtpData.hops.length === 1
-                                ? (dict?.mailbox?.hop ?? "hop")
-                                : (dict?.mailbox?.hopsPlural ?? "hops")}
+                            {dict?.locale === "pl"
+                                ? formatPolishCount(
+                                        dict.locale,
+                                        smtpData.hops.length,
+                                        { one: "przeskok dostarczenia", few: "przeskoki dostarczenia", many: "przeskoków dostarczenia" },
+                                        "delivery hops",
+                                    )
+                                : `${smtpData.hops.length} ${dict?.mailbox?.deliveryLabel ?? "delivery"} ${smtpData.hops.length === 1 ? (dict?.mailbox?.hop ?? "hop") : (dict?.mailbox?.hopsPlural ?? "hops")}` }
                         </Badge>
 
                         <Badge

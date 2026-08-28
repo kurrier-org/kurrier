@@ -13,6 +13,7 @@ import {
 } from "@/lib/actions/calendar";
 import { getDayjsTz } from "@common/day-js-extended";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { formatLocalizedCalendarTime } from "@/lib/locale-format";
 
 type UiGuestStatus =
 	| "accepted"
@@ -104,9 +105,12 @@ function ExternalEventView() {
 
 	const dateLabel =
 		start && end
-			? `${start.format("ddd, D MMM")} · ${start.format(
-					"hh:mm A",
-				)} – ${end.format("hh:mm A")} (${start.format("z")})`
+			? `${new Intl.DateTimeFormat(dict?.locale ?? "en", {
+						weekday: "short",
+						day: "numeric",
+						month: "short",
+						timeZone: state.defaultCalendar.timezone,
+					}).format(start.toDate())} · ${formatLocalizedCalendarTime(start.toDate(), dict?.locale, state.defaultCalendar.timezone)} – ${formatLocalizedCalendarTime(end.toDate(), dict?.locale, state.defaultCalendar.timezone)} (${start.format("z")})`
 			: "";
 
 	const organizerLabel =

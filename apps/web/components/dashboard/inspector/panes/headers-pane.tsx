@@ -10,6 +10,7 @@ import type { MessageEntity } from "@db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { formatPolishCount } from "@/lib/locale-format";
 
 type HeadersPaneProps = {
     message?: MessageEntity;
@@ -266,7 +267,12 @@ export default function HeadersPane({
                 <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                         <Badge variant="secondary">
-                            {rows.length} {dict?.mailbox?.headersLabel ?? "headers"}
+                            {formatPolishCount(
+                                dict?.locale,
+                                rows.length,
+                                { one: "nagłówek", few: "nagłówki", many: "nagłówków" },
+                                dict?.mailbox?.headersLabel ?? "headers",
+                            )}
                         </Badge>
 
                         <span className="text-xs text-muted-foreground">

@@ -19,11 +19,13 @@ import CalendarEventsLayer from "@/components/dashboard/calendars/calendar-event
 import { getDayjsTz } from "@common/day-js-extended";
 import AllDayEventsRow from "@/components/dashboard/calendars/all-day-events-row";
 import dayjs from "dayjs";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { formatLocalizedTime } from "@/lib/locale-format";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
-function formatHourLabel(hour: number) {
-	return dayjs().hour(hour).minute(0).format("h A");
+function formatHourLabel(hour: number, locale?: string) {
+	return formatLocalizedTime(dayjs().hour(hour).minute(0).toDate(), locale);
 }
 
 export function WeekGrid({
@@ -39,6 +41,7 @@ export function WeekGrid({
 	attendeeContacts: Promise<ComposeContact[]>;
 	allDayByDay: Map<string, AllDayFragment[]>;
 }) {
+	const dict = useOptionalDictionary();
 	const { setState, state } = useDynamicContext<CalendarState>();
 	const params = useParams();
 	const dayjsTz = getDayjsTz(state.defaultCalendar.timezone);
@@ -143,7 +146,7 @@ export function WeekGrid({
 									key={hour}
 									className="h-12 border-b border-neutral-200 dark:border-neutral-700 flex items-start justify-end pr-3 pt-1 text-xxs text-neutral-400 dark:text-brand-foreground"
 								>
-									{formatHourLabel(hour)}
+									{formatHourLabel(hour, dict?.locale)}
 								</div>
 							))}
 						</div>

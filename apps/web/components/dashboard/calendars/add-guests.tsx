@@ -11,6 +11,7 @@ import GuestList, {
 	UiGuestStatus,
 } from "@/components/dashboard/calendars/guest-list";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { formatPolishCount } from "@/lib/locale-format";
 
 type SearchableContactsOption = ComboboxItem & {
 	row?: {
@@ -143,7 +144,16 @@ function AddGuests({
 			<div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
 				<Users size={14} className="shrink-0" />
 				<span className="font-medium">
-					{guestCount === 1 ? (dict?.calendar?.oneGuest ?? "1 guest") : `${guestCount} ${dict?.calendar?.guestsPlural ?? "guests"}`}
+					{dict?.locale === "pl"
+						? formatPolishCount(
+								dict.locale,
+								guestCount,
+								{ one: "gość", few: "goście", many: "gości" },
+								"guests",
+							)
+						: guestCount === 1
+							? (dict?.calendar?.oneGuest ?? "1 guest")
+							: `${guestCount} ${dict?.calendar?.guestsPlural ?? "guests"}`}
 				</span>
 			</div>
 		</>

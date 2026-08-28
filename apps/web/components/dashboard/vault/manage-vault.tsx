@@ -31,6 +31,7 @@ import { toast } from "sonner";
 
 import { Container } from "@/components/common/containers";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { formatPolishCount } from "@/lib/locale-format";
 import type { FetchVaultSecretsResult } from "@/lib/actions/vault";
 
 type VaultSecret = FetchVaultSecretsResult[number];
@@ -232,10 +233,14 @@ export default function ManageVault({
 
 					{secrets.length > 0 && (
 						<Badge variant="light" radius="sm">
-							{secrets.length}{" "}
-							{secrets.length === 1
-								? (dict?.vault?.secretSingular ?? "secret")
-								: (dict?.vault?.secretPlural ?? "secrets")}
+							{formatPolishCount(
+								dict?.locale,
+								secrets.length,
+								{ one: "sekret", few: "sekrety", many: "sekretów" },
+								secrets.length === 1
+									? (dict?.vault?.secretSingular ?? "secret")
+									: (dict?.vault?.secretPlural ?? "secrets"),
+							)}
 						</Badge>
 					)}
 				</div>

@@ -15,6 +15,7 @@ import {
 import type { MessageEntity } from "@db";
 import { Badge } from "@/components/ui/badge";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { formatPolishCount } from "@/lib/locale-format";
 
 type Dict = ReturnType<typeof useOptionalDictionary>;
 
@@ -332,10 +333,14 @@ export default function DeliveryPane({
                         className="gap-1.5"
                     >
                         <Route className="size-3" />
-                        {events.length} {dict?.mailbox?.deliveryLabel ?? "delivery"}{" "}
-                        {events.length === 1
-                            ? (dict?.mailbox?.event ?? "event")
-                            : (dict?.mailbox?.eventsPlural ?? "events")}
+                        {dict?.locale === "pl"
+                            ? formatPolishCount(
+                                    dict.locale,
+                                    events.length,
+                                    { one: "zdarzenie dostarczenia", few: "zdarzenia dostarczenia", many: "zdarzeń dostarczenia" },
+                                    "delivery events",
+                                )
+                            : `${events.length} ${dict?.mailbox?.deliveryLabel ?? "delivery"} ${events.length === 1 ? (dict?.mailbox?.event ?? "event") : (dict?.mailbox?.eventsPlural ?? "events")}` }
                     </Badge>
 
                     {message.rawStorageKey && (

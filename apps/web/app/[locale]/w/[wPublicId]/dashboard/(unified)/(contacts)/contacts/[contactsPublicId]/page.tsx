@@ -26,6 +26,7 @@ import {getRedis} from "@/lib/actions/get-redis";
 import {isSignedIn} from "@/lib/actions/auth";
 import {generateSignedUrl} from "@common";
 import { getDictionary } from "@/lib/dictionaries";
+import { formatPolishCount } from "@/lib/locale-format";
 import { cookies } from "next/headers";
 
 async function Page({ params }: { params: { contactsPublicId: string } }) {
@@ -346,8 +347,12 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 									</span>
 								</div>
 								<span className="text-[11px] text-muted-foreground/70">
-									{addresses.length}{" "}
-									{addresses.length === 1 ? c.location : c.locations}
+									{formatPolishCount(
+										dict.locale,
+										addresses.length,
+										{ one: "lokalizacja", few: "lokalizacje", many: "lokalizacji" },
+										addresses.length === 1 ? c.location : c.locations,
+									)}
 								</span>
 							</header>
 

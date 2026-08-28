@@ -12,6 +12,7 @@ import { useParams, useRouter } from "next/navigation";
 import { CalendarEventAttendeeEntity, CalendarEventEntity } from "@db";
 import { getDayjsTz } from "@common/day-js-extended";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { formatLocalizedCalendarTime } from "@/lib/locale-format";
 
 type MonthGridProps = {
 	events: CalendarEventEntity[];
@@ -149,7 +150,7 @@ export default function MonthGrid({
 									const title = ev.title?.trim() || (dict?.calendar?.noTitle ?? "(no title)");
 									const startLabel = ev.isAllDay
 										? null
-										: dayjsTz(ev.startsAt).format("h:mm A");
+										: formatLocalizedCalendarTime(dayjsTz(ev.startsAt).toDate(), dict?.locale, state.defaultCalendar.timezone);
 
 									return (
 										<div

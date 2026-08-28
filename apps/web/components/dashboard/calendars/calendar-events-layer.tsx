@@ -5,6 +5,8 @@ import type { EventSlotRenderFragment, CalendarState } from "@schema";
 import CalendarAddEventPopover from "@/components/dashboard/calendars/calendar-add-event-popover";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { getDayjsTz } from "@common/day-js-extended";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { formatLocalizedCalendarTime } from "@/lib/locale-format";
 
 type FragmentCellProps = {
 	fragment: EventSlotRenderFragment;
@@ -18,6 +20,7 @@ function FragmentCell({
 	showTitle,
 }: FragmentCellProps) {
 	const { state, setState } = useDynamicContext<CalendarState>();
+	const dict = useOptionalDictionary();
 
 	const colCount = fragment.columnCount ?? fallbackCount;
 	const colWidth = 90 / colCount;
@@ -64,13 +67,23 @@ function FragmentCell({
 				{showTitle && (
 					<div
 						className={"flex flex-wrap"}
-						title={`${fragment.event.title} - ${start.format("h:mm A")} - ${end.format("h:mm A")}`}
+						title={`${fragment.event.title} - ${formatLocalizedCalendarTime(start.toDate(), dict?.locale, state.defaultCalendar.timezone)} - ${formatLocalizedCalendarTime(end.toDate(), dict?.locale, state.defaultCalendar.timezone)}`}
 					>
 						<div className="truncate font-medium text-xs">
 							{fragment.event.title}
 						</div>
 						<div className="truncate font-medium text-xs mx-1">
-							{start.format("h:mm A")} - {end.format("h:mm A")}
+							{formatLocalizedCalendarTime(
+								start.toDate(),
+								dict?.locale,
+								state.defaultCalendar.timezone,
+							)}{" "}
+							-{" "}
+							{formatLocalizedCalendarTime(
+								end.toDate(),
+								dict?.locale,
+								state.defaultCalendar.timezone,
+							)}
 						</div>
 					</div>
 				)}

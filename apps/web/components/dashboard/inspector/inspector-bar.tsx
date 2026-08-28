@@ -25,6 +25,7 @@ import type {
     InspectorView,
 } from "@/components/dashboard/inspector/inspector-views";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { formatPolishCount } from "@/lib/locale-format";
 
 export type {
     InspectorView,
@@ -358,7 +359,12 @@ export default function InspectorBar({
                             </span>
 
                             <span>
-                                {Object.keys(message?.headersJson || {}).length} {dict?.mailbox?.headersLabel ?? "headers"}
+                                {formatPolishCount(
+                                dict?.locale,
+                                Object.keys(message?.headersJson || {}).length,
+                                { one: "nagłówek", few: "nagłówki", many: "nagłówków" },
+                                dict?.mailbox?.headersLabel ?? "headers",
+                            )}
                             </span>
                         </div>
                     </div>

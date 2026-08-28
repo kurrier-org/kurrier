@@ -98,7 +98,7 @@ function DriveTile({ entry }: { entry: DriveEntryEntity }) {
 							{lastModified ? (
 								<>
 									<span className="truncate">
-										{formatLastModified(lastModified)}
+										{formatLastModified(lastModified, dict?.locale)}
 									</span>
 								</>
 							) : null}
@@ -229,11 +229,14 @@ function formatBytes(n: number) {
 	return `${v.toFixed(digits)} ${units[i]}`;
 }
 
-function formatLastModified(v: any) {
+function formatLastModified(v: any, locale?: string) {
 	const s = typeof v === "string" ? v : "";
 	if (!s) return "";
 	const d = new Date(s);
-	return dayjs(d).format("hh:mm A MMM D, YYYY");
+	return new Intl.DateTimeFormat(locale ?? "en", {
+		dateStyle: "medium",
+		timeStyle: "short",
+	}).format(d);
 }
 
 function formatEntryName(name: string) {

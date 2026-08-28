@@ -7,7 +7,6 @@ import { Button } from "@mantine/core";
 import { HardDrive, Plus, CheckCircle, Clock } from "lucide-react";
 import type { SyncProvidersRow } from "@/lib/actions/dashboard";
 import { DriveVolumeEntity } from "@db";
-import dayjs from "dayjs";
 import Link from "next/link";
 import { IconDatabaseShare } from "@tabler/icons-react";
 import { modals } from "@mantine/modals";
@@ -180,7 +179,9 @@ export default function VolumesManager({
 															{v.createdAt ? (
 																<span className="text-xs text-muted-foreground">
 																	{dict?.platform?.createdColonPrefix ?? "Created:"}{" "}
-																	{dayjs(v.createdAt).format("MMM D, YYYY")}
+																	{new Intl.DateTimeFormat(dict?.locale ?? "en", {
+																	dateStyle: "medium",
+																}).format(new Date(v.createdAt))}
 																</span>
 															) : null}
 														</div>
