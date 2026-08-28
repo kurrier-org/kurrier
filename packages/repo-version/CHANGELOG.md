@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 3.9.6
+
+### Patch Changes
+
+- [`4314d3d`](https://github.com/kurrier-org/kurrier/commit/4314d3df20499be596c2d9d1ce2c8e6510d1beaa) Thanks [@krokhale](https://github.com/krokhale)! - Add Russian language support, allow disabling local email/password login, and improve rendering for faster instant navigation.
+
 ## 3.9.5
 
 ### Patch Changes
