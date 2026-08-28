@@ -1,21 +1,15 @@
-import { driveVolumes, providerSecrets, smtpAccountSecrets } from "@db";
-import { ProviderLabels, STORAGE_PROVIDERS } from "@schema";
+import { driveVolumes } from "@db";
+import { STORAGE_PROVIDERS } from "@schema";
 import { redirect } from "next/navigation";
-import * as React from "react";
 import { Container } from "@/components/common/containers";
 import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
 import VolumesManager from "@/components/dashboard/storage/volumes-manager";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { getWorkspacePublicId, rlsClient } from "@/lib/actions/clients";
-import {
-	fetchDecryptedSecrets,
-	getProviderById,
-	syncProviders,
-} from "@/lib/actions/dashboard";
+import { syncProviders } from "@/lib/actions/dashboard";
 import { getDictionary } from "@/lib/dictionaries";
 import { SITE_FEATURES } from "@/lib/site-features";
-import { parseSecret } from "@/lib/utils";
 
 export default async function ProvidersPage({
 	params,
@@ -32,42 +26,6 @@ export default async function ProvidersPage({
 	const userProviders = await syncProviders();
 	const rls = await rlsClient();
 	const vols = await rls((tx) => tx.select().from(driveVolumes));
-	const [, userProviderAccounts] = await Promise.all([
-		fetchDecryptedSecrets({
-			linkTable: smtpAccountSecrets,
-			foreignCol: smtpAccountSecrets.accountId,
-			secretIdCol: smtpAccountSecrets.secretId,
-		}),
-		fetchDecryptedSecrets({
-			linkTable: providerSecrets,
-			foreignCol: providerSecrets.providerId,
-			secretIdCol: providerSecrets.secretId,
-		}),
-	]);
-
-	const options = [];
-	for (const providerAccount of userProviderAccounts) {
-		const secret = parseSecret(providerAccount);
-		if (secret.verified) {
-			const provider = await getProviderById(
-				String(providerAccount.linkRow.providerId),
-			);
-			const providerTypeKey = provider?.type
-				? `providerName${provider.type.charAt(0).toUpperCase()}${provider.type.slice(1)}`
-				: null;
-			const providerName =
-				(providerTypeKey &&
-					(dict.platform as Record<string, string>)[providerTypeKey]) ||
-				ProviderLabels[provider?.type || "unknown"] ||
-				dict.platform.unknownProvider;
-			if (provider) {
-				options.push({
-					label: providerName,
-					value: String(providerAccount.providerId),
-				});
-			}
-		}
-	}
 
 	return (
 		<>
@@ -109,7 +67,6 @@ export default async function ProvidersPage({
 						workspacePublicId={workspacePublicId}
 						volumes={vols}
 						provisioned={true}
-						providerSelectOptions={options}
 					/>
 				</div>
 			</div>

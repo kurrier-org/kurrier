@@ -1445,7 +1445,7 @@ export async function addNewVolume(_prev: FormState, formData: FormData) {
 		const data = decode(formData);
 		const user = await isSignedIn();
 
-		const label = String(data.bucketName || "").trim();
+		const label = String(data.volumeName || data.bucketName || "").trim();
 
 		if (!label) {
 			return { success: false, error: "dashboard.volumeNameRequired" };
@@ -1479,7 +1479,10 @@ export async function addNewVolume(_prev: FormState, formData: FormData) {
 			}),
 		);
 
-		revalidatePath("/w/[workspaceId]/dashboard/platform/storage");
+		revalidatePath(
+			"/[locale]/w/[wPublicId]/dashboard/platform/storage",
+			"page",
+		);
 
 		return {
 			success: true,
