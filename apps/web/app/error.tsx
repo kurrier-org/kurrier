@@ -30,6 +30,12 @@ const COPY: Record<
 		retry: "Try again",
 		back: "Back to Kurrier",
 	},
+	pl: {
+		title: "Coś poszło nie tak",
+		body: "Wystąpił nieoczekiwany błąd. Spróbuj ponownie albo wróć na stronę główną.",
+		retry: "Spróbuj ponownie",
+		back: "Wróć do Kurrier",
+	},
 	ru: {
 		title: "Что-то пошло не так",
 		body: "Произошла непредвиденная ошибка. Попробуйте ещё раз или вернитесь на главную страницу.",

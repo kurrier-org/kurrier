@@ -1,0 +1,76 @@
+{
+	"auth": {
+		"missingCredentials": "Brak adresu e-mail lub hasła",
+		"invalidCredentials": "Nieprawidłowe dane logowania",
+		"loggedIn": "Zalogowano",
+		"accountAlreadyExists": "Konto z tym adresem e-mail już istnieje",
+		"welcome": "Witaj",
+		"signupDisabled": "Rejestracja jest obecnie wyłączona. Skontaktuj się z administratorem.",
+		"localLoginDisabled": "Logowanie lokalne jest obecnie wyłączone. Zaloguj się przez SSO."
+	},
+	"contacts": {
+		"noDefaultAddressBook": "Nie znaleziono domyślnej książki adresowej użytkownika."
+	},
+	"calendar": {
+		"missingCalendarId": "Brak identyfikatora kalendarza",
+		"failedToPersistEvent": "Nie udało się zapisać wydarzenia w kalendarzu"
+	},
+	"drive": {
+		"folderNameRequired": "Nazwa folderu jest wymagana",
+		"missingVolume": "Brak woluminu",
+		"volumeNotFound": "Nie znaleziono woluminu",
+		"invalidVolumeType": "Nieprawidłowy typ woluminu",
+		"cloudVolumeMissingBucket": "W woluminie chmurowym brakuje zasobnika",
+		"folderCreated": "Utworzono folder",
+		"deletedFolder": "Usunięto folder",
+		"deletedFile": "Usunięto plik"
+	},
+	"labels": {
+		"invalidIdentity": "Nieprawidłowa tożsamość e-mail"
+	},
+	"mailRules": {
+		"nameRequired": "Nazwa reguły jest wymagana.",
+		"priorityNonNegative": "Priorytet musi być liczbą nieujemną.",
+		"atLeastOneCriteria": "Dodaj co najmniej jedno kryterium.",
+		"atLeastOneAction": "Wybierz co najmniej jedną akcję.",
+		"labelIdRequired": "Identyfikator etykiety jest wymagany, gdy włączono opcję „Zastosuj etykietę”.",
+		"duplicateName": "Reguła o tej nazwie już istnieje dla tej tożsamości e-mail.",
+		"nameMustBeUnique": "Nazwa reguły musi być unikatowa dla każdej tożsamości e-mail.",
+		"validationErrorsOccurred": "Wystąpiły błędy walidacji.",
+		"missingRuleId": "Brak identyfikatora reguły"
+	},
+	"mailbox": {
+		"folderNameRequired": "Nazwa folderu jest wymagana",
+		"invalidParentFolder": "Nieprawidłowy folder nadrzędny",
+		"subscriptionNotFound": "Nie znaleziono subskrypcji",
+		"displayNameUpdated": "Zaktualizowano nazwę wyświetlaną."
+	},
+	"dashboard": {
+		"providerAccountUpdated": "Pomyślnie zaktualizowano konto dostawcy",
+		"done": "Gotowe",
+		"noProviderSecretFound": "Nie znaleziono sekretu dostawcy dla tego wyboru",
+		"unsupportedProviderType": "Nieobsługiwany typ dostawcy lub brak dostawcy",
+		"failedToAddIdentity": "Nie udało się dodać nowej tożsamości e-mail",
+		"addedNewIdentity": "Dodano nową tożsamość e-mail",
+		"mustAssignAtLeastOneMember": "Musisz przypisać co najmniej jednego członka",
+		"notSignedIn": "Nie zalogowano",
+		"googleAccountNotFound": "Nie znaleziono konta Google",
+		"googleAccountNotConnected": "Konto Google nie jest połączone",
+		"addedGoogleEmailIdentity": "Dodano tożsamość e-mail Google",
+		"customProviderUnavailable": "Ten dostawca poczty e-mail nie jest już dostępny. Odśwież stronę i spróbuj ponownie.",
+		"displayNameRequired": "Nazwa wyświetlana jest wymagana",
+		"mailboxAlreadyConnected": "Ta skrzynka pocztowa jest już połączona",
+		"customProviderAccountAdded": "Dodano konto dostawcy",
+		"customProviderMailboxConnected": "Połączono skrzynkę pocztową",
+		"customProviderMailboxSyncing": "Połączono skrzynkę pocztową; synchronizacja będzie kontynuowana w tle",
+		"apiKeyCreated": "Pomyślnie utworzono klucz API",
+		"volumeNameRequired": "Nazwa woluminu jest wymagana",
+		"invalidVolumeName": "Nieprawidłowa nazwa woluminu",
+		"s3BucketNotConfigured": "Nie skonfigurowano S3_BUCKET",
+		"addedNewVolume": "Dodano nowy wolumin",
+		"webhookCreated": "Pomyślnie utworzono webhook"
+	},
+	"workspace": {
+		"updated": "Zaktualizowano obszar roboczy"
+	}
+}
