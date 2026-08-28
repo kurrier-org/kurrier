@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
+import { cn } from "@/lib/utils";
 
 function encodeSegments(segs: string[]) {
 	return segs.map(encodeURIComponent);
@@ -94,13 +95,15 @@ function DriveTopBar({
 	return (
 		<div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
 			{crumbs.map((c, i) => {
-				const isRoot = i === 0;
 				const isLast = i === crumbs.length - 1;
 
 				return (
 					<div
 						key={c.href}
-						className="flex min-w-0 items-center gap-2 last:flex-1"
+						className={cn(
+							"min-w-0 items-center gap-2 last:flex-1",
+							isLast ? "flex" : "hidden sm:flex",
+						)}
 					>
 						{i > 0 && <span className="text-muted-foreground">/</span>}
 
@@ -108,11 +111,9 @@ function DriveTopBar({
 							href={c.href}
 							className={[
 								"truncate text-sm transition-colors",
-								isRoot
-									? "font-semibold text-brand dark:text-brand-300"
-									: isLast
-										? "font-medium text-foreground"
-										: "text-muted-foreground hover:text-foreground",
+								isLast
+									? "font-semibold text-foreground"
+									: "text-muted-foreground hover:text-foreground",
 							].join(" ")}
 						>
 							{c.label}

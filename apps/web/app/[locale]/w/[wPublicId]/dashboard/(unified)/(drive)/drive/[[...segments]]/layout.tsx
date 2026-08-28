@@ -28,7 +28,7 @@ async function DriveHeader({
 	]);
 
 	return (
-		<header className="flex min-w-0 items-center gap-2 border-b bg-background/60 px-3 py-3 backdrop-blur sm:px-4 sm:py-4">
+		<header className="flex h-16 min-w-0 shrink-0 items-center gap-2 border-b bg-background/60 px-3 backdrop-blur sm:px-4">
 			<SidebarTrigger className="-ml-1" />
 
 			<Separator
@@ -62,8 +62,8 @@ export default function DriveSegmentsLayout({
 				<DriveHeader params={params} />
 			</Suspense>
 
-			<main>
-				<section>{children}</section>
+			<main className="flex min-h-0 flex-1 flex-col">
+				<section className="flex min-h-0 flex-1 flex-col">{children}</section>
 			</main>
 		</>
 	);

@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import type * as React from "react";
 import { Suspense } from "react";
 import Loading from "@/app/loading";
+import DriveSideBar from "@/components/dashboard/drive/drive-side-bar";
 import NewUploadButton from "@/components/dashboard/drive/new-upload-button";
 import { AppSidebar } from "@/components/ui/dashboards/unified/default/app-sidebar";
 import NavUserWrapper from "@/components/ui/dashboards/workspace/nav-user-wrapper";
@@ -36,7 +37,9 @@ async function DriveDashboard({ children }: { children: React.ReactNode }) {
 		<DynamicContextProvider initialState={initialState}>
 			<AppSidebar
 				workspacePublicId={workspacePublicId}
-				sidebarSectionContent={null}
+				sidebarSectionContent={
+					<DriveSideBar workspacePublicId={workspacePublicId} />
+				}
 				navUserContent={
 					<Suspense fallback={<Loading />}>
 						<NavUserWrapper />
