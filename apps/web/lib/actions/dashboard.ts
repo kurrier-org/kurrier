@@ -2153,8 +2153,9 @@ export const verifyMailtrapConnection = async (
 					}
 					: {
 						ok: true,
-						message:
-							"Token is valid, but no inbound inboxes exist on this account yet.",
+						message: truncated
+							? `Token is valid, but no inbound inboxes were found in the first ${MAILTRAP_MAX_FOLDERS_CHECKED} folders; additional folders were not checked.`
+							: "Token is valid, but no inbound inboxes exist on this account yet.",
 						meta: { inboxes: [] },
 					};
 			} catch (err: any) {
