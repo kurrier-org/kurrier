@@ -5,7 +5,8 @@
 		"loggedIn": "Logged in!",
 		"accountAlreadyExists": "An account with this email already exists",
 		"welcome": "Welcome!",
-		"signupDisabled": "Signup is currently disabled. Please contact your administrator."
+		"signupDisabled": "Signup is currently disabled. Please contact your administrator.",
+		"localLoginDisabled": "Local login is currently disabled. Please use SSO to sign in."
 	},
 	"contacts": {
 		"noDefaultAddressBook": "No default address book found for user."
@@ -41,7 +42,8 @@
 	"mailbox": {
 		"folderNameRequired": "Folder name is required",
 		"invalidParentFolder": "Invalid parent folder",
-		"subscriptionNotFound": "Subscription not found"
+		"subscriptionNotFound": "Subscription not found",
+		"displayNameUpdated": "Display name updated."
 	},
 	"dashboard": {
 		"providerAccountUpdated": "Successfully updated provider account",
@@ -55,6 +57,12 @@
 		"googleAccountNotFound": "Google account not found",
 		"googleAccountNotConnected": "Google account is not connected",
 		"addedGoogleEmailIdentity": "Added Google email identity",
+		"customProviderUnavailable": "This email provider is no longer available. Refresh the page and try again.",
+		"displayNameRequired": "Display name is required",
+		"mailboxAlreadyConnected": "This mailbox is already connected",
+		"customProviderAccountAdded": "Provider account added",
+		"customProviderMailboxConnected": "Mailbox connected",
+		"customProviderMailboxSyncing": "Mailbox connected; synchronization will continue in the background",
 		"apiKeyCreated": "API key created successfully",
 		"volumeNameRequired": "Volume name is required",
 		"invalidVolumeName": "Invalid volume name",

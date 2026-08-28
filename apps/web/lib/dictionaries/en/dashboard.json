@@ -5,6 +5,7 @@
 	"navCalendar": "Calendar",
 	"navDrive": "Drive",
 	"navPlatform": "Platform",
+	"closeNavigation": "Close navigation",
 	"logOut": "Log out",
 	"storageOverLimit": "Your account is on hold. Please upgrade your workspace storage limit."
 }

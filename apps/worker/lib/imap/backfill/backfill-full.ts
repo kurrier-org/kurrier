@@ -37,7 +37,7 @@ export function getOrInitQuota(
 	return quota;
 }
 
-function getDailyQuota(identity: IdentityEntity): number {
+export function getDailyQuota(identity: IdentityEntity): number {
 	const meta = (identity.metaData as any) ?? {};
 	const val = Number(meta.dailyQuota);
 	return Number.isFinite(val) && val > 0 ? val : defaultImapQuota;
@@ -118,11 +118,14 @@ async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 			})
 			.where(eq(mailboxSync.id, sync.id));
 
-		// update local copy so any later logic sees it
 		sync.lastSeenUid = bootLastSeen as any;
 	}
 
 	let cursor = Number(sync.backfillCursorUid ?? 0);
+
+	if (sync.phase === "IDLE" && cursor <= 0) {
+		return;
+	}
 
 	// Nothing left to backfill for this mailbox
 	if (cursor <= 0) {
@@ -174,18 +177,17 @@ async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 			source: true,
 		},
 	)) {
-		if (quota.limit <= 0) break;
 
 		const m = msg as FetchMessageObject;
 		const raw = m.source ? m.source.toString() : "";
-		if (!raw) continue;
+		if (!raw) {
+			throw new Error(
+				`IMAP backfill returned empty source identity=${identityId} mailbox=${path} uid=${m.uid}`,
+			);
+		}
 
 		const size = m.size ?? Buffer.byteLength(raw, "utf8");
 
-		if (size > quota.limit) {
-			quota.limit = 0;
-			break;
-		}
 
 		batchBytes += size;
 		processedCount += 1;
@@ -243,48 +245,6 @@ async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 	}
 }
 
-export const startFullBackfill = async (
-	imapInstances: Map<string, ImapFlow>,
-) => {
-	const identitiesRows = await db
-		.select()
-		.from(identities)
-		.where(eq(identities.kind, "email"));
-	const filteredRows = identitiesRows.filter((id) => {
-		return !!id.smtpAccountId;
-	});
-
-	for (const identity of filteredRows) {
-		// await davCreateCalendarForIdentity(identity.id)
-		await davCreateCalendarForIdentity({
-			identityId: identity.id,
-			userId: identity.ownerId,
-			workspaceId: identity.workspaceId,
-		})
-		const dailyQuotaBytes = getDailyQuota(identity as IdentityEntity);
-		const quota = getOrInitQuota(identity.id, dailyQuotaBytes);
-
-		if (quota.limit <= 0) {
-			console.log("[imap:backfill-full] quota exhausted, skipping identity", {
-				identityId: identity.id,
-				remaining: quota.limit,
-			});
-			continue;
-		}
-
-		const client = await initSmtpClient(identity.id, imapInstances);
-		if (!client) {
-			console.warn(
-				"[imap:backfill-full] could not init imap client for identity",
-				identity.id,
-			);
-			continue;
-		}
-
-		await startFullBackfillForIdentity(client, identity.id, quota);
-	}
-};
-
 export const startFullBackfillForIdentity = async (
 	client: ImapFlow,
 	identityId: string,
@@ -333,50 +293,88 @@ export const startFullBackfillForIdentity = async (
 
 			const path = (row.metaData as any)?.imap?.path as string | undefined;
 			if (!path) continue;
-			await backfillMailboxFull({
-				client,
-				workspaceId: identity.workspaceId,
-				identityId,
-				ownerId,
-				mailboxId: row.id,
-				path,
-				quota,
-			});
+
+			try {
+				await backfillMailboxFull({
+					client,
+					workspaceId: identity.workspaceId,
+					identityId,
+					ownerId,
+					mailboxId: row.id,
+					path,
+					quota,
+				});
+			} catch (err: any) {
+				if (
+					err?.code === "NoConnection" ||
+					err?.code === "ETIMEOUT" ||
+					!client.usable
+				) {
+					console.warn(
+						`[imap:backfill-full] IMAP connection lost; stopping identity pass identity=${identityId}`,
+					);
+					break;
+				}
+
+				console.error("[imap:backfill-full] mailbox failed", {
+					identityId,
+					mailboxId: row.id,
+					path,
+					err,
+				});
+
+				continue;
+			}
 		}
 	} catch (err) {
-		console.error("[imap:backfill-full] error", err);
+
+		console.error("[imap:backfill-full] error", {
+			identityId,
+			err,
+		});
+		throw err;
+
 	}
 };
-
-
 
 export async function startBackfillForIdentity(
 	identityId: string,
 	imapInstances: Map<string, ImapFlow>,
 ) {
+
 	const [identity] = await db
+
 		.select()
 		.from(identities)
 		.where(eq(identities.id, identityId));
-
-	if (!identity) return;
-
+	if (!identity) return false;
 	const quota = getOrInitQuota(
 		identity.id,
 		getDailyQuota(identity as IdentityEntity),
 	);
-
-	if (quota.limit <= 0) return;
-
-	const client = await initSmtpClient(identity.id, imapInstances);
-
-	if (!client?.authenticated || !client?.usable) return;
-
+	if (quota.limit <= 0) {
+		console.info("[imap:backfill-full] quota exhausted", {
+			identityId,
+		});
+		return false;
+	}
+	const client = await initSmtpClient(
+		identity.id,
+		imapInstances,
+	);
+	if (!client?.authenticated || !client?.usable) {
+		return false;
+	}
 	await davCreateCalendarForIdentity({
 		identityId: identity.id,
 		userId: identity.ownerId,
 		workspaceId: identity.workspaceId,
 	});
+	await startFullBackfillForIdentity(
+		client,
+		identity.id,
+		quota,
+	);
+	return quota.limit > 0;
 
-	await startFullBackfillForIdentity(client, identity.id, quota);
 }

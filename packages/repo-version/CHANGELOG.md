@@ -1,5 +1,23 @@
 # @kurrier/repo
 
+## 3.9.1
+
+### Patch Changes
+
+- [`f8192fc`](https://github.com/kurrier-org/kurrier/commit/f8192fcc91f6165b0d9b6e180aec985ae2048378) Thanks [@krokhale](https://github.com/krokhale)! - Add Russian language support, allow disabling local email/password login, and improve rendering for faster instant navigation.
+
+## 3.9.0
+
+### Minor Changes
+
+- [`4baf594`](https://github.com/kurrier-org/kurrier/commit/4baf594415154632d7431fc5a6bbd14c8d5d738f) Thanks [@krokhale](https://github.com/krokhale)! - Harden IMAP sync and connection lifecycle, add one-step custom provider mailbox setup, improve mobile mailbox navigation, complete pt-BR localization, refactor SMTP account handling, and add JMAP provider documentation.
+
+## 3.8.1
+
+### Patch Changes
+
+- [`e23398f`](https://github.com/kurrier-org/kurrier/commit/e23398f4c2b719c113b5fe8d01dbe09b5b73d5b7) Thanks [@krokhale](https://github.com/krokhale)! - Harden IMAP sync and connection lifecycle, add one-step custom provider mailbox setup, improve mobile mailbox navigation, complete pt-BR localization, refactor SMTP account handling, and add JMAP provider documentation.
+
 ## 3.8.0
 
 ### Minor Changes

@@ -5,7 +5,8 @@
 		"loggedIn": "Login realizado!",
 		"accountAlreadyExists": "Já existe uma conta com este e-mail",
 		"welcome": "Bem-vindo!",
-		"signupDisabled": "O cadastro está desativado no momento. Entre em contato com o administrador."
+		"signupDisabled": "O cadastro está desativado no momento. Entre em contato com o administrador.",
+		"localLoginDisabled": "O login local está desativado no momento. Use o SSO para entrar."
 	},
 	"contacts": {
 		"noDefaultAddressBook": "Nenhum catálogo de endereços padrão encontrado para o usuário."
@@ -41,7 +42,8 @@
 	"mailbox": {
 		"folderNameRequired": "O nome da pasta é obrigatório",
 		"invalidParentFolder": "Pasta pai inválida",
-		"subscriptionNotFound": "Inscrição não encontrada"
+		"subscriptionNotFound": "Inscrição não encontrada",
+		"displayNameUpdated": "Nome de exibição atualizado."
 	},
 	"dashboard": {
 		"providerAccountUpdated": "Conta do provedor atualizada com sucesso",
@@ -55,6 +57,12 @@
 		"googleAccountNotFound": "Conta do Google não encontrada",
 		"googleAccountNotConnected": "A conta do Google não está conectada",
 		"addedGoogleEmailIdentity": "Identidade de e-mail do Google adicionada",
+		"customProviderUnavailable": "Este provedor de e-mail não está mais disponível. Atualize a página e tente novamente.",
+		"displayNameRequired": "O nome de exibição é obrigatório",
+		"mailboxAlreadyConnected": "Esta caixa de entrada já está conectada",
+		"customProviderAccountAdded": "Conta do provedor adicionada",
+		"customProviderMailboxConnected": "Caixa de entrada conectada",
+		"customProviderMailboxSyncing": "Caixa de entrada conectada; a sincronização continuará em segundo plano",
 		"apiKeyCreated": "Chave de API criada com sucesso",
 		"volumeNameRequired": "O nome do volume é obrigatório",
 		"invalidVolumeName": "Nome de volume inválido",

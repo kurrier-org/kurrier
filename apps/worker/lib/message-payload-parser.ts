@@ -227,6 +227,8 @@ function isIcsAttachment(att: Attachment) {
 /**
  * Parse raw email, create thread, insert message + attachments.
  */
+
+
 export async function parseAndStoreEmail(
 	rawEmail: string,
 	opts: {
@@ -249,17 +251,6 @@ export async function parseAndStoreEmail(
 	const parsed = await simpleParser(rawEmail);
 	const headers = parsed.headers as Map<string, any>;
 
-	const encoder = new TextEncoder();
-	const emailBuffer = encoder.encode(rawEmail);
-	const sizeBytes = emailBuffer.byteLength;
-
-	await s3.send(new PutObjectCommand({
-		Bucket: process.env.S3_BUCKET!,
-		Key: opts.rawStorageKey,
-		Body: emailBuffer,
-		ContentType: "message/rfc822",
-	}));
-
 	const messageId =
 		parsed.messageId || String(headers.get("message-id") || "").trim();
 
@@ -270,11 +261,81 @@ export async function parseAndStoreEmail(
 		return null;
 	}
 
+	/**
+	 * Important for IMAP replay / UIDVALIDITY recovery:
+	 *
+	 * If this message already exists in this mailbox, do not recreate
+	 * the message, attachments, thread, contacts, rules, webhooks, etc.
+	 *
+	 * Instead, refresh the IMAP metadata and flags because the UID,
+	 * mailbox path or flags may have changed on the server.
+	 */
+	const [existingMessage] = await db
+		.select()
+		.from(messages)
+		.where(
+			and(
+				eq(messages.mailboxId, mailboxId),
+				eq(messages.messageId, messageId),
+			),
+		)
+		.limit(1);
+
+	if (existingMessage) {
+		const existingMeta =
+			(existingMessage.metaData as Record<string, any>) ?? {};
+
+		const incomingMeta = opts.metaData ?? {};
+
+		const nextMeta = {
+			...existingMeta,
+			...incomingMeta,
+			imap: {
+				...(existingMeta.imap ?? {}),
+				...(incomingMeta.imap ?? {}),
+			},
+		};
+
+		await db
+			.update(messages)
+			.set({
+				metaData: nextMeta,
+				seen:
+					typeof opts.seen === "boolean"
+						? opts.seen
+						: existingMessage.seen,
+				answered:
+					typeof opts.answered === "boolean"
+						? opts.answered
+						: existingMessage.answered,
+				flagged:
+					typeof opts.flagged === "boolean"
+						? opts.flagged
+						: existingMessage.flagged,
+				updatedAt: new Date(),
+			})
+			.where(eq(messages.id, existingMessage.id));
+
+		return existingMessage;
+	}
+
+	const encoder = new TextEncoder();
+	const emailBuffer = encoder.encode(rawEmail);
+	const sizeBytes = emailBuffer.byteLength;
+
+	await s3.send(
+		new PutObjectCommand({
+			Bucket: process.env.S3_BUCKET!,
+			Key: rawStorageKey,
+			Body: emailBuffer,
+			ContentType: "message/rfc822",
+		}),
+	);
+
 	const thread = await createOrInitializeThread({
 		...parsed,
 		ownerId,
 		workspaceId,
-		// mailboxId,
 	});
 
 	const decoratedParsed = {
@@ -296,7 +357,7 @@ export async function parseAndStoreEmail(
 		flagged: false,
 		draft: false,
 		html: parsed.html || "",
-		sizeBytes: sizeBytes,
+		sizeBytes,
 		snippet: generateSnippet(parsed.text || parsed.html || ""),
 	} as MessageCreate | ParsedMail;
 
@@ -307,14 +368,19 @@ export async function parseAndStoreEmail(
 	if (typeof opts.seen === "boolean") {
 		(decoratedParsed as any).seen = opts.seen;
 	}
+
 	if (typeof opts.answered === "boolean") {
 		(decoratedParsed as any).answered = opts.answered;
 	}
+
 	if (typeof opts.flagged === "boolean") {
 		(decoratedParsed as any).flagged = opts.flagged;
 	}
 
-	const messagePayload = MessageInsertSchema.parse(decoratedParsed);
+	const messagePayload = sanitizePostgresValue(
+		MessageInsertSchema.parse(decoratedParsed),
+	);
+
 	const [message] = await db
 		.insert(messages)
 		.values(messagePayload as MessageCreate)
@@ -323,12 +389,33 @@ export async function parseAndStoreEmail(
 		})
 		.returning();
 
-	if (!message) return null;
+	/**
+	 * Another worker/replay may have inserted the message between our
+	 * initial lookup and this insert. In that case, just stop here.
+	 */
+	if (!message) {
+		const [existingThreadMessage] = await db
+			.select({ id: messages.id })
+			.from(messages)
+			.where(eq(messages.threadId, thread.id))
+			.limit(1);
+
+		if (!existingThreadMessage) {
+			await db
+				.delete(threads)
+				.where(eq(threads.id, thread.id));
+		}
+
+		return null;
+	}
+
 	await db
 		.update(workspaces)
 		.set({
 			storageBytesUsed: sql`${workspaces.storageBytesUsed} + ${sizeBytes}`,
-		}).where(eq(workspaces.id, workspaceId));
+		})
+		.where(eq(workspaces.id, workspaceId));
+
 	await ingestMailSubscriptionFromMessage({
 		ownerId,
 		workspaceId,
@@ -341,19 +428,26 @@ export async function parseAndStoreEmail(
 		mailboxId,
 		fallbackOwnerId: ownerId,
 	});
+
 	const contactId = contactRes?.contactIdForMessage ?? null;
+
 	await upsertMailboxThreadItem(message.id);
 
 	const msgDate = message.createdAt ?? new Date();
+
 	const [t] = await db
-		.select({ last: threads.lastMessageDate })
+		.select({
+			last: threads.lastMessageDate,
+		})
 		.from(threads)
 		.where(eq(threads.id, thread.id));
 
 	if (!t?.last || new Date(t.last) < msgDate) {
 		await db
 			.update(threads)
-			.set({ lastMessageDate: msgDate })
+			.set({
+				lastMessageDate: msgDate,
+			})
 			.where(eq(threads.id, thread.id));
 	}
 
@@ -375,43 +469,58 @@ export async function parseAndStoreEmail(
 			}),
 		);
 
-		const data = { path: objectPath };
-		const error = data ? null : new Error("Failed to store attachment");
-		if (error) throw error;
-
 		const candidate: MessageAttachmentCreate = {
 			ownerId,
 			workspaceId,
 			messageId: message.id,
 			bucketId: bucket,
-			path: data?.path,
+			path: objectPath,
 			filenameOriginal: attachment.filename || null,
-			contentType: attachment.contentType || "application/octet-stream",
-			sizeBytes: Number(attachment.size ?? attachment.content?.length ?? 0),
+			contentType:
+				attachment.contentType || "application/octet-stream",
+			sizeBytes: Number(
+				attachment.size ??
+				attachment.content?.length ??
+				0,
+			),
 			checksum: attachment.checksum || null,
 			cid: attachment.cid || null,
 			isInline:
-				attachment.contentDisposition === "inline" || !!attachment.cid || false,
-			disposition: attachment.contentDisposition || "attachment",
+				attachment.contentDisposition === "inline" ||
+				!!attachment.cid ||
+				false,
+			disposition:
+				attachment.contentDisposition || "attachment",
 		} as MessageAttachmentCreate;
 
-		const parsedRow = MessageAttachmentInsertSchema.parse(candidate);
+		const parsedRow =
+			MessageAttachmentInsertSchema.parse(candidate);
+
 		const [newAttachment] = await db
 			.insert(messageAttachments)
 			.values(parsedRow)
 			.returning();
 
-		if (mode === "live" && isIcsAttachment(attachment)) {
+		if (
+			mode === "live" &&
+			isIcsAttachment(attachment)
+		) {
 			const key =
-				attachment.checksum || `${attachment.size}:${attachment.contentType}`;
+				attachment.checksum ||
+				`${attachment.size}:${attachment.contentType}`;
+
 			if (!seenIcsChecksums.has(key)) {
 				seenIcsChecksums.add(key);
+
 				icsBuffer.push({
 					messageId: message.id,
 					messageAttachmentId: newAttachment.id,
 					mailboxId,
 				});
-				if (icsBuffer.length >= CALENDAR_BATCH_SIZE) {
+
+				if (
+					icsBuffer.length >= CALENDAR_BATCH_SIZE
+				) {
 					await flushBatches();
 				} else {
 					scheduleFlush();
@@ -422,9 +531,12 @@ export async function parseAndStoreEmail(
 
 	searchBuffer.push({
 		messageId: message.id,
-		contactId: String(contactId),
+		contactId: contactId
+			? String(contactId)
+			: null,
 		ownerId,
 	});
+
 	if (searchBuffer.length >= SEARCH_BATCH_SIZE) {
 		await flushBatches();
 	} else {
@@ -432,9 +544,19 @@ export async function parseAndStoreEmail(
 	}
 
 	if (mode === "live") {
-		webhookBuffer.push({ message, rawEmail });
-		rulesBuffer.push({ messageId: message.id });
-		if ((webhookBuffer.length >= WEBHOOK_BATCH_SIZE) || (rulesBuffer.length >= RULES_BATCH_SIZE)) {
+		webhookBuffer.push({
+			message,
+			rawEmail,
+		});
+
+		rulesBuffer.push({
+			messageId: message.id,
+		});
+
+		if (
+			webhookBuffer.length >= WEBHOOK_BATCH_SIZE ||
+			rulesBuffer.length >= RULES_BATCH_SIZE
+		) {
 			await flushBatches();
 		} else {
 			scheduleFlush();
@@ -443,7 +565,6 @@ export async function parseAndStoreEmail(
 
 	return message;
 }
-
 
 
 async function ingestMailSubscriptionFromMessage(opts: {
@@ -535,4 +656,29 @@ async function ingestMailSubscriptionFromMessage(opts: {
 			},
 		});
 
+}
+
+function sanitizePostgresValue<T>(value: T): T {
+	if (typeof value === "string") {
+		return value.replace(/\u0000/g, "") as T;
+	}
+
+	if (Array.isArray(value)) {
+		return value.map((item) => sanitizePostgresValue(item)) as T;
+	}
+
+	if (
+		value &&
+		typeof value === "object" &&
+		Object.getPrototypeOf(value) === Object.prototype
+	) {
+		return Object.fromEntries(
+			Object.entries(value).map(([key, val]) => [
+				key,
+				sanitizePostgresValue(val),
+			]),
+		) as T;
+	}
+
+	return value;
 }

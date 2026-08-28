@@ -9,20 +9,24 @@ import {
 } from "@/lib/actions/calendar";
 import { getTimeZones } from "@vvo/tzdb";
 import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
-import {getWorkspacePublicId} from "@/lib/actions/clients";
-import {Suspense} from "react";
+import { getWorkspacePublicId } from "@/lib/actions/clients";
+import { Suspense } from "react";
+import { connection } from "next/server";
 import Loading from "@/app/loading";
 import NavUserWrapper from "@/components/ui/dashboards/workspace/nav-user-wrapper";
 import CalendarSidebarWrapper from "@/components/dashboard/calendars/calendar-sidebar-wrapper";
 import { getDictionary } from "@/lib/dictionaries";
 import { cookies } from "next/headers";
 
-export default async function DashboardLayout({
-												  children,
-											  }: {
+async function CalendarDashboard({
+									 children,
+								 }: {
 	children: React.ReactNode;
 }) {
+	await connection();
+
 	const cookieStore = await cookies();
+
 	const [defaultCalendar, organizers, workspacePublicId, dict] =
 		await Promise.all([
 			fetchDefaultCalendar(),
@@ -77,12 +81,14 @@ export default async function DashboardLayout({
 				}
 				sidebarTopContent={
 					<Suspense fallback={<Loading />}>
-						{defaultCalendar && <div className="-mt-1">
-							<NewEventButton
-								workspacePublicId={workspacePublicId}
-								hideOnMobile
-							/>
-						</div>}
+						{defaultCalendar && (
+							<div className="-mt-1">
+								<NewEventButton
+									workspacePublicId={workspacePublicId}
+									hideOnMobile
+								/>
+							</div>
+						)}
 					</Suspense>
 				}
 			/>
@@ -97,5 +103,17 @@ export default async function DashboardLayout({
 				)}
 			</SidebarInset>
 		</DynamicContextProvider>
+	);
+}
+
+export default function DashboardLayout({
+											children,
+										}: {
+	children: React.ReactNode;
+}) {
+	return (
+		<Suspense fallback={<Loading />}>
+			<CalendarDashboard>{children}</CalendarDashboard>
+		</Suspense>
 	);
 }

@@ -93,7 +93,7 @@ export function NavMain({
 							]
 						: []),
 					{
-						title: "Vault",
+						title: dict.vault.vault,
 						url: `/w/${workspacePublicId}/dashboard/platform/vault`,
 						icon: Vault,
 						items: [],

@@ -1,7 +1,7 @@
-import {type NextRequest, NextResponse} from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
-const locales = ["en", "ko", "pt-BR"];
+const locales = ["en", "ko", "pt-BR", "ru"];
 const defaultLocale = "en";
 
 function normalizeLocale(tag: string): string | null {
@@ -13,12 +13,9 @@ function normalizeLocale(tag: string): string | null {
 }
 
 function getRedirectLocale(request: NextRequest) {
-
 	const pathname = request.nextUrl.pathname;
 	const pathnameHasLocale = locales.some(
-		(locale) =>
-			pathname === `/${locale}` ||
-			pathname.startsWith(`/${locale}/`),
+		(locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
 	);
 	if (pathnameHasLocale) return null;
 	const cookieLocale = request.cookies.get("locale")?.value;
@@ -31,12 +28,9 @@ function getRedirectLocale(request: NextRequest) {
 		(acceptLanguageTag && normalizeLocale(acceptLanguageTag)) ||
 		defaultLocale
 	);
-
 }
 
-
 export async function proxy(request: NextRequest) {
-
 	if (request.nextUrl.pathname.startsWith("/api")) {
 		return await updateSession(request);
 	}

@@ -17,5 +17,10 @@
 	"error": "Erro",
 	"requiredField": "Este campo é obrigatório",
 	"language": "Idioma",
-	"pickValue": "Selecione um valor"
+	"pickValue": "Selecione um valor",
+	"connect": "Conectar",
+	"switchToLightMode": "Mudar para o modo claro",
+	"switchToDarkMode": "Mudar para o modo escuro",
+	"switchToThemePrefix": "Mudar para o tema ",
+	"switchToThemeSuffix": ""
 }

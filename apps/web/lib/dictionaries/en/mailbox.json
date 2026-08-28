@@ -184,6 +184,9 @@
 	"rawSourceRetained": "Raw source retained",
 	"noDeliveryInformation": "No delivery information is available for this message.",
 	"noMessageSelected": "No message selected.",
+	"mailTitle": "Mail",
+	"chooseMailbox": "Choose a mailbox",
+	"selectMailboxDescription": "Select an email account and mailbox to view your messages.",
 	"selectMailboxPrompt": "Select a mailbox to view the emails.",
 	"headersPlaceholder": "Parsed message headers will be shown here.",
 	"headersDescription": "Parsed message headers from the original message.",
@@ -279,5 +282,10 @@
 	"hasAttachmentLabel": "Has attachment:",
 	"unreadOnlyLabel": "Unread only:",
 	"starredOnlyLabel": "Starred only:",
-	"useGlobalSearchBox": "Use the global search box above to run a query."
+	"useGlobalSearchBox": "Use the global search box above to run a query.",
+	"identitySettingsDescription": "Identity settings for this mailbox",
+	"identity": "Identity",
+	"noScheduledMessages": "No scheduled messages",
+	"loadRemoteImagesOnce": "Load remote images once",
+	"alwaysLoadForThisSender": "Always load for this sender"
 }

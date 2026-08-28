@@ -4,7 +4,9 @@ import { Button } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import type { CustomEmailProvider } from "@schema";
 import { Inbox, Mail, Plus, Send } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
 import NewCustomEmailProviderAccountForm from "@/components/dashboard/providers/new-custom-email-provider-account-form";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import {
 	Card,
 	CardContent,
@@ -43,11 +45,16 @@ export default function CustomEmailProviderCard({
 }: {
 	provider: CustomEmailProvider;
 }) {
+	const dict = useOptionalDictionary();
+	const params = useParams<{ wPublicId: string }>();
+	const router = useRouter();
+
 	const openAddModal = () => {
 		const modalId = modals.open({
 			title: (
 				<div className="font-semibold text-brand-foreground">
-					Connect {provider.name}
+					{(dict?.platform?.connectProviderPrefix ?? "Connect ") +
+						provider.name}
 				</div>
 			),
 			closeOnEscape: false,
@@ -57,7 +64,15 @@ export default function CustomEmailProviderCard({
 				<div className="p-2">
 					<NewCustomEmailProviderAccountForm
 						provider={provider}
-						onCompleted={() => modals.close(modalId)}
+						onCompleted={(data) => {
+							modals.close(modalId);
+							if (data?.identityPublicId && data.mailboxSlug) {
+								router.push(
+									`/w/${params.wPublicId}/dashboard/mail/${data.identityPublicId}/${data.mailboxSlug}`,
+								);
+								router.refresh();
+							}
+						}}
 					/>
 				</div>
 			),
@@ -72,16 +87,18 @@ export default function CustomEmailProviderCard({
 					<div className="min-w-0">
 						<CardTitle className="text-lg">{provider.name}</CardTitle>
 						<CardDescription className="mt-1">
-							{provider.description ?? "Configured by your administrator."}
+							{provider.description ??
+								dict?.platform?.configuredByAdminDescription ??
+								"Configured by your administrator."}
 						</CardDescription>
 					</div>
 				</div>
 				<span className="mt-4 inline-flex self-start rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
 					{!provider.imap
-						? "SMTP only"
+						? (dict?.platform?.smtpOnlyBadge ?? "SMTP only")
 						: provider.credentialMode === "shared"
-							? "Shared login"
-							: "Separate logins"}
+							? (dict?.platform?.sharedLoginBadge ?? "Shared login")
+							: (dict?.platform?.separateLoginsBadge ?? "Separate logins")}
 				</span>
 			</CardContent>
 			<CardContent className="grid gap-3 border-t p-5 lg:border-t-0 lg:border-l">
@@ -109,7 +126,9 @@ export default function CustomEmailProviderCard({
 					leftSection={<Plus className="size-4" />}
 					onClick={openAddModal}
 				>
-					Add account
+					{provider.imap
+						? (dict?.platform?.addMailbox ?? "Add mailbox")
+						: (dict?.platform?.addAccount ?? "Add account")}
 				</Button>
 			</CardContent>
 		</Card>

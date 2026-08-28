@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
 import { ColorSwatch, Tooltip } from "@mantine/core";
 import type { ThemeName } from "@schema/types/themes";
+import React from "react";
 import { useAppearance } from "@/components/providers/appearance-provider";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 const THEME_OPTIONS: Array<{ label: string; theme: ThemeName; color: string }> =
 	[
@@ -15,6 +16,7 @@ const THEME_OPTIONS: Array<{ label: string; theme: ThemeName; color: string }> =
 
 function ThemeColorPicker({ onComplete }: { onComplete?: () => void }) {
 	const { theme: activeTheme, setTheme, pending } = useAppearance();
+	const dict = useOptionalDictionary();
 
 	return (
 		<div className="flex items-center gap-2">
@@ -29,7 +31,11 @@ function ThemeColorPicker({ onComplete }: { onComplete?: () => void }) {
 							onComplete && onComplete();
 						}}
 						disabled={pending}
-						aria-label={`Switch to ${label} theme`}
+						aria-label={
+							(dict?.common?.switchToThemePrefix ?? "Switch to ") +
+							label +
+							(dict?.common?.switchToThemeSuffix ?? " theme")
+						}
 						aria-pressed={isActive}
 						className="p-0 m-0 bg-transparent border-0 rounded-full"
 						style={{ lineHeight: 0 }}

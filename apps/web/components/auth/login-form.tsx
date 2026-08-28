@@ -8,6 +8,7 @@ import Form from "next/form";
 import Link from "next/link";
 import type * as React from "react";
 import { useActionState } from "react";
+import { useSiteFeatures } from "@/components/providers/site-features-provider";
 import {
 	Card,
 	CardContent,
@@ -19,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login } from "@/lib/actions/auth";
 import type { Dictionary } from "@/lib/dictionaries";
+import { resolveDictMessage } from "@/lib/resolve-dict-message";
 import { cn } from "@/lib/utils";
 
 export function LoginForm({
@@ -33,6 +35,8 @@ export function LoginForm({
 		genericName?: string;
 	};
 } & { dict: Dictionary }) {
+	const { localLogin } = useSiteFeatures();
+	const oidcEnabled = Boolean(oidc?.googleEnabled || oidc?.genericEnabled);
 	const [formState, formAction, isPending] = useActionState<
 		FormState,
 		FormData
@@ -43,8 +47,10 @@ export function LoginForm({
 			<Card>
 				<CardHeader className="text-center">
 					<CardTitle className="text-xl">{dict.auth.welcomeBack}</CardTitle>
-					{(oidc?.googleEnabled || oidc?.genericEnabled) && (
-						<CardDescription>Login with your existing account</CardDescription>
+					{oidcEnabled && (
+						<CardDescription>
+							{dict.auth.loginWithExistingAccount}
+						</CardDescription>
 					)}
 					{oidc?.googleEnabled && (
 						<Button
@@ -55,7 +61,7 @@ export function LoginForm({
 							component="a"
 							leftSection={<IconBrandGoogle />}
 						>
-							Login with Google
+							{dict.auth.loginWithGoogle}
 						</Button>
 					)}
 					{oidc?.genericEnabled && (
@@ -67,17 +73,20 @@ export function LoginForm({
 							component="a"
 							leftSection={<IconLogin2 />}
 						>
-							Login with {oidc?.genericName || "SSO"}
+							{dict.auth.loginWithProviderPrefix}
+							{oidc?.genericName || "SSO"}
 						</Button>
 					)}
-					{!oidc?.googleEnabled && !oidc?.genericEnabled && (
+					{!oidcEnabled && (
 						<div className={"text-sm text-center"}>
-							{dict.auth.noOidcEnabled}
+							{localLogin
+								? dict.auth.noOidcEnabled
+								: dict.auth.noLoginMethodsEnabled}
 						</div>
 					)}
 				</CardHeader>
 
-				<CardContent>
+				<CardContent hidden={!localLogin}>
 					<Form action={formAction}>
 						<input type="hidden" name="locale" value={dict.locale} />
 						<div className="grid gap-6">
@@ -136,14 +145,14 @@ export function LoginForm({
 								{formState?.error && (
 									<div className="text-center">
 										<span className="text-sm text-red-600">
-											{formState.error}
+											{resolveDictMessage(dict.actions, formState.error)}
 										</span>
 									</div>
 								)}
 								{formState?.message && !formState.error && (
 									<div className="text-center">
 										<span className="text-sm text-green-600">
-											{formState.message}
+											{resolveDictMessage(dict.actions, formState.message)}
 										</span>
 									</div>
 								)}
@@ -152,7 +161,7 @@ export function LoginForm({
 									{isPending && (
 										<Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
 									)}
-									Login
+									{dict.auth.login}
 								</Button>
 							</div>
 

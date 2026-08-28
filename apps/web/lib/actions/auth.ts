@@ -13,6 +13,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getRedis } from "@/lib/actions/get-redis";
 import { updateWorkSpaceContext } from "@/lib/actions/workspace";
+import { SITE_FEATURES } from "@/lib/site-features";
 import { withLocale } from "@/lib/utils";
 
 const initProviders = async (userId: string, workspaceId: string) => {
@@ -144,6 +145,13 @@ export async function login(
 	_prev: FormState,
 	formData: FormData,
 ): Promise<FormState> {
+	if (!SITE_FEATURES.localLogin) {
+		return {
+			success: false,
+			error: "auth.localLoginDisabled",
+		};
+	}
+
 	const { email, password, locale } = decode(formData) as {
 		email: string;
 		password: string;

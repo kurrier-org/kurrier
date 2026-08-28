@@ -1,14 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-	// devIndicators: false,
+	devIndicators: { position: "top-right" },
 	output: "standalone",
+	cacheComponents: true,
+	partialPrefetching: true,
 	serverExternalPackages: ["pino", "pino-pretty", "thread-stream"],
 	reactCompiler: true,
-	experimental: {
-		proxyClientMaxBodySize: "10gb",
-	},
-	// cacheComponents: true,
 	images: {
 		remotePatterns: [
 			{

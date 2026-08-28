@@ -1,32 +1,42 @@
 "use client";
 
-import type { CustomEmailProvider, FieldConfig } from "@schema";
+import {
+	type CustomEmailProvider,
+	defaultImapQuota,
+	type FieldConfig,
+	imapQuotaList,
+} from "@schema";
 import { ulid } from "ulid";
 import { ReusableForm } from "@/components/common/reusable-form";
-import { createCustomProviderSMTPAccount } from "@/lib/actions/dashboard";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { connectCustomEmailProvider } from "@/lib/actions/dashboard";
 
 export default function NewCustomEmailProviderAccountForm({
 	provider,
 	onCompleted,
 }: {
 	provider: CustomEmailProvider;
-	onCompleted?: () => void;
+	onCompleted?: (data?: {
+		identityPublicId?: string;
+		mailboxSlug?: string;
+	}) => void;
 }) {
+	const dict = useOptionalDictionary();
 	const fields: FieldConfig[] = [
 		{
 			name: "ulid",
 			props: { type: "hidden", defaultValue: ulid() },
-			wrapperClasses: "hidden"
+			wrapperClasses: "hidden",
 		},
 		{
 			name: "presetId",
 			props: { type: "hidden", defaultValue: provider.id },
-			wrapperClasses: "hidden"
+			wrapperClasses: "hidden",
 		},
 		{
 			name: "credentialMode",
 			props: { type: "hidden", defaultValue: provider.credentialMode },
-			wrapperClasses: "hidden"
+			wrapperClasses: "hidden",
 		},
 	];
 
@@ -34,7 +44,7 @@ export default function NewCustomEmailProviderAccountForm({
 		fields.push(
 			{
 				name: "username",
-				label: "Mailbox email",
+				label: dict?.platform?.mailboxEmail ?? "Mailbox email",
 				props: {
 					type: "email",
 					autoComplete: "username",
@@ -44,14 +54,16 @@ export default function NewCustomEmailProviderAccountForm({
 				bottomStartPrefix: (
 					<span className="text-xs text-muted-foreground">
 						{provider.imap
-							? "Used as the username for both SMTP and IMAP."
-							: "Used as the SMTP username."}
+							? (dict?.platform?.mailboxEmailUsedForBothHelp ??
+								"Used as the username for both SMTP and IMAP.")
+							: (dict?.platform?.mailboxEmailUsedForSmtpHelp ??
+								"Used as the SMTP username.")}
 					</span>
 				),
 			},
 			{
 				name: "password",
-				label: "Mailbox password",
+				label: dict?.platform?.mailboxPassword ?? "Mailbox password",
 				props: {
 					type: "password",
 					autoComplete: "current-password",
@@ -63,7 +75,8 @@ export default function NewCustomEmailProviderAccountForm({
 		fields.push(
 			{
 				name: "smtpUsername",
-				label: "SMTP mailbox email",
+				label:
+					dict?.platform?.customProviderSmtpUsername ?? "SMTP mailbox email",
 				props: {
 					type: "email",
 					autoComplete: "username",
@@ -73,7 +86,7 @@ export default function NewCustomEmailProviderAccountForm({
 			},
 			{
 				name: "smtpPassword",
-				label: "SMTP password",
+				label: dict?.platform?.customProviderSmtpPassword ?? "SMTP password",
 				props: {
 					type: "password",
 					autoComplete: "current-password",
@@ -87,16 +100,20 @@ export default function NewCustomEmailProviderAccountForm({
 				{
 					el: (
 						<div className="border-t pt-4">
-							<p className="text-sm font-medium">Incoming mail</p>
+							<p className="text-sm font-medium">
+								{dict?.platform?.customProviderIncomingMailTitle ??
+									"Incoming mail"}
+							</p>
 							<p className="mt-1 text-xs text-muted-foreground">
-								This provider uses separate IMAP credentials.
+								{dict?.platform?.customProviderSeparateImapHelp ??
+									"This provider uses separate IMAP credentials."}
 							</p>
 						</div>
 					),
 				},
 				{
 					name: "imapUsername",
-					label: "IMAP username",
+					label: dict?.platform?.customProviderImapUsername ?? "IMAP username",
 					props: {
 						autoComplete: "username",
 						required: true,
@@ -104,7 +121,7 @@ export default function NewCustomEmailProviderAccountForm({
 				},
 				{
 					name: "imapPassword",
-					label: "IMAP password",
+					label: dict?.platform?.customProviderImapPassword ?? "IMAP password",
 					props: {
 						type: "password",
 						autoComplete: "current-password",
@@ -115,13 +132,64 @@ export default function NewCustomEmailProviderAccountForm({
 		}
 	}
 
+	if (provider.imap) {
+		fields.push(
+			{
+				el: (
+					<div className="border-t pt-4">
+						<p className="text-sm font-medium">
+							{dict?.platform?.customProviderMailboxIdentityTitle ??
+								"Mailbox identity"}
+						</p>
+						<p className="mt-1 text-xs text-muted-foreground">
+							{dict?.platform?.customProviderMailboxIdentityHelp ??
+								"Kurrier will create the email identity and start syncing its mailboxes automatically."}
+						</p>
+					</div>
+				),
+			},
+			{
+				name: "displayName",
+				label: dict?.platform?.displayName ?? "Display name",
+				props: {
+					autoComplete: "name",
+					required: true,
+					placeholder:
+						dict?.platform?.customProviderDisplayNamePlaceholder ?? "Your name",
+				},
+				bottomStartPrefix: (
+					<span className="text-xs text-muted-foreground">
+						{dict?.platform?.customProviderDisplayNameHelp ??
+							"Shown to recipients when you send email."}
+					</span>
+				),
+			},
+			{
+				name: "dailyQuota",
+				label: dict?.platform?.dailyImapQuota ?? "Daily IMAP quota",
+				kind: "select",
+				options: imapQuotaList.map((quota) => ({
+					label: quota.label,
+					value: String(quota.value),
+				})),
+				props: {
+					className: "w-full",
+					defaultValue: String(defaultImapQuota),
+				},
+			},
+		);
+	}
+
 	return (
 		<ReusableForm
-			action={createCustomProviderSMTPAccount}
+			action={connectCustomEmailProvider}
 			onSuccess={onCompleted}
 			fields={fields}
+			notify={{ kind: "toast" }}
 			submitButtonProps={{
-				submitLabel: "Add account",
+				submitLabel: provider.imap
+					? (dict?.platform?.connectMailbox ?? "Connect mailbox")
+					: (dict?.platform?.addAccount ?? "Add account"),
 				wrapperClasses: "mt-6",
 				fullWidth: true,
 			}}

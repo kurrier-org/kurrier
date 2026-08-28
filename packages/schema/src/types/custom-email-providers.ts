@@ -40,6 +40,12 @@ export const CustomEmailProviderCredentialsSchema = z.discriminatedUnion(
 			credentialMode: z.literal("shared"),
 			username: z.string().trim().email("A valid mailbox email is required"),
 			password: z.string().min(1, "Password is required"),
+			displayName: z
+				.string()
+				.trim()
+				.min(1, "Display name is required")
+				.optional(),
+			dailyQuota: z.coerce.number().int().positive().optional(),
 		}),
 		z.object({
 			ulid: z.string().min(1, "ULID is required"),
@@ -52,6 +58,12 @@ export const CustomEmailProviderCredentialsSchema = z.discriminatedUnion(
 			smtpPassword: z.string().min(1, "SMTP password is required"),
 			imapUsername: z.string().trim().optional(),
 			imapPassword: z.string().optional(),
+			displayName: z
+				.string()
+				.trim()
+				.min(1, "Display name is required")
+				.optional(),
+			dailyQuota: z.coerce.number().int().positive().optional(),
 		}),
 	],
 );
@@ -77,7 +89,7 @@ type Warn = (message: string) => void;
 export function parseCustomEmailProviders(
 	warn: Warn = console.warn,
 ): CustomEmailProvider[] {
-	const raw = process.env.CUSTOM_EMAIL_PROVIDERS
+	const raw = process.env.CUSTOM_EMAIL_PROVIDERS;
 	if (!raw?.trim()) return [];
 
 	let input: unknown;

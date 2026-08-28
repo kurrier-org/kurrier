@@ -1,10 +1,11 @@
 "use client";
 
+import dayjs from "dayjs";
+import { Clock, Paperclip, Trash } from "lucide-react";
 import * as React from "react";
 import { useMemo } from "react";
-import { Clock, Paperclip, Trash } from "lucide-react";
-import dayjs from "dayjs";
 import { ReusableFormButton } from "@/components/common/reusable-form-button";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import { deleteScheduledDraft } from "@/lib/actions/mailbox";
 
 type DraftMessageRow = {
@@ -139,6 +140,7 @@ export default function ScheduledList({
 	title,
 	onCancel,
 }: ScheduledListProps) {
+	const dict = useOptionalDictionary();
 	const scheduledDrafts = useMemo(() => {
 		return drafts
 			.filter((d) => String(d.status) === "scheduled")
@@ -152,7 +154,7 @@ export default function ScheduledList({
 	if (scheduledDrafts.length === 0) {
 		return (
 			<div className="p-4 text-center text-base text-muted-foreground">
-				No scheduled messages
+				{dict?.mailbox?.noScheduledMessages ?? "No scheduled messages"}
 			</div>
 		);
 	}
