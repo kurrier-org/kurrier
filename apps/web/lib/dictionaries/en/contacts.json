@@ -1,5 +1,8 @@
 {
 	"contacts": "Contacts",
+	"emptyTitle": "No contacts yet",
+	"emptyDescription": "Create your first contact to keep names, email addresses, and phone numbers in one place.",
+	"selectContactTitle": "Select a contact",
 	"pleaseSelectAContact": "Please select a contact to view details.",
 	"noContactFound": "No contact found.",
 	"toggleFavorite": "Toggle favorite",

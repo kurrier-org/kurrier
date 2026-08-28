@@ -1,5 +1,8 @@
 {
 	"contacts": "Kontakty",
+	"emptyTitle": "Brak kontaktów",
+	"emptyDescription": "Utwórz pierwszy kontakt, aby przechowywać imiona, adresy e-mail i numery telefonów w jednym miejscu.",
+	"selectContactTitle": "Wybierz kontakt",
 	"pleaseSelectAContact": "Wybierz kontakt, aby wyświetlić szczegóły.",
 	"noContactFound": "Nie znaleziono kontaktu.",
 	"toggleFavorite": "Przełącz ulubiony kontakt",

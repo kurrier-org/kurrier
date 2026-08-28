@@ -1,1 +1,5 @@
-{}
+{
+	"emptyTitle": "아직 연락처가 없습니다",
+	"emptyDescription": "첫 연락처를 만들어 이름, 이메일 주소, 전화번호를 한곳에서 관리하세요.",
+	"selectContactTitle": "연락처 선택"
+}

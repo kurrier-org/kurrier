@@ -1,5 +1,8 @@
 {
 	"contacts": "Contatos",
+	"emptyTitle": "Ainda não há contatos",
+	"emptyDescription": "Crie seu primeiro contato para manter nomes, emails e telefones em um só lugar.",
+	"selectContactTitle": "Selecione um contato",
 	"pleaseSelectAContact": "Selecione um contato para ver os detalhes.",
 	"noContactFound": "Nenhum contato encontrado.",
 	"toggleFavorite": "Favoritar",

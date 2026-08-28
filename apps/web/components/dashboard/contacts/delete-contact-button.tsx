@@ -5,7 +5,7 @@ import { ActionIcon } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { IconTrash } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
-import React from "react";
+import { responsiveModalActionsClassName } from "@/components/common/modal-actions";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 type DeleteContactButtonProps = {
@@ -47,6 +47,7 @@ function DeleteContactButton({
 				cancel: dict?.contacts?.cancel ?? "Cancel",
 			},
 			confirmProps: { color: "red" },
+			groupProps: { className: responsiveModalActionsClassName },
 			onConfirm: async () => {
 				await onDeleteAction(contact.id);
 				router.push(`/w/${workspacePublicId}/dashboard/contacts`);

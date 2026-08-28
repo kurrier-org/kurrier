@@ -1,11 +1,11 @@
 "use client";
-import React from "react";
-import Link from "next/link";
-import { ContactEntity } from "@db";
-import { useParams } from "next/navigation";
+import type { ContactEntity } from "@db";
 import { Star } from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import ContactListAvatar from "@/components/dashboard/contacts/contact-list-avatar";
-import {ProfileImage} from "@/components/dashboard/contacts/contacts-shell";
+import ContactsEmptyState from "@/components/dashboard/contacts/contacts-empty-state";
+import type { ProfileImage } from "@/components/dashboard/contacts/contacts-shell";
 
 export type ContactWithFavorite = ContactEntity & {
 	isFavorite: boolean;
@@ -16,13 +16,13 @@ function ContactsList({
 	userContacts,
 	profileImages,
 	workspacePublicId,
-	selectedAddressBook
+	selectedAddressBook,
 }: {
-	selectedAddressBook: string
-	onAddressBookChange: (value: string) => void
+	selectedAddressBook: string;
+	onAddressBookChange: (value: string) => void;
 	userContacts?: ContactWithFavorite[];
 	profileImages: (ProfileImage | null)[];
-	workspacePublicId: string
+	workspacePublicId: string;
 }) {
 	const params = useParams() as {
 		contactsPublicId?: string;
@@ -36,11 +36,25 @@ function ContactsList({
 				)
 			: (userContacts ?? []);
 
-	const finalFilteredUserContacts = selectedAddressBook === 'all'
-		? filteredUserContacts
-		: filteredUserContacts.filter((c) => c.addressBookId === selectedAddressBook);
+	const finalFilteredUserContacts =
+		selectedAddressBook === "all"
+			? filteredUserContacts
+			: filteredUserContacts.filter(
+					(c) => c.addressBookId === selectedAddressBook,
+				);
+
+	if (finalFilteredUserContacts.length === 0) {
+		return (
+			<ContactsEmptyState
+				filtered
+				workspacePublicId={workspacePublicId}
+				className="min-h-80"
+			/>
+		);
+	}
+
 	return (
-		<div className="overflow-y-auto flex-col h-[calc(100vh-10rem)]">
+		<div className="min-h-0 flex-1 overflow-y-auto">
 			{finalFilteredUserContacts.map((c) => {
 				const imagePath =
 					c.profilePictureXs && profileImages
@@ -53,9 +67,9 @@ function ContactsList({
 					<Link
 						key={c.id}
 						className={[
-							"flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-background",
+							"group flex min-h-14 w-full items-center gap-3 border-b border-border/50 px-4 py-2.5 text-left text-sm transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
 							c.publicId === params.contactsPublicId
-									? "text-brand dark:text-white bg-brand-100 dark:bg-neutral-800 hover:text-brand hover:bg-brand-100"
+								? "bg-accent text-accent-foreground hover:bg-accent"
 								: "",
 						].join(" ")}
 						href={
@@ -64,23 +78,26 @@ function ContactsList({
 								: `/w/${workspacePublicId}/dashboard/contacts/${c.publicId}`
 						}
 					>
-
-                        <ContactListAvatar signedUrl={imagePath} alt={c?.firstName} />
+						<ContactListAvatar
+							signedUrl={imagePath}
+							alt={c?.firstName}
+							size={36}
+						/>
 
 						<div className="min-w-0 flex-1">
-							<div className="truncate text-sm font-medium text-foreground flex justify-between">
-								{c.firstName} {c.lastName}
-								<Star
-									size={10}
-									className={
-										c.isFavorite
-											? "text-yellow-400 fill-yellow-400"
-											: "text-muted-foreground"
-									}
-								/>
+							<div className="flex items-center justify-between gap-2">
+								<span className="truncate text-sm font-medium text-foreground">
+									{c.firstName} {c.lastName}
+								</span>
+								{c.isFavorite && (
+									<Star
+										className="size-3.5 shrink-0 fill-amber-400 text-amber-400"
+										aria-hidden="true"
+									/>
+								)}
 							</div>
 							<p className="truncate text-xs text-muted-foreground">
-								{c.emails && c.emails.length > 0 ? c.emails[0].address : ""}
+								{c.emails?.[0]?.address ?? c.company ?? ""}
 							</p>
 						</div>
 					</Link>
