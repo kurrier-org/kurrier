@@ -11,6 +11,7 @@ import type {
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 import { useOptionalI18n } from "@/components/providers/dictionary-provider";
+import { useDashboardPath } from "@/hooks/use-dashboard-path";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 
 type MonthGridProps = {
@@ -37,6 +38,7 @@ export default function MonthGrid({
 	const { state, setState } = useDynamicContext<CalendarState>();
 	const params = useParams();
 	const router = useRouter();
+	const dashboardPath = useDashboardPath(workspacePublicId);
 	const contacts = React.use(attendeeContacts);
 	const dayjsTz = getDayjsTz(state.defaultCalendar.timezone);
 	const today = dayjsTz();
@@ -91,7 +93,9 @@ export default function MonthGrid({
 		const month = d.month() + 1;
 		const day = d.date();
 		router.push(
-			`/w/${workspacePublicId}/dashboard/calendar/${state.defaultCalendar.publicId}/day/${year}/${month}/${day}`,
+			dashboardPath(
+				`calendar/${state.defaultCalendar.publicId}/day/${year}/${month}/${day}`,
+			),
 		);
 	};
 

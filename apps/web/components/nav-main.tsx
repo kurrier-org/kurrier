@@ -1,15 +1,18 @@
 "use client";
 
+import type { DashboardNavItem } from "@extensions";
 import {
 	Blocks,
-	ChevronRight, CreditCard,
+	ChevronRight,
+	CreditCard,
 	FolderSync,
 	HardDrive,
 	Key,
 	LayoutDashboard,
 	type LucideIcon,
 	Plug,
-	Send, Users,
+	Send,
+	Users,
 	Vault,
 	Webhook,
 } from "lucide-react";
@@ -33,12 +36,12 @@ import {
 	SidebarMenuSubButton,
 	SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import {DashboardNavItem} from "@extensions";
+import { useDashboardPath } from "@/hooks/use-dashboard-path";
 
 export function NavMain({
 	workspacePublicId,
 	workspaceRole,
-	extensionNavItems
+	extensionNavItems,
 }: {
 	workspacePublicId?: string;
 	workspaceRole?: string;
@@ -47,6 +50,7 @@ export function NavMain({
 	const pathname = usePathname();
 	const dict = useDictionary();
 	const { drive } = useSiteFeatures();
+	const dashboardPath = useDashboardPath(workspacePublicId);
 	const extensionIcons: Record<string, LucideIcon> = {
 		Users,
 		CreditCard,
@@ -56,10 +60,8 @@ export function NavMain({
 		.filter((item) => !item.ownerOnly || workspaceRole === "owner")
 		.map((item) => ({
 			title: item.title,
-			url: `/w/${workspacePublicId}/dashboard/${item.path}`,
-			icon: item.icon
-				? extensionIcons[item.icon] ?? Blocks
-				: Blocks,
+			url: dashboardPath(item.path),
+			icon: item.icon ? (extensionIcons[item.icon] ?? Blocks) : Blocks,
 			items: [],
 		}));
 
@@ -71,7 +73,7 @@ export function NavMain({
 	}[] = [
 		{
 			title: dict.dashboard.overview,
-			url: `/w/${workspacePublicId}/dashboard/platform/overview`,
+			url: dashboardPath("platform/overview"),
 			icon: LayoutDashboard,
 			items: [],
 		},
@@ -79,13 +81,13 @@ export function NavMain({
 			? [
 					{
 						title: dict.platform.providers,
-						url: `/w/${workspacePublicId}/dashboard/platform/providers`,
+						url: dashboardPath("platform/providers"),
 						icon: Plug,
 						items: [],
 					},
 					{
 						title: dict.platform.identities,
-						url: `/w/${workspacePublicId}/dashboard/platform/identities`,
+						url: dashboardPath("platform/identities"),
 						icon: Send,
 						items: [],
 					},
@@ -95,7 +97,7 @@ export function NavMain({
 			? [
 					{
 						title: dict.platform.workspace,
-						url: `/w/${workspacePublicId}/dashboard/platform/workspace`,
+						url: dashboardPath("platform/workspace"),
 						icon: Blocks,
 						items: [],
 					},
@@ -103,7 +105,7 @@ export function NavMain({
 						? [
 								{
 									title: dict.platform.storage,
-									url: `/w/${workspacePublicId}/dashboard/platform/storage`,
+									url: dashboardPath("platform/storage"),
 									icon: HardDrive,
 									items: [],
 								},
@@ -111,25 +113,25 @@ export function NavMain({
 						: []),
 					{
 						title: dict.vault.vault,
-						url: `/w/${workspacePublicId}/dashboard/platform/vault`,
+						url: dashboardPath("platform/vault"),
 						icon: Vault,
 						items: [],
 					},
 					{
 						title: dict.platform.apiKeys,
-						url: `/w/${workspacePublicId}/dashboard/platform/api-keys`,
+						url: dashboardPath("platform/api-keys"),
 						icon: Key,
 						items: [],
 					},
 					{
 						title: dict.platform.webhooks,
-						url: `/w/${workspacePublicId}/dashboard/platform/webhooks`,
+						url: dashboardPath("platform/webhooks"),
 						icon: Webhook,
 						items: [],
 					},
 					{
 						title: dict.platform.syncServices,
-						url: `/w/${workspacePublicId}/dashboard/platform/sync-services`,
+						url: dashboardPath("platform/sync-services"),
 						icon: FolderSync,
 						items: [],
 					},
