@@ -52,5 +52,6 @@
 	"addAddress": "Dodaj adres",
 	"selectDate": "Wybierz datę",
 	"editPrefix": "Edytuj ",
-	"newContactForm": "Formularz nowego kontaktu"
+	"newContactForm": "Formularz nowego kontaktu",
+  "locationsCount": {"one": "{count} lokalizacja", "few": "{count} lokalizacje", "many": "{count} lokalizacji", "other": "{count} lokalizacji"}
 }

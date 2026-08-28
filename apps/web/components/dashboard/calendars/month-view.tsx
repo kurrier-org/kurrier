@@ -11,8 +11,7 @@ import {
 import { useParams, useRouter } from "next/navigation";
 import { CalendarEventAttendeeEntity, CalendarEventEntity } from "@db";
 import { getDayjsTz } from "@common/day-js-extended";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
-import { formatLocalizedCalendarTime } from "@/lib/locale-format";
+import { useOptionalI18n } from "@/components/providers/dictionary-provider";
 
 type MonthGridProps = {
 	events: CalendarEventEntity[];
@@ -32,7 +31,9 @@ export default function MonthGrid({
 	attendeeContacts,
 	workspacePublicId
 }: MonthGridProps) {
-	const dict = useOptionalDictionary();
+	const i18n = useOptionalI18n();
+	const dict = i18n?.dict;
+	const format = i18n?.format;
 	const { state, setState } = useDynamicContext<CalendarState>();
 	const params = useParams();
 	const router = useRouter();
@@ -150,7 +151,7 @@ export default function MonthGrid({
 									const title = ev.title?.trim() || (dict?.calendar?.noTitle ?? "(no title)");
 									const startLabel = ev.isAllDay
 										? null
-										: formatLocalizedCalendarTime(dayjsTz(ev.startsAt).toDate(), dict?.locale, state.defaultCalendar.timezone);
+										: format?.time(dayjsTz(ev.startsAt).toDate(), { timeZone: state.defaultCalendar.timezone }) ?? "";
 
 									return (
 										<div

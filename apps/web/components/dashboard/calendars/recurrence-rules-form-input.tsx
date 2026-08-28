@@ -11,8 +11,7 @@ import {
 } from "@schema";
 import React, { useMemo, useState } from "react";
 import { ReusableFormItems } from "@/components/common/reusable-form-items";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
-import { selectPolishPluralForm } from "@/lib/locale-format";
+import { useOptionalI18n } from "@/components/providers/dictionary-provider";
 
 const WEEKDAY_LABEL_KEYS: Record<string, string> = {
 	MO: "weekdayMon",
@@ -104,7 +103,9 @@ function RecurrenceRulesFormInput({
 	name,
 	defaultValue,
 }: RecurrenceRulesFormInputProps) {
-	const dict = useOptionalDictionary();
+	const i18n = useOptionalI18n();
+	const dict = i18n?.dict;
+	const format = i18n?.format;
 	const initial = useMemo(
 		() => parseInitialRrule(defaultValue),
 		[defaultValue],
@@ -149,25 +150,15 @@ function RecurrenceRulesFormInput({
 	}, [freq, interval, untilMode, untilDate, count, byWeekdays]);
 
 	const intervalUnitLabel =
-		dict?.locale === "pl"
-			? freq === "DAILY"
-				? selectPolishPluralForm(interval, { one: "dzień", few: "dni", many: "dni" })
-				: freq === "WEEKLY"
-					? selectPolishPluralForm(interval, { one: "tydzień", few: "tygodnie", many: "tygodni" })
-					: freq === "MONTHLY"
-						? selectPolishPluralForm(interval, { one: "miesiąc", few: "miesiące", many: "miesięcy" })
-						: freq === "YEARLY"
-							? selectPolishPluralForm(interval, { one: "rok", few: "lata", many: "lat" })
-							: ""
-			: freq === "DAILY"
-				? (dict?.calendar?.intervalDays ?? "day(s)")
-				: freq === "WEEKLY"
-					? (dict?.calendar?.intervalWeeks ?? "week(s)")
-					: freq === "MONTHLY"
-						? (dict?.calendar?.intervalMonths ?? "month(s)")
-						: freq === "YEARLY"
-							? (dict?.calendar?.intervalYears ?? "year(s)")
-							: "";
+		freq === "DAILY"
+			? format?.message(interval, dict?.calendar?.intervalDaysCount ?? { other: "days" }) ?? "days"
+			: freq === "WEEKLY"
+				? format?.message(interval, dict?.calendar?.intervalWeeksCount ?? { other: "weeks" }) ?? "weeks"
+				: freq === "MONTHLY"
+					? format?.message(interval, dict?.calendar?.intervalMonthsCount ?? { other: "months" }) ?? "months"
+					: freq === "YEARLY"
+						? format?.message(interval, dict?.calendar?.intervalYearsCount ?? { other: "years" }) ?? "years"
+						: "";
 
 	const fields: BaseFormProps["fields"] = [
 		{

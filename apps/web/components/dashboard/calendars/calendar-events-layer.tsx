@@ -5,8 +5,7 @@ import type { EventSlotRenderFragment, CalendarState } from "@schema";
 import CalendarAddEventPopover from "@/components/dashboard/calendars/calendar-add-event-popover";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { getDayjsTz } from "@common/day-js-extended";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
-import { formatLocalizedCalendarTime } from "@/lib/locale-format";
+import { useOptionalI18n } from "@/components/providers/dictionary-provider";
 
 type FragmentCellProps = {
 	fragment: EventSlotRenderFragment;
@@ -20,7 +19,8 @@ function FragmentCell({
 	showTitle,
 }: FragmentCellProps) {
 	const { state, setState } = useDynamicContext<CalendarState>();
-	const dict = useOptionalDictionary();
+	const i18n = useOptionalI18n();
+	const format = i18n?.format;
 
 	const colCount = fragment.columnCount ?? fallbackCount;
 	const colWidth = 90 / colCount;
@@ -67,23 +67,19 @@ function FragmentCell({
 				{showTitle && (
 					<div
 						className={"flex flex-wrap"}
-						title={`${fragment.event.title} - ${formatLocalizedCalendarTime(start.toDate(), dict?.locale, state.defaultCalendar.timezone)} - ${formatLocalizedCalendarTime(end.toDate(), dict?.locale, state.defaultCalendar.timezone)}`}
+						title={`${fragment.event.title} - ${format?.time(start.toDate(), { timeZone: state.defaultCalendar.timezone }) ?? ""} - ${format?.time(end.toDate(), { timeZone: state.defaultCalendar.timezone }) ?? ""}`}
 					>
 						<div className="truncate font-medium text-xs">
 							{fragment.event.title}
 						</div>
 						<div className="truncate font-medium text-xs mx-1">
-							{formatLocalizedCalendarTime(
-								start.toDate(),
-								dict?.locale,
-								state.defaultCalendar.timezone,
-							)}{" "}
+							{format?.time(start.toDate(), {
+								timeZone: state.defaultCalendar.timezone,
+							}) ?? ""}{" "}
 							-{" "}
-							{formatLocalizedCalendarTime(
-								end.toDate(),
-								dict?.locale,
-								state.defaultCalendar.timezone,
-							)}
+							{format?.time(end.toDate(), {
+								timeZone: state.defaultCalendar.timezone,
+							}) ?? ""}
 						</div>
 					</div>
 				)}

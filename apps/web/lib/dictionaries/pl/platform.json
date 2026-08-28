@@ -368,5 +368,7 @@
 	"customProviderMailboxIdentityTitle": "Tożsamość e-mail dla skrzynki pocztowej",
 	"customProviderMailboxIdentityHelp": "Kurrier utworzy tożsamość e-mail i automatycznie rozpocznie synchronizację jej skrzynek pocztowych.",
 	"customProviderDisplayNamePlaceholder": "Twoje imię i nazwisko",
-	"customProviderDisplayNameHelp": "Wyświetlane odbiorcom podczas wysyłania e-maili."
+	"customProviderDisplayNameHelp": "Wyświetlane odbiorcom podczas wysyłania e-maili.",
+  "noDomainsYet": "Brak domen — dodaj pierwszą, aby rozpocząć.",
+  "noEmailAddressesYet": "Brak adresów e-mail — dodaj pierwszy, aby rozpocząć."
 }

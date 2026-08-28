@@ -10,8 +10,7 @@ import GuestList, {
 	UiGuest,
 	UiGuestStatus,
 } from "@/components/dashboard/calendars/guest-list";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
-import { formatPolishCount } from "@/lib/locale-format";
+import { useOptionalI18n } from "@/components/providers/dictionary-provider";
 
 type SearchableContactsOption = ComboboxItem & {
 	row?: {
@@ -29,7 +28,9 @@ function AddGuests({
 	name: string;
 	onChange?: (value: string[]) => void;
 }) {
-	const dict = useOptionalDictionary();
+	const i18n = useOptionalI18n();
+	const dict = i18n?.dict;
+	const format = i18n?.format;
 	const { state } = useDynamicContext<CalendarState>();
 	const editEvent = state.activePopoverEditEvent;
 	const editEventId = editEvent?.id || "";
@@ -144,16 +145,7 @@ function AddGuests({
 			<div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
 				<Users size={14} className="shrink-0" />
 				<span className="font-medium">
-					{dict?.locale === "pl"
-						? formatPolishCount(
-								dict.locale,
-								guestCount,
-								{ one: "gość", few: "goście", many: "gości" },
-								"guests",
-							)
-						: guestCount === 1
-							? (dict?.calendar?.oneGuest ?? "1 guest")
-							: `${guestCount} ${dict?.calendar?.guestsPlural ?? "guests"}`}
+					{format?.message(guestCount, dict?.calendar?.guestsCount ?? { other: "{count} guests" }) ?? `${guestCount} guests`}
 				</span>
 			</div>
 		</>

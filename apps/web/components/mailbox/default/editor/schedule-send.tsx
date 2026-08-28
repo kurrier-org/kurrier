@@ -13,24 +13,20 @@ import { DateTimePicker } from "@mantine/dates";
 import { getTimeZones } from "@vvo/tzdb";
 import { getDayjsTz } from "@common/day-js-extended";
 import { Dayjs } from "dayjs";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useOptionalI18n } from "@/components/providers/dictionary-provider";
 
-function formatWhen(d: Date, locale?: string) {
-	return new Intl.DateTimeFormat(locale ?? "en", {
-		dateStyle: "medium",
-		timeStyle: "short",
-	}).format(d);
-}
 
 function ScheduleSend() {
-	const dict = useOptionalDictionary();
+	const i18n = useOptionalI18n();
+	const dict = i18n?.dict;
+	const format = i18n?.format;
 	const [scheduledAt, setScheduledAt] = useState<Date | null>(null);
 
 	const scheduled = !!scheduledAt;
 
 	const label = useMemo(() => {
 		if (!scheduledAt) return dict?.mailbox?.scheduleSend ?? "Schedule Send";
-		return `${dict?.mailbox?.scheduledBullet ?? "Scheduled • "}${formatWhen(scheduledAt, dict?.locale)}`;
+		return `${dict?.mailbox?.scheduledBullet ?? "Scheduled • "}${format?.date(scheduledAt, { dateStyle: "medium", timeStyle: "short" }) ?? ""}`;
 	}, [scheduledAt, dict]);
 
 	const [opened, { open, close }] = useDisclosure(false);
@@ -95,14 +91,19 @@ function ScheduleSend() {
 						if (d.isValid()) setPickerValue(d);
 					}}
 					valueFormat={
-						dict?.locale === "pl" ? "DD.MM.YYYY HH:mm" : "DD MMM hh:mm A"
+						format?.hourCycle() === "h23" || format?.hourCycle() === "h24"
+							? "DD.MM.YYYY HH:mm"
+							: "DD MMM hh:mm A"
 					}
 					popoverProps={{ zIndex: 1004 }}
 					className="my-4"
 					timePickerProps={{
 						withDropdown: true,
 						popoverProps: { withinPortal: false },
-						format: dict?.locale === "pl" ? "24h" : "12h",
+						format:
+							format?.hourCycle() === "h23" || format?.hourCycle() === "h24"
+								? "24h"
+								: "12h",
 					}}
 				/>
 				<Button
@@ -145,7 +146,7 @@ function ScheduleSend() {
 							}}
 						>
 							<span className={"my-1"}>{preset.label}</span>
-							<span>{formatWhen(preset.date.toDate(), dict?.locale)}</span>
+							<span>{format?.date(preset.date.toDate(), { dateStyle: "medium", timeStyle: "short" }) ?? ""}</span>
 						</button>
 					);
 				})}
@@ -211,7 +212,7 @@ function ScheduleSend() {
 								</>
 							) : (
 								<span className="text-[11px] leading-none text-white/90">
-									{formatWhen(scheduledAt!)}
+									{format?.date(scheduledAt!, { dateStyle: "medium", timeStyle: "short" }) ?? ""}
 								</span>
 							)}
 						</span>
@@ -234,7 +235,7 @@ function ScheduleSend() {
 								leftSection={<Check size={14} />}
 								rightSection={
 									<span className="text-[11px] text-neutral-500">
-										{formatWhen(scheduledAt!)}
+										{format?.date(scheduledAt!, { dateStyle: "medium", timeStyle: "short" }) ?? ""}
 									</span>
 								}
 								onClick={() => {}}

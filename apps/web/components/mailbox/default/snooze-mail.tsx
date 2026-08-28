@@ -9,14 +9,8 @@ import { getDayjsTz } from "@common/day-js-extended";
 import { Dayjs } from "dayjs";
 import { CalendarClock, Clock4, X } from "lucide-react";
 import { snoozeThread } from "@/lib/actions/mailbox";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useOptionalI18n } from "@/components/providers/dictionary-provider";
 
-function formatWhen(d: Date, locale?: string) {
-	return new Intl.DateTimeFormat(locale ?? "en", {
-		dateStyle: "medium",
-		timeStyle: "short",
-	}).format(d);
-}
 
 type Props = {
 	mailboxThreadId: string;
@@ -29,7 +23,9 @@ export default function SnoozeMail({
 	activeMailboxId,
 	initialSnoozedUntil = null,
 }: Props) {
-	const dict = useOptionalDictionary();
+	const i18n = useOptionalI18n();
+	const dict = i18n?.dict;
+	const format = i18n?.format;
 	const [snoozedUntil, setSnoozedUntil] = useState<Date | null>(
 		initialSnoozedUntil,
 	);
@@ -75,7 +71,7 @@ export default function SnoozeMail({
 
 	const label = useMemo(() => {
 		if (!snoozedUntil) return dict?.mailbox?.snooze ?? "Snooze";
-		return `${dict?.mailbox?.snoozedBullet ?? "Snoozed • "}${formatWhen(snoozedUntil, dict?.locale)}`;
+		return `${dict?.mailbox?.snoozedBullet ?? "Snoozed • "}${format?.date(snoozedUntil, { dateStyle: "medium", timeStyle: "short" }) ?? ""}`;
 	}, [snoozedUntil, dict]);
 
 	async function commit(next: Date | null) {
@@ -119,14 +115,19 @@ export default function SnoozeMail({
 						if (d.isValid()) setPickerValue(d);
 					}}
 					valueFormat={
-						dict?.locale === "pl" ? "DD.MM.YYYY HH:mm" : "DD MMM hh:mm A"
+						format?.hourCycle() === "h23" || format?.hourCycle() === "h24"
+							? "DD.MM.YYYY HH:mm"
+							: "DD MMM hh:mm A"
 					}
 					popoverProps={{ zIndex: 1004 }}
 					className="my-4"
 					timePickerProps={{
 						withDropdown: true,
 						popoverProps: { withinPortal: false },
-						format: dict?.locale === "pl" ? "24h" : "12h",
+						format:
+							format?.hourCycle() === "h23" || format?.hourCycle() === "h24"
+								? "24h"
+								: "12h",
 					}}
 					disabled={saving}
 				/>
@@ -167,7 +168,7 @@ export default function SnoozeMail({
 						onClick={() => commit(preset.date.toDate())}
 					>
 						<span className="my-1">{preset.label}</span>
-						<span>{formatWhen(preset.date.toDate(), dict?.locale)}</span>
+						<span>{format?.date(preset.date.toDate(), { dateStyle: "medium", timeStyle: "short" }) ?? ""}</span>
 					</button>
 				))}
 

@@ -372,5 +372,7 @@
 	"customProviderMailboxIdentityTitle": "Mailbox identity",
 	"customProviderMailboxIdentityHelp": "Kurrier will create the email identity and start syncing its mailboxes automatically.",
 	"customProviderDisplayNamePlaceholder": "Your name",
-	"customProviderDisplayNameHelp": "Shown to recipients when you send email."
+	"customProviderDisplayNameHelp": "Shown to recipients when you send email.",
+  "noDomainsYet": "No domains yet — add your first one to get started.",
+  "noEmailAddressesYet": "No email addresses yet — add your first one to get started."
 }

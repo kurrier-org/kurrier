@@ -1,67 +1,67 @@
-type PolishPluralForms = {
-	one: string;
-	few: string;
-	many: string;
+export type PluralForms = {
+	other: string;
+	one?: string;
+	two?: string;
+	few?: string;
+	many?: string;
+	zero?: string;
 };
 
-/** Returns the correct Polish cardinal form for a count. */
-export function selectPolishPluralForm(
-	count: number,
-	forms: PolishPluralForms,
-) {
-	const category = new Intl.PluralRules("pl").select(count);
-	return category === "one"
-		? forms.one
-		: category === "few"
-			? forms.few
-			: forms.many;
+type DateValue = Date | string | number;
+
+function toDate(value: DateValue) {
+	const date = value instanceof Date ? value : new Date(value);
+	return Number.isNaN(date.getTime()) ? null : date;
 }
 
 /**
- * Formats legacy count labels for Polish, which has three cardinal forms.
- *
- * Keep new messages as complete, locale-owned strings where possible. This
- * bridge is for existing UI that composes a count with a legacy label.
+ * Creates locale-aware formatters using only the platform `Intl` APIs.
+ * Translation strings remain owned by the dictionaries passed to `message`.
  */
-export function formatPolishCount(
-	locale: string | undefined,
-	count: number,
-	forms: PolishPluralForms,
-	fallback: string,
-) {
-	if (locale !== "pl") return `${count} ${fallback}`;
-	return `${count} ${selectPolishPluralForm(count, forms)}`;
+export function createLocaleFormatter(locale: string | undefined) {
+	const resolvedLocale = locale ?? "en";
+	const pluralRules = new Intl.PluralRules(resolvedLocale);
+	const numberFormatter = new Intl.NumberFormat(resolvedLocale);
+
+	const date = (value: DateValue, options?: Intl.DateTimeFormatOptions) => {
+		const parsed = toDate(value);
+		return parsed
+			? new Intl.DateTimeFormat(resolvedLocale, options).format(parsed)
+			: "";
+	};
+
+	return {
+		date,
+
+		time(value: DateValue, options?: Intl.DateTimeFormatOptions) {
+			return date(value, {
+				hour: "2-digit",
+				minute: "2-digit",
+				...options,
+			});
+		},
+
+		number(value: number, options?: Intl.NumberFormatOptions) {
+			return options
+				? new Intl.NumberFormat(resolvedLocale, options).format(value)
+				: numberFormatter.format(value);
+		},
+
+		hourCycle() {
+			return new Intl.DateTimeFormat(resolvedLocale, {
+				hour: "numeric",
+			}).resolvedOptions().hourCycle;
+		},
+
+		plural(count: number) {
+			return pluralRules.select(count);
+		},
+
+		message(count: number, forms: PluralForms) {
+			const template = forms[pluralRules.select(count)] ?? forms.other;
+			return template.replaceAll("{count}", numberFormatter.format(count));
+		},
+	};
 }
 
-export function formatLocalizedDateTime(
-	value: Date | string | number,
-	locale: string | undefined,
-	options: Intl.DateTimeFormatOptions,
-) {
-	const date = value instanceof Date ? value : new Date(value);
-	if (Number.isNaN(date.getTime())) return "";
-
-	return new Intl.DateTimeFormat(locale ?? "en", options).format(date);
-}
-
-export function formatLocalizedTime(
-	value: Date | string | number,
-	locale: string | undefined,
-) {
-	return formatLocalizedDateTime(value, locale, {
-		hour: "2-digit",
-		minute: "2-digit",
-	});
-}
-
-export function formatLocalizedCalendarTime(
-	value: Date | string | number,
-	locale: string | undefined,
-	timeZone: string,
-) {
-	return formatLocalizedDateTime(value, locale, {
-		hour: "2-digit",
-		minute: "2-digit",
-		timeZone,
-	});
-}
+export type LocaleFormatter = ReturnType<typeof createLocaleFormatter>;

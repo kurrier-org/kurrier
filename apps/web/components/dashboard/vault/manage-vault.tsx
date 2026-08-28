@@ -30,8 +30,7 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { Container } from "@/components/common/containers";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
-import { formatPolishCount } from "@/lib/locale-format";
+import { useOptionalI18n } from "@/components/providers/dictionary-provider";
 import type { FetchVaultSecretsResult } from "@/lib/actions/vault";
 
 type VaultSecret = FetchVaultSecretsResult[number];
@@ -55,7 +54,9 @@ export default function ManageVault({
 	deleteSecret,
 	revealSecret,
 }: ManageVaultProps) {
-	const dict = useOptionalDictionary();
+	const i18n = useOptionalI18n();
+	const dict = i18n?.dict;
+	const format = i18n?.format;
 	const [opened, setOpened] = React.useState(false);
 	const [editing, setEditing] = React.useState<VaultSecret | null>(null);
 
@@ -233,14 +234,7 @@ export default function ManageVault({
 
 					{secrets.length > 0 && (
 						<Badge variant="light" radius="sm">
-							{formatPolishCount(
-								dict?.locale,
-								secrets.length,
-								{ one: "sekret", few: "sekrety", many: "sekretów" },
-								secrets.length === 1
-									? (dict?.vault?.secretSingular ?? "secret")
-									: (dict?.vault?.secretPlural ?? "secrets"),
-							)}
+							{format?.message(secrets.length, dict?.vault?.secretsCount ?? { other: "{count} secrets" }) ?? `${secrets.length} secrets`}
 						</Badge>
 					)}
 				</div>

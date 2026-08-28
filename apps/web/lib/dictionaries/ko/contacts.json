@@ -1,1 +1,3 @@
-{}
+{
+  "locationsCount": {"other": "위치 {count}개", "one": "위치 {count}개", "few": "위치 {count}개", "many": "위치 {count}개"}
+}

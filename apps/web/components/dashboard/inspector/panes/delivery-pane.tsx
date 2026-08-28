@@ -14,10 +14,9 @@ import {
 } from "@/components/dashboard/inspector/inspector-bar";
 import type { MessageEntity } from "@db";
 import { Badge } from "@/components/ui/badge";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
-import { formatPolishCount } from "@/lib/locale-format";
+import { useOptionalI18n } from "@/components/providers/dictionary-provider";
 
-type Dict = ReturnType<typeof useOptionalDictionary>;
+type Dict = NonNullable<ReturnType<typeof useOptionalI18n>>["dict"] | null | undefined;
 
 type DeliveryPaneProps = {
     message?: MessageEntity;
@@ -221,7 +220,9 @@ function DeliveryEventRow({
     event: DeliveryEvent;
     isLast: boolean;
 }) {
-    const dict = useOptionalDictionary();
+    const i18n = useOptionalI18n();
+    const dict = i18n?.dict;
+    const format = i18n?.format;
     const Icon = event.icon;
 
     return (
@@ -301,7 +302,9 @@ function DeliveryEventRow({
 export default function DeliveryPane({
                                          message,
                                      }: DeliveryPaneProps) {
-    const dict = useOptionalDictionary();
+    const i18n = useOptionalI18n();
+    const dict = i18n?.dict;
+    const format = i18n?.format;
     const events = useMemo(() => {
         if (!message) return [];
 
@@ -333,14 +336,7 @@ export default function DeliveryPane({
                         className="gap-1.5"
                     >
                         <Route className="size-3" />
-                        {dict?.locale === "pl"
-                            ? formatPolishCount(
-                                    dict.locale,
-                                    events.length,
-                                    { one: "zdarzenie dostarczenia", few: "zdarzenia dostarczenia", many: "zdarzeń dostarczenia" },
-                                    "delivery events",
-                                )
-                            : `${events.length} ${dict?.mailbox?.deliveryLabel ?? "delivery"} ${events.length === 1 ? (dict?.mailbox?.event ?? "event") : (dict?.mailbox?.eventsPlural ?? "events")}` }
+                        {format?.message(events.length, dict?.mailbox?.deliveryEventsCount ?? { other: "{count} delivery events" }) ?? `${events.length} delivery events` }
                     </Badge>
 
                     {message.rawStorageKey && (

@@ -70,5 +70,10 @@
 	"decline": "Odrzuć",
 	"location": "Lokalizacja",
 	"guests": "Goście",
-	"more": "więcej"
+	"more": "więcej",
+  "guestsCount": {"one": "{count} gość", "few": "{count} goście", "many": "{count} gości", "other": "{count} gości"},
+  "intervalDaysCount": {"one": "dzień", "few": "dni", "many": "dni", "other": "dni"},
+  "intervalWeeksCount": {"one": "tydzień", "few": "tygodnie", "many": "tygodni", "other": "tygodni"},
+  "intervalMonthsCount": {"one": "miesiąc", "few": "miesiące", "many": "miesięcy", "other": "miesięcy"},
+  "intervalYearsCount": {"one": "rok", "few": "lata", "many": "lat", "other": "lat"}
 }

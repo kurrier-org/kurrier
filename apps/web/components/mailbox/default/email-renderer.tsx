@@ -16,7 +16,7 @@ import ThreadLabelHoverButtons from "@/components/dashboard/labels/thread-label-
 import EditorAttachmentItem from "@/components/mailbox/default/editor/editor-attachment-item";
 import type { EmailEditorHandle } from "@/components/mailbox/default/editor/email-editor";
 import MailUnsubscriber from "@/components/mailbox/default/mail-unsubscriber";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useOptionalI18n } from "@/components/providers/dictionary-provider";
 import type {
 	FetchLabelsResult,
 	FetchMailboxThreadLabelsResult,
@@ -27,7 +27,6 @@ import {
 	markAsRead,
 } from "@/lib/actions/mailbox";
 import { getRawMessageDownloadUrl } from "@/lib/actions/uploads-actions";
-import { formatPolishCount } from "@/lib/locale-format";
 
 const InspectorBar = dynamic(
 	() => import("@/components/dashboard/inspector/inspector-bar"),
@@ -136,7 +135,9 @@ function EmailRenderer({
 	labelsByThreadId: FetchMailboxThreadLabelsResult;
 	children?: React.ReactNode;
 }) {
-	const dict = useOptionalDictionary();
+	const i18n = useOptionalI18n();
+	const dict = i18n?.dict;
+	const format = i18n?.format;
 	const formatted = Temporal.Instant.from(message.createdAt.toISOString())
 		.toZonedDateTimeISO(Temporal.Now.timeZoneId())
 		.toLocaleString(dict?.locale ?? "en", {
@@ -440,12 +441,7 @@ function EmailRenderer({
 			{attachments?.length > 0 && (
 				<div className="border-t border-dotted py-4">
 					<div className="font-semibold mb-4">
-						{formatPolishCount(
-							dict?.locale,
-							attachments.length,
-							{ one: "załącznik", few: "załączniki", many: "załączników" },
-							dict?.mailbox?.attachmentsCountSuffix?.trim() ?? "attachments",
-						)}
+						{format?.message(attachments.length, dict?.mailbox?.attachmentsCount ?? { other: "{count} attachments" }) ?? `${attachments.length} attachments`}
 					</div>
 
 					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -287,5 +287,9 @@
 	"identity": "Tożsamość e-mail",
 	"noScheduledMessages": "Brak zaplanowanych wiadomości",
 	"loadRemoteImagesOnce": "Wczytaj zdalne obrazy jednorazowo",
-	"alwaysLoadForThisSender": "Zawsze wczytuj dla tego nadawcy"
+	"alwaysLoadForThisSender": "Zawsze wczytuj dla tego nadawcy",
+  "attachmentsCount": {"one": "{count} załącznik", "few": "{count} załączniki", "many": "{count} załączników", "other": "{count} załączników"},
+  "headersCount": {"one": "{count} nagłówek", "few": "{count} nagłówki", "many": "{count} nagłówków", "other": "{count} nagłówków"},
+  "deliveryHopsCount": {"one": "{count} przeskok dostarczenia", "few": "{count} przeskoki dostarczenia", "many": "{count} przeskoków dostarczenia", "other": "{count} przeskoków dostarczenia"},
+  "deliveryEventsCount": {"one": "{count} zdarzenie dostarczenia", "few": "{count} zdarzenia dostarczenia", "many": "{count} zdarzeń dostarczenia", "other": "{count} zdarzeń dostarczenia"}
 }

@@ -25,14 +25,15 @@ import ContactListAvatar from "@/components/dashboard/contacts/contact-list-avat
 import {getRedis} from "@/lib/actions/get-redis";
 import {isSignedIn} from "@/lib/actions/auth";
 import {generateSignedUrl} from "@common";
-import { getDictionary } from "@/lib/dictionaries";
-import { formatPolishCount } from "@/lib/locale-format";
+import { getI18n } from "@/lib/dictionaries";
 import { cookies } from "next/headers";
 
 async function Page({ params }: { params: { contactsPublicId: string } }) {
 	const { contactsPublicId } = await params;
 	const cookieStore = await cookies();
-	const dict = await getDictionary(cookieStore.get("locale")?.value ?? "en");
+	const { dict, format } = await getI18n(
+		cookieStore.get("locale")?.value ?? "en",
+	);
 	const c = dict.contacts;
 
 	const rls = await rlsClient();
@@ -347,12 +348,7 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 									</span>
 								</div>
 								<span className="text-[11px] text-muted-foreground/70">
-									{formatPolishCount(
-										dict.locale,
-										addresses.length,
-										{ one: "lokalizacja", few: "lokalizacje", many: "lokalizacji" },
-										addresses.length === 1 ? c.location : c.locations,
-									)}
+									{format.message(addresses.length, c.locationsCount)}
 								</span>
 							</header>
 
