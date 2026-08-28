@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { DriveRouteContext, DriveState } from "@schema";
-import { useDynamicContext } from "@/hooks/use-dynamic-context";
+import type { DriveRouteContext, DriveState } from "@schema";
 import Link from "next/link";
+import { useEffect } from "react";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useDynamicContext } from "@/hooks/use-dynamic-context";
 
 function encodeSegments(segs: string[]) {
 	return segs.map(encodeURIComponent);
@@ -34,11 +34,11 @@ export function buildDriveBreadcrumb(
 	if (vol) {
 		out.push({
 			label: vol.label || vol.code || (dict?.drive?.volume ?? "Volume"),
-			href: `/dashboard/drive/volumes/${encodeURIComponent(vol.publicId)}`,
+			href: `/w/${workspacePublicId}/dashboard/drive/volumes/${encodeURIComponent(vol.publicId)}`,
 		});
 	}
 
-	const base = `/dashboard/drive/volumes/${encodeURIComponent(
+	const base = `/w/${workspacePublicId}/dashboard/drive/volumes/${encodeURIComponent(
 		vol?.publicId || "",
 	)}`;
 
@@ -57,10 +57,10 @@ export function buildDriveBreadcrumb(
 }
 
 function DriveTopBar({
-						 ctx,
-						 userId,
-						 workspacePublicId,
-					 }: {
+	ctx,
+	userId,
+	workspacePublicId,
+}: {
 	ctx: DriveRouteContext;
 	userId: string;
 	workspacePublicId: string;
@@ -81,10 +81,10 @@ function DriveTopBar({
 			within: ctx.within,
 			driveVolume: ctx.driveVolume
 				? {
-					publicId: ctx.driveVolume.publicId,
-					label: ctx.driveVolume.label,
-					code: ctx.driveVolume.code,
-				}
+						publicId: ctx.driveVolume.publicId,
+						label: ctx.driveVolume.label,
+						code: ctx.driveVolume.code,
+					}
 				: null,
 		},
 		workspacePublicId,
@@ -92,13 +92,16 @@ function DriveTopBar({
 	);
 
 	return (
-		<div className="flex items-center gap-2 min-w-0">
+		<div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
 			{crumbs.map((c, i) => {
 				const isRoot = i === 0;
 				const isLast = i === crumbs.length - 1;
 
 				return (
-					<div key={c.href} className="flex items-center gap-2 min-w-0">
+					<div
+						key={c.href}
+						className="flex min-w-0 items-center gap-2 last:flex-1"
+					>
 						{i > 0 && <span className="text-muted-foreground">/</span>}
 
 						<Link

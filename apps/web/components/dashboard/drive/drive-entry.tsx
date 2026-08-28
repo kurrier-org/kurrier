@@ -18,7 +18,6 @@ import {
 import dayjs from "dayjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import React from "react";
 import DriveEntryOptions from "@/components/dashboard/drive/drive-entry-options";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
@@ -28,7 +27,7 @@ export default function DriveEntry({ entry }: { entry: DriveEntryEntity }) {
 
 function DriveTile({ entry }: { entry: DriveEntryEntity }) {
 	const dict = useOptionalDictionary();
-	const meta = entry.metaData as any;
+	const meta = entry.metaData as { lastModified?: unknown } | null;
 	const lastModified = meta?.lastModified ?? null;
 	const ext = guessExt(entry);
 	const { Icon, badge } = pickIconAndBadge(entry, ext, dict);
@@ -39,7 +38,7 @@ function DriveTile({ entry }: { entry: DriveEntryEntity }) {
 		entry.type === "folder" ? `${base}/${encodeURIComponent(entry.name)}` : "#";
 
 	return (
-		<div className="group w-[260px]">
+		<div className="group min-w-0 w-full">
 			<div className="rounded-2xl border border-neutral-200 bg-white transition hover:shadow-xs dark:border-neutral-800 dark:bg-neutral-950">
 				<div className="relative h-[150px] overflow-hidden rounded-t-2xl bg-neutral-50 dark:bg-neutral-900">
 					<div className="absolute left-3 top-3">
@@ -96,11 +95,9 @@ function DriveTile({ entry }: { entry: DriveEntryEntity }) {
 								</>
 							)}
 							{lastModified ? (
-								<>
-									<span className="truncate">
-										{formatLastModified(lastModified)}
-									</span>
-								</>
+								<span className="truncate">
+									{formatLastModified(lastModified)}
+								</span>
 							) : null}
 						</div>
 					</div>
@@ -229,7 +226,7 @@ function formatBytes(n: number) {
 	return `${v.toFixed(digits)} ${units[i]}`;
 }
 
-function formatLastModified(v: any) {
+function formatLastModified(v: unknown) {
 	const s = typeof v === "string" ? v : "";
 	if (!s) return "";
 	const d = new Date(s);

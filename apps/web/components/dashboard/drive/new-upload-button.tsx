@@ -1,22 +1,25 @@
 "use client";
-import React, { useRef, useState } from "react";
-import { Plus, Upload, FolderPlus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input, Menu, Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { addNewFolder } from "@/lib/actions/drive";
+import type { DriveState } from "@schema";
+import { FolderPlus, Plus, Upload } from "lucide-react";
+import { useRef, useState } from "react";
 import { ReusableFormButton } from "@/components/common/reusable-form-button";
-import { useDynamicContext } from "@/hooks/use-dynamic-context";
-import { DriveState } from "@schema";
 import DriveUploader, {
-	DriveUploaderHandle,
+	type DriveUploaderHandle,
 } from "@/components/dashboard/drive/drive-uploader";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { Button } from "@/components/ui/button";
+import { useDynamicContext } from "@/hooks/use-dynamic-context";
+import { addNewFolder } from "@/lib/actions/drive";
+import { cn } from "@/lib/utils";
 
 export default function NewUploadButton({
-	hideOnMobile,
+	compact = false,
+	className,
 }: {
-	hideOnMobile?: boolean;
+	compact?: boolean;
+	className?: string;
 }) {
 	const dict = useOptionalDictionary();
 	const [folderOpened, folderHandlers] = useDisclosure(false);
@@ -36,9 +39,14 @@ export default function NewUploadButton({
 				closeOnItemClick={false}
 			>
 				<Menu.Target>
-					<Button hidden={!hideOnMobile} size="lg" className={"w-full"}>
-						<Plus className="h-5 w-5" />
-						{dict?.drive?.new ?? "New"}
+					<Button
+						size={compact ? "icon" : "lg"}
+						className={cn(!compact && "w-full", className)}
+					>
+						<Plus />
+						<span className={compact ? "sr-only" : ""}>
+							{dict?.drive?.new ?? "New"}
+						</span>
 					</Button>
 				</Menu.Target>
 
