@@ -1,18 +1,20 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { Minus, X, MailPlus, PencilLine } from "lucide-react";
-import EmailEditor, {
-	EmailEditorHandle,
-} from "@/components/mailbox/default/editor/email-editor";
-import { PublicConfig } from "@schema";
-import { Button } from "@/components/ui/button";
-import {FetchIdentityMailboxListResult, fetchMailbox} from "@/lib/actions/mailbox";
+import type { PublicConfig } from "@schema";
+import { MailPlus, Minus, PencilLine, X } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useMediaQuery } from "@mantine/hooks";
-import { ActionIcon } from "@mantine/core";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import EmailEditor, {
+	type EmailEditorHandle,
+} from "@/components/mailbox/default/editor/email-editor";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { Button } from "@/components/ui/button";
+import {
+	type FetchIdentityMailboxListResult,
+	fetchMailbox,
+} from "@/lib/actions/mailbox";
 
 function Portal({ children }: { children: React.ReactNode }) {
 	const elRef = useRef<HTMLDivElement | null>(null);
@@ -21,7 +23,8 @@ function Portal({ children }: { children: React.ReactNode }) {
 	if (!elRef.current) elRef.current = document.createElement("div");
 
 	useEffect(() => {
-		const el = elRef.current!;
+		const el = elRef.current;
+		if (!el) return;
 		document.body.appendChild(el);
 		setMounted(true);
 		return () => {
@@ -29,44 +32,45 @@ function Portal({ children }: { children: React.ReactNode }) {
 		};
 	}, []);
 
-	return mounted ? createPortal(children, elRef.current!) : null;
+	if (!mounted || !elRef.current) return null;
+
+	return createPortal(children, elRef.current);
 }
 
 export default function ComposeMail({
 	publicConfig,
-	identityMailboxes
+	identityMailboxes,
+	compact = false,
 }: {
 	publicConfig: PublicConfig;
 	identityMailboxes: FetchIdentityMailboxListResult;
+	compact?: boolean;
 }) {
 	const [open, setOpen] = useState(false);
 	const [appeared, setAppeared] = useState(false);
 	const [minimized, setMinimized] = useState(false);
-	const [expanded, setExpanded] = useState(false);
 	const [sentMailboxId, setSentMailboxId] = useState<string>();
-	const [showEditorMode, setShowEditorMode] = useState<string>("compose");
+	const showEditorMode = "compose";
 	const editorRef = useRef<EmailEditorHandle>(null);
 	const params = useParams();
-	const isMobile = useMediaQuery("(max-width: 768px)");
 	const dict = useOptionalDictionary();
-
-	const fetchSentMailbox = async () => {
-		const { activeMailbox } = await fetchMailbox(
-			String(params.identityPublicId),
-			"sent",
-		);
-		setSentMailboxId(String(activeMailbox.id));
-	};
 
 	useEffect(() => {
 		if (!open) return;
-		fetchSentMailbox();
+		fetchMailbox(String(params.identityPublicId), "sent").then(
+			({ activeMailbox }) => setSentMailboxId(String(activeMailbox.id)),
+		);
 
 		const t = setTimeout(() => setAppeared(true), 16);
 		const prev = document.body.style.overflow;
 		document.body.style.overflow = "hidden";
 
-		const onEsc = (e: KeyboardEvent) => e.key === "Escape" && handleClose();
+		const onEsc = (e: KeyboardEvent) => {
+			if (e.key === "Escape") {
+				setOpen(false);
+				setAppeared(false);
+			}
+		};
 		window.addEventListener("keydown", onEsc);
 
 		return () => {
@@ -74,12 +78,11 @@ export default function ComposeMail({
 			document.body.style.overflow = prev;
 			window.removeEventListener("keydown", onEsc);
 		};
-	}, [open]);
+	}, [open, params.identityPublicId]);
 
 	const handleOpen = () => {
 		setOpen(true);
 		setMinimized(false);
-		setExpanded(false);
 	};
 
 	const handleClose = () => {
@@ -89,53 +92,78 @@ export default function ComposeMail({
 
 	return (
 		<>
-			{isMobile ? (
-				<ActionIcon onClick={handleOpen}>
-					<PencilLine size={16} />
-				</ActionIcon>
-			) : (
-				<Button size="lg" onClick={handleOpen} disabled={!params.identityPublicId}>
-					<MailPlus className="h-5 w-5" />
+			<Button
+				size={compact ? "icon" : "lg"}
+				className={compact ? "size-8" : "w-full"}
+				onClick={handleOpen}
+				disabled={!params.identityPublicId}
+			>
+				{compact ? <PencilLine /> : <MailPlus />}
+				<span className={compact ? "sr-only" : ""}>
 					{dict?.mailbox?.compose ?? "Compose"}
-				</Button>
-			)}
+				</span>
+			</Button>
 
 			{!open ? null : (
 				<Portal>
 					<div
 						className={[
-							"fixed inset-0",
+							"fixed inset-0 z-[999] bg-black/20 sm:pointer-events-none sm:bg-transparent",
 							appeared ? "opacity-100" : "opacity-0",
 							"transition-opacity",
 						].join(" ")}
 					/>
 
-					{isMobile ? (
-						<div
-							role="dialog"
-							aria-modal="true"
-							className={[
-								"fixed inset-0 z-[1000] bg-background text-foreground",
-								"flex flex-col",
-								"motion-safe:transition-transform motion-safe:duration-200",
-								appeared ? "translate-y-0" : "translate-y-3",
-							].join(" ")}
-							onClick={(e) => e.stopPropagation()}
-						>
-							<div className="sticky top-0 z-10 flex items-center justify-between border-b px-4 py-3">
-								<div className="text-sm font-medium">{dict?.mailbox?.newMessage ?? "New Message"}</div>
-								<button
-									type="button"
-									onClick={handleClose}
-									aria-label={dict?.mailbox?.close ?? "Close"}
-									title={dict?.mailbox?.close ?? "Close"}
-									className="p-2 rounded-md hover:bg-muted transition-colors"
-								>
-									<X className="h-5 w-5" />
-								</button>
+					<div
+						role="dialog"
+						aria-modal="true"
+						aria-label={dict?.mailbox?.newMessage ?? "New Message"}
+						className={[
+							"fixed inset-0 z-[1000] flex min-h-0 flex-col overflow-hidden bg-background text-foreground",
+							"sm:inset-auto sm:right-4 sm:bottom-4 sm:max-h-[calc(100svh-2rem)] sm:w-[min(520px,calc(100vw-2rem))] sm:rounded-lg sm:border sm:shadow-xl",
+							"motion-safe:transition-[opacity,transform] motion-safe:duration-200 motion-safe:ease-out",
+							appeared
+								? "translate-y-0 scale-100 opacity-100"
+								: "translate-y-3 scale-[0.98] opacity-0",
+						].join(" ")}
+					>
+						<div className="flex shrink-0 items-center justify-between border-b px-4 py-2">
+							<div className="text-sm font-medium">
+								{dict?.mailbox?.newMessage ?? "New Message"}
 							</div>
+							<div className="flex items-center gap-2">
+								<div className="hidden sm:block">
+									<IconBtn
+										label={
+											minimized
+												? (dict?.mailbox?.restore ?? "Restore")
+												: (dict?.mailbox?.minimize ?? "Minimize")
+										}
+										onClick={() => setMinimized((v) => !v)}
+									>
+										<Minus className="size-4" />
+									</IconBtn>
+								</div>
+								<IconBtn
+									label={dict?.mailbox?.close ?? "Close"}
+									onClick={handleClose}
+								>
+									<X className="size-4" />
+								</IconBtn>
+							</div>
+						</div>
 
-							<div className="flex-1 min-h-0 overflow-auto px-0 pb-[env(safe-area-inset-bottom)]">
+						<div
+							className={[
+								"grid min-h-0 flex-1 px-0 pb-0",
+								minimized
+									? "grid-rows-[0fr] opacity-0"
+									: "grid-rows-[1fr] opacity-100",
+								"transition-[grid-template-rows,opacity] duration-200 ease-out",
+								"overflow-hidden",
+							].join(" ")}
+						>
+							<div className="min-h-0 overflow-auto pb-[env(safe-area-inset-bottom)]">
 								<EmailEditor
 									sentMailboxId={String(sentMailboxId)}
 									ref={editorRef}
@@ -150,64 +178,7 @@ export default function ComposeMail({
 								/>
 							</div>
 						</div>
-					) : (
-						<div
-							role="dialog"
-							aria-modal="true"
-							className={[
-								"fixed z-[1000] bg-background border shadow-xl rounded-lg overflow-hidden",
-								"right-12 bottom-4",
-								// expanded ? "w-[720px] h-[70vh]" : "w-[520px] h-auto",
-								expanded ? "w-[720px] h-[70vh]" : "w-[520px] h-auto",
-								"transition-[width,height] duration-200 ease-out",
-								"motion-safe:transition-opacity motion-safe:duration-200 motion-safe:ease-out motion-safe:transition-transform",
-								appeared
-									? "opacity-100 translate-y-0 scale-100"
-									: "opacity-0 translate-y-3 scale-[0.98]",
-								"hover:shadow-2xl",
-							].join(" ")}
-							onClick={(e) => e.stopPropagation()}
-						>
-							<div className="flex items-center justify-between border-b px-4 py-2">
-								{/*<div className="text-sm font-medium">New Message</div>*/}
-								<div className="flex items-center gap-2">
-									<IconBtn
-										label={minimized ? (dict?.mailbox?.restore ?? "Restore") : (dict?.mailbox?.minimize ?? "Minimize")}
-										onClick={() => setMinimized((v) => !v)}
-									>
-										<Minus className="h-4 w-4" />
-									</IconBtn>
-									<IconBtn label={dict?.mailbox?.close ?? "Close"} onClick={handleClose}>
-										<X className="h-4 w-4" />
-									</IconBtn>
-								</div>
-							</div>
-
-							<div
-								className={[
-									"px-0 pb-0 grid",
-									minimized
-										? "grid-rows-[0fr] opacity-0"
-										: "grid-rows-[1fr] opacity-100",
-									"transition-[grid-template-rows,opacity] duration-200 ease-out",
-									"overflow-hidden",
-									expanded ? "max-h-[calc(70vh-48px)]" : "max-h-none",
-								].join(" ")}
-							>
-								<div className="min-h-0">
-									<EmailEditor
-										sentMailboxId={String(sentMailboxId)}
-										ref={editorRef}
-										publicConfig={publicConfig}
-										identityMailboxes={identityMailboxes}
-										message={null}
-										showEditorMode={showEditorMode}
-										handleClose={handleClose}
-									/>
-								</div>
-							</div>
-						</div>
-					)}
+					</div>
 				</Portal>
 			)}
 		</>

@@ -1,13 +1,16 @@
+import { getPublicEnv } from "@schema";
+import MailPagination from "@/components/mailbox/default/mail-pagination";
+import WebmailList from "@/components/mailbox/default/webmail-list";
+import { getWorkspacePublicId } from "@/lib/actions/clients";
+import {
+	fetchLabelsByIdentityPublicId,
+	fetchMailboxThreadLabels,
+} from "@/lib/actions/labels";
 import {
 	fetchIdentityMailboxList,
 	fetchMailbox,
 	fetchMailboxThreads,
 } from "@/lib/actions/mailbox";
-import {fetchLabelsByIdentityPublicId, fetchMailboxThreadLabels} from "@/lib/actions/labels";
-import { getPublicEnv } from "@schema";
-import MailPagination from "@/components/mailbox/default/mail-pagination";
-import WebmailList from "@/components/mailbox/default/webmail-list";
-import {getWorkspacePublicId} from "@/lib/actions/clients";
 
 async function Page({
 	params,
@@ -28,40 +31,34 @@ async function Page({
 		return { mailboxThreads, labelsByThreadId };
 	});
 
-
 	const identityMailboxesPromise = fetchIdentityMailboxList();
 	const globalLabelsPromise = fetchLabelsByIdentityPublicId({
 		identityPublicId,
 		scope: "thread",
 	});
 
-	const fetchMailboxPromise = fetchMailbox(
-		identityPublicId,
-		mailboxSlug,
-	)
-	const workspacePublicId = await getWorkspacePublicId()
+	const fetchMailboxPromise = fetchMailbox(identityPublicId, mailboxSlug);
+	const workspacePublicId = await getWorkspacePublicId();
 	return (
-		<>
-			<div className="flex flex-1 flex-col gap-4 p-4 mb-12">
-				<WebmailList
-					mailboxThreadPromise={mailboxThreadPromise}
-					publicConfig={publicConfig}
-					identityPublicId={identityPublicId}
-					fetchMailboxPromise={fetchMailboxPromise}
-					identityMailboxesPromise={identityMailboxesPromise}
-					globalLabelsPromise={globalLabelsPromise}
-					workspacePublicId={workspacePublicId}
-				/>
+		<div className="mb-12 flex min-w-0 flex-1 flex-col gap-4 p-3 sm:p-4">
+			<WebmailList
+				mailboxThreadPromise={mailboxThreadPromise}
+				publicConfig={publicConfig}
+				identityPublicId={identityPublicId}
+				fetchMailboxPromise={fetchMailboxPromise}
+				identityMailboxesPromise={identityMailboxesPromise}
+				globalLabelsPromise={globalLabelsPromise}
+				workspacePublicId={workspacePublicId}
+			/>
 
-				<MailPagination
-					key={page}
-					workspacePublicId={workspacePublicId}
-					fetchMailboxPromise={fetchMailboxPromise}
-					identityPublicId={identityPublicId}
-					page={Number(page)}
-				/>
-			</div>
-		</>
+			<MailPagination
+				key={page}
+				workspacePublicId={workspacePublicId}
+				fetchMailboxPromise={fetchMailboxPromise}
+				identityPublicId={identityPublicId}
+				page={Number(page)}
+			/>
+		</div>
 	);
 }
 

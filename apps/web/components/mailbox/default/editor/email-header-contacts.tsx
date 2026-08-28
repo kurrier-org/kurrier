@@ -1,15 +1,15 @@
 "use client";
-import React, { useState } from "react";
 import {
-	ComboboxItem,
-	TagsInput,
-	TagsInputProps,
-	OptionsFilter,
+	type ComboboxItem,
 	FocusTrap,
+	type OptionsFilter,
+	TagsInput,
+	type TagsInputProps,
 } from "@mantine/core";
+import type { ComposeContact } from "@schema";
+import { useState } from "react";
 import ContactSuggestionItem from "@/components/mailbox/default/editor/contact-suggestion-item";
 import { searchContactsForCompose } from "@/lib/actions/calendar";
-import {ComposeContact} from "@schema";
 
 export default function EmailHeaderContacts({
 	name,
@@ -40,7 +40,6 @@ export default function EmailHeaderContacts({
 		const rowsContacts = await searchContactsForCompose(val);
 		const rows = uniqueByEmail(rowsContacts);
 
-
 		const mapped: ComboboxItem[] = rows.map((row) => ({
 			value: row.email,
 			label: `${row.name} <${row.email}>`,
@@ -62,36 +61,34 @@ export default function EmailHeaderContacts({
 	};
 
 	return (
-		<>
-			<FocusTrap active={true}>
-				<TagsInput
-					defaultValue={toEmail ? [toEmail] : []}
-					searchValue={searchValue}
-					onSearchChange={searchContacts}
-					data={options}
-					onChange={(value) => {
-						if (value.length > 0) {
-							onChange && onChange(value as string[]);
-						}
-					}}
-					renderOption={renderOption}
-					filter={filter}
-					maxTags={maxTags}
-					name={name}
-					size="sm"
-					variant="unstyled"
-					className="min-h-[28px] text-sm w-96"
-					comboboxProps={{
-						dropdownPadding: 0,
-						withinPortal: false,
-						position: "bottom-start",
-						offset: 1,
-						width: "target",
-						shadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-						transitionProps: { transition: "skew-down", duration: 150 },
-					}}
-				/>
-			</FocusTrap>
-		</>
+		<FocusTrap active={true}>
+			<TagsInput
+				defaultValue={toEmail ? [toEmail] : []}
+				searchValue={searchValue}
+				onSearchChange={searchContacts}
+				data={options}
+				onChange={(value) => {
+					if (value.length > 0) {
+						onChange?.(value as string[]);
+					}
+				}}
+				renderOption={renderOption}
+				filter={filter}
+				maxTags={maxTags}
+				name={name}
+				size="sm"
+				variant="unstyled"
+				className="min-h-7 w-full min-w-0 text-sm sm:w-96 sm:max-w-full"
+				comboboxProps={{
+					dropdownPadding: 0,
+					withinPortal: false,
+					position: "bottom-start",
+					offset: 1,
+					width: "target",
+					shadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+					transitionProps: { transition: "skew-down", duration: 150 },
+				}}
+			/>
+		</FocusTrap>
 	);
 }

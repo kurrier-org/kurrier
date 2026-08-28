@@ -57,7 +57,7 @@ const BASE_CSS = `
 }
 
 /* Don’t style tables/cells; just prevent overflow */
-.email-root table { max-width: 85vw; }
+.email-root table { max-width: 100% !important; }
 .email-root .table-scroll { overflow-x: auto; }
 
 /* Pre/code */
@@ -103,6 +103,34 @@ div[style*="border-left"][style*="solid"] blockquote {
 }
 `;
 
+function blockRemoteImages(html: string, allowImages: boolean) {
+	const doc = new DOMParser().parseFromString(html, "text/html");
+	const images = doc.querySelectorAll<HTMLImageElement>("img[src]");
+	let blocked = false;
+
+	images.forEach((img) => {
+		const src = img.getAttribute("src") || "";
+
+		if (/^https?:\/\//i.test(src)) {
+			blocked = true;
+
+			if (!allowImages) {
+				img.setAttribute("data-blocked-src", src);
+				img.removeAttribute("src");
+				img.setAttribute(
+					"alt",
+					img.getAttribute("alt") || "Remote image blocked",
+				);
+			}
+		}
+	});
+
+	return {
+		html: doc.body.innerHTML,
+		blocked,
+	};
+}
+
 export default function EmailViewer({ message }: { message: MessageEntity }) {
 	const dict = useOptionalDictionary();
 	const hostRef = useRef<HTMLDivElement>(null);
@@ -110,34 +138,6 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 
 	const [showRemoteImages, setShowRemoteImages] = useState(false);
 	const [hasBlockedImages, setHasBlockedImages] = useState(false);
-
-	function blockRemoteImages(html: string, allowImages: boolean) {
-		const doc = new DOMParser().parseFromString(html, "text/html");
-		const images = doc.querySelectorAll<HTMLImageElement>("img[src]");
-		let blocked = false;
-
-		images.forEach((img) => {
-			const src = img.getAttribute("src") || "";
-
-			if (/^https?:\/\//i.test(src)) {
-				blocked = true;
-
-				if (!allowImages) {
-					img.setAttribute("data-blocked-src", src);
-					img.removeAttribute("src");
-					img.setAttribute(
-						"alt",
-						img.getAttribute("alt") || "Remote image blocked",
-					);
-				}
-			}
-		});
-
-		return {
-			html: doc.body.innerHTML,
-			blocked,
-		};
-	}
 
 	const hasQuotes = useMemo(() => {
 		const html = message.html || "";
@@ -169,17 +169,16 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 		let shadow = hostRef.current.shadowRoot;
 		if (!shadow) shadow = hostRef.current.attachShadow({ mode: "open" });
 
-		const rawHtml =
-			message.html && message.html.trim()
-				? message.html
-				: `<div style="white-space: pre-wrap;padding: 6px;">${(
-						message.text || "No content"
-					)
-						.toString()
-						.replace(
-							/[<>&]/g,
-							(c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c] as string,
-						)}</div>`;
+		const rawHtml = message.html?.trim()
+			? message.html
+			: `<div style="white-space: pre-wrap;padding: 6px;">${(
+					message.text || "No content"
+				)
+					.toString()
+					.replace(
+						/[<>&]/g,
+						(c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c] as string,
+					)}</div>`;
 
 		const sanitized = DOMPurify.sanitize(rawHtml, {
 			USE_PROFILES: { html: true },
@@ -208,9 +207,9 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 	}, [message.html, message.text, hideQuotes, showRemoteImages]);
 
 	return (
-		<div className="mb-24 mt-6 overflow-x-hidden">
+		<div className="mb-24 mt-6 min-w-0 overflow-x-hidden">
 			{hasBlockedImages && !showRemoteImages && (
-				<div className="mb-3 flex gap-2">
+				<div className="mb-3 flex flex-wrap gap-2">
 					<Button
 						size="xs"
 						variant="default"

@@ -75,7 +75,7 @@ export function scrollToEditor(
 	const isWindow = container === (document.scrollingElement as HTMLElement);
 
 	const cRect = isWindow
-		? ({ top: 10, height: window.innerHeight } as any)
+		? { top: 10, height: window.innerHeight }
 		: container.getBoundingClientRect();
 	const eRect = el.getBoundingClientRect();
 	const currentTop = isWindow ? window.scrollY : container.scrollTop;
@@ -156,26 +156,19 @@ function EmailRenderer({
 		undefined,
 	);
 	const params = useParams();
-	const fetchSentMailbox = async () => {
-		const { activeMailbox } = await fetchMailbox(
-			String(params.identityPublicId),
-			"sent",
-		);
-		setSentMailboxId(String(activeMailbox.id));
-	};
-
 	useEffect(() => {
-		if (!sentMailboxId && !seenRef.current) {
-			seenRef.current = true;
-			fetchSentMailbox();
-		}
-	}, []);
+		if (sentMailboxId || seenRef.current) return;
+		seenRef.current = true;
+		fetchMailbox(String(params.identityPublicId), "sent").then(
+			({ activeMailbox }) => setSentMailboxId(String(activeMailbox.id)),
+		);
+	}, [params.identityPublicId, sentMailboxId]);
 
 	useEffect(() => {
 		if (activeMailboxId) {
 			markAsRead(threadId, activeMailboxId, markSmtp, true);
 		}
-	}, [activeMailboxId]);
+	}, [activeMailboxId, markSmtp, threadId]);
 
 	const downloadEml = async () => {
 		const { url } = await getRawMessageDownloadUrl(message.id);
@@ -197,7 +190,7 @@ function EmailRenderer({
 				.then((res) => res.text())
 				.then((raw) => setEmailString(raw.slice(0, 10000)));
 		});
-	}, [opened]);
+	}, [message.id, opened]);
 
 	const formattedTime = useMemo(() => {
 		return Temporal.Instant.from(message.createdAt.toISOString())
@@ -221,9 +214,9 @@ function EmailRenderer({
 				title={dict?.mailbox?.originalMessage ?? "Original message"}
 				size="xl"
 			>
-				<div className="text-sm border rounded-md overflow-hidden">
+				<div className="overflow-hidden rounded-md border text-sm">
 					{/* Header Rows */}
-					<div className="grid grid-cols-[160px_1fr] border-b">
+					<div className="grid grid-cols-1 border-b sm:grid-cols-[160px_minmax(0,1fr)]">
 						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
 							{dict?.mailbox?.messageId ?? "Message ID"}
 						</div>
@@ -232,37 +225,37 @@ function EmailRenderer({
 						</div>
 					</div>
 
-					<div className="grid grid-cols-[160px_1fr] border-b">
+					<div className="grid grid-cols-1 border-b sm:grid-cols-[160px_minmax(0,1fr)]">
 						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
 							{dict?.mailbox?.createdOn ?? "Created on"}
 						</div>
 						<div className="px-3 py-2">{formattedTime}</div>
 					</div>
 
-					<div className="grid grid-cols-[160px_1fr] border-b">
+					<div className="grid grid-cols-1 border-b sm:grid-cols-[160px_minmax(0,1fr)]">
 						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
 							{dict?.mailbox?.from ?? "From"}
 						</div>
-						<div className="px-3 py-2">
+						<div className="min-w-0 break-words px-3 py-2">
 							{String(message?.headersJson?.from?.text)}
 						</div>
 					</div>
 
-					<div className="grid grid-cols-[160px_1fr] border-b">
+					<div className="grid grid-cols-1 border-b sm:grid-cols-[160px_minmax(0,1fr)]">
 						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
 							{dict?.mailbox?.to ?? "To"}
 						</div>
 						{/*<div className="px-3 py-2">suisse@dinebot.io</div>*/}
-						<div className="px-3 py-2">
+						<div className="min-w-0 break-words px-3 py-2">
 							{String(message?.headersJson?.to?.text)}
 						</div>
 					</div>
 
-					<div className="grid grid-cols-[160px_1fr] border-b">
+					<div className="grid grid-cols-1 border-b sm:grid-cols-[160px_minmax(0,1fr)]">
 						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
 							{dict?.mailbox?.subject ?? "Subject"}
 						</div>
-						<div className="px-3 py-2">
+						<div className="min-w-0 break-words px-3 py-2">
 							{/*Google Workspace: Your invoice is available for dinebot.io*/}
 							{message?.headersJson?.subject}
 						</div>
@@ -332,8 +325,8 @@ function EmailRenderer({
 			<div className={"grid grid-cols-12"}>
 				<div className={"col-span-12"}>
 					{threadIndex === 0 && (
-						<div className={"flex gap-3 items-center"}>
-							<div className="text-xl font-base">
+						<div className="flex min-w-0 flex-wrap items-center gap-3">
+							<div className="min-w-0 break-words text-lg font-base sm:text-xl">
 								{message.subject ||
 									(dict?.mailbox?.noSubjectTitle ?? "No Subject")}
 							</div>
@@ -345,20 +338,18 @@ function EmailRenderer({
 					)}
 				</div>
 
-				<div className={"md:col-span-6 col-span-12 flex flex-col"}>
-					<div className={"mt-4 flex gap-1 items-center"}>
+				<div className="col-span-12 flex min-w-0 flex-col md:col-span-6">
+					<div className="mt-4 flex min-w-0 flex-wrap items-center gap-1">
 						<div className={"text-sm font-semibold capitalize"}>
 							{getMessageName(message, "from") ??
 								slugify(String(getMessageAddress(message, "from")), {
 									separator: " ",
 								})}
 						</div>
-						<div
-							className={"text-xs"}
-						>{`<${getMessageAddress(message, "from") ?? getMessageName(message, "from")}>`}</div>
+						<div className="min-w-0 break-all text-xs">{`<${getMessageAddress(message, "from") ?? getMessageName(message, "from")}>`}</div>
 					</div>
-					<div className={"flex gap-1 items-center"}>
-						<div className={"text-xs"}>
+					<div className="flex min-w-0 items-center gap-1">
+						<div className="min-w-0 break-all text-xs">
 							{dict?.mailbox?.toLower ?? "to"}{" "}
 							{`<${getMessageAddress(message, "to") ?? getMessageName(message, "to")}>`}
 						</div>
@@ -371,7 +362,7 @@ function EmailRenderer({
 
 				<div
 					className={
-						"md:col-span-6 col-span-12 my-1 flex md:justify-end justify-between items-center gap-2 "
+						"col-span-12 my-1 flex flex-wrap items-center justify-between gap-2 md:col-span-6 md:justify-end"
 					}
 				>
 					<div className={"text-xs "}>{formatted}</div>
@@ -433,11 +424,9 @@ function EmailRenderer({
 				</div>
 			</div>
 
-			<InspectorBar
-				children={children}
-				message={message}
-				onDownloadEml={downloadEml}
-			/>
+			<InspectorBar message={message} onDownloadEml={downloadEml}>
+				{children}
+			</InspectorBar>
 
 			{attachments?.length > 0 && (
 				<div className="border-t border-dotted py-4">
@@ -459,7 +448,7 @@ function EmailRenderer({
 			)}
 
 			{threadIndex === numberOfMessages - 1 && !showEditor && (
-				<div className={"flex gap-6"}>
+				<div className="flex flex-wrap gap-3 sm:gap-6">
 					<Button
 						onClick={() => {
 							setShowEditor(!showEditor);

@@ -1,12 +1,9 @@
 "use client";
-import { useMediaQuery } from "@mantine/hooks";
 import type { PublicConfig } from "@schema";
 import { useParams } from "next/navigation";
-import * as React from "react";
 import { use } from "react";
 import MailListHeader from "@/components/mailbox/default/mail-list-header";
 import WebmailListItem from "@/components/mailbox/default/webmail-list-item";
-import WebmailListItemMobile from "@/components/mailbox/default/webmail-list-item-mobile";
 import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
 import type {
 	FetchLabelsResult,
@@ -28,7 +25,7 @@ type WebListProps = {
 	identityMailboxesPromise: Promise<FetchIdentityMailboxListResult>;
 	fetchMailboxPromise: Promise<FetchMailboxResult>;
 	globalLabelsPromise: Promise<FetchLabelsResult>;
-	workspacePublicId?: string;
+	workspacePublicId: string;
 };
 
 export default function WebmailList({
@@ -44,11 +41,10 @@ export default function WebmailList({
 	const globalLabels = use(globalLabelsPromise);
 	const { mailboxSync, activeMailbox } = use(fetchMailboxPromise);
 	const identityMailboxes = use(identityMailboxesPromise);
-	const isMobile = useMediaQuery("(max-width: 768px)");
 	const params = useParams();
 
 	return (
-		<div className={params?.threadId ? "hidden" : ""}>
+		<div className={params?.threadId ? "hidden" : "min-w-0"}>
 			<DynamicContextProvider
 				initialState={{
 					selectedThreadIds: new Set(),
@@ -62,7 +58,7 @@ export default function WebmailList({
 						<span className={"lowercase"}>{activeMailbox.name}</span>
 					</div>
 				) : (
-					<div className="rounded-xl border bg-background/50 z-[50]">
+					<div className="min-w-0 overflow-hidden rounded-xl border bg-background/50">
 						<MailListHeader
 							mailboxThreads={mailboxThreads}
 							mailboxSync={mailboxSync ?? undefined}
@@ -71,35 +67,19 @@ export default function WebmailList({
 							activeMailbox={activeMailbox}
 						/>
 
-						<ul role="list" className={`divide-y rounded-4xl`}>
-							{mailboxThreads.map((mailboxThreadItem) =>
-								isMobile ? (
-									<WebmailListItemMobile
-										key={
-											mailboxThreadItem.threadId + mailboxThreadItem.mailboxId
-										}
-										mailboxThreadItem={mailboxThreadItem}
-										activeMailbox={activeMailbox}
-										identityPublicId={identityPublicId}
-										mailboxSync={mailboxSync ?? undefined}
-										labelsByThreadId={labelsByThreadId}
-										globalLabels={globalLabels}
-									/>
-								) : (
-									<WebmailListItem
-										key={
-											mailboxThreadItem.threadId + mailboxThreadItem.mailboxId
-										}
-										mailboxThreadItem={mailboxThreadItem}
-										workspacePublicId={workspacePublicId}
-										activeMailbox={activeMailbox}
-										identityPublicId={identityPublicId}
-										mailboxSync={mailboxSync ?? undefined}
-										globalLabels={globalLabels}
-										labelsByThreadId={labelsByThreadId}
-									/>
-								),
-							)}
+						<ul className="divide-y rounded-4xl">
+							{mailboxThreads.map((mailboxThreadItem) => (
+								<WebmailListItem
+									key={mailboxThreadItem.threadId + mailboxThreadItem.mailboxId}
+									mailboxThreadItem={mailboxThreadItem}
+									workspacePublicId={workspacePublicId}
+									activeMailbox={activeMailbox}
+									identityPublicId={identityPublicId}
+									mailboxSync={mailboxSync ?? undefined}
+									globalLabels={globalLabels}
+									labelsByThreadId={labelsByThreadId}
+								/>
+							))}
 						</ul>
 					</div>
 				)}
