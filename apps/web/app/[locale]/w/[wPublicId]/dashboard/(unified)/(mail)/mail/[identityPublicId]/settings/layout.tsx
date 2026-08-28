@@ -1,13 +1,13 @@
 import { identities } from "@db";
 import { eq } from "drizzle-orm";
 import { Mail } from "lucide-react";
-import React, {type ReactNode, Suspense} from "react";
+import { type ReactNode, Suspense } from "react";
 import { Container } from "@/components/common/containers";
+import { DashboardHeaderLoading } from "@/components/dashboard/dashboard-loading";
 import MailboxSearchHeader from "@/components/mailbox/mailbox-search-header";
 import SettingsTabs from "@/components/mailbox/settings/settings-tabs";
 import { getWorkspacePublicId, rlsClient } from "@/lib/actions/clients";
 import { getDictionary } from "@/lib/dictionaries";
-import Loading from "@/app/loading";
 
 type LayoutProps = {
 	children: ReactNode;
@@ -30,7 +30,7 @@ export default async function Layout({ children, params }: LayoutProps) {
 
 	return (
 		<>
-			<Suspense fallback={<Loading />}>
+			<Suspense fallback={<DashboardHeaderLoading />}>
 				<MailboxSearchHeader params={params} />
 			</Suspense>
 

@@ -1,7 +1,7 @@
 import { Mail } from "lucide-react";
 import { Suspense } from "react";
-import Loading from "@/app/loading";
 import ContentPlaceholder from "@/components/common/content-placeholder";
+import { DashboardContentLoading } from "@/components/dashboard/dashboard-loading";
 import DashboardPageHeader from "@/components/dashboard/dashboard-page-header";
 import { getDictionary, type Locale } from "@/lib/dictionaries";
 
@@ -31,7 +31,7 @@ export default function Page({
 	params: Promise<{ locale: Locale }>;
 }) {
 	return (
-		<Suspense fallback={<Loading />}>
+		<Suspense fallback={<DashboardContentLoading />}>
 			<MailHomeContent params={params} />
 		</Suspense>
 	);

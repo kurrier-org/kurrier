@@ -1,9 +1,11 @@
 import type { DriveState } from "@schema";
 import { redirect } from "next/navigation";
-import { connection } from "next/server";
 import type * as React from "react";
 import { Suspense } from "react";
-import Loading from "@/app/loading";
+import {
+	DashboardShellLoading,
+	DashboardSidebarFooterLoading,
+} from "@/components/dashboard/dashboard-loading";
 import DriveSideBar from "@/components/dashboard/drive/drive-side-bar";
 import NewUploadButton from "@/components/dashboard/drive/new-upload-button";
 import { AppSidebar } from "@/components/ui/dashboards/unified/default/app-sidebar";
@@ -16,8 +18,6 @@ import { fetchVolumes } from "@/lib/actions/drive";
 import { DISTRIBUTION_CONFIG } from "@distribution/config";
 
 async function DriveDashboard({ children }: { children: React.ReactNode }) {
-	await connection();
-
 	const workspacePublicId = await getWorkspacePublicId();
 
 	if (!DISTRIBUTION_CONFIG.features.drive) {
@@ -41,7 +41,7 @@ async function DriveDashboard({ children }: { children: React.ReactNode }) {
 					<DriveSideBar workspacePublicId={workspacePublicId} />
 				}
 				navUserContent={
-					<Suspense fallback={<Loading />}>
+					<Suspense fallback={<DashboardSidebarFooterLoading />}>
 						<NavUserWrapper />
 					</Suspense>
 				}
@@ -63,7 +63,7 @@ export default function DriveLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<Suspense fallback={<Loading />}>
+		<Suspense fallback={<DashboardShellLoading />}>
 			<DriveDashboard>{children}</DriveDashboard>
 		</Suspense>
 	);

@@ -465,11 +465,6 @@
 	}
 }
 
-.sidebar-animation {
-	transition: width 500ms ease-in-out;
-	transition-property: width, flex-basis;
-}
-
 @layer utilities {
 	@keyframes weekFade {
 		from {

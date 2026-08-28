@@ -1,14 +1,11 @@
-import { Suspense } from "react";
 import { connection } from "next/server";
+import { Suspense } from "react";
+import { DASHBOARD_SIDEBAR_WIDTHS } from "@/components/dashboard/dashboard-loading";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { fetchWorkspace } from "@/lib/actions/workspace";
 import { getDictionary } from "@/lib/dictionaries";
 
-async function StorageLimitBanner({
-									  locale,
-								  }: {
-	locale: string;
-}) {
+async function StorageLimitBanner({ locale }: { locale: string }) {
 	await connection();
 
 	const [workspace, dict] = await Promise.all([
@@ -28,9 +25,9 @@ async function StorageLimitBanner({
 }
 
 export default async function DashboardLayout({
-												  children,
-												  params,
-											  }: {
+	children,
+	params,
+}: {
 	children: React.ReactNode;
 	params: Promise<{ locale: string }>;
 }) {
@@ -45,10 +42,9 @@ export default async function DashboardLayout({
 			<SidebarProvider
 				style={
 					{
-						"--sidebar-width": "250px",
+						"--sidebar-width": DASHBOARD_SIDEBAR_WIDTHS.default,
 					} as React.CSSProperties
 				}
-				className="sidebar-animation"
 			>
 				{children}
 			</SidebarProvider>

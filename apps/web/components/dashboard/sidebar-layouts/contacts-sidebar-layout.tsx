@@ -1,49 +1,51 @@
-import { AppSidebar } from "@/components/ui/dashboards/unified/default/app-sidebar";
-import { fetchContactLabelsWithCounts } from "@/lib/actions/labels";
-import { LabelScope } from "@schema";
+import type { LabelScope } from "@schema";
+import { Suspense } from "react";
 import ContactsNav from "@/components/dashboard/contacts/contacts-sidebar";
-import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
-import LabelHome from "@/components/dashboard/labels/label-home";
-import * as React from "react";
 import NewContactButton from "@/components/dashboard/contacts/new-contact-button";
-import {getWorkspacePublicId} from "@/lib/actions/clients";
-import {Suspense} from "react";
-import Loading from "@/app/loading";
+import { DashboardSidebarFooterLoading } from "@/components/dashboard/dashboard-loading";
+import LabelHome from "@/components/dashboard/labels/label-home";
+import { AppSidebar } from "@/components/ui/dashboards/unified/default/app-sidebar";
 import NavUserWrapper from "@/components/ui/dashboards/workspace/nav-user-wrapper";
+import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
+import { getWorkspacePublicId } from "@/lib/actions/clients";
+import { fetchContactLabelsWithCounts } from "@/lib/actions/labels";
 
 export default async function ContactsSidebarLayout() {
-    const [contactLabels, workspacePublicId] = await Promise.all([
-        fetchContactLabelsWithCounts(),
-        getWorkspacePublicId()
-    ]);
+	const [contactLabels, workspacePublicId] = await Promise.all([
+		fetchContactLabelsWithCounts(),
+		getWorkspacePublicId(),
+	]);
 
-    return (
-        <>
-            <AppSidebar
-                workspacePublicId={workspacePublicId}
-                sidebarTopContent={
-                    <>
-                        <div className={"-mt-1"}>
-                            <NewContactButton hideOnMobile={true} workspacePublicId={workspacePublicId} />
-                        </div>
-                    </>
-                }
-                navUserContent={<Suspense fallback={<Loading />}><NavUserWrapper /></Suspense>}
-                sidebarSectionContent={
-                    <>
-                        <ContactsNav workspacePublicId={workspacePublicId} />
-                        <DynamicContextProvider
-                            initialState={{
-                                labels: contactLabels,
-                                scope: "contact" as LabelScope,
-                                workspacePublicId
-                            }}
-                        >
-                            <LabelHome />
-                        </DynamicContextProvider>
-                    </>
-                }
-            />
-        </>
-    );
+	return (
+		<AppSidebar
+			workspacePublicId={workspacePublicId}
+			sidebarTopContent={
+				<div className="-mt-1">
+					<NewContactButton
+						hideOnMobile
+						workspacePublicId={workspacePublicId}
+					/>
+				</div>
+			}
+			navUserContent={
+				<Suspense fallback={<DashboardSidebarFooterLoading />}>
+					<NavUserWrapper />
+				</Suspense>
+			}
+			sidebarSectionContent={
+				<>
+					<ContactsNav workspacePublicId={workspacePublicId} />
+					<DynamicContextProvider
+						initialState={{
+							labels: contactLabels,
+							scope: "contact" as LabelScope,
+							workspacePublicId,
+						}}
+					>
+						<LabelHome />
+					</DynamicContextProvider>
+				</>
+			}
+		/>
+	);
 }
