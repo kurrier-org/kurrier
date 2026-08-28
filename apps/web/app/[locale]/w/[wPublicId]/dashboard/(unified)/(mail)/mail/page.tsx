@@ -1,7 +1,7 @@
 import { Mail } from "lucide-react";
 import { Suspense } from "react";
 import Loading from "@/app/loading";
-import DashboardEmptyState from "@/components/dashboard/dashboard-empty-state";
+import ContentPlaceholder from "@/components/common/content-placeholder";
 import DashboardPageHeader from "@/components/dashboard/dashboard-page-header";
 import { getDictionary, type Locale } from "@/lib/dictionaries";
 
@@ -16,7 +16,7 @@ async function MailHomeContent({
 	return (
 		<div className="flex min-h-0 flex-1 flex-col">
 			<DashboardPageHeader title={dict.mailbox.mailTitle} />
-			<DashboardEmptyState
+			<ContentPlaceholder
 				icon={<Mail className="size-5" aria-hidden="true" />}
 				title={dict.mailbox.chooseMailbox}
 				description={dict.mailbox.selectMailboxDescription}

@@ -6,9 +6,9 @@ import type { FieldConfig } from "@schema";
 import { webHookListOptions } from "@schema";
 import { Webhook, X } from "lucide-react";
 import { ulid } from "ulid";
+import ContentPlaceholder from "@/components/common/content-placeholder";
 import { ReusableForm } from "@/components/common/reusable-form";
 import { ReusableFormButton } from "@/components/common/reusable-form-button";
-import DashboardEmptyState from "@/components/dashboard/dashboard-empty-state";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import {
 	addWebhook,
@@ -109,7 +109,7 @@ export default function ManageWebhooks({
 
 			<Card className="!rounded-xl border shadow-none">
 				{hooksList.length === 0 ? (
-					<DashboardEmptyState
+					<ContentPlaceholder
 						className="min-h-64 py-10"
 						icon={<Webhook className="size-5" aria-hidden="true" />}
 						title={dict?.platform?.noWebhooksYet ?? "No webhooks yet."}

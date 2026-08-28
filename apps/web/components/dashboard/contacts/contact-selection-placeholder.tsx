@@ -1,5 +1,5 @@
 import { ContactRound } from "lucide-react";
-import DashboardEmptyState from "@/components/dashboard/dashboard-empty-state";
+import ContentPlaceholder from "@/components/common/content-placeholder";
 
 export default function ContactSelectionPlaceholder({
 	title,
@@ -9,7 +9,7 @@ export default function ContactSelectionPlaceholder({
 	description: string;
 }) {
 	return (
-		<DashboardEmptyState
+		<ContentPlaceholder
 			icon={<ContactRound className="size-5" aria-hidden="true" />}
 			title={title}
 			description={description}

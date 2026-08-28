@@ -1,6 +1,6 @@
 import { ArrowRight, FolderOpen, HardDrive, Settings2 } from "lucide-react";
 import Link from "next/link";
-import DashboardEmptyState from "@/components/dashboard/dashboard-empty-state";
+import ContentPlaceholder from "@/components/common/content-placeholder";
 import DriveEntry from "@/components/dashboard/drive/drive-entry";
 import NewUploadButton from "@/components/dashboard/drive/new-upload-button";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ export default async function Page({
 
 		if (volumes.length === 0) {
 			return (
-				<DashboardEmptyState
+				<ContentPlaceholder
 					className="min-h-[calc(100svh-4rem)]"
 					icon={<HardDrive className="size-5" aria-hidden="true" />}
 					title={dict.drive.emptyVolumesTitle ?? "No storage volumes yet"}
@@ -105,7 +105,7 @@ export default async function Page({
 		console.error("Failed to load Drive volume", error);
 
 		return (
-			<DashboardEmptyState
+			<ContentPlaceholder
 				className="min-h-[calc(100svh-4rem)]"
 				icon={<HardDrive className="size-5" aria-hidden="true" />}
 				title={dict.drive.storageUnavailableTitle ?? "Storage unavailable"}
@@ -131,7 +131,7 @@ export default async function Page({
 
 	if (entries.length === 0) {
 		return (
-			<DashboardEmptyState
+			<ContentPlaceholder
 				className="min-h-[calc(100svh-4rem)]"
 				icon={<FolderOpen className="size-5" aria-hidden="true" />}
 				title={dict.drive.emptyFolderTitle ?? "This folder is empty"}

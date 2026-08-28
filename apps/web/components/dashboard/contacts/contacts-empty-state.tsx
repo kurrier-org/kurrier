@@ -3,7 +3,7 @@
 import { ContactRound, Plus } from "lucide-react";
 import Link from "next/link";
 
-import DashboardEmptyState from "@/components/dashboard/dashboard-empty-state";
+import ContentPlaceholder from "@/components/common/content-placeholder";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import { Button } from "@/components/ui/button";
 
@@ -19,7 +19,7 @@ export default function ContactsEmptyState({
 	const dict = useOptionalDictionary();
 
 	return (
-		<DashboardEmptyState
+		<ContentPlaceholder
 			className={className}
 			icon={<ContactRound className="size-5" aria-hidden="true" />}
 			title={

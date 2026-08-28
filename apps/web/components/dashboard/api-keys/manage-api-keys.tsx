@@ -14,8 +14,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ulid } from "ulid";
+import ContentPlaceholder from "@/components/common/content-placeholder";
 import { ReusableForm } from "@/components/common/reusable-form";
-import DashboardEmptyState from "@/components/dashboard/dashboard-empty-state";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -199,7 +199,7 @@ export default function ManageApiKeys({
 				</CardHeader>
 
 				{apiKeysList.length === 0 ? (
-					<DashboardEmptyState
+					<ContentPlaceholder
 						icon={<KeyRound className="size-5" />}
 						title={dict?.platform?.noApiKeysYet ?? "No API keys yet."}
 						className="min-h-72 py-10"

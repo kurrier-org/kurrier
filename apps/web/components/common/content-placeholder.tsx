@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-export default function DashboardEmptyState({
+export default function ContentPlaceholder({
 	icon,
 	title,
 	description,

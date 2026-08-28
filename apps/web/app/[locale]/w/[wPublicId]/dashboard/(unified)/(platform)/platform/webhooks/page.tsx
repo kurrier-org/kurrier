@@ -1,7 +1,7 @@
 import { Plus, Webhook } from "lucide-react";
 import Link from "next/link";
 import { Container } from "@/components/common/containers";
-import DashboardEmptyState from "@/components/dashboard/dashboard-empty-state";
+import ContentPlaceholder from "@/components/common/content-placeholder";
 import DashboardPageHeader from "@/components/dashboard/dashboard-page-header";
 import ManageWebhooks from "@/components/dashboard/webhooks/manage-webhooks";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,7 @@ export default async function Page({
 					</Container>
 				</div>
 			) : (
-				<DashboardEmptyState
+				<ContentPlaceholder
 					icon={<Webhook className="size-5" aria-hidden="true" />}
 					title={dict.platform.noIdentitiesAvailableForWebhooks}
 					description={dict.platform.webhooksDescription}

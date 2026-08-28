@@ -5,10 +5,10 @@ import { connection } from "next/server";
 import type * as React from "react";
 import { Suspense } from "react";
 import Loading from "@/app/loading";
+import ContentPlaceholder from "@/components/common/content-placeholder";
 import CalendarSidebarWrapper from "@/components/dashboard/calendars/calendar-sidebar-wrapper";
 import CalendarTopBar from "@/components/dashboard/calendars/calendar-top-bar";
 import NewEventButton from "@/components/dashboard/calendars/new-event-button";
-import DashboardEmptyState from "@/components/dashboard/dashboard-empty-state";
 import DashboardPageHeader from "@/components/dashboard/dashboard-page-header";
 import { AppSidebar } from "@/components/ui/dashboards/unified/default/app-sidebar";
 import NavUserWrapper from "@/components/ui/dashboards/workspace/nav-user-wrapper";
@@ -115,7 +115,7 @@ async function CalendarDashboard({
 				{defaultCalendar ? (
 					children
 				) : (
-					<DashboardEmptyState
+					<ContentPlaceholder
 						icon={<CalendarDays className="size-5" aria-hidden="true" />}
 						title={emptyCalendarTitle}
 						description={dict.calendar.emptyDescription}
