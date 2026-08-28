@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
-const locales = ["en", "ko", "pt-BR", "ru"];
+const locales = ["en", "ko", "pt-BR", "pl", "ru"];
 const defaultLocale = "en";
 
 function normalizeLocale(tag: string): string | null {

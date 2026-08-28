@@ -1,0 +1,10 @@
+{
+	"mailRules": {
+		"nameRequired": "Nazwa reguły jest wymagana.",
+		"priorityNonNegative": "Priorytet musi być liczbą nieujemną.",
+		"atLeastOneCriteria": "Dodaj co najmniej jedno kryterium.",
+		"atLeastOneAction": "Wybierz co najmniej jedną akcję.",
+		"labelIdRequired": "Identyfikator etykiety jest wymagany, gdy włączono opcję „Zastosuj etykietę”.",
+		"nameMustBeUnique": "Nazwa reguły musi być unikatowa dla każdej tożsamości e-mail."
+	}
+}
