@@ -80,7 +80,7 @@ export default function CustomEmailProviderCard({
 	};
 
 	return (
-		<Card className="grid gap-0 overflow-hidden py-0 shadow-none lg:grid-cols-[minmax(14rem,0.75fr)_minmax(24rem,1.25fr)_auto]">
+		<Card className="grid gap-0 overflow-hidden py-0 shadow-none xl:grid-cols-[minmax(14rem,0.75fr)_minmax(20rem,1.25fr)_auto]">
 			<CardContent className="flex flex-col p-5">
 				<div className="flex min-w-0 items-start gap-3">
 					<Mail className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
@@ -101,7 +101,7 @@ export default function CustomEmailProviderCard({
 							: (dict?.platform?.separateLoginsBadge ?? "Separate logins")}
 				</span>
 			</CardContent>
-			<CardContent className="grid gap-3 border-t p-5 lg:border-t-0 lg:border-l">
+			<CardContent className="grid gap-3 border-t p-5 xl:border-t-0 xl:border-l">
 				<div className="grid gap-2">
 					<Endpoint
 						icon={<Send className="size-4" />}
@@ -119,17 +119,20 @@ export default function CustomEmailProviderCard({
 					) : null}
 				</div>
 			</CardContent>
-			<CardContent className="flex items-center border-t bg-muted/10 p-5 lg:border-t-0 lg:border-l">
-				<Button
-					size="xs"
-					className="w-full lg:w-auto"
-					leftSection={<Plus className="size-4" />}
-					onClick={openAddModal}
-				>
-					{provider.imap
-						? (dict?.platform?.addMailbox ?? "Add mailbox")
-						: (dict?.platform?.addAccount ?? "Add account")}
-				</Button>
+			<CardContent className="flex items-center border-t bg-muted/10 p-5 xl:border-t-0 xl:border-l">
+				<div className="w-full xl:w-fit">
+					<Button
+						fullWidth
+						size="xs"
+						className="!min-h-11 !w-full xl:!min-h-9 xl:!w-auto"
+						leftSection={<Plus className="size-4" />}
+						onClick={openAddModal}
+					>
+						{provider.imap
+							? (dict?.platform?.addMailbox ?? "Add mailbox")
+							: (dict?.platform?.addAccount ?? "Add account")}
+					</Button>
+				</div>
 			</CardContent>
 		</Card>
 	);

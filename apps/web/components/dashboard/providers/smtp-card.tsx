@@ -3,17 +3,10 @@ import { Button } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { SMTP_SPEC } from "@schema";
 import { Plus } from "lucide-react";
-import * as React from "react";
 import NewSmtpAccountForm from "@/components/dashboard/providers/new-smtp-account-form";
 import SmtpAccountCard from "@/components/dashboard/providers/smtp-account-card";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
-import {
-	Card,
-	CardAction,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { FetchDecryptedSecretsResult } from "@/lib/actions/dashboard";
 
 export default function SMTPCard({
@@ -41,10 +34,10 @@ export default function SMTPCard({
 	};
 
 	return (
-		<div className="flex flex-col">
-			<Card className={"shadow-none border-border"}>
+		<div className="flex min-w-0 flex-col">
+			<Card className="min-w-0 border-border shadow-none">
 				<CardHeader className="gap-2">
-					<div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+					<div className="flex flex-col 2xl:flex-row 2xl:items-center 2xl:justify-between">
 						<div className="max-w-2xl">
 							<CardTitle className="text-xl">SMTP/IMAP Accounts</CardTitle>
 							<p className="text-sm text-muted-foreground mt-1">
@@ -56,12 +49,17 @@ export default function SMTPCard({
 							</p>
 						</div>
 
-						<CardAction className="mt-3 lg:mt-0">
-							<Button size="sm" onClick={openAddModal} className="gap-2">
+						<div className="mt-3 w-full 2xl:mt-0 2xl:w-fit">
+							<Button
+								fullWidth
+								size="sm"
+								onClick={openAddModal}
+								className="!min-h-11 !w-full gap-2 2xl:!min-h-9 2xl:!w-auto"
+							>
 								<Plus className="h-4 w-4" />
 								Add Generic Account
 							</Button>
-						</CardAction>
+						</div>
 					</div>
 				</CardHeader>
 
@@ -77,15 +75,19 @@ export default function SMTPCard({
 										"Add an account to start sending mail from your app."}
 								</div>
 							</div>
-							<Button
-								variant="default"
-								size="sm"
-								onClick={openAddModal}
-								className="gap-2"
-							>
-								<Plus className="h-4 w-4" />
-								Add Generic Account
-							</Button>
+							<div className="w-full sm:w-fit">
+								<Button
+									fullWidth
+									variant="default"
+									size="sm"
+									onClick={openAddModal}
+									className="!h-auto !min-h-9 gap-2 !py-2"
+									classNames={{ label: "!whitespace-normal text-center" }}
+								>
+									<Plus className="h-4 w-4" />
+									Add Generic Account
+								</Button>
+							</div>
 						</div>
 					)}
 

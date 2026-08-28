@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import {
 	deleteSmtpAccount,
 	FetchDecryptedSecretsResultRow,
@@ -12,6 +12,7 @@ import { cn, parseSecret } from "@/lib/utils";
 import { Lock, Pencil, Play, ShieldCheck, Trash2 } from "lucide-react";
 import { ActionIcon, Button } from "@mantine/core";
 import { toast } from "sonner";
+import { responsiveModalActionsClassName } from "@/components/common/modal-actions";
 import IsVerifiedStatus from "@/components/dashboard/providers/is-verified-status";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
@@ -63,6 +64,7 @@ function SmtpAccountCard({
 				cancel: dict?.platform?.cancel ?? "Cancel",
 			},
 			confirmProps: { color: "red" },
+			groupProps: { className: responsiveModalActionsClassName },
 			onConfirm: async () => {
 				const { success } = await deleteSmtpAccount(
 					String(smtpSecret?.linkRow?.accountId),

@@ -249,16 +249,26 @@ export default async function Page({
 								</div>
 
 								{isOwner ? (
-									<div className="flex flex-wrap gap-3">
-										<Link href={`${base}/providers`}>
-											<Button>{p.addProvider}</Button>
+									<div className="grid w-full gap-3 lg:w-auto lg:grid-flow-col lg:auto-cols-max">
+										<Link
+											href={`${base}/providers`}
+											className="block w-full lg:w-auto"
+										>
+											<Button className="!min-h-11 !w-full lg:!min-h-9 lg:!w-auto">
+												{p.addProvider}
+											</Button>
 										</Link>
 
 										<Link
 											href={`${base}/identities`}
-											className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm text-muted-foreground transition hover:bg-muted"
+											className="block w-full lg:w-auto"
 										>
-											{p.createIdentity}
+											<Button
+												variant="outline"
+												className="!min-h-11 !w-full text-muted-foreground lg:!min-h-9 lg:!w-auto"
+											>
+												{p.createIdentity}
+											</Button>
 										</Link>
 									</div>
 								) : null}

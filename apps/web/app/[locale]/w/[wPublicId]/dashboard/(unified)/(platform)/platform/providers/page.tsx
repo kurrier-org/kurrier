@@ -1,6 +1,5 @@
 import { smtpAccountSecrets } from "@db";
 import { PROVIDERS, parseCustomEmailProviders } from "@schema";
-import * as React from "react";
 import { Container } from "@/components/common/containers";
 import CustomEmailProviderCard from "@/components/dashboard/providers/custom-email-provider-card";
 import GoogleCard from "@/components/dashboard/providers/google-card";
@@ -93,7 +92,7 @@ export default async function ProvidersPage({
 						</section>
 					) : null}
 
-					<div className="grid gap-6 lg:grid-cols-2">
+					<div className="grid gap-6 xl:grid-cols-2">
 						{PROVIDERS.map((p) => (
 							<ProviderCardShell
 								key={p.key}
@@ -103,7 +102,7 @@ export default async function ProvidersPage({
 							/>
 						))}
 					</div>
-					<div className="grid gap-6 lg:grid-cols-2 my-8">
+					<div className="my-8 grid gap-6 xl:grid-cols-2">
 						<SMTPCard smtpSecrets={smtpSecrets} />
 						<GoogleCard
 							googleAccounts={googleAccounts}

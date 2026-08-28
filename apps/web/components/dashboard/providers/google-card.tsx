@@ -3,17 +3,10 @@
 import { Button } from "@mantine/core";
 import { GOOGLE_SPEC } from "@schema";
 import { Plus } from "lucide-react";
-import * as React from "react";
 import GoogleAccountCard from "@/components/dashboard/providers/google-account-card";
 import GoogleOAuthConfigButton from "@/components/dashboard/providers/google-oauth-config-form";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
-import {
-	Card,
-	CardAction,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { FetchGoogleAccountsResult } from "@/lib/actions/dashboard";
 
 export default function GoogleCard({
@@ -26,10 +19,10 @@ export default function GoogleCard({
 	const dict = useOptionalDictionary();
 
 	return (
-		<div className="flex flex-col">
-			<Card className="h-full shadow-none border-border">
+		<div className="flex min-w-0 flex-col">
+			<Card className="h-full min-w-0 border-border shadow-none">
 				<CardHeader className="gap-2">
-					<div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+					<div className="flex flex-col 2xl:flex-row 2xl:items-center 2xl:justify-between">
 						<div className="max-w-2xl">
 							<CardTitle className="text-xl">
 								{dict?.platform?.providerNameGoogle ?? GOOGLE_SPEC.name}
@@ -43,11 +36,12 @@ export default function GoogleCard({
 							</p>
 						</div>
 
-						<CardAction className="mt-3 lg:mt-0">
+						<div className="mt-3 w-full 2xl:mt-0 2xl:w-fit">
 							{googleOAuthConfigured ? (
 								<Button
+									fullWidth
 									size="sm"
-									className="gap-2"
+									className="!min-h-11 !w-full gap-2 2xl:!min-h-9 2xl:!w-auto"
 									component="a"
 									href="/api/oauth/google/connect"
 								>
@@ -55,9 +49,12 @@ export default function GoogleCard({
 									{dict?.platform?.addGoogleAccount ?? "Add Google Account"}
 								</Button>
 							) : (
-								<GoogleOAuthConfigButton />
+								<GoogleOAuthConfigButton
+									fullWidth
+									className="!min-h-11 !w-full 2xl:!min-h-9 2xl:!w-auto"
+								/>
 							)}
-						</CardAction>
+						</div>
 					</div>
 				</CardHeader>
 
@@ -81,18 +78,24 @@ export default function GoogleCard({
 							</div>
 
 							{googleOAuthConfigured ? (
-								<Button
-									variant="default"
-									size="sm"
-									className="gap-2"
-									component="a"
-									href="/api/oauth/google/connect"
-								>
-									<Plus className="h-4 w-4" />
-									{dict?.platform?.addGoogleAccount ?? "Add Google Account"}
-								</Button>
+								<div className="w-full sm:w-fit">
+									<Button
+										fullWidth
+										variant="default"
+										size="sm"
+										className="!h-auto !min-h-9 gap-2 !py-2"
+										classNames={{ label: "!whitespace-normal text-center" }}
+										component="a"
+										href="/api/oauth/google/connect"
+									>
+										<Plus className="h-4 w-4" />
+										{dict?.platform?.addGoogleAccount ?? "Add Google Account"}
+									</Button>
+								</div>
 							) : (
-								<GoogleOAuthConfigButton />
+								<div className="w-full sm:w-fit">
+									<GoogleOAuthConfigButton fullWidth />
+								</div>
 							)}
 						</div>
 					)}

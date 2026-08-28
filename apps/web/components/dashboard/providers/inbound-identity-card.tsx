@@ -3,8 +3,8 @@
 import { ActionIcon } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { ArrowDownToLine, Trash2 } from "lucide-react";
-import React from "react";
 import { toast } from "sonner";
+import { responsiveModalActionsClassName } from "@/components/common/modal-actions";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import {
 	deleteInboundIdentity,
@@ -43,6 +43,7 @@ export default function InboundIdentityCard({
 			confirmProps: {
 				color: "red",
 			},
+			groupProps: { className: responsiveModalActionsClassName },
 			onConfirm: async () => {
 				const { success, error } = await deleteInboundIdentity(identity.id);
 

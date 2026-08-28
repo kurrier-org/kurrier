@@ -26,8 +26,8 @@ function SectionHeader({
 	action?: React.ReactNode;
 }) {
 	return (
-		<div className="flex items-start justify-between">
-			<div>
+		<div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-start sm:justify-between">
+			<div className="min-w-0">
 				<div className="flex items-center gap-2">
 					<h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
 						{title}
@@ -40,7 +40,7 @@ function SectionHeader({
 					<p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
 				) : null}
 			</div>
-			{action ? <div className="ml-4">{action}</div> : null}
+			{action ? <div className="w-full sm:ml-4 sm:w-auto">{action}</div> : null}
 		</div>
 	);
 }
