@@ -4,6 +4,7 @@ import type { DriveRouteContext, DriveState } from "@schema";
 import Link from "next/link";
 import { useEffect } from "react";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useDashboardPath } from "@/hooks/use-dashboard-path";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { cn } from "@/lib/utils";
 
@@ -22,12 +23,14 @@ export function buildDriveBreadcrumb(
 	},
 	workspacePublicId: string,
 	dict?: ReturnType<typeof useOptionalDictionary>,
+	dashboardPath: (path: string) => string = (path) =>
+		`/w/${workspacePublicId}/dashboard/${path}`,
 ) {
 	const out: { label: string; href: string }[] = [];
 
 	out.push({
 		label: dict?.drive?.myDrive ?? "My Drive",
-		href: `/w/${workspacePublicId}/dashboard/drive`,
+		href: dashboardPath("drive"),
 	});
 
 	const vol = ctx.driveVolume;
@@ -35,13 +38,13 @@ export function buildDriveBreadcrumb(
 	if (vol) {
 		out.push({
 			label: vol.label || vol.code || (dict?.drive?.volume ?? "Volume"),
-			href: `/w/${workspacePublicId}/dashboard/drive/volumes/${encodeURIComponent(vol.publicId)}`,
+			href: dashboardPath(`drive/volumes/${encodeURIComponent(vol.publicId)}`),
 		});
 	}
 
-	const base = `/w/${workspacePublicId}/dashboard/drive/volumes/${encodeURIComponent(
-		vol?.publicId || "",
-	)}`;
+	const base = dashboardPath(
+		`drive/volumes/${encodeURIComponent(vol?.publicId || "")}`,
+	);
 
 	const acc: string[] = [];
 
@@ -68,6 +71,7 @@ function DriveTopBar({
 }) {
 	const dict = useOptionalDictionary();
 	const { setState } = useDynamicContext<DriveState>();
+	const dashboardPath = useDashboardPath(workspacePublicId);
 
 	useEffect(() => {
 		setState((prevState) => ({
@@ -90,6 +94,7 @@ function DriveTopBar({
 		},
 		workspacePublicId,
 		dict,
+		dashboardPath,
 	);
 
 	return (

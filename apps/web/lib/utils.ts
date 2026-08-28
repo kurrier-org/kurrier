@@ -1,7 +1,7 @@
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-import { FetchDecryptedSecretsResult } from "@/lib/actions/dashboard";
 import imageCompression from "browser-image-compression";
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+import type { FetchDecryptedSecretsResult } from "@/lib/actions/dashboard";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -71,18 +71,7 @@ export async function createThumbnail(
 // }
 //
 
-export function setSidebarWidth(width: string) {
-	if (typeof document === "undefined") return;
-
-	const el = document.querySelector<HTMLElement>(
-		'[data-slot="sidebar-wrapper"]',
-	);
-	if (!el) return;
-
-	el.style.setProperty("--sidebar-width", width);
-}
-
-export function withLocale(locale: string, path: string,) {
+export function withLocale(locale: string, path: string) {
 	if (path.startsWith("/")) {
 		return `/${locale}${path}`;
 	}

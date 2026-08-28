@@ -12,6 +12,7 @@ import { useEffect } from "react";
 import NewEventButton from "@/components/dashboard/calendars/new-event-button";
 import { useAppearance } from "@/components/providers/appearance-provider";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useDashboardPath } from "@/hooks/use-dashboard-path";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { DAYJS_LOCALES } from "@/lib/locale";
 
@@ -27,6 +28,7 @@ function CalendarTopBar({ workspacePublicId }: { workspacePublicId: string }) {
 	const { theme } = useAppearance();
 	const router = useRouter();
 	const { state, setState } = useDynamicContext<CalendarState>();
+	const dashboardPath = useDashboardPath(workspacePublicId);
 
 	const params = useParams();
 	const calendarPublicId =
@@ -70,7 +72,9 @@ function CalendarTopBar({ workspacePublicId }: { workspacePublicId: string }) {
 		const year = day.year();
 		const month = day.month() + 1;
 		const date = day.date();
-		return `/w/${workspacePublicId}/dashboard/calendar/${calendarPublicId}/${view}/${year}/${month}/${date}`;
+		return dashboardPath(
+			`calendar/${calendarPublicId}/${view}/${year}/${month}/${date}`,
+		);
 	};
 
 	const switchView = (value: CalendarViewType) => {

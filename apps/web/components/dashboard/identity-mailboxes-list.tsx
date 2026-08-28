@@ -25,15 +25,16 @@ import {
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import * as React from "react";
-import { Suspense, use, useEffect } from "react";
+import { Suspense, use } from "react";
 import AddNewFolder from "@/components/mailbox/default/add-new-folder";
 import DeleteMailboxFolder from "@/components/mailbox/default/delete-folder";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useDashboardPath } from "@/hooks/use-dashboard-path";
 import type {
 	FetchIdentityMailboxListResult,
 	FetchMailboxUnreadCountsResult,
 } from "@/lib/actions/mailbox";
-import { cn, setSidebarWidth } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 const ORDER: MailboxKind[] = [
 	"inbox",
@@ -124,13 +125,13 @@ function IdentityExtraCounts({
 	identity,
 	scheduledDraftsPromise,
 	snoozedThreadsPromise,
-	workspacePublicId,
+	dashboardPath,
 	currentSlug,
 }: {
 	identity: IdentityEntity;
 	scheduledDraftsPromise: Promise<DraftMessageEntity[]>;
 	snoozedThreadsPromise: Promise<{ threads: MailboxThreadEntity[] }>;
-	workspacePublicId: string | undefined;
+	dashboardPath: (path: string) => string;
 	currentSlug: string;
 }) {
 	const scheduledDrafts = use(scheduledDraftsPromise);
@@ -148,7 +149,7 @@ function IdentityExtraCounts({
 		<>
 			{scheduledCount > 0 && (
 				<Link
-					href={`/w/${workspacePublicId}/dashboard/mail/${identity.publicId}/scheduled`}
+					href={dashboardPath(`mail/${identity.publicId}/scheduled`)}
 					className={`my-2 rounded hover:dark:bg-neutral-800 ${
 						currentSlug === "scheduled"
 							? "dark:bg-neutral-800 dark:text-brand-foreground bg-brand-200 text-brand"
@@ -164,7 +165,7 @@ function IdentityExtraCounts({
 
 			{snoozedCount > 0 && (
 				<Link
-					href={`/w/${workspacePublicId}/dashboard/mail/${identity.publicId}/snoozed`}
+					href={dashboardPath(`mail/${identity.publicId}/snoozed`)}
 					className={`mx-1.5 my-2 rounded hover:dark:bg-neutral-800 ${
 						currentSlug === "snoozed"
 							? "dark:bg-neutral-800 dark:text-brand-foreground bg-brand-200 text-brand"
@@ -200,11 +201,7 @@ export default function IdentityMailboxesList({
 		identityPublicId?: string;
 		mailboxSlug?: string;
 	};
-
-	useEffect(() => {
-		setSidebarWidth("340px");
-		return () => setSidebarWidth("250px");
-	}, []);
+	const dashboardPath = useDashboardPath(workspacePublicId);
 
 	const currentSlug = React.useMemo(() => {
 		const parts = pathname.split("/").filter(Boolean);
@@ -228,7 +225,7 @@ export default function IdentityMailboxesList({
 		const slug = m.slug ?? "inbox";
 		const itemLabel =
 			m.kind === "custom" ? (m.name ?? "Mailbox") : TITLE[m.kind];
-		const href = `/w/${workspacePublicId}/dashboard/mail/${identityPublicId}/${slug}`;
+		const href = dashboardPath(`mail/${identityPublicId}/${slug}`);
 
 		const isActive =
 			pathname === href ||
@@ -344,9 +341,7 @@ export default function IdentityMailboxesList({
 						},
 					}}
 					onChange={(publicId) => {
-						router.push(
-							`/w/${workspacePublicId}/dashboard/mail/${publicId}/inbox`,
-						);
+						router.push(dashboardPath(`mail/${publicId}/inbox`));
 					}}
 					value={params.identityPublicId}
 					data={identityMailboxes.map((id) => {
@@ -383,7 +378,7 @@ export default function IdentityMailboxesList({
 								identity={identity}
 								scheduledDraftsPromise={scheduledDraftsPromise}
 								snoozedThreadsPromise={snoozedThreadsPromise}
-								workspacePublicId={workspacePublicId}
+								dashboardPath={dashboardPath}
 								currentSlug={currentSlug}
 							/>
 						</Suspense>
