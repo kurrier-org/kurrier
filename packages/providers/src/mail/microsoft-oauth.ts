@@ -155,6 +155,36 @@ export function isMicrosoftTokenExpired(expiresAt: Date, skewSeconds = 60) {
 }
 export type MicrosoftCredentials = Record<string, unknown>;
 
+export function createMicrosoftCredentials(input: {
+	email: string;
+	clientId: string;
+	tenant: string;
+	token: MicrosoftTokenSet;
+}): MicrosoftCredentials {
+	const { email, clientId, tenant, token } = input;
+	return {
+		provider: "microsoft",
+		SMTP_HOST: "smtp.office365.com",
+		SMTP_PORT: "587",
+		SMTP_USERNAME: email,
+		SMTP_AUTH_METHOD: "xoauth2",
+		SMTP_ACCESS_TOKEN: token.accessToken,
+		SMTP_TOKEN_EXPIRES_AT: token.expiresAt.toISOString(),
+		SMTP_SECURE: "false",
+		IMAP_HOST: "outlook.office365.com",
+		IMAP_PORT: "993",
+		IMAP_USERNAME: email,
+		IMAP_AUTH_METHOD: "xoauth2",
+		IMAP_ACCESS_TOKEN: token.accessToken,
+		IMAP_TOKEN_EXPIRES_AT: token.expiresAt.toISOString(),
+		IMAP_SECURE: "true",
+		MICROSOFT_REFRESH_TOKEN: token.refreshToken,
+		MICROSOFT_TENANT: tenant,
+		MICROSOFT_CLIENT_ID: clientId,
+		MICROSOFT_SCOPES: MICROSOFT_MAIL_SCOPES.join(" "),
+	};
+}
+
 export async function loadMicrosoftCredentials(
 	credentials: MicrosoftCredentials,
 	options: {
@@ -214,13 +244,21 @@ export async function loadMicrosoftCredentials(
 		options.load
 			? async () => {
 					const current = await options.load?.();
-					const accessToken = current?.SMTP_ACCESS_TOKEN ?? current?.IMAP_ACCESS_TOKEN;
-					const expiresAt = current?.SMTP_TOKEN_EXPIRES_AT ?? current?.IMAP_TOKEN_EXPIRES_AT;
-					if (!accessToken || !expiresAt || isMicrosoftTokenExpired(new Date(String(expiresAt))))
+					const accessToken =
+						current?.SMTP_ACCESS_TOKEN ?? current?.IMAP_ACCESS_TOKEN;
+					const expiresAt =
+						current?.SMTP_TOKEN_EXPIRES_AT ?? current?.IMAP_TOKEN_EXPIRES_AT;
+					const refreshToken = current?.MICROSOFT_REFRESH_TOKEN;
+					if (
+						!accessToken ||
+						!expiresAt ||
+						typeof refreshToken !== "string" ||
+						isMicrosoftTokenExpired(new Date(String(expiresAt)))
+					)
 						return null;
 					return {
 						accessToken: String(accessToken),
-						refreshToken: String(current.MICROSOFT_REFRESH_TOKEN),
+						refreshToken,
 						expiresAt: new Date(String(expiresAt)),
 						tokenType: "Bearer",
 					};

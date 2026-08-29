@@ -49,6 +49,7 @@ export async function decryptAdminSecrets({
 			return {
 				linkRow: r.linkRow,
 				metaId,
+				encryptedValue: r.encryptedValue,
 				vault,
 				providerId: (r as any)?.linkRow?.providerId,
 				accountId: (r as any)?.linkRow?.accountId,

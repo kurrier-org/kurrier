@@ -7,8 +7,8 @@ import {
 	smtpAccounts,
 } from "@db";
 import {
+	createMicrosoftCredentials,
 	exchangeMicrosoftAuthorizationCode,
-	MICROSOFT_MAIL_SCOPES,
 	type MicrosoftTokenSet,
 	validateMicrosoftOAuthState,
 } from "@providers";
@@ -91,24 +91,12 @@ export async function GET(req: NextRequest) {
 	const config = {
 		label: `Microsoft — ${email}`,
 		ulid: `microsoft-${email}`,
-		SMTP_HOST: "smtp.office365.com",
-		SMTP_PORT: "587",
-		SMTP_USERNAME: email,
-		SMTP_AUTH_METHOD: "xoauth2",
-		SMTP_ACCESS_TOKEN: token.accessToken,
-		SMTP_TOKEN_EXPIRES_AT: token.expiresAt.toISOString(),
-		SMTP_SECURE: "false",
-		IMAP_HOST: "outlook.office365.com",
-		IMAP_PORT: "993",
-		IMAP_USERNAME: email,
-		IMAP_AUTH_METHOD: "xoauth2",
-		IMAP_ACCESS_TOKEN: token.accessToken,
-		IMAP_TOKEN_EXPIRES_AT: token.expiresAt.toISOString(),
-		IMAP_SECURE: "true",
-		MICROSOFT_REFRESH_TOKEN: token.refreshToken,
-		MICROSOFT_TENANT: process.env.MICROSOFT_TENANT ?? "common",
-		MICROSOFT_CLIENT_ID: process.env.MICROSOFT_CLIENT_ID,
-		MICROSOFT_SCOPES: MICROSOFT_MAIL_SCOPES.join(" "),
+		...createMicrosoftCredentials({
+			email,
+			clientId,
+			tenant: process.env.MICROSOFT_TENANT ?? "common",
+			token,
+		}),
 	};
 	let secretId: string | undefined;
 	let accountId: string | undefined;

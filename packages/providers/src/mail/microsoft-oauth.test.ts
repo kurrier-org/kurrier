@@ -2,15 +2,50 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
 	buildMicrosoftAuthorizationUrl,
+	createMicrosoftCredentials,
 	createMicrosoftOAuthState,
 	exchangeMicrosoftAuthorizationCode,
 	isMicrosoftTokenExpired,
+	loadMicrosoftCredentials,
 	MICROSOFT_MAIL_SCOPES,
 	refreshMicrosoftAccessToken,
 	validateMicrosoftOAuthState,
 	withMicrosoftRefreshLock,
 	xoauth2String,
 } from "./microsoft-oauth";
+
+test("OAuth-created Microsoft credentials reach the refresh loader", async () => {
+	const credentials = createMicrosoftCredentials({
+		email: "person@example.com",
+		clientId: "client",
+		tenant: "common",
+		token: {
+			accessToken: "expired-access",
+			refreshToken: "old-refresh",
+			expiresAt: new Date(Date.now() - 1_000),
+			tokenType: "Bearer",
+		},
+	});
+	let persisted: Record<string, unknown> | undefined;
+	const result = await loadMicrosoftCredentials(credentials, {
+		key: "oauth-created-account",
+		persist: async (next) => {
+			persisted = next;
+		},
+		fetcher: async () =>
+			new Response(
+				JSON.stringify({
+					access_token: "fresh-access",
+					refresh_token: "fresh-refresh",
+					expires_in: 3600,
+				}),
+				{ status: 200 },
+			),
+	});
+	assert.equal(result.provider, "microsoft");
+	assert.equal(result.IMAP_ACCESS_TOKEN, "fresh-access");
+	assert.equal(persisted?.MICROSOFT_REFRESH_TOKEN, "fresh-refresh");
+});
 
 test("builds Microsoft authorization URL with PKCE and state", () => {
 	const url = new URL(
@@ -200,6 +235,29 @@ test("coalesces concurrent refreshes and persists the rotated token once", async
 	assert.deepEqual(result, ["token-1", "token-1"]);
 	assert.equal(refreshes, 1);
 	assert.equal(saves, 1);
+});
+
+test("passes the distributed fence to CAS persistence", async () => {
+	let owner = "";
+	let persisted = false;
+	const redis = {
+		set: async (...args: string[]) => {
+			owner = args[1];
+			return "OK";
+		},
+		eval: async () => 1,
+	};
+	await withMicrosoftRefreshLock(
+		"cas-test",
+		async () => "rotated-token",
+		async (_value, fenceToken) => {
+			if (fenceToken !== owner) throw new Error("stale CAS fence rejected");
+			persisted = true;
+		},
+		undefined,
+		{ distributed: true, redis },
+	);
+	assert.equal(persisted, true);
 });
 
 test("renews a distributed refresh lease until persistence completes", async () => {
