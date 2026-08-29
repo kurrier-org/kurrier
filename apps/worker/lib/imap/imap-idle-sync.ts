@@ -704,3 +704,49 @@ export const imapIdleSync = async (
 		);
 	}
 };
+
+export const recoverOfflineRealtime = async (
+	idleImapInstances: Map<string, ImapFlow>,
+	imapInstances: Map<string, ImapFlow>,
+) => {
+	if (realtimeShuttingDown) {
+		return;
+	}
+
+	const identityRows = await db
+		.select()
+		.from(identities)
+		.where(isNotNull(identities.smtpAccountId));
+
+	console.info(
+		`[realtime-recovery] checking ${identityRows.length} identities`,
+	);
+
+	for (const identity of identityRows) {
+
+		if (realtimeShuttingDown) {
+			break;
+		}
+
+		const existing = idleImapInstances.get(identity.id);
+
+		if (
+			existing?.authenticated &&
+			existing?.usable &&
+			(existing as any).__kurrierRealtimeStarted
+		) {
+			continue;
+		}
+
+		console.info(
+			`[realtime-recovery] attempting identity=${identity.id}`,
+		);
+
+		await startRealtimeForIdentity(
+			identity.id,
+			idleImapInstances,
+			imapInstances,
+			true,
+		);
+	}
+};
