@@ -15,7 +15,7 @@ import {currentSession, isSignedIn} from "@/lib/actions/auth";
 import {getWorkspaceId, rlsClient} from "@/lib/actions/clients";
 import { checkDefaultWorkspaceIdentity } from "@/lib/actions/workspace";
 import {assignIdentityToAllWorkspaceMembers, fetchDecryptedSecrets, initializeMailboxes} from "@/lib/actions/dashboard";
-import {createMailer, VerifyResult} from "@providers";
+import {createMailer, VerifyResult, refreshMicrosoftAccessToken, isMicrosoftTokenExpired} from "@providers";
 import {eq} from "drizzle-orm";
 
 export type CreateEmailIdentityInput = {
@@ -82,9 +82,15 @@ export async function verifySMTPAccount(
             throw new Error("SMTP account secret not found");
         }
 
-        const parsedVaultValues = smtpSecret.parsedSecret;
+        let parsedVaultValues = smtpSecret.parsedSecret;
         const session = await currentSession();
         const workspaceId = await getWorkspaceId();
+
+        if (parsedVaultValues.provider === "microsoft" && parsedVaultValues.MICROSOFT_REFRESH_TOKEN && parsedVaultValues.SMTP_TOKEN_EXPIRES_AT && isMicrosoftTokenExpired(new Date(parsedVaultValues.SMTP_TOKEN_EXPIRES_AT))) {
+            const refreshed = await refreshMicrosoftAccessToken({ clientId: String(parsedVaultValues.MICROSOFT_CLIENT_ID), refreshToken: String(parsedVaultValues.MICROSOFT_REFRESH_TOKEN), tenant: String(parsedVaultValues.MICROSOFT_TENANT) });
+            parsedVaultValues = { ...parsedVaultValues, SMTP_ACCESS_TOKEN: refreshed.accessToken, IMAP_ACCESS_TOKEN: refreshed.accessToken, MICROSOFT_REFRESH_TOKEN: refreshed.refreshToken ?? parsedVaultValues.MICROSOFT_REFRESH_TOKEN, SMTP_TOKEN_EXPIRES_AT: refreshed.expiresAt.toISOString(), IMAP_TOKEN_EXPIRES_AT: refreshed.expiresAt.toISOString() };
+            await updateSecret(session, workspaceId, smtpSecret.metaId, { value: JSON.stringify(parsedVaultValues) });
+        }
 
         const mailer = createMailer("smtp", parsedVaultValues);
         const res = await mailer.verify(smtpAccountId);

@@ -24,6 +24,9 @@ export const RawSmtpConfigSchema = z
 		SMTP_AUTH_METHOD: AuthMethod.optional(),
 		SMTP_ACCESS_TOKEN: z.string().optional(),
 		SMTP_TOKEN_EXPIRES_AT: z.string().datetime().optional(),
+		MICROSOFT_REFRESH_TOKEN: z.string().optional(),
+		MICROSOFT_TENANT: z.string().optional(),
+		MICROSOFT_CLIENT_ID: z.string().optional(),
 		IMAP_HOST: z.string().optional(),
 		IMAP_PORT: z.coerce.number().optional(),
 		IMAP_USERNAME: z.string().optional(),
@@ -69,6 +72,11 @@ export const RawSmtpConfigSchema = z
 					}
 				: { user: r.SMTP_USERNAME, pass: r.SMTP_PASSWORD! },
 		pool: r.SMTP_POOL,
+		provider: r.MICROSOFT_REFRESH_TOKEN ? "microsoft" : undefined,
+		refreshToken: r.MICROSOFT_REFRESH_TOKEN,
+		tenant: r.MICROSOFT_TENANT,
+		clientId: r.MICROSOFT_CLIENT_ID,
+		expiresAt: r.SMTP_TOKEN_EXPIRES_AT ? new Date(r.SMTP_TOKEN_EXPIRES_AT) : undefined,
 		imap:
 			r.IMAP_HOST &&
 			r.IMAP_PORT &&

@@ -20,6 +20,7 @@ export type MicrosoftTokenSet = {
 	expiresAt: Date;
 	scope?: string;
 	tokenType: string;
+	idToken?: string;
 };
 type Fetcher = typeof fetch;
 const endpoint = (tenant: string) =>
@@ -90,6 +91,7 @@ async function tokenRequest(
 		expiresAt: new Date(Date.now() + expiresIn * 1000),
 		scope: typeof data.scope === "string" ? data.scope : undefined,
 		tokenType: typeof data.token_type === "string" ? data.token_type : "Bearer",
+		idToken: typeof data.id_token === "string" ? data.id_token : undefined,
 	};
 }
 export function exchangeMicrosoftAuthorizationCode(
