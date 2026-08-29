@@ -57,6 +57,8 @@ export class PostmarkMailer implements Mailer {
 			await this.serverClient.sendEmail({
 				From: opts?.from ?? "no-reply@kurrier.org",
 				To: to,
+				Cc: opts.cc?.length ? opts.cc.join(",") : undefined,
+				Bcc: opts.bcc?.length ? opts.bcc.join(",") : undefined,
 				Subject: opts?.subject ?? "Test email",
 				TextBody:
 					opts?.body ??

@@ -421,6 +421,8 @@ export class SendgridMailer implements Mailer {
 			const msg: MailDataRequired = {
 				from: opts.from,
 				to,
+				cc: opts.cc?.length ? opts.cc : undefined,
+				bcc: opts.bcc?.length ? opts.bcc : undefined,
 				subject: opts.subject,
 				text: opts.text || undefined,
 				html: opts.html || undefined,

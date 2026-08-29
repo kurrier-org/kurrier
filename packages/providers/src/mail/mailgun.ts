@@ -334,11 +334,12 @@ export class MailgunMailer implements Mailer {
 			// Mailgun accepts string or array for "to"
 			const payload: any = {
 				from: opts.from,
-				to, // array is fine
+				to,
+				cc: opts.cc?.length ? opts.cc : undefined,
+				bcc: opts.bcc?.length ? opts.bcc : undefined,
 				subject: opts.subject,
 				text: opts.text || undefined,
 				html: opts.html || undefined,
-				// headers
 				...headers,
 			};
 

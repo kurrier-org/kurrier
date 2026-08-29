@@ -5,7 +5,7 @@ import { sql } from "drizzle-orm";
 import {
     db, identities
 } from "@db";
-import { getRedis } from "../../lib/get-redis";
+import {getRedis, redisConnection} from "../../lib/get-redis";
 import { discoverGmailMailboxes } from "../../lib/gmail/gmail-discover";
 import { backfillGmailAccount } from "../../lib/gmail/gmail-backfill";
 import { deltaSyncGmailAccount } from "../../lib/gmail/gmail-delta";
@@ -113,7 +113,7 @@ async function enqueueIncompleteBackfills() {
 export default defineNitroPlugin(async (nitroApp) => {
     console.info("**********************GMAIL-WORKER***************************");
 
-    const { connection } = await getRedis();
+    const connection = redisConnection.connection
 
     const worker = new Worker(
         "gmail-worker",

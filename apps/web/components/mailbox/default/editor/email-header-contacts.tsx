@@ -1,22 +1,23 @@
 "use client";
+
 import React, { useState } from "react";
 import {
-	ComboboxItem,
+	type ComboboxItem,
+	type OptionsFilter,
 	TagsInput,
-	TagsInputProps,
-	OptionsFilter,
-	FocusTrap,
+	type TagsInputProps,
 } from "@mantine/core";
+
 import ContactSuggestionItem from "@/components/mailbox/default/editor/contact-suggestion-item";
 import { searchContactsForCompose } from "@/lib/actions/calendar";
-import {ComposeContact} from "@schema";
+import type { ComposeContact } from "@schema";
 
 export default function EmailHeaderContacts({
-	name,
-	toEmail,
-	maxTags,
-	onChange,
-}: {
+												name,
+												toEmail,
+												maxTags,
+												onChange,
+											}: {
 	toEmail?: string;
 	maxTags?: number;
 	onChange?: (value: string[]) => void;
@@ -26,20 +27,21 @@ export default function EmailHeaderContacts({
 	const [options, setOptions] = useState<ComboboxItem[]>([]);
 
 	const uniqueByEmail = (arr: ComposeContact[]) => {
-		const seen = new Set();
+		const seen = new Set<string>();
+
 		return arr.filter((item) => {
 			if (seen.has(item.email)) return false;
+
 			seen.add(item.email);
 			return true;
 		});
 	};
 
-	const searchContacts = async (val: string) => {
-		setSearchValue(val);
+	const searchContacts = async (value: string) => {
+		setSearchValue(value);
 
-		const rowsContacts = await searchContactsForCompose(val);
+		const rowsContacts = await searchContactsForCompose(value);
 		const rows = uniqueByEmail(rowsContacts);
-
 
 		const mapped: ComboboxItem[] = rows.map((row) => ({
 			value: row.email,
@@ -55,43 +57,41 @@ export default function EmailHeaderContacts({
 	);
 
 	const filter: OptionsFilter = ({ options, search }) => {
-		const s = search.toLowerCase();
-		return (options as ComboboxItem[]).filter((opt) =>
-			opt.label.toLowerCase().includes(s),
+		const value = search.toLowerCase();
+
+		return (options as ComboboxItem[]).filter((option) =>
+			option.label.toLowerCase().includes(value),
 		);
 	};
 
 	return (
-		<>
-			<FocusTrap active={true}>
-				<TagsInput
-					defaultValue={toEmail ? [toEmail] : []}
-					searchValue={searchValue}
-					onSearchChange={searchContacts}
-					data={options}
-					onChange={(value) => {
-						if (value.length > 0) {
-							onChange && onChange(value as string[]);
-						}
-					}}
-					renderOption={renderOption}
-					filter={filter}
-					maxTags={maxTags}
-					name={name}
-					size="sm"
-					variant="unstyled"
-					className="min-h-[28px] text-sm w-96"
-					comboboxProps={{
-						dropdownPadding: 0,
-						withinPortal: false,
-						position: "bottom-start",
-						offset: 1,
-						width: "target",
-						shadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-						transitionProps: { transition: "skew-down", duration: 150 },
-					}}
-				/>
-			</FocusTrap>
-		</>
+		<TagsInput
+			defaultValue={toEmail ? [toEmail] : []}
+			searchValue={searchValue}
+			onSearchChange={searchContacts}
+			data={options}
+			onChange={(value) => {
+				onChange?.(value as string[]);
+			}}
+			renderOption={renderOption}
+			filter={filter}
+			maxTags={maxTags}
+			name={name}
+			size="sm"
+			variant="unstyled"
+			className="min-h-[28px] w-96 text-sm"
+			comboboxProps={{
+				dropdownPadding: 0,
+				withinPortal: false,
+				position: "bottom-start",
+				offset: 1,
+				width: "target",
+				shadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+				transitionProps: {
+					transition: "skew-down",
+					duration: 150,
+				},
+			}}
+		/>
 	);
 }
