@@ -140,21 +140,6 @@ export default defineNitroPlugin(async (nitroApp) => {
 		{ override: true },
 	);
 
-
-	await scheduler.upsertJobScheduler(
-		"billing-sync-scheduler",
-		// { every: 10000 },
-		{ every: 60 * 60 * 1000 },
-		"billing:sync",
-		{},
-		{
-			removeOnComplete: true,
-			removeOnFail: false,
-			attempts: 1,
-		},
-		{ override: true },
-	);
-
 	worker.on("completed", async (job) => {
 		console.log(`[COMMON] ${job.name} ${job.id} has completed!`);
 	});
