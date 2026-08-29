@@ -9,10 +9,16 @@ import {
 	MessageAttachmentCreate,
 	MessageAttachmentInsertSchema,
 	mailSubscriptions,
+	mailboxes,
 	workspaces,
 } from "@db";
-import { generateSnippet, upsertMailboxThreadItem } from "@common";
-import { randomUUID } from "crypto";
+import {
+	buildThreadingCandidates,
+	fallbackMessageId,
+	generateSnippet,
+	upsertMailboxThreadItem,
+} from "@common";
+import { randomUUID } from "node:crypto";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { getRedis } from "../lib/get-redis";
 import {s3} from "../lib/create-s3-client";
@@ -140,21 +146,25 @@ function generateFileName(att: Attachment) {
 }
 
 export async function createOrInitializeThread(
-	parsed: ParsedMail & { ownerId: string, workspaceId: string },
+	parsed: ParsedMail & { ownerId: string; workspaceId: string; mailboxId: string },
 ) {
-	const { ownerId, workspaceId } = parsed;
-	const inReplyTo = parsed.inReplyTo?.trim() || null;
+	const { ownerId, workspaceId, mailboxId } = parsed;
+	const inReplyTo = parsed.inReplyTo ?? null;
 	const refs = Array.isArray(parsed.references)
 		? parsed.references
 		: parsed.references
 			? [parsed.references]
 			: [];
-	const candidates = Array.from(
-		new Set([inReplyTo, ...refs].filter(Boolean).map((s) => String(s))),
-	);
+	const candidates = buildThreadingCandidates(inReplyTo, refs);
 
 	return db.transaction(async (tx) => {
 		let existingThread = null;
+		const [mailbox] = await tx
+			.select({ identityId: mailboxes.identityId })
+			.from(mailboxes)
+			.where(eq(mailboxes.id, mailboxId))
+			.limit(1);
+		if (!mailbox) throw new Error(`Mailbox ${mailboxId} not found`);
 
 		if (candidates.length > 0) {
 			const parentMsgs = await tx
@@ -165,9 +175,11 @@ export async function createOrInitializeThread(
 					date: messages.date,
 				})
 				.from(messages)
+				.innerJoin(mailboxes, eq(messages.mailboxId, mailboxes.id))
 				.where(
 					and(
 						eq(messages.ownerId, ownerId),
+						eq(mailboxes.identityId, mailbox.identityId),
 						inArray(messages.messageId, candidates),
 					),
 				)
@@ -252,14 +264,7 @@ export async function parseAndStoreEmail(
 	const headers = parsed.headers as Map<string, any>;
 
 	const messageId =
-		parsed.messageId || String(headers.get("message-id") || "").trim();
-
-	if (!messageId) {
-		console.warn(
-			`[parseAndStoreEmail] Skipping message with no Message-ID (mailboxId=${mailboxId}, storageKey=${rawStorageKey})`,
-		);
-		return null;
-	}
+		parsed.messageId || String(headers.get("message-id") || "").trim() || fallbackMessageId(rawEmail);
 
 	/**
 	 * Important for IMAP replay / UIDVALIDITY recovery:
@@ -336,6 +341,7 @@ export async function parseAndStoreEmail(
 		...parsed,
 		ownerId,
 		workspaceId,
+		mailboxId,
 	});
 
 	const decoratedParsed = {
