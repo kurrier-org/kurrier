@@ -8,6 +8,7 @@ import {
 	MICROSOFT_MAIL_SCOPES,
 	refreshMicrosoftAccessToken,
 	validateMicrosoftOAuthState,
+	withMicrosoftRefreshLock,
 	xoauth2String,
 } from "./microsoft-oauth";
 
@@ -28,6 +29,19 @@ test("builds Microsoft authorization URL with PKCE and state", () => {
 	assert.equal(url.searchParams.get("code_challenge_method"), "S256");
 	assert.equal(url.searchParams.get("state"), "state-value");
 	assert.equal(url.searchParams.get("scope"), MICROSOFT_MAIL_SCOPES.join(" "));
+});
+
+test("includes the nonce in the authorization request", () => {
+	const url = new URL(
+		buildMicrosoftAuthorizationUrl({
+			clientId: "client-id",
+			redirectUri: "https://app.example/callback",
+			state: "state-value",
+			codeChallenge: "challenge-value",
+			nonce: "nonce-value",
+		}),
+	);
+	assert.equal(url.searchParams.get("nonce"), "nonce-value");
 });
 test("creates an opaque state and verifier pair", () => {
 	const first = createMicrosoftOAuthState();
@@ -100,4 +114,55 @@ test("validates callback state and token expiry skew", () => {
 	assert.equal(validateMicrosoftOAuthState("state", "state"), true);
 	assert.equal(validateMicrosoftOAuthState("state", "other"), false);
 	assert.equal(isMicrosoftTokenExpired(new Date(Date.now() + 10_000)), true);
+});
+
+test("does not expose provider error descriptions", async () => {
+	await assert.rejects(
+		refreshMicrosoftAccessToken(
+			{ clientId: "id", refreshToken: "refresh", tenant: "common" },
+			async () =>
+				new Response(
+					JSON.stringify({
+						error: "temporarily_unavailable",
+						error_description: "secret tenant detail",
+					}),
+					{ status: 503 },
+				),
+		),
+		(error: unknown) =>
+			error instanceof Error &&
+			!error.message.includes("secret tenant detail") &&
+			error.message.includes("temporarily_unavailable"),
+	);
+});
+
+test("coalesces concurrent refreshes and persists the rotated token once", async () => {
+	let refreshes = 0;
+	let saves = 0;
+	const result = await Promise.all([
+		withMicrosoftRefreshLock(
+			"secret",
+			async () => {
+				refreshes++;
+				await new Promise((resolve) => setTimeout(resolve, 5));
+				return "token-1";
+			},
+			async () => {
+				saves++;
+			},
+		),
+		withMicrosoftRefreshLock(
+			"secret",
+			async () => {
+				refreshes++;
+				return "token-2";
+			},
+			async () => {
+				saves++;
+			},
+		),
+	]);
+	assert.deepEqual(result, ["token-1", "token-1"]);
+	assert.equal(refreshes, 1);
+	assert.equal(saves, 1);
 });

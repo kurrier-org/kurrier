@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import IORedis from "ioredis";
 
 export const MICROSOFT_MAIL_SCOPES = [
 	"openid",
@@ -31,6 +32,7 @@ export function createMicrosoftOAuthState() {
 	return {
 		state: encoded(crypto.randomBytes(32)),
 		codeVerifier: encoded(crypto.randomBytes(32)),
+		nonce: encoded(crypto.randomBytes(32)),
 	};
 }
 export function buildMicrosoftAuthorizationUrl(input: {
@@ -40,6 +42,7 @@ export function buildMicrosoftAuthorizationUrl(input: {
 	codeChallenge: string;
 	tenant?: string;
 	loginHint?: string;
+	nonce?: string;
 }) {
 	const url = new URL(
 		`https://login.microsoftonline.com/${encodeURIComponent(input.tenant ?? "common")}/oauth2/v2.0/authorize`,
@@ -53,6 +56,7 @@ export function buildMicrosoftAuthorizationUrl(input: {
 		code_challenge: input.codeChallenge,
 		code_challenge_method: "S256",
 		state: input.state,
+		...(input.nonce ? { nonce: input.nonce } : {}),
 		...(input.loginHint ? { login_hint: input.loginHint } : {}),
 	}).toString();
 	return url.toString();
@@ -74,14 +78,12 @@ async function tokenRequest(
 	const data = (await response.json()) as Record<string, unknown>;
 	if (!response.ok || typeof data.access_token !== "string") {
 		const code = String(data.error ?? "unknown_error");
-		const detail = String(
-			data.error_description ?? "Microsoft token request failed",
-		);
+		const detail = String(data.error_description ?? "");
 		if (code === "invalid_grant" || /expired|revoked|consent/i.test(detail))
 			throw new Error(
 				"Microsoft authorization expired or was revoked; reconnect the mailbox. ",
 			);
-		throw new Error(`Microsoft OAuth failed (${code}): ${detail}`);
+		throw new Error(`Microsoft OAuth failed (${code})`);
 	}
 	const expiresIn = Number(data.expires_in ?? 3600);
 	return {
@@ -157,4 +159,69 @@ export function validateMicrosoftOAuthState(
 ) {
 	if (!received || expected.length !== received.length) return false;
 	return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(received));
+}
+
+const microsoftRefreshes = new Map<string, Promise<unknown>>();
+let refreshRedis: IORedis | undefined;
+const getRefreshRedis = () => {
+	if (!refreshRedis)
+		refreshRedis = new IORedis({
+			host: process.env.REDIS_HOST || "redis",
+			port: Number(process.env.REDIS_PORT || 6379),
+			password: process.env.REDIS_PASSWORD,
+			maxRetriesPerRequest: null,
+		});
+	return refreshRedis;
+};
+export function withMicrosoftRefreshLock<T>(
+	key: string,
+	refresh: () => Promise<T>,
+	persist: (value: T) => Promise<void>,
+	load?: () => Promise<T | null>,
+	options?: { distributed?: boolean },
+): Promise<T> {
+	if (!options?.distributed) {
+		const existing = microsoftRefreshes.get(key);
+		if (existing) return existing as Promise<T>;
+		const operation = refresh()
+			.then(async (value) => {
+				await persist(value);
+				return value;
+			})
+			.finally(() => {
+				if (microsoftRefreshes.get(key) === operation)
+					microsoftRefreshes.delete(key);
+			});
+		microsoftRefreshes.set(key, operation);
+		return operation;
+	}
+	const lockKey = `kurrier:microsoft-refresh-lock:${key}`;
+	const owner = crypto.randomUUID();
+	const redis = getRefreshRedis();
+	return (async () => {
+		const acquired = await redis.set(lockKey, owner, "PX", 30_000, "NX");
+		if (acquired !== "OK") {
+			if (!load) throw new Error("Microsoft refresh is already in progress");
+			for (let attempt = 0; attempt < 600; attempt++) {
+				const value = await load();
+				if (value) return value;
+				await new Promise((resolve) => setTimeout(resolve, 50));
+			}
+			throw new Error("Microsoft refresh lock timed out");
+		}
+		try {
+			const current = load ? await load() : null;
+			if (current) return current;
+			const value = await refresh();
+			await persist(value);
+			return value;
+		} finally {
+			await redis.eval(
+				"if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+				1,
+				lockKey,
+				owner,
+			);
+		}
+	})();
 }

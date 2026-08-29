@@ -1,75 +1,89 @@
-import { cookies } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
-import { createSecret, smtpAccounts, smtpAccountSecrets } from "@db";
-import { rlsClient } from "@/lib/actions/clients";
-import { createEmailIdentity } from "@/lib/actions/email-identity";
-import { currentSession } from "@/lib/actions/auth";
+import crypto from "node:crypto";
+import {
+	createSecret,
+	identities,
+	secretsMeta,
+	smtpAccountSecrets,
+	smtpAccounts,
+} from "@db";
 import {
 	exchangeMicrosoftAuthorizationCode,
-	validateMicrosoftOAuthState,
 	MICROSOFT_MAIL_SCOPES,
+	type MicrosoftTokenSet,
+	validateMicrosoftOAuthState,
 } from "@providers";
-const fail = (id: string, msg: string) =>
-	NextResponse.redirect(
+import { eq } from "drizzle-orm";
+import { cookies } from "next/headers";
+import { type NextRequest, NextResponse } from "next/server";
+import { currentSession, isSignedIn } from "@/lib/actions/auth";
+import { getWorkspaceId, rlsClient } from "@/lib/actions/clients";
+import { createEmailIdentity } from "@/lib/actions/email-identity";
+import { verifyMicrosoftIdToken } from "@/lib/oauth/microsoft-oidc";
+import { consumeMicrosoftOAuthTransaction } from "@/lib/oauth/microsoft-transaction";
+
+const fail = (id: string, code = "microsoft_oauth_failed") => {
+	const correlationId = crypto.randomUUID();
+	console.error("[MICROSOFT OAUTH CALLBACK FAILED]", { correlationId, code });
+	return NextResponse.redirect(
 		new URL(
-			`/w/${id}/dashboard/platform/providers?microsoft_error=${encodeURIComponent(msg)}`,
+			`/w/${id}/dashboard/platform/providers?microsoft_error=${code}&correlation_id=${correlationId}`,
 			process.env.WEB_URL,
 		),
 	);
-const claims = (token: string) => {
-	try {
-		return JSON.parse(
-			Buffer.from(token.split(".")[1], "base64url").toString(),
-		) as Record<string, unknown>;
-	} catch {
-		return {};
-	}
 };
+
 export async function GET(req: NextRequest) {
-	const c = await cookies(),
-		state = c.get("microsoft_provider_state")?.value,
-		verifier = c.get("microsoft_provider_code_verifier")?.value,
-		workspaceId = c.get("microsoft_provider_workspace_id")?.value,
-		publicId = c.get("microsoft_provider_workspace_public_id")?.value,
-		ownerId = c.get("microsoft_provider_owner_id")?.value;
-	if (!state || !verifier || !workspaceId || !publicId || !ownerId)
+	const c = await cookies();
+	const txId = c.get("microsoft_provider_tx")?.value;
+	const session = await currentSession();
+	const user = await isSignedIn();
+	if (!txId || !session || !user)
 		return NextResponse.redirect(new URL("/auth/login", process.env.WEB_URL));
+	const tx = await consumeMicrosoftOAuthTransaction(txId);
+	if (!tx || tx.userId !== user.id) return fail(tx?.publicId ?? "");
+	c.delete("microsoft_provider_tx");
 	if (
-		!validateMicrosoftOAuthState(state, req.nextUrl.searchParams.get("state"))
+		!validateMicrosoftOAuthState(
+			tx.state,
+			req.nextUrl.searchParams.get("state"),
+		)
 	)
-		return fail(publicId, "Microsoft OAuth state validation failed");
-	const err = req.nextUrl.searchParams.get("error");
-	if (err)
-		return fail(
-			publicId,
-			req.nextUrl.searchParams.get("error_description") ?? err,
-		);
+		return fail(tx.publicId, "microsoft_oauth_state_invalid");
+	if ((await getWorkspaceId()) !== tx.workspaceId)
+		return fail(tx.publicId, "microsoft_oauth_workspace_invalid");
+	const providerError = req.nextUrl.searchParams.get("error");
+	if (providerError) return fail(tx.publicId, "microsoft_oauth_denied");
 	const code = req.nextUrl.searchParams.get("code");
-	if (!code) return fail(publicId, "Microsoft authorization code missing");
-	let t;
+	if (!code) return fail(tx.publicId, "microsoft_oauth_code_missing");
+	const clientId = process.env.MICROSOFT_CLIENT_ID;
+	if (!clientId) return fail(tx.publicId, "microsoft_oauth_not_configured");
+	let token: MicrosoftTokenSet;
 	try {
-		t = await exchangeMicrosoftAuthorizationCode({
-			clientId: process.env.MICROSOFT_CLIENT_ID!,
+		token = await exchangeMicrosoftAuthorizationCode({
+			clientId,
 			clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
 			code,
-			codeVerifier: verifier,
+			codeVerifier: tx.codeVerifier,
 			redirectUri: `${process.env.WEB_URL}/api/oauth/microsoft/callback`,
 			tenant: process.env.MICROSOFT_TENANT ?? "common",
 		});
-	} catch (e) {
-		return fail(
-			publicId,
-			e instanceof Error ? e.message : "Microsoft OAuth token exchange failed",
-		);
+	} catch {
+		return fail(tx.publicId, "microsoft_oauth_exchange_failed");
 	}
-	if (!t.refreshToken)
-		return fail(
-			publicId,
-			"Microsoft did not return a refresh token. Remove Kurrier access and reconnect.",
-		);
-	const p = claims(String((t as any).idToken ?? "")),
-		email = String(p.email ?? p.preferred_username ?? "").trim();
-	if (!email) return fail(publicId, "Microsoft account email missing");
+	if (!token.refreshToken || !token.idToken)
+		return fail(tx.publicId, "microsoft_oauth_identity_missing");
+	let claims: Awaited<ReturnType<typeof verifyMicrosoftIdToken>>;
+	try {
+		claims = await verifyMicrosoftIdToken({
+			token: token.idToken,
+			clientId,
+			nonce: tx.nonce,
+		});
+	} catch {
+		return fail(tx.publicId, "microsoft_oauth_identity_invalid");
+	}
+	const email = String(claims.email ?? claims.preferred_username ?? "").trim();
+	if (!email) return fail(tx.publicId, "microsoft_oauth_identity_missing");
 	const config = {
 		label: `Microsoft — ${email}`,
 		ulid: `microsoft-${email}`,
@@ -77,58 +91,75 @@ export async function GET(req: NextRequest) {
 		SMTP_PORT: "587",
 		SMTP_USERNAME: email,
 		SMTP_AUTH_METHOD: "xoauth2",
-		SMTP_ACCESS_TOKEN: t.accessToken,
-		SMTP_TOKEN_EXPIRES_AT: t.expiresAt.toISOString(),
+		SMTP_ACCESS_TOKEN: token.accessToken,
+		SMTP_TOKEN_EXPIRES_AT: token.expiresAt.toISOString(),
 		SMTP_SECURE: "false",
 		IMAP_HOST: "outlook.office365.com",
 		IMAP_PORT: "993",
 		IMAP_USERNAME: email,
 		IMAP_AUTH_METHOD: "xoauth2",
-		IMAP_ACCESS_TOKEN: t.accessToken,
-		IMAP_TOKEN_EXPIRES_AT: t.expiresAt.toISOString(),
+		IMAP_ACCESS_TOKEN: token.accessToken,
+		IMAP_TOKEN_EXPIRES_AT: token.expiresAt.toISOString(),
 		IMAP_SECURE: "true",
-		MICROSOFT_REFRESH_TOKEN: t.refreshToken,
+		MICROSOFT_REFRESH_TOKEN: token.refreshToken,
 		MICROSOFT_TENANT: process.env.MICROSOFT_TENANT ?? "common",
 		MICROSOFT_CLIENT_ID: process.env.MICROSOFT_CLIENT_ID,
 		MICROSOFT_SCOPES: MICROSOFT_MAIL_SCOPES.join(" "),
 	};
-	const secret = await createSecret(await currentSession(), workspaceId, {
+	let secretId: string | undefined;
+	let accountId: string | undefined;
+	try {
+		const secret = await createSecret(session, tx.workspaceId, {
 			name: config.ulid,
 			value: JSON.stringify(config),
 			description: "Microsoft OAuth IMAP/SMTP tokens",
 			managedBy: "user",
-		}),
-		rls = await rlsClient();
-	const accountRows: any = await rls((tx: any) =>
-		tx.insert(smtpAccounts).values({ ownerId, workspaceId }).returning(),
-	);
-	const account = accountRows[0];
-	await rls((tx: any) =>
-		tx
-			.insert(smtpAccountSecrets)
-			.values({ accountId: account.id, secretId: secret.id, workspaceId }),
-	);
-	const identity = await createEmailIdentity({
-		email,
-		displayName: String(p.name ?? email),
-		smtpAccountId: account.id,
-	});
-	if (!identity.success)
-		return fail(
-			publicId,
-			identity.error ?? "Microsoft mailbox could not be created",
+		});
+		secretId = secret.id;
+		const rls = await rlsClient();
+		const [account] = await rls((db) =>
+			db
+				.insert(smtpAccounts)
+				.values({ ownerId: tx.userId, workspaceId: tx.workspaceId })
+				.returning(),
 		);
-	for (const k of [
-		"state",
-		"code_verifier",
-		"workspace_id",
-		"workspace_public_id",
-		"owner_id",
-	])
-		c.delete(`microsoft_provider_${k}`);
+		accountId = account.id;
+		await rls((db) =>
+			db.insert(smtpAccountSecrets).values({
+				accountId: account.id,
+				secretId: secret.id,
+				workspaceId: tx.workspaceId,
+			}),
+		);
+		const identity = await createEmailIdentity({
+			email,
+			displayName: String(claims.name ?? email),
+			smtpAccountId: account.id,
+		});
+		if (!identity.success) throw new Error("identity_creation_failed");
+	} catch {
+		const rls = await rlsClient();
+		const failedAccountId = accountId;
+		const failedSecretId = secretId;
+		if (failedAccountId)
+			await rls((db) =>
+				db
+					.delete(identities)
+					.where(eq(identities.smtpAccountId, failedAccountId)),
+			);
+		if (failedAccountId)
+			await rls((db) =>
+				db.delete(smtpAccounts).where(eq(smtpAccounts.id, failedAccountId)),
+			);
+		if (failedSecretId)
+			await rls((db) =>
+				db.delete(secretsMeta).where(eq(secretsMeta.id, failedSecretId)),
+			);
+		return fail(tx.publicId, "microsoft_oauth_persistence_failed");
+	}
 	return NextResponse.redirect(
 		new URL(
-			`/w/${publicId}/dashboard/platform/providers?connected=microsoft`,
+			`/w/${tx.publicId}/dashboard/platform/providers?connected=microsoft`,
 			process.env.WEB_URL,
 		),
 	);

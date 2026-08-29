@@ -548,6 +548,9 @@ importers:
       imapflow:
         specifier: ^1.0.198
         version: 1.2.0
+      ioredis:
+        specifier: ^5.8.1
+        version: 5.11.1
       mailgun.js:
         specifier: ^12.1.0
         version: 12.4.0
@@ -5110,6 +5113,7 @@ packages:
   eslint@9.39.2:
     resolution: {integrity: sha512-LEyamqS7W5HB3ujJyvi0HQK/dtVINZvd5mAAp9eT5S/ujByGjiZLCzPcHVzuXbpJDJF/cxwHlfceVUDZ2lnSTw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
     peerDependencies:
       jiti: '*'
@@ -16125,7 +16129,7 @@ snapshots:
       h3: 1.15.4
       hookable: 5.5.3
       httpxy: 0.1.7
-      ioredis: 5.8.2
+      ioredis: 5.11.1
       jiti: 2.6.1
       klona: 2.0.6
       knitwork: 1.3.0
@@ -16158,7 +16162,7 @@ snapshots:
       unenv: 2.0.0-rc.24
       unimport: 5.5.0
       unplugin-utils: 0.3.1
-      unstorage: 1.17.2(db0@0.3.4(@libsql/client@0.15.15)(better-sqlite3@12.4.5)(drizzle-orm@0.45.2(@libsql/client@0.15.15)(@types/better-sqlite3@7.6.13)(@types/pg@8.15.6)(better-sqlite3@12.4.5)(pg@8.16.3)(postgres@3.4.7)))(ioredis@5.8.2)
+      unstorage: 1.17.2(db0@0.3.4(@libsql/client@0.15.15)(better-sqlite3@12.4.5)(drizzle-orm@0.45.2(@libsql/client@0.15.15)(@types/better-sqlite3@7.6.13)(@types/pg@8.15.6)(better-sqlite3@12.4.5)(pg@8.16.3)(postgres@3.4.7)))(ioredis@5.11.1)
       untyped: 2.0.0
       unwasm: 0.3.11
       youch: 4.1.0-beta.12
@@ -18015,7 +18019,7 @@ snapshots:
       '@unrs/resolver-binding-win32-ia32-msvc': 1.11.1
       '@unrs/resolver-binding-win32-x64-msvc': 1.11.1
 
-  unstorage@1.17.2(db0@0.3.4(@libsql/client@0.15.15)(better-sqlite3@12.4.5)(drizzle-orm@0.45.2(@libsql/client@0.15.15)(@types/better-sqlite3@7.6.13)(@types/pg@8.15.6)(better-sqlite3@12.4.5)(pg@8.16.3)(postgres@3.4.7)))(ioredis@5.8.2):
+  unstorage@1.17.2(db0@0.3.4(@libsql/client@0.15.15)(better-sqlite3@12.4.5)(drizzle-orm@0.45.2(@libsql/client@0.15.15)(@types/better-sqlite3@7.6.13)(@types/pg@8.15.6)(better-sqlite3@12.4.5)(pg@8.16.3)(postgres@3.4.7)))(ioredis@5.11.1):
     dependencies:
       anymatch: 3.1.3
       chokidar: 4.0.3
@@ -18027,7 +18031,7 @@ snapshots:
       ufo: 1.6.1
     optionalDependencies:
       db0: 0.3.4(@libsql/client@0.15.15)(better-sqlite3@12.4.5)(drizzle-orm@0.45.2(@libsql/client@0.15.15)(@types/better-sqlite3@7.6.13)(@types/pg@8.15.6)(better-sqlite3@12.4.5)(pg@8.16.3)(postgres@3.4.7))
-      ioredis: 5.8.2
+      ioredis: 5.11.1
 
   untun@0.1.3:
     dependencies:
