@@ -18,11 +18,15 @@ import { type NextRequest, NextResponse } from "next/server";
 import { currentSession, isSignedIn } from "@/lib/actions/auth";
 import { getWorkspaceId, rlsClient } from "@/lib/actions/clients";
 import { createEmailIdentity } from "@/lib/actions/email-identity";
+import { compensateMicrosoftOAuthResources } from "@/lib/oauth/microsoft-compensation";
 import { verifyMicrosoftIdToken } from "@/lib/oauth/microsoft-oidc";
 import { consumeMicrosoftOAuthTransaction } from "@/lib/oauth/microsoft-transaction";
 
-const fail = (id: string, code = "microsoft_oauth_failed") => {
-	const correlationId = crypto.randomUUID();
+const fail = (
+	id: string,
+	code = "microsoft_oauth_failed",
+	correlationId = crypto.randomUUID(),
+) => {
 	console.error("[MICROSOFT OAUTH CALLBACK FAILED]", { correlationId, code });
 	return NextResponse.redirect(
 		new URL(
@@ -138,24 +142,69 @@ export async function GET(req: NextRequest) {
 		});
 		if (!identity.success) throw new Error("identity_creation_failed");
 	} catch {
+		const correlationId = crypto.randomUUID();
 		const rls = await rlsClient();
 		const failedAccountId = accountId;
 		const failedSecretId = secretId;
-		if (failedAccountId)
-			await rls((db) =>
-				db
-					.delete(identities)
-					.where(eq(identities.smtpAccountId, failedAccountId)),
-			);
-		if (failedAccountId)
-			await rls((db) =>
-				db.delete(smtpAccounts).where(eq(smtpAccounts.id, failedAccountId)),
-			);
-		if (failedSecretId)
-			await rls((db) =>
-				db.delete(secretsMeta).where(eq(secretsMeta.id, failedSecretId)),
-			);
-		return fail(tx.publicId, "microsoft_oauth_persistence_failed");
+		await compensateMicrosoftOAuthResources(correlationId, [
+			...(failedAccountId
+				? [
+						{
+							resource: "identities",
+							cleanup: () =>
+								rls((db) =>
+									db
+										.delete(identities)
+										.where(eq(identities.smtpAccountId, failedAccountId)),
+								),
+						},
+					]
+				: []),
+			...(failedAccountId
+				? [
+						{
+							resource: "smtp_account_secrets",
+							cleanup: () =>
+								rls((db) =>
+									db
+										.delete(smtpAccountSecrets)
+										.where(eq(smtpAccountSecrets.accountId, failedAccountId)),
+								),
+						},
+					]
+				: []),
+			...(failedAccountId
+				? [
+						{
+							resource: "smtp_accounts",
+							cleanup: () =>
+								rls((db) =>
+									db
+										.delete(smtpAccounts)
+										.where(eq(smtpAccounts.id, failedAccountId)),
+								),
+						},
+					]
+				: []),
+			...(failedSecretId
+				? [
+						{
+							resource: "secrets_meta",
+							cleanup: () =>
+								rls((db) =>
+									db
+										.delete(secretsMeta)
+										.where(eq(secretsMeta.id, failedSecretId)),
+								),
+						},
+					]
+				: []),
+		]);
+		return fail(
+			tx.publicId,
+			"microsoft_oauth_persistence_failed",
+			correlationId,
+		);
 	}
 	return NextResponse.redirect(
 		new URL(

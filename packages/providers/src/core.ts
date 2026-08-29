@@ -68,15 +68,17 @@ export const RawSmtpConfigSchema = z
 				? {
 						type: "OAuth2" as const,
 						user: r.SMTP_USERNAME,
-						accessToken: r.SMTP_ACCESS_TOKEN!,
+						accessToken: r.SMTP_ACCESS_TOKEN ?? "",
 					}
-				: { user: r.SMTP_USERNAME, pass: r.SMTP_PASSWORD! },
+				: { user: r.SMTP_USERNAME, pass: r.SMTP_PASSWORD ?? "" },
 		pool: r.SMTP_POOL,
 		provider: r.MICROSOFT_REFRESH_TOKEN ? "microsoft" : undefined,
 		refreshToken: r.MICROSOFT_REFRESH_TOKEN,
 		tenant: r.MICROSOFT_TENANT,
 		clientId: r.MICROSOFT_CLIENT_ID,
-		expiresAt: r.SMTP_TOKEN_EXPIRES_AT ? new Date(r.SMTP_TOKEN_EXPIRES_AT) : undefined,
+		expiresAt: r.SMTP_TOKEN_EXPIRES_AT
+			? new Date(r.SMTP_TOKEN_EXPIRES_AT)
+			: undefined,
 		imap:
 			r.IMAP_HOST &&
 			r.IMAP_PORT &&

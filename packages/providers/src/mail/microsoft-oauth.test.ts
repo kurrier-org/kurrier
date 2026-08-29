@@ -105,8 +105,11 @@ test("reports actionable Microsoft refresh errors", async () => {
 });
 test("formats the RFC 7628 XOAUTH2 initial client response", () => {
 	assert.equal(
-		xoauth2String("person@example.com", "access-token"),
-		"dXNlcj1wZXJzb25AZXhhbXBsZS5jb20BYXV0aD1CZWFyZXIgYWNjZXNzLXRva2VuAQE=",
+		Buffer.from(
+			xoauth2String("person@example.com", "access-token"),
+			"base64",
+		).toString("utf8"),
+		"user=person@example.com\x01auth=Bearer access-token\x01\x01",
 	);
 });
 
@@ -165,4 +168,29 @@ test("coalesces concurrent refreshes and persists the rotated token once", async
 	assert.deepEqual(result, ["token-1", "token-1"]);
 	assert.equal(refreshes, 1);
 	assert.equal(saves, 1);
+});
+
+test("renews a distributed refresh lease until persistence completes", async () => {
+	const calls: string[] = [];
+	const redis = {
+		set: async () => "OK",
+		eval: async (...args: unknown[]) => {
+			const script = String(args[0]);
+			if (script.includes("pexpire")) calls.push("renew");
+			else calls.push("release");
+			return 1;
+		},
+	};
+	await withMicrosoftRefreshLock(
+		"lease-test",
+		async () => {
+			await new Promise((resolve) => setTimeout(resolve, 30));
+			return "rotated-token";
+		},
+		async () => {},
+		undefined,
+		{ distributed: true, redis, leaseMs: 15, renewEveryMs: 5 },
+	);
+	assert.ok(calls.includes("renew"));
+	assert.equal(calls.at(-1), "release");
 });

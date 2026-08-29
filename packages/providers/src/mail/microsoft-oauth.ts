@@ -163,7 +163,12 @@ export function validateMicrosoftOAuthState(
 
 const microsoftRefreshes = new Map<string, Promise<unknown>>();
 let refreshRedis: IORedis | undefined;
-const getRefreshRedis = () => {
+type RefreshRedis = {
+	set: (...args: string[]) => Promise<string | null>;
+	pexpire: (key: string, milliseconds: number) => Promise<number>;
+	eval: (...args: unknown[]) => Promise<unknown>;
+};
+const getRefreshRedis = (): RefreshRedis => {
 	if (!refreshRedis)
 		refreshRedis = new IORedis({
 			host: process.env.REDIS_HOST || "redis",
@@ -178,7 +183,12 @@ export function withMicrosoftRefreshLock<T>(
 	refresh: () => Promise<T>,
 	persist: (value: T) => Promise<void>,
 	load?: () => Promise<T | null>,
-	options?: { distributed?: boolean },
+	options?: {
+		distributed?: boolean;
+		redis?: RefreshRedis;
+		leaseMs?: number;
+		renewEveryMs?: number;
+	},
 ): Promise<T> {
 	if (!options?.distributed) {
 		const existing = microsoftRefreshes.get(key);
@@ -197,9 +207,18 @@ export function withMicrosoftRefreshLock<T>(
 	}
 	const lockKey = `kurrier:microsoft-refresh-lock:${key}`;
 	const owner = crypto.randomUUID();
-	const redis = getRefreshRedis();
+	const redis = options.redis ?? getRefreshRedis();
+	const leaseMs = options.leaseMs ?? 30_000;
+	const renewEveryMs =
+		options.renewEveryMs ?? Math.max(1_000, Math.floor(leaseMs / 3));
 	return (async () => {
-		const acquired = await redis.set(lockKey, owner, "PX", 30_000, "NX");
+		const acquired = await redis.set(
+			lockKey,
+			owner,
+			"PX",
+			String(leaseMs),
+			"NX",
+		);
 		if (acquired !== "OK") {
 			if (!load) throw new Error("Microsoft refresh is already in progress");
 			for (let attempt = 0; attempt < 600; attempt++) {
@@ -209,13 +228,32 @@ export function withMicrosoftRefreshLock<T>(
 			}
 			throw new Error("Microsoft refresh lock timed out");
 		}
+		let leaseLost = false;
+		const renewal = setInterval(() => {
+			void redis
+				.eval(
+					"if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('pexpire', KEYS[1], ARGV[2]) else return 0 end",
+					1,
+					lockKey,
+					owner,
+					String(leaseMs),
+				)
+				.then((renewed) => {
+					if (renewed !== 1) leaseLost = true;
+				})
+				.catch(() => {
+					leaseLost = true;
+				});
+		}, renewEveryMs);
 		try {
 			const current = load ? await load() : null;
 			if (current) return current;
 			const value = await refresh();
+			if (leaseLost) throw new Error("Microsoft refresh lock lease lost");
 			await persist(value);
 			return value;
 		} finally {
+			clearInterval(renewal);
 			await redis.eval(
 				"if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
 				1,
