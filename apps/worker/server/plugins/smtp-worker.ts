@@ -17,7 +17,8 @@ import {
 	imapIdleSync,
 	startRealtimeForIdentity,
 	stopRealtimeForIdentity,
-	beginRealtimeShutdown
+	beginRealtimeShutdown,
+	recoverOfflineRealtime
 } from "../../lib/imap/imap-idle-sync";
 import { discoverMailboxes } from "../../lib/imap/backfill/discover/discover-mailboxes";
 import {startBackfillForIdentity} from "../../lib/imap/backfill/backfill-full";
@@ -197,6 +198,13 @@ export default defineNitroPlugin(async (nitroApp) => {
 					idleImapInstances,
 					imapInstances,
 				);
+			} else if (job.name === "imap:realtime-recovery") {
+				await recoverOfflineRealtime(
+					idleImapInstances,
+					imapInstances,
+				);
+				return { success: true };
+
 			}
 			return { success: true };
 		},
@@ -224,6 +232,19 @@ export default defineNitroPlugin(async (nitroApp) => {
 		},
 		{ override: true },
 
+	);
+
+	await scheduler.upsertJobScheduler(
+		"imap-realtime-recovery-scheduler",
+		{ every: 10 * 60 * 1000 },
+		"imap:realtime-recovery",
+		{},
+		{
+			removeOnComplete: true,
+			removeOnFail: true,
+			attempts: 1,
+		},
+		{ override: true },
 	);
 
 	await smtpQueue.add(
