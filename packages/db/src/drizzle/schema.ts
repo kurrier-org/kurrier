@@ -164,12 +164,13 @@ export const webPushDeliveries = pgTable(
 	"web_push_deliveries",
 	{
 		id: uuid("id").defaultRandom().primaryKey(),
-		messageId: uuid("message_id")
-			.references(() => messages.id, { onDelete: "cascade" })
-			.notNull(),
-		subscriptionId: uuid("subscription_id")
-			.references(() => webPushSubscriptions.id, { onDelete: "cascade" })
-			.notNull(),
+		messageId: uuid("message_id").references(() => messages.id, {
+			onDelete: "set null",
+		}),
+		subscriptionId: uuid("subscription_id").references(
+			() => webPushSubscriptions.id,
+			{ onDelete: "set null" },
+		),
 		status: text("status").notNull().default("queued"),
 		attempts: integer("attempts").notNull().default(0),
 		lastError: text("last_error"),

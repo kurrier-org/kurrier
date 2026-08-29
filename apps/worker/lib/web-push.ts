@@ -1,16 +1,44 @@
-import { db, webPushDeliveries, webPushSubscriptions } from "@db";
+import { lookup as dnsLookup } from "node:dns/promises";
+import https from "node:https";
+import { isUnsafeWebPushAddress, validateWebPushSubscription } from "@common";
+import { db, messages, webPushDeliveries, webPushSubscriptions } from "@db";
 import type { Queue } from "bullmq";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, lt, or, sql } from "drizzle-orm";
 import webpush from "web-push";
-
-export {
+import {
 	isStalePushEndpoint,
-	makePushPayload,
 	MAX_PUSH_ATTEMPTS,
+	makePushPayload,
 	pushJobId,
 } from "./web-push-payload";
 
+export { isStalePushEndpoint, MAX_PUSH_ATTEMPTS, makePushPayload, pushJobId };
+
 export type PushQueue = Pick<Queue, "add">;
+
+function createPinnedPushAgent() {
+	return new https.Agent({
+		lookup(hostname, _options, callback) {
+			void dnsLookup(hostname, { all: true }).then((addresses) => {
+				const safe = addresses.find(
+					({ address }) => !isUnsafeWebPushAddress(address),
+				);
+				if (
+					!safe ||
+					addresses.some(({ address }) => isUnsafeWebPushAddress(address))
+				) {
+					callback(
+						new Error(
+							"Web Push endpoint resolves to a private or reserved address",
+						),
+					);
+					return;
+				}
+				callback(null, safe.address, safe.family);
+			}, callback);
+		},
+	});
+}
 export async function enqueueNewMailPush(
 	messageId: string,
 	ownerId: string,
@@ -41,6 +69,36 @@ export async function enqueueNewMailPush(
 	}
 }
 
+export async function reconcileQueuedWebPushDeliveries(queue: PushQueue) {
+	const deliveries = await db
+		.select({
+			messageId: webPushDeliveries.messageId,
+			subscriptionId: webPushDeliveries.subscriptionId,
+		})
+		.from(webPushDeliveries)
+		.innerJoin(messages, eq(messages.id, webPushDeliveries.messageId))
+		.innerJoin(
+			webPushSubscriptions,
+			eq(webPushSubscriptions.id, webPushDeliveries.subscriptionId),
+		)
+		.where(
+			and(
+				eq(webPushDeliveries.status, "queued"),
+				lt(webPushDeliveries.attempts, MAX_PUSH_ATTEMPTS),
+			),
+		);
+	for (const delivery of deliveries) {
+		if (!delivery.messageId || !delivery.subscriptionId) continue;
+		await queue.add("web-push:deliver", delivery, {
+			jobId: pushJobId(delivery.messageId, delivery.subscriptionId),
+			attempts: MAX_PUSH_ATTEMPTS,
+			backoff: { type: "exponential", delay: 5000 },
+			removeOnComplete: true,
+			removeOnFail: false,
+		});
+	}
+}
+
 export async function deliverWebPush(
 	messageId: string,
 	subscriptionId: string,
@@ -52,9 +110,20 @@ export async function deliverWebPush(
 		process.env.VAPID_PRIVATE_KEY,
 	);
 	const [row] = await db
-		.select()
+		.select({
+			id: webPushSubscriptions.id,
+			endpoint: webPushSubscriptions.endpoint,
+			p256dh: webPushSubscriptions.p256dh,
+			auth: webPushSubscriptions.auth,
+		})
 		.from(webPushSubscriptions)
-		.where(eq(webPushSubscriptions.id, subscriptionId))
+		.innerJoin(messages, eq(messages.ownerId, webPushSubscriptions.userId))
+		.where(
+			and(
+				eq(webPushSubscriptions.id, subscriptionId),
+				eq(messages.id, messageId),
+			),
+		)
 		.limit(1);
 	if (!row) return;
 	const [delivery] = await db
@@ -63,19 +132,33 @@ export async function deliverWebPush(
 			status: "sending",
 			attempts: sql`${webPushDeliveries.attempts} + 1`,
 			updatedAt: new Date(),
+			leaseUntil: new Date(Date.now() + 5 * 60_000),
 		})
 		.where(
 			and(
 				eq(webPushDeliveries.messageId, messageId),
 				eq(webPushDeliveries.subscriptionId, subscriptionId),
+				lt(webPushDeliveries.attempts, MAX_PUSH_ATTEMPTS),
+				or(
+					inArray(webPushDeliveries.status, ["queued", "failed"]),
+					and(
+						eq(webPushDeliveries.status, "sending"),
+						lt(webPushDeliveries.leaseUntil, new Date()),
+					),
+				),
 			),
 		)
 		.returning({ attempts: webPushDeliveries.attempts });
 	if (!delivery) return;
 	try {
+		await validateWebPushSubscription({
+			endpoint: row.endpoint,
+			keys: { p256dh: row.p256dh, auth: row.auth },
+		});
 		await webpush.sendNotification(
 			{ endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } },
 			JSON.stringify(makePushPayload()),
+			{ agent: createPinnedPushAgent() },
 		);
 		await db
 			.update(webPushDeliveries)
@@ -84,6 +167,7 @@ export async function deliverWebPush(
 				and(
 					eq(webPushDeliveries.messageId, messageId),
 					eq(webPushDeliveries.subscriptionId, subscriptionId),
+					eq(webPushDeliveries.status, "sending"),
 				),
 			);
 	} catch (error: unknown) {
@@ -121,6 +205,7 @@ export async function deliverWebPush(
 				and(
 					eq(webPushDeliveries.messageId, messageId),
 					eq(webPushDeliveries.subscriptionId, subscriptionId),
+					eq(webPushDeliveries.status, "sending"),
 				),
 			);
 		throw error;
