@@ -42,6 +42,18 @@ test("classifies hexadecimal and expanded IPv4-mapped loopback addresses as unsa
 		assert.equal(isUnsafeWebPushAddress(address), true, address);
 });
 
+test("classifies IPv4 translation and compatible IPv6 addresses by embedded IPv4", () => {
+	for (const address of [
+		"64:ff9b::127.0.0.1",
+		"64:ff9b::10.0.0.1",
+		"64:ff9b:1::192.0.2.1",
+		"::127.0.0.1",
+		"0:0:0:0:0:0:192.0.2.1",
+	])
+		assert.equal(isUnsafeWebPushAddress(address), true, address);
+	assert.equal(isUnsafeWebPushAddress("64:ff9b::8.8.8.8"), false);
+});
+
 test("rejects non-HTTPS and private Web Push endpoints", async () => {
 	await assert.rejects(
 		validateWebPushSubscription(
@@ -98,6 +110,30 @@ test("rejects a hostname when any DNS answer is unsafe", async () => {
 				{ address: "8.8.8.8", family: 4 },
 				{ address: "::ffff:127.0.0.1", family: 6 },
 			],
+		),
+		/private|reserved/i,
+	);
+});
+
+test("classifies URL IPv6 literals without DNS lookup", async () => {
+	const resolve = async () => {
+		throw new Error("DNS lookup should not run for an IPv6 literal");
+	};
+	const valid = await validateWebPushSubscription(
+		{
+			endpoint: "https://[2001:4860:4860::8888]/push",
+			keys: { p256dh: "A".repeat(87), auth: "A".repeat(22) },
+		},
+		resolve,
+	);
+	assert.equal(valid.endpoint, "https://[2001:4860:4860::8888]/push");
+	await assert.rejects(
+		validateWebPushSubscription(
+			{
+				endpoint: "https://[::ffff:127.0.0.1]/push",
+				keys: { p256dh: "A".repeat(87), auth: "A".repeat(22) },
+			},
+			resolve,
 		),
 		/private|reserved/i,
 	);

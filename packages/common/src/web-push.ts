@@ -56,12 +56,14 @@ export function isUnsafeWebPushAddress(address: string) {
 		.concat(Array(8 - left.length - right.length).fill("0"), right)
 		.map((x) => parseInt(x, 16));
 	const value = words.reduce((n, word) => (n << 16n) | BigInt(word), 0n);
-	const mappedIPv4 = value >> 32n === 0xffffn;
-	if (mappedIPv4) {
-		const ipv4 = Number(value & 0xffffffffn);
-		return isUnsafeIPv4(ipv4);
-	}
 	const prefix = (bits: number) => value >> BigInt(128 - bits);
+	const embeddedIPv4 = Number(value & 0xffffffffn);
+	const mappedIPv4 = value >> 32n === 0xffffn;
+	const translatedIPv4 =
+		prefix(96) === 0x64ff9b0000000000000000n ||
+		prefix(48) === 0x64ff9b0001n ||
+		prefix(96) === 0n;
+	if (mappedIPv4 || translatedIPv4) return isUnsafeIPv4(embeddedIPv4);
 	return (
 		prefix(128) === 0n ||
 		prefix(128) === 1n ||
@@ -121,9 +123,11 @@ export async function validateWebPushSubscription<
 			input.userAgent.length > MAX_USER_AGENT_LENGTH)
 	)
 		throw new Error("Invalid Web Push user agent");
-	const addresses = isIP(endpoint.hostname)
-		? [{ address: endpoint.hostname, family: isIP(endpoint.hostname) }]
-		: await resolve(endpoint.hostname);
+	const hostname = endpoint.hostname.replace(/^\[|\]$/g, "");
+	const hostnameFamily = isIP(hostname);
+	const addresses = hostnameFamily
+		? [{ address: hostname, family: hostnameFamily }]
+		: await resolve(hostname);
 	if (
 		!addresses.length ||
 		addresses.some(({ address }) => isUnsafeWebPushAddress(address))

@@ -29,3 +29,51 @@ test("delivery attempt accounting increments and bounds retries", () => {
 	assert.deepEqual(nextPushAttempt(4), { attempts: 5, retryable: false });
 	assert.deepEqual(nextPushAttempt(5), { attempts: 6, retryable: false });
 });
+
+import { MAX_PUSH_ATTEMPTS } from "./web-push-payload";
+import { reconcileWebPushDeliveryJob } from "./web-push-reconcile";
+
+const delivery = { messageId: "message-1", subscriptionId: "subscription-1" };
+
+test("reconciliation retries a retained failed BullMQ job instead of adding a duplicate", async () => {
+	const calls: string[] = [];
+	const queue = {
+		getJob: async (jobId: string) => {
+			assert.equal(
+				jobId,
+				pushJobId(delivery.messageId, delivery.subscriptionId),
+			);
+			return {
+				getState: async () => "failed" as const,
+				retry: async (_state: "wait") => calls.push("retry:wait"),
+			};
+		},
+		add: async () => calls.push("add"),
+	};
+
+	await reconcileWebPushDeliveryJob(queue, delivery);
+
+	assert.deepEqual(calls, ["retry:wait"]);
+});
+
+test("reconciliation adds a missing job with the stable delivery id", async () => {
+	let options: Record<string, unknown> | undefined;
+	const queue = {
+		getJob: async () => undefined,
+		add: async (
+			_name: string,
+			_data: typeof delivery,
+			nextOptions: Record<string, unknown>,
+		) => {
+			options = nextOptions;
+		},
+	};
+
+	await reconcileWebPushDeliveryJob(queue, delivery);
+
+	assert.equal(
+		options?.jobId,
+		pushJobId(delivery.messageId, delivery.subscriptionId),
+	);
+	assert.equal(options?.attempts, MAX_PUSH_ATTEMPTS);
+});

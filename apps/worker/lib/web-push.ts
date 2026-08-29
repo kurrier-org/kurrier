@@ -3,7 +3,6 @@ import { lookup as dnsLookup } from "node:dns/promises";
 import https from "node:https";
 import { isUnsafeWebPushAddress, validateWebPushSubscription } from "@common";
 import { db, messages, webPushDeliveries, webPushSubscriptions } from "@db";
-import type { Queue } from "bullmq";
 import { and, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import webpush from "web-push";
 import {
@@ -12,10 +11,15 @@ import {
 	makePushPayload,
 	pushJobId,
 } from "./web-push-payload";
+import {
+	type PushQueue,
+	reconcileWebPushDeliveryJob,
+} from "./web-push-reconcile";
 
 export { isStalePushEndpoint, MAX_PUSH_ATTEMPTS, makePushPayload, pushJobId };
 
-export type PushQueue = Pick<Queue, "add">;
+export { reconcileWebPushDeliveryJob };
+export type { PushQueue };
 
 function createPinnedPushAgent() {
 	return new https.Agent({
@@ -90,13 +94,7 @@ export async function reconcileQueuedWebPushDeliveries(queue: PushQueue) {
 		);
 	for (const delivery of deliveries) {
 		if (!delivery.messageId || !delivery.subscriptionId) continue;
-		await queue.add("web-push:deliver", delivery, {
-			jobId: pushJobId(delivery.messageId, delivery.subscriptionId),
-			attempts: MAX_PUSH_ATTEMPTS,
-			backoff: { type: "exponential", delay: 5000 },
-			removeOnComplete: true,
-			removeOnFail: false,
-		});
+		await reconcileWebPushDeliveryJob(queue, delivery);
 	}
 }
 
