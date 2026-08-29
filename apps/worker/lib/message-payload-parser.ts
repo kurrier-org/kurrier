@@ -14,12 +14,15 @@ import {
 } from "@db";
 import {
 	buildThreadingCandidates,
+	extractThreadingHeader,
 	fallbackMessageId,
+	resolveMessageId,
+	selectThreadParent,
 	generateSnippet,
 	upsertMailboxThreadItem,
 } from "@common";
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { getRedis } from "../lib/get-redis";
 import {s3} from "../lib/create-s3-client";
 import {PutObjectCommand} from "@aws-sdk/client-s3";
@@ -182,13 +185,15 @@ export async function createOrInitializeThread(
 						eq(mailboxes.identityId, mailbox.identityId),
 						inArray(messages.messageId, candidates),
 					),
-				)
-				.orderBy(desc(messages.date ?? sql`now()`));
+				);
 
 			if (parentMsgs.length) {
-				const chosen = inReplyTo
-					? parentMsgs.find((m) => m.messageId === inReplyTo)
-					: parentMsgs[0];
+				const selectedId = selectThreadParent(
+					inReplyTo,
+					refs,
+					parentMsgs.map((message) => message.messageId),
+				);
+				const chosen = parentMsgs.find((m) => m.messageId === selectedId);
 
 				if (chosen?.threadId) {
 					const [t] = await tx
@@ -262,9 +267,11 @@ export async function parseAndStoreEmail(
 
 	const parsed = await simpleParser(rawEmail);
 	const headers = parsed.headers as Map<string, any>;
-
-	const messageId =
-		parsed.messageId || String(headers.get("message-id") || "").trim() || fallbackMessageId(rawEmail);
+	const rawInReplyTo = extractThreadingHeader(rawEmail, "in-reply-to");
+	const rawReferences = extractThreadingHeader(rawEmail, "references");
+	const inReplyTo = rawInReplyTo ?? null;
+	const references = rawReferences ? [rawReferences] : [];
+	const messageId = resolveMessageId(rawEmail, parsed.messageId, String(headers.get("message-id") || ""));
 
 	/**
 	 * Important for IMAP replay / UIDVALIDITY recovery:
@@ -339,6 +346,8 @@ export async function parseAndStoreEmail(
 
 	const thread = await createOrInitializeThread({
 		...parsed,
+		inReplyTo,
+		references,
 		ownerId,
 		workspaceId,
 		mailboxId,
@@ -346,6 +355,9 @@ export async function parseAndStoreEmail(
 
 	const decoratedParsed = {
 		...parsed,
+		messageId,
+		inReplyTo,
+		references: references.length ? references : null,
 		mailboxId,
 		workspaceId,
 		threadId: thread.id,
@@ -353,11 +365,6 @@ export async function parseAndStoreEmail(
 		headersJson: Object.fromEntries(parsed.headers as Map<string, any>),
 		hasAttachments: (parsed.attachments?.length ?? 0) > 0,
 		rawStorageKey,
-		references: Array.isArray(parsed.references)
-			? parsed.references
-			: parsed.references
-				? [parsed.references]
-				: null,
 		seen: false,
 		answered: false,
 		flagged: false,
