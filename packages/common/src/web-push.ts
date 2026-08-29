@@ -9,6 +9,25 @@ const BASE64URL = /^[A-Za-z0-9_-]+$/;
 type Address = { address: string; family: number };
 type Resolver = (hostname: string) => Promise<Address[]>;
 
+function isUnsafeIPv4(n: number) {
+	return [
+		[n, 0, 0xff000000],
+		[n, 0x0a000000, 0xff000000],
+		[n, 0x64400000, 0xffc00000],
+		[n, 0x7f000000, 0xff000000],
+		[n, 0xa9fe0000, 0xffff0000],
+		[n, 0xac100000, 0xfff00000],
+		[n, 0xc0000000, 0xffffff00],
+		[n, 0xc0000200, 0xffffff00],
+		[n, 0xc0586300, 0xffffff00],
+		[n, 0xc6120000, 0xffff0000],
+		[n, 0xc6336400, 0xffffff00],
+		[n, 0xcb007100, 0xffffff00],
+		[n, 0xe0000000, 0xe0000000],
+		[n, 0xf0000000, 0xf0000000],
+	].some(([value, base, mask]) => (value & mask) >>> 0 === base >>> 0);
+}
+
 export function isUnsafeWebPushAddress(address: string) {
 	const normalized = address.toLowerCase().replace(/\.+$/, "");
 	if (normalized === "localhost" || normalized.endsWith(".localhost"))
@@ -17,35 +36,31 @@ export function isUnsafeWebPushAddress(address: string) {
 		const n = normalized
 			.split(".")
 			.reduce((value, part) => value * 256 + Number(part), 0);
-		return [
-			[n, 0, 0xff000000],
-			[n, 0x0a000000, 0xff000000],
-			[n, 0x64400000, 0xffc00000],
-			[n, 0x7f000000, 0xff000000],
-			[n, 0xa9fe0000, 0xffff0000],
-			[n, 0xac100000, 0xfff00000],
-			[n, 0xc0000000, 0xffffff00],
-			[n, 0xc0000200, 0xffffff00],
-			[n, 0xc0586300, 0xffffff00],
-			[n, 0xc6120000, 0xffff0000],
-			[n, 0xc6336400, 0xffffff00],
-			[n, 0xcb007100, 0xffffff00],
-			[n, 0xe0000000, 0xe0000000],
-			[n, 0xf0000000, 0xf0000000],
-		].some(([value, base, mask]) => (value & mask) >>> 0 === base >>> 0);
+		return isUnsafeIPv4(n);
 	}
 	if (isIP(normalized) !== 6) return false;
-	const ip = normalized.startsWith("::ffff:")
-		? normalized.slice(7)
-		: normalized;
-	if (isIP(ip) === 4) return isUnsafeWebPushAddress(ip);
-	const groups = ip.split("::");
-	const left = groups[0] ? groups[0].split(":").filter(Boolean) : [];
-	const right = groups[1] ? groups[1].split(":").filter(Boolean) : [];
+	const groups = normalized.split("::");
+	const expandIPv4 = (parts: string[]) => {
+		const last = parts.at(-1);
+		if (!last?.includes(".")) return parts;
+		const octets = last.split(".").map(Number);
+		return [
+			...parts.slice(0, -1),
+			((octets[0] << 8) | octets[1]).toString(16),
+			((octets[2] << 8) | octets[3]).toString(16),
+		];
+	};
+	const left = expandIPv4(groups[0] ? groups[0].split(":") : []);
+	const right = expandIPv4(groups[1] ? groups[1].split(":") : []);
 	const words = left
 		.concat(Array(8 - left.length - right.length).fill("0"), right)
 		.map((x) => parseInt(x, 16));
 	const value = words.reduce((n, word) => (n << 16n) | BigInt(word), 0n);
+	const mappedIPv4 = value >> 32n === 0xffffn;
+	if (mappedIPv4) {
+		const ipv4 = Number(value & 0xffffffffn);
+		return isUnsafeIPv4(ipv4);
+	}
 	const prefix = (bits: number) => value >> BigInt(128 - bits);
 	return (
 		prefix(128) === 0n ||

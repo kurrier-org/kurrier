@@ -37,6 +37,11 @@ test("classifies IPv4, IPv6, mapped, and reserved addresses as unsafe", () => {
 		assert.equal(isUnsafeWebPushAddress(address), false, address);
 });
 
+test("classifies hexadecimal and expanded IPv4-mapped loopback addresses as unsafe", () => {
+	for (const address of ["::ffff:7f00:1", "0:0:0:0:0:ffff:7f00:1"])
+		assert.equal(isUnsafeWebPushAddress(address), true, address);
+});
+
 test("rejects non-HTTPS and private Web Push endpoints", async () => {
 	await assert.rejects(
 		validateWebPushSubscription(
