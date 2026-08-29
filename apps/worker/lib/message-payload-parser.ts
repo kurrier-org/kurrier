@@ -11,6 +11,8 @@ import {
 	messageAttachments,
 	messages,
 	threads,
+	webPushDeliveries,
+	webPushSubscriptions,
 	workspaces,
 } from "@db";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
@@ -384,13 +386,26 @@ export async function parseAndStoreEmail(
 		MessageInsertSchema.parse(decoratedParsed),
 	);
 
-	const [message] = await db
-		.insert(messages)
-		.values(messagePayload as MessageCreate)
-		.onConflictDoNothing({
-			target: [messages.mailboxId, messages.messageId],
-		})
-		.returning();
+	const [message, pushSubscriptions] = await db.transaction(async (tx) => {
+		const [inserted] = await tx
+			.insert(messages)
+			.values(messagePayload as MessageCreate)
+			.onConflictDoNothing({
+				target: [messages.mailboxId, messages.messageId],
+			})
+			.returning();
+		if (!inserted) return [inserted, []] as const;
+		const subscriptions = await tx
+			.select({ id: webPushSubscriptions.id })
+			.from(webPushSubscriptions)
+			.where(eq(webPushSubscriptions.userId, ownerId));
+		if (subscriptions.length) {
+			await tx.insert(webPushDeliveries).values(
+				subscriptions.map(({ id }) => ({ messageId: inserted.id, subscriptionId: id })),
+			);
+		}
+		return [inserted, subscriptions] as const;
+	});
 
 	/**
 	 * Another worker/replay may have inserted the message between our
@@ -413,7 +428,15 @@ export async function parseAndStoreEmail(
 	}
 
 	const { webPushQueue } = await getRedis();
-	await enqueueNewMailPush(message.id, ownerId, webPushQueue);
+	for (const subscription of pushSubscriptions) {
+		await webPushQueue.add("web-push:deliver", { messageId: message.id, subscriptionId: subscription.id }, {
+			jobId: `web-push:${message.id}:${subscription.id}`,
+			attempts: 5,
+			backoff: { type: "exponential", delay: 5000 },
+			removeOnComplete: true,
+			removeOnFail: false,
+		});
+	}
 
 	await db
 		.update(workspaces)

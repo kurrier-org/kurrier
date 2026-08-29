@@ -10,43 +10,55 @@ type Address = { address: string; family: number };
 type Resolver = (hostname: string) => Promise<Address[]>;
 
 export function isUnsafeWebPushAddress(address: string) {
-	const normalized = address.toLowerCase();
+	const normalized = address.toLowerCase().replace(/\.+$/, "");
 	if (normalized === "localhost" || normalized.endsWith(".localhost"))
 		return true;
 	if (isIP(normalized) === 4) {
-		const [a, b] = normalized.split(".").map(Number);
-		return (
-			a === 0 ||
-			a === 10 ||
-			a === 127 ||
-			(a === 169 && b === 254) ||
-			(a === 172 && b >= 16 && b <= 31) ||
-			(a === 192 && b === 0) ||
-			(a === 192 && b === 168) ||
-			(a === 192 && b === 2) ||
-			(a === 198 && b === 51) ||
-			(a === 203 && b === 0) ||
-			(a === 198 && (b === 18 || b === 19)) ||
-			(a === 100 && b >= 64 && b <= 127) ||
-			a >= 224
-		);
+		const n = normalized
+			.split(".")
+			.reduce((value, part) => value * 256 + Number(part), 0);
+		return [
+			[n, 0, 0xff000000],
+			[n, 0x0a000000, 0xff000000],
+			[n, 0x64400000, 0xffc00000],
+			[n, 0x7f000000, 0xff000000],
+			[n, 0xa9fe0000, 0xffff0000],
+			[n, 0xac100000, 0xfff00000],
+			[n, 0xc0000000, 0xffffff00],
+			[n, 0xc0000200, 0xffffff00],
+			[n, 0xc0586300, 0xffffff00],
+			[n, 0xc6120000, 0xffff0000],
+			[n, 0xc6336400, 0xffffff00],
+			[n, 0xcb007100, 0xffffff00],
+			[n, 0xe0000000, 0xe0000000],
+			[n, 0xf0000000, 0xf0000000],
+		].some(([value, base, mask]) => (value & mask) >>> 0 === base >>> 0);
 	}
-	if (isIP(normalized) === 6) {
-		if (normalized.startsWith("::ffff:")) {
-			return isPrivateOrReserved(normalized.slice("::ffff:".length));
-		}
-		return (
-			normalized === "::" ||
-			normalized === "::1" ||
-			normalized.startsWith("fc") ||
-			normalized.startsWith("fd") ||
-			normalized.startsWith("fe8") ||
-			normalized.startsWith("fe9") ||
-			normalized.startsWith("fea") ||
-			normalized.startsWith("feb")
-		);
-	}
-	return false;
+	if (isIP(normalized) !== 6) return false;
+	const ip = normalized.startsWith("::ffff:")
+		? normalized.slice(7)
+		: normalized;
+	if (isIP(ip) === 4) return isUnsafeWebPushAddress(ip);
+	const groups = ip.split("::");
+	const left = groups[0] ? groups[0].split(":").filter(Boolean) : [];
+	const right = groups[1] ? groups[1].split(":").filter(Boolean) : [];
+	const words = left
+		.concat(Array(8 - left.length - right.length).fill("0"), right)
+		.map((x) => parseInt(x, 16));
+	const value = words.reduce((n, word) => (n << 16n) | BigInt(word), 0n);
+	const prefix = (bits: number) => value >> BigInt(128 - bits);
+	return (
+		prefix(128) === 0n ||
+		prefix(128) === 1n ||
+		prefix(8) === 0xffn ||
+		prefix(7) === 0x7en ||
+		prefix(10) === 0x3fan ||
+		prefix(32) === 0x20010db8n ||
+		prefix(28) === 0x2001001n ||
+		prefix(64) === 0x100000000000000n ||
+		prefix(32) === 0x20010000n ||
+		prefix(16) === 0x2002n
+	);
 }
 
 export async function validateWebPushSubscription<

@@ -1,9 +1,10 @@
+import { randomUUID } from "node:crypto";
 import { lookup as dnsLookup } from "node:dns/promises";
 import https from "node:https";
 import { isUnsafeWebPushAddress, validateWebPushSubscription } from "@common";
 import { db, messages, webPushDeliveries, webPushSubscriptions } from "@db";
 import type { Queue } from "bullmq";
-import { and, eq, inArray, lt, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import webpush from "web-push";
 import {
 	isStalePushEndpoint,
@@ -83,7 +84,7 @@ export async function reconcileQueuedWebPushDeliveries(queue: PushQueue) {
 		)
 		.where(
 			and(
-				eq(webPushDeliveries.status, "queued"),
+				inArray(webPushDeliveries.status, ["queued", "failed"]),
 				lt(webPushDeliveries.attempts, MAX_PUSH_ATTEMPTS),
 			),
 		);
@@ -133,6 +134,7 @@ export async function deliverWebPush(
 			attempts: sql`${webPushDeliveries.attempts} + 1`,
 			updatedAt: new Date(),
 			leaseUntil: new Date(Date.now() + 5 * 60_000),
+			leaseToken: randomUUID(),
 		})
 		.where(
 			and(
@@ -143,13 +145,20 @@ export async function deliverWebPush(
 					inArray(webPushDeliveries.status, ["queued", "failed"]),
 					and(
 						eq(webPushDeliveries.status, "sending"),
-						lt(webPushDeliveries.leaseUntil, new Date()),
+						or(
+							isNull(webPushDeliveries.leaseUntil),
+							lt(webPushDeliveries.leaseUntil, new Date()),
+						),
 					),
 				),
 			),
 		)
-		.returning({ attempts: webPushDeliveries.attempts });
-	if (!delivery) return;
+		.returning({
+			attempts: webPushDeliveries.attempts,
+			leaseToken: webPushDeliveries.leaseToken,
+		});
+	if (!delivery?.leaseToken) return;
+	const leaseToken = delivery.leaseToken;
 	try {
 		await validateWebPushSubscription({
 			endpoint: row.endpoint,
@@ -168,6 +177,7 @@ export async function deliverWebPush(
 					eq(webPushDeliveries.messageId, messageId),
 					eq(webPushDeliveries.subscriptionId, subscriptionId),
 					eq(webPushDeliveries.status, "sending"),
+					eq(webPushDeliveries.leaseToken, leaseToken),
 				),
 			);
 	} catch (error: unknown) {
@@ -176,7 +186,7 @@ export async function deliverWebPush(
 				? Number((error as { statusCode?: number }).statusCode)
 				: 0;
 		if (isStalePushEndpoint(statusCode)) {
-			await db
+			const staleDelivery = await db
 				.update(webPushDeliveries)
 				.set({
 					status: "stale",
@@ -187,8 +197,11 @@ export async function deliverWebPush(
 					and(
 						eq(webPushDeliveries.messageId, messageId),
 						eq(webPushDeliveries.subscriptionId, subscriptionId),
+						eq(webPushDeliveries.leaseToken, leaseToken),
 					),
-				);
+				)
+				.returning({ id: webPushDeliveries.id });
+			if (!staleDelivery.length) return;
 			await db
 				.delete(webPushSubscriptions)
 				.where(eq(webPushSubscriptions.id, subscriptionId));
@@ -206,6 +219,7 @@ export async function deliverWebPush(
 					eq(webPushDeliveries.messageId, messageId),
 					eq(webPushDeliveries.subscriptionId, subscriptionId),
 					eq(webPushDeliveries.status, "sending"),
+					eq(webPushDeliveries.leaseToken, leaseToken),
 				),
 			);
 		throw error;

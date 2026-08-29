@@ -174,6 +174,8 @@ export const webPushDeliveries = pgTable(
 		status: text("status").notNull().default("queued"),
 		attempts: integer("attempts").notNull().default(0),
 		lastError: text("last_error"),
+		leaseUntil: timestamp("lease_until", { withTimezone: true }),
+		leaseToken: text("lease_token"),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),
