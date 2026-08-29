@@ -1,14 +1,14 @@
-import test from "node:test";
 import assert from "node:assert/strict";
+import test from "node:test";
 import {
-	MICROSOFT_MAIL_SCOPES,
 	buildMicrosoftAuthorizationUrl,
 	createMicrosoftOAuthState,
 	exchangeMicrosoftAuthorizationCode,
-	refreshMicrosoftAccessToken,
-	xoauth2String,
 	isMicrosoftTokenExpired,
+	MICROSOFT_MAIL_SCOPES,
+	refreshMicrosoftAccessToken,
 	validateMicrosoftOAuthState,
+	xoauth2String,
 } from "./microsoft-oauth";
 
 test("builds Microsoft authorization URL with PKCE and state", () => {

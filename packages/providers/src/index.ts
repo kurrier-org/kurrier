@@ -1,14 +1,13 @@
 import type { Providers } from "@schema";
-import { Mailer, StorageProvider } from "./core";
-import { SmtpMailer } from "./mail/smtp";
-import { SesMailer } from "./mail/ses";
-import { SendgridMailer } from "./mail/sendgrid";
+import type { Mailer, StorageProvider } from "./core";
+import { GoogleMailer } from "./mail/google";
+import { JmapMailer } from "./mail/jmap";
 import { MailgunMailer } from "./mail/mailgun";
 import { PostmarkMailer } from "./mail/postmark";
-import { GoogleMailer } from "./mail/google";
-
+import { SendgridMailer } from "./mail/sendgrid";
+import { SesMailer } from "./mail/ses";
+import { SmtpMailer } from "./mail/smtp";
 import { S3Store } from "./store/s3";
-import { JmapMailer } from "./mail/jmap";
 
 export function createMailer(provider: Providers, config: unknown): Mailer {
 	switch (provider) {

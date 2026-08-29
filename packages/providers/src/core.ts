@@ -1,5 +1,5 @@
+import type { IdentityStatus } from "@schema";
 import { z } from "zod";
-import { IdentityStatus } from "@schema";
 
 export type VerifyResult = {
 	ok: boolean;
