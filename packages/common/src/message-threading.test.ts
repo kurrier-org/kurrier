@@ -20,12 +20,21 @@ test("builds ordered unique candidates from reply and references", () => {
 
 test("rejects malformed message ids instead of joining unrelated mail", () => {
 	assert.equal(normalizeMessageId("not-a-message-id"), null);
+	assert.equal(normalizeMessageId("junk <victim@example.com> trailing"), null);
 	assert.deepEqual(
 		buildThreadingCandidates(" <reply@example.test> ", [
 			"broken",
 			"<root@example.test>",
+			"junk <victim@example.com> trailing",
 		]),
 		["<reply@example.test>", "<root@example.test>"],
+	);
+});
+
+test("rejects malformed References values containing embedded message ids", () => {
+	assert.deepEqual(
+		buildThreadingCandidates(null, ["prefix <victim@example.com> suffix"]),
+		[],
 	);
 });
 

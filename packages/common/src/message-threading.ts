@@ -1,20 +1,19 @@
 import { createHash } from "node:crypto";
 
-const MESSAGE_ID_PATTERN = /<[^<>\s@]+@[^<>\s@]+>/g;
+const MESSAGE_ID_PATTERN = /^<[^<>\s@]+@[^<>\s@]+>$/;
 
 export function normalizeMessageId(
 	value: string | null | undefined,
 ): string | null {
 	const normalized = value?.trim();
 	if (!normalized) return null;
-	const matches = normalized.match(MESSAGE_ID_PATTERN);
-	return matches?.length === 1 && matches[0] === normalized ? matches[0] : null;
+	return MESSAGE_ID_PATTERN.test(normalized) ? normalized : null;
 }
 
 function extractMessageIds(value: string | null | undefined): string[] {
-	if (!value) return [];
-	const matches = value.match(MESSAGE_ID_PATTERN);
-	return matches ?? [];
+	if (!value?.trim()) return [];
+	const ids = value.trim().split(/\s+/).map(normalizeMessageId);
+	return ids.every((id): id is string => id !== null) ? ids : [];
 }
 
 export function buildThreadingCandidates(
