@@ -23,18 +23,23 @@ function getClient() {
 	}
 	return redis;
 }
+export function createMicrosoftOAuthTransactionRecord(
+	input: MicrosoftOAuthTransaction,
+) {
+	return input;
+}
+
 export async function createMicrosoftOAuthTransaction(
-	input: Omit<MicrosoftOAuthTransaction, "state">,
+	input: MicrosoftOAuthTransaction,
 ) {
 	const id = crypto.randomBytes(32).toString("base64url");
-	const state = crypto.randomBytes(32).toString("base64url");
 	await getClient().set(
 		`oauth:microsoft:${id}`,
-		JSON.stringify({ ...input, state }),
+		JSON.stringify(createMicrosoftOAuthTransactionRecord(input)),
 		"EX",
 		600,
 	);
-	return { id, state };
+	return { id, state: input.state };
 }
 export async function consumeMicrosoftOAuthTransaction(id: string) {
 	const raw = await getClient().getdel(`oauth:microsoft:${id}`);

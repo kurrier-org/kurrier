@@ -32,6 +32,7 @@ export async function GET() {
 		userId: user.id,
 		workspaceId,
 		publicId,
+		state,
 		codeVerifier,
 		nonce,
 	});
