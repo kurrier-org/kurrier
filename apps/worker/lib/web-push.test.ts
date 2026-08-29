@@ -31,7 +31,10 @@ test("delivery attempt accounting increments and bounds retries", () => {
 });
 
 import { MAX_PUSH_ATTEMPTS } from "./web-push-payload";
-import { reconcileWebPushDeliveryJob } from "./web-push-reconcile";
+import {
+	isExpiredPushLease,
+	reconcileWebPushDeliveryJob,
+} from "./web-push-reconcile";
 
 const delivery = { messageId: "message-1", subscriptionId: "subscription-1" };
 
@@ -76,4 +79,45 @@ test("reconciliation adds a missing job with the stable delivery id", async () =
 		pushJobId(delivery.messageId, delivery.subscriptionId),
 	);
 	assert.equal(options?.attempts, MAX_PUSH_ATTEMPTS);
+});
+
+test("sending deliveries are reclaimable when their lease is expired or missing", () => {
+	const now = new Date("2026-01-01T00:00:00.000Z");
+
+	assert.equal(isExpiredPushLease(null, now), true);
+	assert.equal(
+		isExpiredPushLease(new Date("2025-12-31T23:59:59.999Z"), now),
+		true,
+	);
+});
+
+test("sending deliveries with a current lease are not reclaimable", () => {
+	const now = new Date("2026-01-01T00:00:00.000Z");
+
+	assert.equal(
+		isExpiredPushLease(new Date("2026-01-01T00:00:00.001Z"), now),
+		false,
+	);
+});
+
+test("concurrent reconciliation tolerates a failed job already revived", async () => {
+	let state: "failed" | "waiting" = "failed";
+	const queue = {
+		getJob: async () => ({
+			getState: async () => state,
+			retry: async (_retryState: "wait") => {
+				if (state !== "failed") {
+					throw new Error("job is not in the failed state");
+				}
+				state = "waiting";
+			},
+		}),
+		add: async () => assert.fail("a retained job should not be duplicated"),
+	};
+
+	await Promise.all([
+		reconcileWebPushDeliveryJob(queue, delivery),
+		reconcileWebPushDeliveryJob(queue, delivery),
+	]);
+	assert.equal(state, "waiting");
 });

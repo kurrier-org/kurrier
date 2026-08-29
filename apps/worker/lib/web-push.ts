@@ -75,6 +75,26 @@ export async function enqueueNewMailPush(
 }
 
 export async function reconcileQueuedWebPushDeliveries(queue: PushQueue) {
+	const now = new Date();
+	await db
+		.update(webPushDeliveries)
+		.set({
+			status: "queued",
+			leaseUntil: null,
+			leaseToken: null,
+			updatedAt: now,
+		})
+		.where(
+			and(
+				eq(webPushDeliveries.status, "sending"),
+				lt(webPushDeliveries.attempts, MAX_PUSH_ATTEMPTS),
+				or(
+					isNull(webPushDeliveries.leaseUntil),
+					lt(webPushDeliveries.leaseUntil, now),
+				),
+			),
+		);
+
 	const deliveries = await db
 		.select({
 			messageId: webPushDeliveries.messageId,
