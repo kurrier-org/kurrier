@@ -1,0 +1,8 @@
+CREATE TABLE "web_push_subscriptions" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, "user_id" uuid NOT NULL REFERENCES "auth"."users"("id") ON DELETE CASCADE, "endpoint" text NOT NULL, "p256dh" text NOT NULL, "auth" text NOT NULL, "user_agent" text, "created_at" timestamptz DEFAULT now() NOT NULL, "updated_at" timestamptz DEFAULT now() NOT NULL);--> statement-breakpoint
+CREATE UNIQUE INDEX "ux_web_push_subscriptions_user_endpoint" ON "web_push_subscriptions" ("user_id", "endpoint");--> statement-breakpoint
+CREATE INDEX "ix_web_push_subscriptions_user" ON "web_push_subscriptions" ("user_id");--> statement-breakpoint
+ALTER TABLE "web_push_subscriptions" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE POLICY "web_push_subscriptions_owner" ON "web_push_subscriptions" FOR ALL TO "kurrier" USING ("user_id" = nullif(current_setting('request.jwt.claim.sub', true), '')::uuid) WITH CHECK ("user_id" = nullif(current_setting('request.jwt.claim.sub', true), '')::uuid);--> statement-breakpoint
+CREATE TABLE "web_push_deliveries" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, "message_id" uuid NOT NULL REFERENCES "messages"("id") ON DELETE CASCADE, "subscription_id" uuid NOT NULL REFERENCES "web_push_subscriptions"("id") ON DELETE CASCADE, "status" text DEFAULT 'queued' NOT NULL, "attempts" integer DEFAULT 0 NOT NULL, "last_error" text, "created_at" timestamptz DEFAULT now() NOT NULL, "updated_at" timestamptz DEFAULT now() NOT NULL);--> statement-breakpoint
+CREATE UNIQUE INDEX "ux_web_push_deliveries_message_subscription" ON "web_push_deliveries" ("message_id", "subscription_id");--> statement-breakpoint
+CREATE INDEX "ix_web_push_deliveries_status" ON "web_push_deliveries" ("status");

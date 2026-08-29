@@ -127,6 +127,68 @@ export const JmapPresetEnum = pgEnum(
 );
 
 
+export const webPushSubscriptions = pgTable(
+	"web_push_subscriptions",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		userId: uuid("user_id")
+			.references(() => users.id, { onDelete: "cascade" })
+			.notNull(),
+		endpoint: text("endpoint").notNull(),
+		p256dh: text("p256dh").notNull(),
+		auth: text("auth").notNull(),
+		userAgent: text("user_agent"),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		uniqueIndex("ux_web_push_subscriptions_user_endpoint").on(
+			t.userId,
+			t.endpoint,
+		),
+		index("ix_web_push_subscriptions_user").on(t.userId),
+		pgPolicy("web_push_subscriptions_owner", {
+			for: "all",
+			to: "kurrier",
+			using: sql`${t.userId} = nullif(current_setting('request.jwt.claim.sub', true), '')::uuid`,
+			withCheck: sql`${t.userId} = nullif(current_setting('request.jwt.claim.sub', true), '')::uuid`,
+		}),
+	],
+).enableRLS();
+
+export const webPushDeliveries = pgTable(
+	"web_push_deliveries",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		messageId: uuid("message_id")
+			.references(() => messages.id, { onDelete: "cascade" })
+			.notNull(),
+		subscriptionId: uuid("subscription_id")
+			.references(() => webPushSubscriptions.id, { onDelete: "cascade" })
+			.notNull(),
+		status: text("status").notNull().default("queued"),
+		attempts: integer("attempts").notNull().default(0),
+		lastError: text("last_error"),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		uniqueIndex("ux_web_push_deliveries_message_subscription").on(
+			t.messageId,
+			t.subscriptionId,
+		),
+		index("ix_web_push_deliveries_status").on(t.status),
+	],
+);
+
 export const workspaces = pgTable(
 	"workspaces",
 	{
