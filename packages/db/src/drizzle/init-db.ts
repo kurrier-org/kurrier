@@ -4,12 +4,11 @@ import {
 } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { getServerEnv } from "@schema";
-import * as schema from "./schema";
+import type * as schema from "./schema";
 
 type Database = PostgresJsDatabase<typeof schema>;
 
 declare global {
-	// Augment Node globalThis so we can persist clients across hot reloads in dev
 	var _db: Database | undefined;
 	var _db_rls: Database | undefined;
 }
@@ -22,9 +21,7 @@ export const createDb = (): Database => {
 			prepare: false,
 		});
 
-		global._db = drizzle(client, {
-			schema,
-		});
+		global._db = drizzle(client) as Database;
 	}
 
 	return global._db;
@@ -38,9 +35,7 @@ export const createDbRls = (): Database => {
 			prepare: false,
 		});
 
-		global._db_rls = drizzle(client, {
-			schema,
-		});
+		global._db_rls = drizzle(client) as Database;
 	}
 
 	return global._db_rls;
