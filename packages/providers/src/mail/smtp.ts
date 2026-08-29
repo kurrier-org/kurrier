@@ -27,10 +27,10 @@ export class SmtpMailer implements Mailer {
 				host: cfg.imap.host,
 				port: cfg.imap.port,
 				secure: cfg.imap.secure,
-				auth: {
-					user: cfg.imap.user,
-					pass: cfg.imap.pass,
-				},
+				auth:
+					cfg.imap.authMethod === "xoauth2"
+						? { user: cfg.imap.user, accessToken: cfg.imap.accessToken! }
+						: { user: cfg.imap.user, pass: cfg.imap.pass! },
 			})
 			: null;
 	}

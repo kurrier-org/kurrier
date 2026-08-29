@@ -18,10 +18,7 @@ export const initSmtpClient = async (
 			existing.removeAllListeners();
 			existing.close();
 		} catch (err) {
-			console.warn(
-				`[IMAP:${identityId}] Failed to close stale client`,
-				err,
-			);
+			console.warn(`[IMAP:${identityId}] Failed to close stale client`, err);
 		}
 	}
 
@@ -52,13 +49,18 @@ export const initSmtpClient = async (
 			host: credentials.IMAP_HOST,
 			port: Number(credentials.IMAP_PORT),
 			secure:
-				credentials.IMAP_SECURE === "true" ||
-				credentials.IMAP_SECURE === true,
+				credentials.IMAP_SECURE === "true" || credentials.IMAP_SECURE === true,
 
-			auth: {
-				user: credentials.IMAP_USERNAME,
-				pass: credentials.IMAP_PASSWORD,
-			},
+			auth:
+				credentials.IMAP_AUTH_METHOD === "xoauth2"
+					? {
+							user: credentials.IMAP_USERNAME,
+							accessToken: credentials.IMAP_ACCESS_TOKEN,
+						}
+					: {
+							user: credentials.IMAP_USERNAME,
+							pass: credentials.IMAP_PASSWORD,
+						},
 
 			/*
 			 * Keep this unchanged for now.
@@ -70,16 +72,10 @@ export const initSmtpClient = async (
 
 			logger: {
 				error(data: any) {
-					console.error(
-						`[IMAP:${identityId}]`,
-						data?.msg ?? data,
-					);
+					console.error(`[IMAP:${identityId}]`, data?.msg ?? data);
 				},
 				warn(data: any) {
-					console.warn(
-						`[IMAP:${identityId}]`,
-						data?.msg ?? data,
-					);
+					console.warn(`[IMAP:${identityId}]`, data?.msg ?? data);
 				},
 				info() {},
 				debug() {},
@@ -115,10 +111,7 @@ export const initSmtpClient = async (
 		try {
 			await client.connect();
 		} catch (err) {
-			console.error(
-				`[IMAP:${identityId}] connect() failed:`,
-				err,
-			);
+			console.error(`[IMAP:${identityId}] connect() failed:`, err);
 
 			if (imapInstances.get(identityId) === client) {
 				imapInstances.delete(identityId);

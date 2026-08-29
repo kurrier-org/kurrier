@@ -8,7 +8,7 @@ import { PostmarkMailer } from "./mail/postmark";
 import { GoogleMailer } from "./mail/google";
 
 import { S3Store } from "./store/s3";
-import {JmapMailer} from "./mail/jmap";
+import { JmapMailer } from "./mail/jmap";
 
 export function createMailer(provider: Providers, config: unknown): Mailer {
 	switch (provider) {
@@ -45,3 +45,5 @@ export function createStore(
 
 export * from "./core";
 export * from "./mail/google-client";
+
+export * from "./mail/microsoft-oauth";
