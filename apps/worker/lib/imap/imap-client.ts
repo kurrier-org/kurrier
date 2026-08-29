@@ -6,9 +6,7 @@ import {
 	updateSecretAdmin,
 } from "@db";
 import {
-	isMicrosoftTokenExpired,
-	refreshMicrosoftAccessToken,
-	withMicrosoftRefreshLock,
+	loadMicrosoftCredentials,
 } from "@providers";
 import { eq } from "drizzle-orm";
 import { ImapFlow } from "imapflow";
@@ -56,70 +54,26 @@ export const initSmtpClient = async (
 			? JSON.parse(secrets.vault.decrypted_secret)
 			: {};
 
-		if (
-			credentials.provider === "microsoft" &&
-			credentials.MICROSOFT_REFRESH_TOKEN &&
-			credentials.IMAP_TOKEN_EXPIRES_AT &&
-			isMicrosoftTokenExpired(new Date(credentials.IMAP_TOKEN_EXPIRES_AT))
-		) {
-			const refreshed = await withMicrosoftRefreshLock(
-				String(secrets.metaId),
-				() =>
-					refreshMicrosoftAccessToken({
-						clientId: String(credentials.MICROSOFT_CLIENT_ID),
-						refreshToken: String(credentials.MICROSOFT_REFRESH_TOKEN),
-						tenant: String(credentials.MICROSOFT_TENANT),
-					}),
-				async (next) => {
-					credentials = {
-						...credentials,
-						SMTP_ACCESS_TOKEN: next.accessToken,
-						IMAP_ACCESS_TOKEN: next.accessToken,
-						MICROSOFT_REFRESH_TOKEN:
-							next.refreshToken ?? credentials.MICROSOFT_REFRESH_TOKEN,
-						SMTP_TOKEN_EXPIRES_AT: next.expiresAt.toISOString(),
-						IMAP_TOKEN_EXPIRES_AT: next.expiresAt.toISOString(),
-					};
-					await updateSecretAdmin(String(secrets.metaId), {
-						value: JSON.stringify(credentials),
-					});
-				},
-				async () => {
-					const [latest] = await decryptAdminSecrets({
-						linkTable: smtpAccountSecrets,
-						foreignCol: smtpAccountSecrets.accountId,
-						secretIdCol: smtpAccountSecrets.secretId,
-						ownerId: identity.ownerId,
-						parentId: String(identity.smtpAccountId),
-					});
-					const values = latest?.vault?.decrypted_secret
-						? JSON.parse(latest.vault.decrypted_secret)
-						: null;
-					if (
-						!values?.IMAP_ACCESS_TOKEN ||
-						!values.IMAP_TOKEN_EXPIRES_AT ||
-						isMicrosoftTokenExpired(new Date(values.IMAP_TOKEN_EXPIRES_AT))
-					)
-						return null;
-					return {
-						accessToken: String(values.IMAP_ACCESS_TOKEN),
-						refreshToken: String(values.MICROSOFT_REFRESH_TOKEN),
-						expiresAt: new Date(values.IMAP_TOKEN_EXPIRES_AT),
-						tokenType: "Bearer",
-					};
-				},
-				{ distributed: true },
-			);
-			credentials = {
-				...credentials,
-				SMTP_ACCESS_TOKEN: refreshed.accessToken,
-				IMAP_ACCESS_TOKEN: refreshed.accessToken,
-				MICROSOFT_REFRESH_TOKEN:
-					refreshed.refreshToken ?? credentials.MICROSOFT_REFRESH_TOKEN,
-				SMTP_TOKEN_EXPIRES_AT: refreshed.expiresAt.toISOString(),
-				IMAP_TOKEN_EXPIRES_AT: refreshed.expiresAt.toISOString(),
-			};
-		}
+		credentials = await loadMicrosoftCredentials(credentials, {
+			key: String(secrets.metaId),
+			distributed: true,
+			persist: async (next) => {
+				await updateSecretAdmin(String(secrets.metaId), {
+					value: JSON.stringify(next),
+					expectedEncryptedValue: secrets.encryptedValue,
+				});
+			},
+			load: async () => {
+				const [latest] = await decryptAdminSecrets({
+					linkTable: smtpAccountSecrets,
+					foreignCol: smtpAccountSecrets.accountId,
+					secretIdCol: smtpAccountSecrets.secretId,
+					ownerId: identity.ownerId,
+					parentId: String(identity.smtpAccountId),
+				});
+				return latest?.vault?.decrypted_secret ? JSON.parse(latest.vault.decrypted_secret) : null;
+			},
+		});
 
 		const client = new ImapFlow({
 			host: credentials.IMAP_HOST,

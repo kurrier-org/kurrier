@@ -13,10 +13,8 @@ import {
 } from "@db";
 import {
 	createMailer,
-	isMicrosoftTokenExpired,
-	refreshMicrosoftAccessToken,
+	loadMicrosoftCredentials,
 	type VerifyResult,
-	withMicrosoftRefreshLock,
 } from "@providers";
 import { defaultImapQuota, type FormState, handleAction } from "@schema";
 import { eq } from "drizzle-orm";
@@ -97,68 +95,25 @@ export async function verifySMTPAccount(
 		const session = await currentSession();
 		const workspaceId = await getWorkspaceId();
 
-		if (
-			parsedVaultValues.provider === "microsoft" &&
-			parsedVaultValues.MICROSOFT_REFRESH_TOKEN &&
-			parsedVaultValues.SMTP_TOKEN_EXPIRES_AT &&
-			isMicrosoftTokenExpired(new Date(parsedVaultValues.SMTP_TOKEN_EXPIRES_AT))
-		) {
-			const refreshed = await withMicrosoftRefreshLock(
-				smtpSecret.metaId,
-				() =>
-					refreshMicrosoftAccessToken({
-						clientId: String(parsedVaultValues.MICROSOFT_CLIENT_ID),
-						refreshToken: String(parsedVaultValues.MICROSOFT_REFRESH_TOKEN),
-						tenant: String(parsedVaultValues.MICROSOFT_TENANT),
-					}),
-				async (next) => {
-					const nextValues = {
-						...parsedVaultValues,
-						SMTP_ACCESS_TOKEN: next.accessToken,
-						IMAP_ACCESS_TOKEN: next.accessToken,
-						MICROSOFT_REFRESH_TOKEN:
-							next.refreshToken ?? parsedVaultValues.MICROSOFT_REFRESH_TOKEN,
-						SMTP_TOKEN_EXPIRES_AT: next.expiresAt.toISOString(),
-						IMAP_TOKEN_EXPIRES_AT: next.expiresAt.toISOString(),
-					};
-					await updateSecret(session, workspaceId, smtpSecret.metaId, {
-						value: JSON.stringify(nextValues),
-					});
-					parsedVaultValues = nextValues;
-				},
-				async () => {
-					const [latest] = await fetchDecryptedSecrets({
-						linkTable: smtpAccountSecrets,
-						foreignCol: smtpAccountSecrets.accountId,
-						secretIdCol: smtpAccountSecrets.secretId,
-						parentId: smtpAccountId,
-					});
-					const values = latest?.parsedSecret;
-					if (
-						!values?.SMTP_ACCESS_TOKEN ||
-						!values.SMTP_TOKEN_EXPIRES_AT ||
-						isMicrosoftTokenExpired(new Date(values.SMTP_TOKEN_EXPIRES_AT))
-					)
-						return null;
-					return {
-						accessToken: String(values.SMTP_ACCESS_TOKEN),
-						refreshToken: String(values.MICROSOFT_REFRESH_TOKEN),
-						expiresAt: new Date(values.SMTP_TOKEN_EXPIRES_AT),
-						tokenType: "Bearer",
-					};
-				},
-				{ distributed: true },
-			);
-			parsedVaultValues = {
-				...parsedVaultValues,
-				SMTP_ACCESS_TOKEN: refreshed.accessToken,
-				IMAP_ACCESS_TOKEN: refreshed.accessToken,
-				MICROSOFT_REFRESH_TOKEN:
-					refreshed.refreshToken ?? parsedVaultValues.MICROSOFT_REFRESH_TOKEN,
-				SMTP_TOKEN_EXPIRES_AT: refreshed.expiresAt.toISOString(),
-				IMAP_TOKEN_EXPIRES_AT: refreshed.expiresAt.toISOString(),
-			};
-		}
+		parsedVaultValues = await loadMicrosoftCredentials(parsedVaultValues, {
+			key: smtpSecret.metaId,
+			distributed: true,
+			persist: async (next) => {
+				await updateSecret(session, workspaceId, smtpSecret.metaId, {
+					value: JSON.stringify(next),
+					expectedEncryptedValue: String(smtpSecret.encryptedValue),
+				});
+			},
+			load: async () => {
+				const [latest] = await fetchDecryptedSecrets({
+					linkTable: smtpAccountSecrets,
+					foreignCol: smtpAccountSecrets.accountId,
+					secretIdCol: smtpAccountSecrets.secretId,
+					parentId: smtpAccountId,
+				});
+				return latest?.parsedSecret ?? null;
+			},
+		});
 
 		const mailer = createMailer("smtp", parsedVaultValues);
 		const res = await mailer.verify(smtpAccountId);

@@ -170,7 +170,7 @@ export async function updateSecret(
 	session: string,
 	workspaceId: string,
 	id: string,
-	input: { value?: string; name?: string, description?: string | null; },
+	input: { value?: string; name?: string, description?: string | null; expectedEncryptedValue?: string },
 ) {
 	const db = await createDrizzleClientInstance(session, { workspaceId });
 	const { rls } = db;
@@ -194,9 +194,10 @@ export async function updateSecret(
 	if (Object.keys(patch).length === 0) return meta;
 
 	const rows = await rls((tx) =>
-		tx.update(secretsMeta).set(patch).where(eq(secretsMeta.id, id)).returning(),
+		tx.update(secretsMeta).set(patch).where(and(eq(secretsMeta.id, id), ...(input.expectedEncryptedValue ? [eq(secretsMeta.encryptedValue, input.expectedEncryptedValue)] : []))).returning(),
 	);
 
+	if (!rows[0]) throw new Error("Secret changed during Microsoft refresh");
 	return rows[0]!;
 }
 
@@ -218,7 +219,7 @@ export async function deleteSecret(
 
 export async function updateSecretAdmin(
 	id: string,
-	input: { value?: string; name?: string },
+	input: { value?: string; name?: string; expectedEncryptedValue?: string },
 ) {
 	const db = createDb();
 	const meta = await db
@@ -247,9 +248,10 @@ export async function updateSecretAdmin(
 	const rows = await db
 		.update(secretsMeta)
 		.set(patch)
-		.where(eq(secretsMeta.id, id))
+		.where(and(eq(secretsMeta.id, id), ...(input.expectedEncryptedValue ? [eq(secretsMeta.encryptedValue, input.expectedEncryptedValue)] : [])))
 		.returning();
 
+	if (!rows[0]) throw new Error("Secret changed during Microsoft refresh");
 	return rows[0]!;
 }
 

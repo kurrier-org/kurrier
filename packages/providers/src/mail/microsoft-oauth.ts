@@ -153,6 +153,97 @@ export function xoauth2String(username: string, accessToken: string) {
 export function isMicrosoftTokenExpired(expiresAt: Date, skewSeconds = 60) {
 	return expiresAt.getTime() <= Date.now() + skewSeconds * 1000;
 }
+export type MicrosoftCredentials = Record<string, unknown>;
+
+export async function loadMicrosoftCredentials(
+	credentials: MicrosoftCredentials,
+	options: {
+		key: string;
+		persist: (
+			value: MicrosoftCredentials,
+			fenceToken?: string,
+		) => Promise<void>;
+		load?: () => Promise<MicrosoftCredentials | null>;
+		distributed?: boolean;
+		redis?: RefreshRedis;
+		leaseMs?: number;
+		renewEveryMs?: number;
+		fetcher?: Fetcher;
+	},
+): Promise<MicrosoftCredentials> {
+	const expiries = [
+		credentials.SMTP_TOKEN_EXPIRES_AT,
+		credentials.IMAP_TOKEN_EXPIRES_AT,
+	].filter((value): value is string => typeof value === "string");
+	if (
+		credentials.provider !== "microsoft" ||
+		typeof credentials.MICROSOFT_REFRESH_TOKEN !== "string" ||
+		expiries.length === 0 ||
+		expiries.every((value) => !isMicrosoftTokenExpired(new Date(value)))
+	)
+		return credentials;
+
+	const refreshed = await withMicrosoftRefreshLock(
+		options.key,
+		() =>
+			refreshMicrosoftAccessToken(
+				{
+					clientId: String(credentials.MICROSOFT_CLIENT_ID),
+					clientSecret:
+						typeof credentials.MICROSOFT_CLIENT_SECRET === "string"
+							? credentials.MICROSOFT_CLIENT_SECRET
+							: undefined,
+					refreshToken: String(credentials.MICROSOFT_REFRESH_TOKEN),
+					tenant: String(credentials.MICROSOFT_TENANT ?? "common"),
+				},
+				options.fetcher,
+			),
+		async (next, fenceToken) =>
+			options.persist(
+				{
+					...credentials,
+					SMTP_ACCESS_TOKEN: next.accessToken,
+					IMAP_ACCESS_TOKEN: next.accessToken,
+					MICROSOFT_REFRESH_TOKEN:
+						next.refreshToken ?? credentials.MICROSOFT_REFRESH_TOKEN,
+					SMTP_TOKEN_EXPIRES_AT: next.expiresAt.toISOString(),
+					IMAP_TOKEN_EXPIRES_AT: next.expiresAt.toISOString(),
+				},
+				fenceToken,
+			),
+		options.load
+			? async () => {
+					const current = await options.load?.();
+					const accessToken = current?.SMTP_ACCESS_TOKEN ?? current?.IMAP_ACCESS_TOKEN;
+					const expiresAt = current?.SMTP_TOKEN_EXPIRES_AT ?? current?.IMAP_TOKEN_EXPIRES_AT;
+					if (!accessToken || !expiresAt || isMicrosoftTokenExpired(new Date(String(expiresAt))))
+						return null;
+					return {
+						accessToken: String(accessToken),
+						refreshToken: String(current.MICROSOFT_REFRESH_TOKEN),
+						expiresAt: new Date(String(expiresAt)),
+						tokenType: "Bearer",
+					};
+				}
+			: undefined,
+		{
+			distributed: options.distributed,
+			redis: options.redis,
+			leaseMs: options.leaseMs,
+			renewEveryMs: options.renewEveryMs,
+		},
+	);
+	return {
+		...credentials,
+		SMTP_ACCESS_TOKEN: refreshed.accessToken,
+		IMAP_ACCESS_TOKEN: refreshed.accessToken,
+		MICROSOFT_REFRESH_TOKEN:
+			refreshed.refreshToken ?? credentials.MICROSOFT_REFRESH_TOKEN,
+		SMTP_TOKEN_EXPIRES_AT: refreshed.expiresAt.toISOString(),
+		IMAP_TOKEN_EXPIRES_AT: refreshed.expiresAt.toISOString(),
+	};
+}
+
 export function validateMicrosoftOAuthState(
 	expected: string,
 	received: string | null | undefined,
@@ -176,12 +267,12 @@ const getRefreshRedis = (): RefreshRedis => {
 			password: process.env.REDIS_PASSWORD,
 			maxRetriesPerRequest: null,
 		});
-	return refreshRedis;
+	return refreshRedis as unknown as RefreshRedis;
 };
 export function withMicrosoftRefreshLock<T>(
 	key: string,
 	refresh: () => Promise<T>,
-	persist: (value: T) => Promise<void>,
+	persist: (value: T, fenceToken?: string) => Promise<void>,
 	load?: () => Promise<T | null>,
 	options?: {
 		distributed?: boolean;
@@ -229,31 +320,45 @@ export function withMicrosoftRefreshLock<T>(
 			throw new Error("Microsoft refresh lock timed out");
 		}
 		let leaseLost = false;
-		const renewal = setInterval(() => {
-			void redis
-				.eval(
+		let renewal: Promise<void> | undefined;
+		const renew = async () => {
+			try {
+				const renewed = await redis.eval(
 					"if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('pexpire', KEYS[1], ARGV[2]) else return 0 end",
 					1,
 					lockKey,
 					owner,
 					String(leaseMs),
-				)
-				.then((renewed) => {
-					if (renewed !== 1) leaseLost = true;
-				})
-				.catch(() => {
-					leaseLost = true;
+				);
+				if (renewed !== 1) leaseLost = true;
+			} catch {
+				leaseLost = true;
+			}
+		};
+		const interval = setInterval(() => {
+			if (!renewal)
+				renewal = renew().finally(() => {
+					renewal = undefined;
 				});
 		}, renewEveryMs);
 		try {
 			const current = load ? await load() : null;
 			if (current) return current;
 			const value = await refresh();
+			if (renewal) await renewal;
 			if (leaseLost) throw new Error("Microsoft refresh lock lease lost");
-			await persist(value);
+			const fenced = await redis.eval(
+				"if redis.call('get', KEYS[1]) == ARGV[1] then return 1 else return 0 end",
+				1,
+				lockKey,
+				owner,
+			);
+			if (fenced !== 1) throw new Error("Microsoft refresh lock lease lost");
+			await persist(value, owner);
 			return value;
 		} finally {
-			clearInterval(renewal);
+			clearInterval(interval);
+			if (renewal) await renewal;
 			await redis.eval(
 				"if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
 				1,

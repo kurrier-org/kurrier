@@ -28,7 +28,7 @@ import {
 	getSecretAdmin,
 	jmapAccounts,
 } from "@db";
-import { createMailer } from "@providers";
+import { createMailer, loadMicrosoftCredentials } from "@providers";
 import { toArray } from "drizzle-orm/mysql-core";
 import { and, eq } from "drizzle-orm";
 import addressparser from "addressparser";
@@ -274,6 +274,27 @@ export default defineNitroPlugin(async (nitroApp) => {
 							secrets.vault.decrypted_secret,
 						)
 						: {};
+
+				if (providerType === "smtp") {
+					credentials = await loadMicrosoftCredentials(credentials, {
+						key: String(secrets.metaId),
+						distributed: true,
+						persist: async (next) => updateSecretAdmin(String(secrets.metaId), {
+							value: JSON.stringify(next),
+							expectedEncryptedValue: secrets.encryptedValue,
+						}),
+						load: async () => {
+							const [latest] = await decryptAdminSecrets({
+								linkTable: smtpAccountSecrets,
+								foreignCol: smtpAccountSecrets.accountId,
+								secretIdCol: smtpAccountSecrets.secretId,
+								ownerId: mailbox.identity.ownerId,
+								parentId: String(mailbox.identity.smtpAccountId),
+							});
+							return latest?.vault?.decrypted_secret ? JSON.parse(latest.vault.decrypted_secret) : null;
+						},
+					});
+				}
 			}
 
 			const mailer = createMailer(

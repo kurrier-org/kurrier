@@ -143,7 +143,6 @@ export async function GET(req: NextRequest) {
 		if (!identity.success) throw new Error("identity_creation_failed");
 	} catch {
 		const correlationId = crypto.randomUUID();
-		const rls = await rlsClient();
 		const failedAccountId = accountId;
 		const failedSecretId = secretId;
 		await compensateMicrosoftOAuthResources(correlationId, [
@@ -151,8 +150,8 @@ export async function GET(req: NextRequest) {
 				? [
 						{
 							resource: "identities",
-							cleanup: () =>
-								rls((db) =>
+							cleanup: async () =>
+								(await rlsClient())((db) =>
 									db
 										.delete(identities)
 										.where(eq(identities.smtpAccountId, failedAccountId)),
@@ -164,8 +163,8 @@ export async function GET(req: NextRequest) {
 				? [
 						{
 							resource: "smtp_account_secrets",
-							cleanup: () =>
-								rls((db) =>
+							cleanup: async () =>
+								(await rlsClient())((db) =>
 									db
 										.delete(smtpAccountSecrets)
 										.where(eq(smtpAccountSecrets.accountId, failedAccountId)),
@@ -177,8 +176,8 @@ export async function GET(req: NextRequest) {
 				? [
 						{
 							resource: "smtp_accounts",
-							cleanup: () =>
-								rls((db) =>
+							cleanup: async () =>
+								(await rlsClient())((db) =>
 									db
 										.delete(smtpAccounts)
 										.where(eq(smtpAccounts.id, failedAccountId)),
@@ -190,8 +189,8 @@ export async function GET(req: NextRequest) {
 				? [
 						{
 							resource: "secrets_meta",
-							cleanup: () =>
-								rls((db) =>
+							cleanup: async () =>
+								(await rlsClient())((db) =>
 									db
 										.delete(secretsMeta)
 										.where(eq(secretsMeta.id, failedSecretId)),

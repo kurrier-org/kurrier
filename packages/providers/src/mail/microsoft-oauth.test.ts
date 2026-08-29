@@ -139,6 +139,38 @@ test("does not expose provider error descriptions", async () => {
 	);
 });
 
+test("centralizes expired Microsoft SMTP and IMAP credential refresh", async () => {
+	const { loadMicrosoftCredentials } = await import("./microsoft-oauth");
+	let saved: Record<string, unknown> | undefined;
+	const credentials = {
+		provider: "microsoft",
+		MICROSOFT_CLIENT_ID: "client",
+		MICROSOFT_REFRESH_TOKEN: "old-refresh",
+		MICROSOFT_TENANT: "common",
+		SMTP_TOKEN_EXPIRES_AT: new Date(Date.now() - 1_000).toISOString(),
+		IMAP_TOKEN_EXPIRES_AT: new Date(Date.now() - 1_000).toISOString(),
+	};
+	const result = await loadMicrosoftCredentials(credentials, {
+		key: "loader-test",
+		persist: async (next) => {
+			saved = next;
+		},
+		fetcher: async () =>
+			new Response(
+				JSON.stringify({
+					access_token: "new-access",
+					refresh_token: "new-refresh",
+					expires_in: 3600,
+				}),
+				{ status: 200 },
+			),
+	});
+	assert.equal(result.SMTP_ACCESS_TOKEN, "new-access");
+	assert.equal(result.IMAP_ACCESS_TOKEN, "new-access");
+	assert.equal(result.MICROSOFT_REFRESH_TOKEN, "new-refresh");
+	assert.equal(saved?.MICROSOFT_REFRESH_TOKEN, "new-refresh");
+});
+
 test("coalesces concurrent refreshes and persists the rotated token once", async () => {
 	let refreshes = 0;
 	let saves = 0;
@@ -193,4 +225,32 @@ test("renews a distributed refresh lease until persistence completes", async () 
 	);
 	assert.ok(calls.includes("renew"));
 	assert.equal(calls.at(-1), "release");
+});
+
+test("does not persist with a stale refresh fence", async () => {
+	let persisted = false;
+	const redis = {
+		set: async () => "OK",
+		eval: async (...args: unknown[]) => {
+			const script = String(args[0]);
+			if (script.includes("pexpire")) return 0;
+			return 1;
+		},
+	};
+	await assert.rejects(
+		withMicrosoftRefreshLock(
+			"stale-fence",
+			async () => {
+				await new Promise((resolve) => setTimeout(resolve, 5));
+				return "rotated-token";
+			},
+			async () => {
+				persisted = true;
+			},
+			undefined,
+			{ distributed: true, redis, leaseMs: 20, renewEveryMs: 1 },
+		),
+		/Microsoft refresh lock lease lost/,
+	);
+	assert.equal(persisted, false);
 });

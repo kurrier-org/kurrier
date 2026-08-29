@@ -24,6 +24,7 @@ export async function decryptAdminSecrets({
 		.select({
 			linkRow: linkTable,
 			metaId: secretsMeta.id,
+			encryptedValue: secretsMeta.encryptedValue,
 			provider: providers,
 			smtpAccount: smtpAccounts,
 		})

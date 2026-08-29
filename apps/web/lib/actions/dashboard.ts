@@ -41,6 +41,7 @@ import { decode } from "decode-formdata";
 import { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import {
 	createMailer,
+	loadMicrosoftCredentials,
 	createStore,
 	DomainIdentity, gmailClientForGoogleAccount,
 	VerifyResult,
@@ -322,6 +323,7 @@ export async function fetchDecryptedSecrets({
 			.select({
 				linkRow: linkTable,
 				metaId: secretsMeta.id,
+				encryptedValue: secretsMeta.encryptedValue,
 				provider: providers,
 				smtpAccount: smtpAccounts,
 			})
@@ -347,6 +349,7 @@ export async function fetchDecryptedSecrets({
 			const payload = {
 				linkRow: r.linkRow,
 				metaId,
+				encryptedValue: r.encryptedValue,
 				vault,
 				providerId: r.linkRow?.providerId,
 				accountId: r.linkRow?.accountId,
@@ -860,7 +863,38 @@ export const testSendingEmail = async (
 ) => {
 	return handleAction(async () => {
 		if (userIdentity?.smtp_accounts) {
-			const mailer = createMailer("smtp", decryptedSecrets);
+			let smtpCredentials = decryptedSecrets;
+			if (decryptedSecrets.provider === "microsoft") {
+				const [smtpSecret] = await fetchDecryptedSecrets({
+					linkTable: smtpAccountSecrets,
+					foreignCol: smtpAccountSecrets.accountId,
+					secretIdCol: smtpAccountSecrets.secretId,
+					parentId: String(userIdentity.smtp_accounts.id),
+				});
+				if (!smtpSecret) throw new Error("SMTP account secret not found");
+				const session = await currentSession();
+				const workspaceId = await getWorkspaceId();
+				smtpCredentials = await loadMicrosoftCredentials(smtpSecret.parsedSecret, {
+					key: smtpSecret.metaId,
+					distributed: true,
+					persist: async (next) => {
+						await updateSecret(session, workspaceId, smtpSecret.metaId, {
+							value: JSON.stringify(next),
+							expectedEncryptedValue: String(smtpSecret.encryptedValue),
+						});
+					},
+					load: async () => {
+						const [latest] = await fetchDecryptedSecrets({
+							linkTable: smtpAccountSecrets,
+							foreignCol: smtpAccountSecrets.accountId,
+							secretIdCol: smtpAccountSecrets.secretId,
+							parentId: String(userIdentity.smtp_accounts.id),
+						});
+						return latest?.parsedSecret ?? null;
+					},
+				});
+			}
+			const mailer = createMailer("smtp", smtpCredentials);
 
 			const ok = await mailer.sendTestEmail(userIdentity.identities.value, {
 				subject: "Test email from Kurrier",
