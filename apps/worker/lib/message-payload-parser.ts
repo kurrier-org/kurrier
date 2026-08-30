@@ -20,7 +20,6 @@ import { type Attachment, type ParsedMail, simpleParser } from "mailparser";
 import { s3 } from "../lib/create-s3-client";
 import { getRedis } from "../lib/get-redis";
 import { upsertWorkspaceSharedContactFromMessage } from "../lib/message-parser-contacts";
-import { shouldEnqueueNewMailPush } from "../lib/message-payload-parser-push";
 
 const SEARCH_BATCH_SIZE = 100;
 const WEBHOOK_BATCH_SIZE = 100;
@@ -425,7 +424,7 @@ export async function parseAndStoreEmail(
 		return null;
 	}
 
-	if (shouldEnqueueNewMailPush(Boolean(existingMessage))) {
+	if (!existingMessage) {
 		const { webPushQueue } = await getRedis();
 		for (const subscription of pushSubscriptions) {
 			await webPushQueue.add("web-push:deliver", { messageId: message.id, subscriptionId: subscription.id }, {
