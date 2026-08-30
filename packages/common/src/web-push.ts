@@ -41,7 +41,7 @@ export function isUnsafeWebPushAddress(address: string) {
 	if (isIP(normalized) !== 6) return false;
 	const groups = normalized.split("::");
 	const expandIPv4 = (parts: string[]) => {
-		const last = parts.at(-1);
+		const last = parts[parts.length - 1];
 		if (!last?.includes(".")) return parts;
 		const octets = last.split(".").map(Number);
 		return [

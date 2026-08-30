@@ -54,6 +54,21 @@ test("classifies IPv4 translation and compatible IPv6 addresses by embedded IPv4
 	assert.equal(isUnsafeWebPushAddress("64:ff9b::8.8.8.8"), false);
 });
 
+test("classifies IPv6 addresses when Array.prototype.at is unavailable", () => {
+	const descriptor = Object.getOwnPropertyDescriptor(Array.prototype, "at");
+	Object.defineProperty(Array.prototype, "at", {
+		configurable: true,
+		value: undefined,
+	});
+	try {
+		assert.equal(isUnsafeWebPushAddress("::ffff:127.0.0.1"), true);
+		assert.equal(isUnsafeWebPushAddress("2001:4860:4860::8888"), false);
+	} finally {
+		if (descriptor) Object.defineProperty(Array.prototype, "at", descriptor);
+		else delete Array.prototype.at;
+	}
+});
+
 test("rejects non-HTTPS and private Web Push endpoints", async () => {
 	await assert.rejects(
 		validateWebPushSubscription(
