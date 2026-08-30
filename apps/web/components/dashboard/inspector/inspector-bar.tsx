@@ -271,8 +271,8 @@ export default function InspectorBar({
                     <Tabs.List
                         classNames={{
                             list: [
-                                "flex flex-nowrap overflow-x-auto border-0 px-1 sm:px-2",
-                                "overscroll-x-contain scroll-smooth",
+                                "flex !flex-nowrap overflow-x-auto border-0 px-1 sm:!flex-wrap sm:px-2",
+                                "snap-x snap-mandatory overscroll-x-contain scroll-smooth sm:snap-none",
                                 "before:hidden",
                             ].join(" "),
                         }}
@@ -291,7 +291,7 @@ export default function InspectorBar({
                                     disabled={disabled}
                                     leftSection={tab.icon}
                                     className={[
-                                        "h-12 shrink-0 px-3 sm:h-14 sm:px-4",
+                                        "h-12 shrink-0 snap-start px-3 sm:h-14 sm:px-4",
                                         "text-muted-foreground",
                                         "transition-colors",
                                         "hover:bg-muted/30",
