@@ -251,6 +251,7 @@
 	"attachmentsCountSuffix": " attachments",
 	"audio": "Audio",
 	"attachment": "Attachment",
+	"dropFilesToAttach": "Drop files to attach",
 	"rsvpYes": "Yes",
 	"rsvpMaybe": "Maybe",
 	"rsvpNo": "No",

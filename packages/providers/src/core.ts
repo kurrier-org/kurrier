@@ -133,6 +133,8 @@ export interface Mailer {
 	sendEmail(
 		to: string[],
 		opts: {
+			cc?: string[];
+			bcc?: string[];
 			subject: string;
 			text: string;
 			html: string;

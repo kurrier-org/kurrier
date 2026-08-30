@@ -1,7 +1,7 @@
 "use client";
+
 import {
 	type ComboboxItem,
-	FocusTrap,
 	type OptionsFilter,
 	TagsInput,
 	type TagsInputProps,
@@ -26,18 +26,20 @@ export default function EmailHeaderContacts({
 	const [options, setOptions] = useState<ComboboxItem[]>([]);
 
 	const uniqueByEmail = (arr: ComposeContact[]) => {
-		const seen = new Set();
+		const seen = new Set<string>();
+
 		return arr.filter((item) => {
 			if (seen.has(item.email)) return false;
+
 			seen.add(item.email);
 			return true;
 		});
 	};
 
-	const searchContacts = async (val: string) => {
-		setSearchValue(val);
+	const searchContacts = async (value: string) => {
+		setSearchValue(value);
 
-		const rowsContacts = await searchContactsForCompose(val);
+		const rowsContacts = await searchContactsForCompose(value);
 		const rows = uniqueByEmail(rowsContacts);
 
 		const mapped: ComboboxItem[] = rows.map((row) => ({
@@ -54,41 +56,41 @@ export default function EmailHeaderContacts({
 	);
 
 	const filter: OptionsFilter = ({ options, search }) => {
-		const s = search.toLowerCase();
-		return (options as ComboboxItem[]).filter((opt) =>
-			opt.label.toLowerCase().includes(s),
+		const value = search.toLowerCase();
+
+		return (options as ComboboxItem[]).filter((option) =>
+			option.label.toLowerCase().includes(value),
 		);
 	};
 
 	return (
-		<FocusTrap active={true}>
-			<TagsInput
-				defaultValue={toEmail ? [toEmail] : []}
-				searchValue={searchValue}
-				onSearchChange={searchContacts}
-				data={options}
-				onChange={(value) => {
-					if (value.length > 0) {
-						onChange?.(value as string[]);
-					}
-				}}
-				renderOption={renderOption}
-				filter={filter}
-				maxTags={maxTags}
-				name={name}
-				size="sm"
-				variant="unstyled"
-				className="min-h-7 w-full min-w-0 text-sm sm:w-96 sm:max-w-full"
-				comboboxProps={{
-					dropdownPadding: 0,
-					withinPortal: false,
-					position: "bottom-start",
-					offset: 1,
-					width: "target",
-					shadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-					transitionProps: { transition: "skew-down", duration: 150 },
-				}}
-			/>
-		</FocusTrap>
+		<TagsInput
+			defaultValue={toEmail ? [toEmail] : []}
+			searchValue={searchValue}
+			onSearchChange={searchContacts}
+			data={options}
+			onChange={(value) => {
+				onChange?.(value as string[]);
+			}}
+			renderOption={renderOption}
+			filter={filter}
+			maxTags={maxTags}
+			name={name}
+			size="sm"
+			variant="unstyled"
+			className="min-h-7 w-full min-w-0 text-sm sm:w-96 sm:max-w-full"
+			comboboxProps={{
+				dropdownPadding: 0,
+				withinPortal: false,
+				position: "bottom-start",
+				offset: 1,
+				width: "target",
+				shadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+				transitionProps: {
+					transition: "skew-down",
+					duration: 150,
+				},
+			}}
+		/>
 	);
 }

@@ -251,6 +251,7 @@
 	"attachmentsCountSuffix": " вложений",
 	"audio": "Аудио",
 	"attachment": "Вложение",
+	"dropFilesToAttach": "Перетащите файлы, чтобы прикрепить",
 	"rsvpYes": "Да",
 	"rsvpMaybe": "Возможно",
 	"rsvpNo": "Нет",

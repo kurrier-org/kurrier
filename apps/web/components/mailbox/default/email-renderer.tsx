@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+
 import { getMessageAddress, getMessageName } from "@common/mail-client";
 import type { MessageAttachmentEntity, MessageEntity } from "@db";
 import { Temporal } from "@js-temporal/polyfill";
@@ -12,18 +13,20 @@ import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import ThreadLabelHoverButtons from "@/components/dashboard/labels/thread-label-hover-buttons";
+import MailComposer from "@/components/mailbox/default/composer/mail-composer";
 import EditorAttachmentItem from "@/components/mailbox/default/editor/editor-attachment-item";
-import type { EmailEditorHandle } from "@/components/mailbox/default/editor/email-editor";
 import MailUnsubscriber from "@/components/mailbox/default/mail-unsubscriber";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+
 import type {
 	FetchLabelsResult,
 	FetchMailboxThreadLabelsResult,
 } from "@/lib/actions/labels";
 import {
+	type FetchIdentityMailboxListResult,
 	type FetchThreadMailSubsResult,
-	fetchMailbox,
 	markAsRead,
 } from "@/lib/actions/mailbox";
 import { getRawMessageDownloadUrl } from "@/lib/actions/uploads-actions";
@@ -40,67 +43,98 @@ const InspectorBar = dynamic(
 	},
 );
 
-const EmailEditor = dynamic(
-	() => import("@/components/mailbox/default/editor/email-editor"),
-	{
-		ssr: false,
-		loading: () => (
-			<div className="py-10 text-sm text-muted-foreground">Loading editor…</div>
-		),
-	},
-);
 export type MessageAttachmentWithUrl = MessageAttachmentEntity & {
 	signedUrl: string;
 };
 
+type ComposerMode = "reply" | "forward";
+
 function getScrollParent(el: HTMLElement): HTMLElement {
-	let p: HTMLElement | null = el.parentElement;
-	while (p) {
-		const s = getComputedStyle(p);
-		const overflowY = s.overflowY || s.overflow;
+	let parent: HTMLElement | null = el.parentElement;
+
+	while (parent) {
+		const style = getComputedStyle(parent);
+		const overflowY = style.overflowY || style.overflow;
+
 		const canScrollY =
 			(overflowY === "auto" || overflowY === "scroll") &&
-			p.scrollHeight > p.clientHeight;
-		if (canScrollY) return p;
-		p = p.parentElement;
+			parent.scrollHeight > parent.clientHeight;
+
+		if (canScrollY) {
+			return parent;
+		}
+
+		parent = parent.parentElement;
 	}
+
 	return (document.scrollingElement || document.documentElement) as HTMLElement;
 }
 
 export function scrollToEditor(
 	el: HTMLElement,
-	{ offsetTop = 96, minBottomGap = 48 } = {},
+	{
+		offsetTop = 96,
+		minBottomGap = 48,
+	}: {
+		offsetTop?: number;
+		minBottomGap?: number;
+	} = {},
 ) {
 	const container = getScrollParent(el);
+
 	const isWindow = container === (document.scrollingElement as HTMLElement);
 
-	const cRect = isWindow
-		? { top: 10, height: window.innerHeight }
+	const containerRect = isWindow
+		? ({
+				top: 10,
+				height: window.innerHeight,
+			} as DOMRect)
 		: container.getBoundingClientRect();
-	const eRect = el.getBoundingClientRect();
+
+	const editorRect = el.getBoundingClientRect();
+
 	const currentTop = isWindow ? window.scrollY : container.scrollTop;
 
-	// Place the editor top just below the sticky header
-	const targetTop = currentTop + (eRect.top - cRect.top) - offsetTop;
+	const targetTop =
+		currentTop + (editorRect.top - containerRect.top) - offsetTop;
 
 	const doScroll = (top: number) => {
-		if (isWindow) window.scrollTo({ top, behavior: "smooth" });
-		else container.scrollTo({ top, behavior: "smooth" });
+		if (isWindow) {
+			window.scrollTo({
+				top,
+				behavior: "smooth",
+			});
+		} else {
+			container.scrollTo({
+				top,
+				behavior: "smooth",
+			});
+		}
 	};
 
 	doScroll(targetTop);
 
 	setTimeout(() => {
-		const e2 = el.getBoundingClientRect();
-		const viewH = isWindow
-			? window.innerHeight
-			: (container as HTMLElement).clientHeight;
-		const bottomGap = viewH - e2.bottom;
+		const editorRectAfterScroll = el.getBoundingClientRect();
+
+		const viewHeight = isWindow ? window.innerHeight : container.clientHeight;
+
+		const bottomGap = viewHeight - editorRectAfterScroll.bottom;
+
 		if (bottomGap < minBottomGap) {
 			const delta = minBottomGap - bottomGap;
-			if (isWindow) window.scrollBy({ top: delta, behavior: "smooth" });
-			else
-				(container as HTMLElement).scrollBy({ top: delta, behavior: "smooth" });
+
+			if (isWindow) {
+				window.scrollBy({
+					top: delta,
+					behavior: "smooth",
+				});
+			} else {
+				container.scrollBy({
+					top: delta,
+					behavior: "smooth",
+				});
+			}
 		}
 	}, 120);
 }
@@ -123,7 +157,6 @@ function EmailRenderer({
 	threadIndex: number;
 	numberOfMessages: number;
 	message: MessageEntity;
-	// attachments: MessageAttachmentEntity[];
 	attachments: MessageAttachmentWithUrl[];
 	publicConfig: PublicConfig;
 	threadId: string;
@@ -136,6 +169,10 @@ function EmailRenderer({
 	children?: React.ReactNode;
 }) {
 	const dict = useOptionalDictionary();
+	const params = useParams();
+
+	const composerRef = useRef<HTMLDivElement>(null);
+
 	const formatted = Temporal.Instant.from(message.createdAt.toISOString())
 		.toZonedDateTimeISO(Temporal.Now.timeZoneId())
 		.toLocaleString("en-US", {
@@ -147,37 +184,41 @@ function EmailRenderer({
 			hour12: true,
 		});
 
-	const [showEditor, setShowEditor] = useState<boolean>(false);
-	const [showEditorMode, setShowEditorMode] = useState<string>("reply");
-	const editorRef = useRef<EmailEditorHandle>(null);
-	const seenRef = useRef(null);
+	const [showEditor, setShowEditor] = useState(false);
 
-	const [sentMailboxId, setSentMailboxId] = useState<string | undefined>(
-		undefined,
-	);
-	const params = useParams();
-	useEffect(() => {
-		if (sentMailboxId || seenRef.current) return;
-		seenRef.current = true;
-		fetchMailbox(String(params.identityPublicId), "sent").then(
-			({ activeMailbox }) => setSentMailboxId(String(activeMailbox.id)),
-		);
-	}, [params.identityPublicId, sentMailboxId]);
+	const [showEditorMode, setShowEditorMode] = useState<ComposerMode>("reply");
 
 	useEffect(() => {
 		if (activeMailboxId) {
 			markAsRead(threadId, activeMailboxId, markSmtp, true);
 		}
-	}, [activeMailboxId, markSmtp, threadId]);
+	}, [activeMailboxId, threadId, markSmtp]);
+
+	useEffect(() => {
+		if (!showEditor) return;
+
+		requestAnimationFrame(() => {
+			const el = composerRef.current;
+
+			if (!el) return;
+
+			scrollToEditor(el, {
+				offsetTop: 96,
+				minBottomGap: 64,
+			});
+		});
+	}, [showEditor]);
 
 	const downloadEml = async () => {
 		const { url } = await getRawMessageDownloadUrl(message.id);
+
 		if (url) {
 			window.open(url, "_blank");
 		}
 	};
 
 	const [opened, { open, close }] = useDisclosure(false);
+
 	const [emailString, setEmailString] = useState<string | null>(null);
 
 	useEffect(() => {
@@ -190,7 +231,7 @@ function EmailRenderer({
 				.then((res) => res.text())
 				.then((raw) => setEmailString(raw.slice(0, 10000)));
 		});
-	}, [message.id, opened]);
+	}, [opened, message.id]);
 
 	const formattedTime = useMemo(() => {
 		return Temporal.Instant.from(message.createdAt.toISOString())
@@ -206,6 +247,25 @@ function EmailRenderer({
 			.replace(",", " at");
 	}, [message.createdAt]);
 
+	const activeIdentityPublicId = useMemo(() => {
+		const routeIdentityPublicId = String(params.identityPublicId ?? "");
+
+		const exists = identityMailboxes.some(
+			(item) => item.identity.publicId === routeIdentityPublicId,
+		);
+
+		if (exists) {
+			return routeIdentityPublicId;
+		}
+
+		return identityMailboxes[0]?.identity.publicId;
+	}, [params.identityPublicId, identityMailboxes]);
+
+	const openComposer = (mode: ComposerMode) => {
+		setShowEditorMode(mode);
+		setShowEditor(true);
+	};
+
 	return (
 		<>
 			<Modal
@@ -215,12 +275,12 @@ function EmailRenderer({
 				size="xl"
 			>
 				<div className="overflow-hidden rounded-md border text-sm">
-					{/* Header Rows */}
 					<div className="grid grid-cols-1 border-b sm:grid-cols-[160px_minmax(0,1fr)]">
 						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
 							{dict?.mailbox?.messageId ?? "Message ID"}
 						</div>
-						<div className="px-3 py-2 text-green-700 break-all">
+
+						<div className="break-all px-3 py-2 text-green-700">
 							{message.messageId}
 						</div>
 					</div>
@@ -229,6 +289,7 @@ function EmailRenderer({
 						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
 							{dict?.mailbox?.createdOn ?? "Created on"}
 						</div>
+
 						<div className="px-3 py-2">{formattedTime}</div>
 					</div>
 
@@ -236,6 +297,7 @@ function EmailRenderer({
 						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
 							{dict?.mailbox?.from ?? "From"}
 						</div>
+
 						<div className="min-w-0 break-words px-3 py-2">
 							{String(message?.headersJson?.from?.text)}
 						</div>
@@ -245,77 +307,31 @@ function EmailRenderer({
 						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
 							{dict?.mailbox?.to ?? "To"}
 						</div>
-						{/*<div className="px-3 py-2">suisse@dinebot.io</div>*/}
+
 						<div className="min-w-0 break-words px-3 py-2">
 							{String(message?.headersJson?.to?.text)}
 						</div>
 					</div>
 
-					<div className="grid grid-cols-1 border-b sm:grid-cols-[160px_minmax(0,1fr)]">
+					<div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)]">
 						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
 							{dict?.mailbox?.subject ?? "Subject"}
 						</div>
+
 						<div className="min-w-0 break-words px-3 py-2">
-							{/*Google Workspace: Your invoice is available for dinebot.io*/}
 							{message?.headersJson?.subject}
 						</div>
 					</div>
-
-					{/*<div className="grid grid-cols-[160px_1fr] border-b">*/}
-					{/*    <div className="bg-muted px-3 py-2 font-medium text-muted-foreground">*/}
-					{/*        SPF*/}
-					{/*    </div>*/}
-					{/*    <div className="px-3 py-2">*/}
-					{/*        <span className="text-green-600 font-semibold">PASS</span> with IP 209.85.220.69{" "}*/}
-					{/*        <a href="#" className="text-blue-600 hover:underline">Learn more</a>*/}
-					{/*    </div>*/}
-					{/*</div>*/}
-
-					{/*<div className="grid grid-cols-[160px_1fr] border-b">*/}
-					{/*    <div className="bg-muted px-3 py-2 font-medium text-muted-foreground">*/}
-					{/*        DKIM*/}
-					{/*    </div>*/}
-					{/*    <div className="px-3 py-2">*/}
-					{/*        <span className="text-green-600 font-semibold">'PASS'</span> with domain google.com{" "}*/}
-					{/*        <a href="#" className="text-blue-600 hover:underline">Learn more</a>*/}
-					{/*    </div>*/}
-					{/*</div>*/}
-
-					{/*<div className="grid grid-cols-[160px_1fr]">*/}
-					{/*    <div className="bg-muted px-3 py-2 font-medium text-muted-foreground">*/}
-					{/*        DMARC*/}
-					{/*    </div>*/}
-					{/*    <div className="px-3 py-2">*/}
-					{/*        <span className="text-green-600 font-semibold">'PASS'</span>{" "}*/}
-					{/*        <a href="#" className="text-blue-600 hover:underline">Learn more</a>*/}
-					{/*    </div>*/}
-					{/*</div>*/}
 				</div>
-
-				{/* Action Buttons */}
-				{/*<div className="flex justify-end gap-2 mt-4">*/}
-				{/*<button*/}
-				{/*    className="text-blue-600 hover:underline text-sm"*/}
-				{/*    onClick={() => console.log("download original")}*/}
-				{/*>*/}
-				{/*    Download original*/}
-				{/*</button>*/}
-				{/*<button*/}
-				{/*    className="text-blue-600 hover:underline text-sm"*/}
-				{/*    onClick={() => navigator.clipboard.writeText("original message headers")}*/}
-				{/*>*/}
-				{/*    Copy to clipboard*/}
-				{/*</button>*/}
-				{/*</div>*/}
 
 				<div
 					className="
-    bg-neutral-50 dark:bg-neutral-900
-    border border-neutral-200 dark:border-neutral-800
-    rounded-md mt-4 p-4 text-sm font-mono
-    whitespace-pre-wrap break-words overflow-x-auto
-    shadow-sm text-neutral-800 dark:text-neutral-200
-  "
+						mt-4 overflow-x-auto whitespace-pre-wrap break-words
+						rounded-md border border-neutral-200 bg-neutral-50
+						p-4 font-mono text-sm text-neutral-800 shadow-sm
+						dark:border-neutral-800 dark:bg-neutral-900
+						dark:text-neutral-200
+					"
 				>
 					{emailString ||
 						(dict?.mailbox?.loadingRawMessage ?? "Loading raw message...")}
@@ -330,6 +346,7 @@ function EmailRenderer({
 								{message.subject ||
 									(dict?.mailbox?.noSubjectTitle ?? "No Subject")}
 							</h1>
+
 							<MailUnsubscriber
 								mailSubscription={mailSubscription}
 								message={message}
@@ -347,13 +364,21 @@ function EmailRenderer({
 										separator: " ",
 									})}
 							</div>
+
 							<div className="min-w-0 break-all text-xs text-muted-foreground sm:truncate">
-								{`<${getMessageAddress(message, "from") ?? getMessageName(message, "from")}>`}
+								{`<${
+									getMessageAddress(message, "from") ??
+									getMessageName(message, "from")
+								}>`}
 							</div>
 						</div>
+
 						<div className="mt-1 min-w-0 break-all text-xs text-muted-foreground">
 							{dict?.mailbox?.toLower ?? "to"}{" "}
-							{`<${getMessageAddress(message, "to") ?? getMessageName(message, "to")}>`}
+							{`<${
+								getMessageAddress(message, "to") ??
+								getMessageName(message, "to")
+							}>`}
 						</div>
 					</div>
 
@@ -364,19 +389,22 @@ function EmailRenderer({
 						>
 							{formatted}
 						</time>
+
 						<div className="flex shrink-0 items-center justify-end gap-1">
 							<ThreadLabelHoverButtons
-								mailboxThreadItem={{ threadId, mailboxId: activeMailboxId }}
+								mailboxThreadItem={{
+									threadId,
+									mailboxId: activeMailboxId,
+								}}
 								allLabels={allLabels}
 								labelsByThreadId={labelsByThreadId}
 							/>
+
 							<ActionIcon
-								variant={"transparent"}
+								variant="transparent"
 								size={44}
 								aria-label={dict?.mailbox?.reply ?? "Reply"}
-								onClick={() => {
-									setShowEditor(!showEditor);
-								}}
+								onClick={() => openComposer("reply")}
 							>
 								<Reply size={18} />
 							</ActionIcon>
@@ -395,22 +423,18 @@ function EmailRenderer({
 								<Menu.Dropdown>
 									<Menu.Item
 										leftSection={<Reply size={14} />}
-										onClick={() => {
-											setShowEditorMode("reply");
-											setShowEditor(true);
-										}}
+										onClick={() => openComposer("reply")}
 									>
 										{dict?.mailbox?.reply ?? "Reply"}
 									</Menu.Item>
+
 									<Menu.Item
 										leftSection={<Forward size={14} />}
-										onClick={() => {
-											setShowEditorMode("forward");
-											setShowEditor(true);
-										}}
+										onClick={() => openComposer("forward")}
 									>
 										{dict?.mailbox?.forward ?? "Forward"}
 									</Menu.Item>
+
 									<Menu.Divider />
 
 									<Menu.Item
@@ -419,6 +443,7 @@ function EmailRenderer({
 									>
 										{dict?.mailbox?.download ?? "Download"}
 									</Menu.Item>
+
 									<Menu.Item leftSection={<Code size={14} />} onClick={open}>
 										{dict?.mailbox?.showOriginal ?? "Show Original"}
 									</Menu.Item>
@@ -435,12 +460,12 @@ function EmailRenderer({
 
 			{attachments?.length > 0 && (
 				<div className="border-t border-dotted py-4">
-					<div className="font-semibold mb-4">
+					<div className="mb-4 font-semibold">
 						{attachments.length}
 						{dict?.mailbox?.attachmentsCountSuffix ?? " attachments"}
 					</div>
 
-					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 						{attachments.map((attachment) => (
 							<EditorAttachmentItem
 								key={attachment.id}
@@ -455,24 +480,19 @@ function EmailRenderer({
 			{threadIndex === numberOfMessages - 1 && !showEditor && (
 				<div className="flex flex-wrap gap-3 sm:gap-6">
 					<Button
-						onClick={() => {
-							setShowEditor(!showEditor);
-							setShowEditorMode("reply");
-						}}
+						onClick={() => openComposer("reply")}
 						leftSection={<Reply />}
-						variant={"outline"}
-						radius={"xl"}
+						variant="outline"
+						radius="xl"
 					>
 						{dict?.mailbox?.reply ?? "Reply"}
 					</Button>
+
 					<Button
-						onClick={() => {
-							setShowEditor(!showEditor);
-							setShowEditorMode("forward");
-						}}
+						onClick={() => openComposer("forward")}
 						rightSection={<Forward />}
-						variant={"outline"}
-						radius={"xl"}
+						variant="outline"
+						radius="xl"
 					>
 						{dict?.mailbox?.forward ?? "Forward"}
 					</Button>
@@ -480,19 +500,18 @@ function EmailRenderer({
 			)}
 
 			{showEditor && (
-				<div>
-					<EmailEditor
-						sentMailboxId={String(sentMailboxId)}
-						ref={editorRef}
+				<div
+					ref={composerRef}
+					className="mt-4 overflow-hidden rounded-lg border"
+				>
+					<MailComposer
+						key={`${message.id}-${showEditorMode}`}
 						publicConfig={publicConfig}
-						message={message}
 						identityMailboxes={identityMailboxes}
-						onReady={(el) => {
-							scrollToEditor(el, { offsetTop: 96, minBottomGap: 64 });
-							requestAnimationFrame(() => editorRef.current?.focus());
-						}}
-						handleClose={() => setShowEditor(false)}
-						showEditorMode={showEditorMode}
+						activeIdentityPublicId={activeIdentityPublicId}
+						message={message}
+						initialMode={showEditorMode}
+						onClose={() => setShowEditor(false)}
 					/>
 				</div>
 			)}
