@@ -74,6 +74,9 @@ export default function MailComposer({
     const dict = useOptionalDictionary();
 
     const [mode, setMode] = useState<ComposerMode>(initialMode);
+    const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+
+    const dragDepthRef = useRef(0);
 
     const [subject, setSubject] = useState(() => {
         if (!message) return "";
@@ -276,6 +279,55 @@ export default function MailComposer({
         event.target.value = "";
     };
 
+    const handleDragEnter = (event: React.DragEvent<HTMLDivElement>) => {
+        if (!event.dataTransfer.types.includes("Files")) return;
+
+        event.preventDefault();
+
+        dragDepthRef.current += 1;
+        setIsDraggingFiles(true);
+    };
+
+    const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+        if (!event.dataTransfer.types.includes("Files")) return;
+
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "copy";
+    };
+
+    const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+        if (!event.dataTransfer.types.includes("Files")) return;
+
+        event.preventDefault();
+
+        dragDepthRef.current = Math.max(
+            0,
+            dragDepthRef.current - 1,
+        );
+
+        if (dragDepthRef.current === 0) {
+            setIsDraggingFiles(false);
+        }
+    };
+
+    const handleDrop = async (
+        event: React.DragEvent<HTMLDivElement>,
+    ) => {
+        if (!event.dataTransfer.types.includes("Files")) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        dragDepthRef.current = 0;
+        setIsDraggingFiles(false);
+
+        const files = Array.from(event.dataTransfer.files);
+
+        for (const file of files) {
+            await uploadFile(file);
+        }
+    };
+
     const handleRemoveUpload = (uploadId: string) => {
         const upload = uploads.find((item) => item.id === uploadId);
 
@@ -301,64 +353,83 @@ export default function MailComposer({
     };
 
     return (
-        <Form action={formAction}>
-            <RichTextEditor
-                editor={editor}
-                className="!overflow-hidden !rounded-none !border-0"
-            >
-                <MailComposerHeader
-                    mode={mode}
-                    subject={subject}
-                    identityPublicId={identityPublicId}
-                    identityMailboxes={identityMailboxes}
-                    message={message}
-                    onModeChange={setMode}
-                    onSubjectChange={setSubject}
-                    onIdentityChange={setIdentityPublicId}
-                />
-
-                <MailComposerBody />
-
-                <MailComposerFooter
+        <div
+            className="relative"
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+        >
+            <Form action={formAction}>
+                <RichTextEditor
                     editor={editor}
-                    isPending={isPending}
-                    uploads={uploads}
-                    onAttach={() => fileInputRef.current?.click()}
-                    onRemoveUpload={handleRemoveUpload}
-                    onOpenUpload={handleOpenAttachment}
-                />
-            </RichTextEditor>
+                    className="!overflow-hidden !rounded-none !border-0"
+                >
+                    <MailComposerHeader
+                        mode={mode}
+                        subject={subject}
+                        identityPublicId={identityPublicId}
+                        identityMailboxes={identityMailboxes}
+                        message={message}
+                        onModeChange={setMode}
+                        onSubjectChange={setSubject}
+                        onIdentityChange={setIdentityPublicId}
+                    />
 
-            <input type="hidden" name="html" value={html} />
-            <input type="hidden" name="text" value={text} />
+                    <MailComposerBody />
 
-            <input
-                type="hidden"
-                name="newMessageId"
-                value={newMessageId.current}
-            />
+                    <MailComposerFooter
+                        editor={editor}
+                        isPending={isPending}
+                        uploads={uploads}
+                        onAttach={() =>
+                            fileInputRef.current?.click()
+                        }
+                        onRemoveUpload={handleRemoveUpload}
+                        onOpenUpload={handleOpenAttachment}
+                    />
+                </RichTextEditor>
 
-            <input
-                type="hidden"
-                name="attachments"
-                value={JSON.stringify(attachments)}
-            />
+                <input type="hidden" name="html" value={html} />
+                <input type="hidden" name="text" value={text} />
 
-            <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                hidden
-                onChange={handleFileSelect}
-            />
-
-            {message && (
                 <input
                     type="hidden"
-                    name="originalMessageId"
-                    value={message.id}
+                    name="newMessageId"
+                    value={newMessageId.current}
                 />
+
+                <input
+                    type="hidden"
+                    name="attachments"
+                    value={JSON.stringify(attachments)}
+                />
+
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    hidden
+                    onChange={handleFileSelect}
+                />
+
+                {message && (
+                    <input
+                        type="hidden"
+                        name="originalMessageId"
+                        value={message.id}
+                    />
+                )}
+            </Form>
+
+            {isDraggingFiles && (
+                <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center border-2 border-dashed border-primary bg-background/85 backdrop-blur-[1px]">
+                    <div className="rounded-lg bg-background px-5 py-3 text-sm font-medium shadow-sm">
+                        {dict?.mailbox?.dropFilesToAttach ??
+                            "Drop files to attach"}
+                    </div>
+                </div>
             )}
-        </Form>
+        </div>
     );
 }
