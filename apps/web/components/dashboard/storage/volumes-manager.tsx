@@ -4,7 +4,6 @@ import type { DriveVolumeEntity } from "@db";
 import { Button } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { IconDatabaseShare } from "@tabler/icons-react";
-import dayjs from "dayjs";
 import { CheckCircle, Clock, HardDrive, Plus } from "lucide-react";
 import Link from "next/link";
 import type * as React from "react";
@@ -198,7 +197,12 @@ export default function VolumesManager({
 																<span className="text-xs text-muted-foreground">
 																	{dict?.platform?.createdColonPrefix ??
 																		"Created:"}{" "}
-																	{dayjs(v.createdAt).format("MMM D, YYYY")}
+																	{new Intl.DateTimeFormat(
+																		dict?.locale ?? "en",
+																		{
+																			dateStyle: "medium",
+																		},
+																	).format(new Date(v.createdAt))}
 																</span>
 															) : null}
 														</div>

@@ -21,17 +21,18 @@ import {
 } from "lucide-react";
 
 import type { MessageEntity } from "@db";
+import type { Dictionary } from "@/lib/dictionaries";
 import type {
     InspectorView,
 } from "@/components/dashboard/inspector/inspector-views";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useOptionalI18n } from "@/components/providers/dictionary-provider";
 
 export type {
     InspectorView,
 } from "@/components/dashboard/inspector/inspector-views";
 
 function getTabLabel(
-    dict: ReturnType<typeof useOptionalDictionary>,
+    dict: Dictionary | undefined,
     key: string,
     fallback: string,
 ) {
@@ -55,7 +56,8 @@ function PaneLoading({
     paneKey: string;
     title: string;
 }) {
-    const dict = useOptionalDictionary();
+    const i18n = useOptionalI18n();
+    const dict = i18n?.dict;
     const label = getTabLabel(dict, paneKey, title);
     return (
         <InspectorPlaceholder
@@ -237,7 +239,9 @@ export default function InspectorBar({
                                          onRefresh,
                                          children,
                                      }: InspectorBarProps) {
-    const dict = useOptionalDictionary();
+    const i18n = useOptionalI18n();
+    const dict = i18n?.dict;
+    const format = i18n?.format;
     const [internalValue, setInternalValue] = useState<InspectorView>("preview");
 
     const activeValue = value ?? internalValue;
@@ -359,7 +363,7 @@ export default function InspectorBar({
                             </span>
 
                             <span>
-                                {Object.keys(message?.headersJson || {}).length} {dict?.mailbox?.headersLabel ?? "headers"}
+                                {format?.message(Object.keys(message?.headersJson || {}).length, dict?.mailbox?.headersCount ?? { other: "{count} headers" }) ?? `${Object.keys(message?.headersJson || {}).length} headers`}
                             </span>
                         </div>
                     </div>

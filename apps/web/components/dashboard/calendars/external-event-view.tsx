@@ -12,7 +12,7 @@ import {
 	yesCalendarInvite,
 } from "@/lib/actions/calendar";
 import { getDayjsTz } from "@common/day-js-extended";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useOptionalI18n } from "@/components/providers/dictionary-provider";
 
 type UiGuestStatus =
 	| "accepted"
@@ -22,7 +22,9 @@ type UiGuestStatus =
 	| null;
 
 function ExternalEventView() {
-	const dict = useOptionalDictionary();
+	const i18n = useOptionalI18n();
+	const dict = i18n?.dict;
+	const format = i18n?.format;
 	const { state } = useDynamicContext<CalendarState>();
 	const editEvent = state.activePopoverEditEvent ?? null;
 	const editEventId = editEvent?.id ?? null;
@@ -104,9 +106,12 @@ function ExternalEventView() {
 
 	const dateLabel =
 		start && end
-			? `${start.format("ddd, D MMM")} · ${start.format(
-					"hh:mm A",
-				)} – ${end.format("hh:mm A")} (${start.format("z")})`
+			? `${format?.date(start.toDate(), {
+						weekday: "short",
+						day: "numeric",
+						month: "short",
+						timeZone: state.defaultCalendar.timezone,
+					}) ?? ""} · ${format?.time(start.toDate(), { timeZone: state.defaultCalendar.timezone }) ?? ""} – ${format?.time(end.toDate(), { timeZone: state.defaultCalendar.timezone }) ?? ""} (${start.format("z")})`
 			: "";
 
 	const organizerLabel =

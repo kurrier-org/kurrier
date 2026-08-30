@@ -30,7 +30,10 @@ type ScheduledListProps = {
 	onCancel?: (draft: DraftMessageRow) => void;
 };
 
-function formatDateLabel(input?: string | number | Date) {
+function formatDateLabel(
+	input: string | number | Date | undefined,
+	locale?: string,
+) {
 	if (!input) return "";
 
 	const d = dayjs(input);
@@ -39,14 +42,16 @@ function formatDateLabel(input?: string | number | Date) {
 	const now = dayjs();
 
 	if (d.isSame(now, "day")) {
-		return d.format("h:mm A");
+		return new Intl.DateTimeFormat(locale ?? "en", {
+			hour: "2-digit",
+			minute: "2-digit",
+		}).format(d.toDate());
 	}
 
-	if (d.isSame(now, "year")) {
-		return d.format("MMM D, h:mm A");
-	}
-
-	return d.format("MMM D, YYYY, h:mm A");
+	return new Intl.DateTimeFormat(locale ?? "en", {
+		dateStyle: d.isSame(now, "year") ? "medium" : "long",
+		timeStyle: "short",
+	}).format(d.toDate());
 }
 
 function getToLabel(payload: Record<string, any>) {
@@ -84,8 +89,10 @@ function hasAttachments(payload: Record<string, any>) {
 }
 
 function ScheduledListItem({ draft }: { draft: DraftMessageRow }) {
+	const dict = useOptionalDictionary();
 	const scheduledLabel = formatDateLabel(
 		draft.scheduledAt ?? draft.updatedAt ?? draft.createdAt ?? Date.now(),
+		dict?.locale,
 	);
 	const toLabel = getToLabel(draft.payload);
 	const subject = getSubject(draft.payload);

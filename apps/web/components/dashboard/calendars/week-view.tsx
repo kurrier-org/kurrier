@@ -18,12 +18,16 @@ import {
 	layoutDayFragments,
 	splitFragmentIntoHours,
 } from "@/components/dashboard/calendars/client-helpers";
+import { useOptionalI18n } from "@/components/providers/dictionary-provider";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
-function formatHourLabel(hour: number) {
-	return dayjs().hour(hour).minute(0).format("h A");
+function formatHourLabel(
+	hour: number,
+	format?: { time: (value: Date) => string },
+) {
+	return format?.time(dayjs().hour(hour).minute(0).toDate()) ?? "";
 }
 
 export function WeekGrid({
@@ -39,6 +43,8 @@ export function WeekGrid({
 	attendeeContacts: Promise<ComposeContact[]>;
 	allDayByDay: Map<string, AllDayFragment[]>;
 }) {
+	const i18n = useOptionalI18n();
+	const format = i18n?.format;
 	const { setState, state } = useDynamicContext<CalendarState>();
 	const params = useParams();
 	const dayjsTz = getDayjsTz(state.defaultCalendar.timezone);
@@ -143,7 +149,7 @@ export function WeekGrid({
 									key={hour}
 									className="h-12 border-b border-neutral-200 dark:border-neutral-700 flex items-start justify-end pr-3 pt-1 text-xxs text-neutral-400 dark:text-brand-foreground"
 								>
-									{formatHourLabel(hour)}
+									{formatHourLabel(hour, format)}
 								</div>
 							))}
 						</div>

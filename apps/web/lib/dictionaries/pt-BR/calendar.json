@@ -72,5 +72,10 @@
 	"decline": "Recusar",
 	"location": "Local",
 	"guests": "Convidados",
-	"more": "mais"
+	"more": "mais",
+  "guestsCount": {"one": "{count} convidado", "other": "{count} convidados", "few": "{count} convidados", "many": "{count} convidados"},
+  "intervalDaysCount": {"one": "dia", "other": "dias", "few": "dias", "many": "dias"},
+  "intervalWeeksCount": {"one": "semana", "other": "semanas", "few": "semanas", "many": "semanas"},
+  "intervalMonthsCount": {"one": "mês", "other": "meses", "few": "meses", "many": "meses"},
+  "intervalYearsCount": {"one": "ano", "other": "anos", "few": "anos", "many": "anos"}
 }

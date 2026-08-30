@@ -384,5 +384,7 @@
 	"customProviderMailboxIdentityTitle": "Identidade da caixa de entrada",
 	"customProviderMailboxIdentityHelp": "O Kurrier criará a identidade de e-mail e começará a sincronizar suas caixas de entrada automaticamente.",
 	"customProviderDisplayNamePlaceholder": "Seu nome",
-	"customProviderDisplayNameHelp": "Exibido aos destinatários quando você envia e-mails."
+	"customProviderDisplayNameHelp": "Exibido aos destinatários quando você envia e-mails.",
+  "noDomainsYet": "Nenhum domínio ainda — adicione o primeiro para começar.",
+  "noEmailAddressesYet": "Nenhum endereço de e-mail ainda — adicione o primeiro para começar."
 }

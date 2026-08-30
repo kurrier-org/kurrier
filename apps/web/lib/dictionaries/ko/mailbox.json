@@ -1,1 +1,6 @@
-{}
+{
+  "attachmentsCount": {"other": "첨부 파일 {count}개", "one": "첨부 파일 {count}개", "few": "첨부 파일 {count}개", "many": "첨부 파일 {count}개"},
+  "headersCount": {"other": "헤더 {count}개", "one": "헤더 {count}개", "few": "헤더 {count}개", "many": "헤더 {count}개"},
+  "deliveryHopsCount": {"other": "전송 경로 {count}개", "one": "전송 경로 {count}개", "few": "전송 경로 {count}개", "many": "전송 경로 {count}개"},
+  "deliveryEventsCount": {"other": "전송 이벤트 {count}개", "one": "전송 이벤트 {count}개", "few": "전송 이벤트 {count}개", "many": "전송 이벤트 {count}개"}
+}

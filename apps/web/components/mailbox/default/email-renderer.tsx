@@ -18,8 +18,7 @@ import ThreadLabelHoverButtons from "@/components/dashboard/labels/thread-label-
 import MailComposer from "@/components/mailbox/default/composer/mail-composer";
 import EditorAttachmentItem from "@/components/mailbox/default/editor/editor-attachment-item";
 import MailUnsubscriber from "@/components/mailbox/default/mail-unsubscriber";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
-
+import { useOptionalI18n } from "@/components/providers/dictionary-provider";
 import type {
 	FetchLabelsResult,
 	FetchMailboxThreadLabelsResult,
@@ -168,20 +167,19 @@ function EmailRenderer({
 	labelsByThreadId: FetchMailboxThreadLabelsResult;
 	children?: React.ReactNode;
 }) {
-	const dict = useOptionalDictionary();
+	const i18n = useOptionalI18n();
+	const dict = i18n?.dict;
+	const format = i18n?.format;
 	const params = useParams();
-
 	const composerRef = useRef<HTMLDivElement>(null);
-
 	const formatted = Temporal.Instant.from(message.createdAt.toISOString())
 		.toZonedDateTimeISO(Temporal.Now.timeZoneId())
-		.toLocaleString("en-US", {
+		.toLocaleString(dict?.locale ?? "en", {
 			day: "2-digit",
 			month: "short",
 			year: "numeric",
 			hour: "2-digit",
 			minute: "2-digit",
-			hour12: true,
 		});
 
 	const [showEditor, setShowEditor] = useState(false);
@@ -236,16 +234,14 @@ function EmailRenderer({
 	const formattedTime = useMemo(() => {
 		return Temporal.Instant.from(message.createdAt.toISOString())
 			.toZonedDateTimeISO(Temporal.Now.timeZoneId())
-			.toLocaleString("en-GB", {
+			.toLocaleString(dict?.locale ?? "en", {
 				day: "numeric",
 				month: "long",
 				year: "numeric",
 				hour: "2-digit",
 				minute: "2-digit",
-				hour12: false,
-			})
-			.replace(",", " at");
-	}, [message.createdAt]);
+			});
+	}, [dict?.locale, message.createdAt]);
 
 	const activeIdentityPublicId = useMemo(() => {
 		const routeIdentityPublicId = String(params.identityPublicId ?? "");
@@ -461,8 +457,12 @@ function EmailRenderer({
 			{attachments?.length > 0 && (
 				<div className="border-t border-dotted py-4">
 					<div className="mb-4 font-semibold">
-						{attachments.length}
-						{dict?.mailbox?.attachmentsCountSuffix ?? " attachments"}
+						{format?.message(
+							attachments.length,
+							dict?.mailbox?.attachmentsCount ?? {
+								other: "{count} attachments",
+							},
+						) ?? `${attachments.length} attachments`}
 					</div>
 
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

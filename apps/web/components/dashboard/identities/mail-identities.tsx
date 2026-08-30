@@ -890,8 +890,10 @@ function EmptyState({
 						{dict?.platform?.noItemsMatchPrefix ?? "No "}{label}{dict?.platform?.noItemsMatchMiddle ?? " match"}{" "}
 						<span className="font-medium text-foreground">“{query}”</span>{dict?.platform?.noItemsMatchSuffix ?? ". Try a different search."}
 					</>
+				) : kind === "domain" ? (
+					dict?.platform?.noDomainsYet ?? "No domains yet — add your first one to get started."
 				) : (
-					<>{dict?.platform?.noItemsYetPrefix ?? "No "}{label}{dict?.platform?.noItemsYetSuffix ?? " yet — add your first one to get started."}</>
+					dict?.platform?.noEmailAddressesYet ?? "No email addresses yet — add your first one to get started."
 				)}
 			</p>
 		</div>

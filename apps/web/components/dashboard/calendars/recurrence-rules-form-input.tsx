@@ -11,7 +11,7 @@ import {
 } from "@schema";
 import React, { useMemo, useState } from "react";
 import { ReusableFormItems } from "@/components/common/reusable-form-items";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useOptionalI18n } from "@/components/providers/dictionary-provider";
 
 const WEEKDAY_LABEL_KEYS: Record<string, string> = {
 	MO: "weekdayMon",
@@ -103,7 +103,9 @@ function RecurrenceRulesFormInput({
 	name,
 	defaultValue,
 }: RecurrenceRulesFormInputProps) {
-	const dict = useOptionalDictionary();
+	const i18n = useOptionalI18n();
+	const dict = i18n?.dict;
+	const format = i18n?.format;
 	const initial = useMemo(
 		() => parseInitialRrule(defaultValue),
 		[defaultValue],
@@ -149,13 +151,13 @@ function RecurrenceRulesFormInput({
 
 	const intervalUnitLabel =
 		freq === "DAILY"
-			? (dict?.calendar?.intervalDays ?? "day(s)")
+			? format?.message(interval, dict?.calendar?.intervalDaysCount ?? { other: "days" }) ?? "days"
 			: freq === "WEEKLY"
-				? (dict?.calendar?.intervalWeeks ?? "week(s)")
+				? format?.message(interval, dict?.calendar?.intervalWeeksCount ?? { other: "weeks" }) ?? "weeks"
 				: freq === "MONTHLY"
-					? (dict?.calendar?.intervalMonths ?? "month(s)")
+					? format?.message(interval, dict?.calendar?.intervalMonthsCount ?? { other: "months" }) ?? "months"
 					: freq === "YEARLY"
-						? (dict?.calendar?.intervalYears ?? "year(s)")
+						? format?.message(interval, dict?.calendar?.intervalYearsCount ?? { other: "years" }) ?? "years"
 						: "";
 
 	const fields: BaseFormProps["fields"] = [

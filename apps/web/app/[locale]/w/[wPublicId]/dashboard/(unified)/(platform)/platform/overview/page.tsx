@@ -187,25 +187,25 @@ export default async function Page({
 		),
 	]);
 	const ownerConfigurationRows: [string, string][] = [
-		[p.providers, formatNumber(statsData?.connectedProviders || 0)],
-		[p.verifiedDomains, formatNumber(statsData?.verifiedDomains || 0)],
-		[p.identities, formatNumber(statsData?.activeIdentities || 0)],
+		[p.providers, formatNumber(locale, statsData?.connectedProviders || 0)],
+		[p.verifiedDomains, formatNumber(locale, statsData?.verifiedDomains || 0)],
+		[p.identities, formatNumber(locale, statsData?.activeIdentities || 0)],
 	];
 	if (driveEnabled) {
 		ownerConfigurationRows.push([
 			p.volumes,
-			formatNumber(statsData?.volumeCount || 0),
+			formatNumber(locale, statsData?.volumeCount || 0),
 		]);
 	}
 	const ownerRecordRows: [string, string][] = [
-		[p.messages, formatNumber(statsData?.emailsProcessedTotal || 0)],
-		[p.threads, formatNumber(statsData?.threadCount || 0)],
-		[p.drafts, formatNumber(statsData?.draftCount || 0)],
+		[p.messages, formatNumber(locale, statsData?.emailsProcessedTotal || 0)],
+		[p.threads, formatNumber(locale, statsData?.threadCount || 0)],
+		[p.drafts, formatNumber(locale, statsData?.draftCount || 0)],
 	];
 	if (driveEnabled) {
 		ownerRecordRows.push([
 			p.driveEntries,
-			formatNumber(statsData?.driveEntryCount || 0),
+			formatNumber(locale, statsData?.driveEntryCount || 0),
 		]);
 	}
 
@@ -298,21 +298,21 @@ export default async function Page({
 									rows={[
 										[
 											p.totalMessages,
-											formatNumber(statsData?.emailsProcessedTotal || 0),
+											formatNumber(locale, statsData?.emailsProcessedTotal || 0),
 										],
 										[
 											p.last24h,
-											formatNumber(statsData?.emailsProcessed24h || 0),
+											formatNumber(locale, statsData?.emailsProcessed24h || 0),
 										],
-										[p.threads, formatNumber(statsData?.threadCount || 0)],
-										[p.drafts, formatNumber(statsData?.draftCount || 0)],
+										[p.threads, formatNumber(locale, statsData?.threadCount || 0)],
+										[p.drafts, formatNumber(locale, statsData?.draftCount || 0)],
 										[
 											p.scheduledDrafts,
-											formatNumber(statsData?.scheduledDraftCount || 0),
+											formatNumber(locale, statsData?.scheduledDraftCount || 0),
 										],
 										[
 											p.attachments,
-											formatNumber(statsData?.attachmentCount || 0),
+											formatNumber(locale, statsData?.attachmentCount || 0),
 										],
 									]}
 								/>
@@ -412,10 +412,10 @@ export default async function Page({
 										: [
 												[
 													p.messages,
-													formatNumber(statsData?.emailsProcessedTotal || 0),
+													formatNumber(locale, statsData?.emailsProcessedTotal || 0),
 												],
-												[p.threads, formatNumber(statsData?.threadCount || 0)],
-												[p.drafts, formatNumber(statsData?.draftCount || 0)],
+												[p.threads, formatNumber(locale, statsData?.threadCount || 0)],
+												[p.drafts, formatNumber(locale, statsData?.draftCount || 0)],
 											]
 								}
 							/>
@@ -562,8 +562,8 @@ function QuickAction({
 	);
 }
 
-function formatNumber(value: unknown) {
-	return Number(value || 0).toLocaleString();
+function formatNumber(locale: string, value: unknown) {
+	return Number(value || 0).toLocaleString(locale);
 }
 
 function formatBytes(value: unknown) {

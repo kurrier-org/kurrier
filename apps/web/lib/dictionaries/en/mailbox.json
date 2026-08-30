@@ -288,5 +288,9 @@
 	"identity": "Identity",
 	"noScheduledMessages": "No scheduled messages",
 	"loadRemoteImagesOnce": "Load remote images once",
-	"alwaysLoadForThisSender": "Always load for this sender"
+	"alwaysLoadForThisSender": "Always load for this sender",
+  "attachmentsCount": {"one": "{count} attachment", "other": "{count} attachments", "few": "{count} attachments", "many": "{count} attachments"},
+  "headersCount": {"one": "{count} header", "other": "{count} headers", "few": "{count} headers", "many": "{count} headers"},
+  "deliveryHopsCount": {"one": "{count} delivery hop", "other": "{count} delivery hops", "few": "{count} delivery hops", "many": "{count} delivery hops"},
+  "deliveryEventsCount": {"one": "{count} delivery event", "other": "{count} delivery events", "few": "{count} delivery events", "many": "{count} delivery events"}
 }

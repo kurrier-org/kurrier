@@ -374,5 +374,13 @@
 	"customProviderIncomingMailTitle": "Входящая почта",
 	"customProviderSeparateImapHelp": "Этот провайдер использует отдельные учётные данные IMAP.",
 	"customProviderImapUsername": "Имя пользователя IMAP",
-	"customProviderImapPassword": "Пароль IMAP"
+	"customProviderImapPassword": "Пароль IMAP",
+	"addMailbox": "Добавить почтовый ящик",
+	"connectMailbox": "Подключить почтовый ящик",
+	"customProviderMailboxIdentityTitle": "Почтовый адрес ящика",
+	"customProviderMailboxIdentityHelp": "Kurrier автоматически создаст почтовый адрес и начнёт синхронизацию его ящиков.",
+	"customProviderDisplayNamePlaceholder": "Ваше имя",
+	"customProviderDisplayNameHelp": "Отображается получателям отправленных вами писем.",
+  "noDomainsYet": "Доменов пока нет — добавьте первый, чтобы начать.",
+  "noEmailAddressesYet": "Адресов электронной почты пока нет — добавьте первый, чтобы начать."
 }

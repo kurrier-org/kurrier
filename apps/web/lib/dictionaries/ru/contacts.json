@@ -55,5 +55,6 @@
 	"addAddress": "Добавить адрес",
 	"selectDate": "Выберите дату",
 	"editPrefix": "Изменить: ",
-	"newContactForm": "Форма нового контакта"
+	"newContactForm": "Форма нового контакта",
+  "locationsCount": {"one": "{count} адрес", "few": "{count} адреса", "many": "{count} адресов", "other": "{count} адреса"}
 }
