@@ -12,3 +12,4 @@ export * from "./types/api";
 export * from "./types/calendar";
 export * from "./types/drive";
 export * from "./types/mail-rules";
+export * from "./types/extensions/hooks";

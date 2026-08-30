@@ -1,0 +1,15 @@
+{
+	"name": "@kurrier/extensions",
+	"private": true,
+	"version": "1.0.0",
+	"description": "Extensibility framework for Kurrier, including hooks, plugins, UI extension points, and themes.",
+	"types": "src/index.ts",
+	"main": "src/index.ts",
+	"type": "module",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "Krishna Rokhale",
+	"license": "ISC"
+}
