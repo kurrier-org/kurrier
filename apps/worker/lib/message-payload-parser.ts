@@ -20,7 +20,7 @@ import { type Attachment, type ParsedMail, simpleParser } from "mailparser";
 import { s3 } from "../lib/create-s3-client";
 import { getRedis } from "../lib/get-redis";
 import { upsertWorkspaceSharedContactFromMessage } from "../lib/message-parser-contacts";
-import { enqueueNewMailPush } from "../lib/web-push";
+import { shouldEnqueueNewMailPush } from "../lib/message-payload-parser-push";
 
 const SEARCH_BATCH_SIZE = 100;
 const WEBHOOK_BATCH_SIZE = 100;
@@ -285,8 +285,6 @@ export async function parseAndStoreEmail(
 		.limit(1);
 
 	if (existingMessage) {
-		const { webPushQueue } = await getRedis();
-		await enqueueNewMailPush(existingMessage.id, existingMessage.ownerId, webPushQueue);
 		const existingMeta =
 			(existingMessage.metaData as Record<string, any>) ?? {};
 
@@ -427,15 +425,17 @@ export async function parseAndStoreEmail(
 		return null;
 	}
 
-	const { webPushQueue } = await getRedis();
-	for (const subscription of pushSubscriptions) {
-		await webPushQueue.add("web-push:deliver", { messageId: message.id, subscriptionId: subscription.id }, {
-			jobId: `web-push:${message.id}:${subscription.id}`,
-			attempts: 5,
-			backoff: { type: "exponential", delay: 5000 },
-			removeOnComplete: true,
-			removeOnFail: false,
-		});
+	if (shouldEnqueueNewMailPush(Boolean(existingMessage))) {
+		const { webPushQueue } = await getRedis();
+		for (const subscription of pushSubscriptions) {
+			await webPushQueue.add("web-push:deliver", { messageId: message.id, subscriptionId: subscription.id }, {
+				jobId: `web-push:${message.id}:${subscription.id}`,
+				attempts: 5,
+				backoff: { type: "exponential", delay: 5000 },
+				removeOnComplete: true,
+				removeOnFail: false,
+			});
+		}
 	}
 
 	await db
