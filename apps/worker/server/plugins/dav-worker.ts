@@ -1,6 +1,6 @@
 import {JobScheduler, Worker} from "bullmq";
 import { defineNitroPlugin } from "nitropack/runtime";
-import { getRedis } from "../../lib/get-redis";
+import { redisConnection } from "../../lib/get-redis";
 import { createCalendarEvent } from "../../lib/dav/calendar/dav-create-calendar-event";
 import { deleteCalendarEvent } from "../../lib/dav/calendar/dav-delete-calendar-event";
 import { updateCalendarEvent } from "../../lib/dav/calendar/dav-update-calendar-event";
@@ -17,7 +17,7 @@ import {deleteContact} from "../../lib/dav/dav-delete-contact";
 import {davSyncCalendarsDb} from "../../lib/dav/calendar/dav-sync-calendar-db";
 
 export default defineNitroPlugin(async (nitroApp) => {
-	const { connection } = await getRedis();
+	const connection = redisConnection.connection
 
 	const worker = new Worker(
 		"dav-worker",

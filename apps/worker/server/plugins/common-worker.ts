@@ -1,6 +1,6 @@
 import { defineNitroPlugin } from "nitropack/runtime";
 import { JobScheduler, Worker } from "bullmq";
-import { getRedis } from "../../lib/get-redis";
+import { redisConnection } from "../../lib/get-redis";
 import { db, mailboxThreads, MessageEntity, providers } from "@db";
 import {INBOUND_SPEC, JMAP_SPEC, PROVIDERS, STORAGE_PROVIDERS} from "@schema";
 import { kvDel, kvGet, kvSet } from "@common";
@@ -13,7 +13,7 @@ import { s3 } from "../../lib/create-s3-client";
 import { getServerEnv } from "@schema";
 
 export default defineNitroPlugin(async (nitroApp) => {
-	const connection = (await getRedis()).connection;
+	const connection = redisConnection.connection
 	try {
 		const { S3_BUCKET } = getServerEnv();
 

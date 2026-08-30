@@ -15,7 +15,7 @@ import type {
     JmapMailboxGetResponse,
 } from "@jmap";
 
-import { getRedis } from "../get-redis";
+import { redisConnection } from "../get-redis";
 import {inferKind} from "../../lib/imap/backfill/discover/discover-helpers";
 
 
@@ -219,7 +219,7 @@ export async function syncJmapMailboxes({
             ),
         );
 
-    const { connection } = await getRedis();
+    const connection = redisConnection.connection
 
     const { Queue } = await import("bullmq");
 

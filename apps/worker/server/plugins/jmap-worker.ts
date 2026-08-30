@@ -4,7 +4,7 @@ import {
     Worker,
 } from "bullmq";
 
-import { getRedis } from "../../lib/get-redis";
+import {getRedis, redisConnection} from "../../lib/get-redis";
 
 import {
     db,
@@ -118,9 +118,9 @@ export default defineNitroPlugin(
         );
 
         const {
-            connection,
             jmapQueue,
         } = await getRedis();
+        const connection = redisConnection.connection
 
         const worker = new Worker(
             "jmap-worker",

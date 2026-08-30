@@ -8,7 +8,6 @@ import {
 import { getMessageAddress, getMessageName } from "@common/mail-client";
 import { generateSnippet, upsertMailboxThreadItem } from "@common";
 const serverConfig = getServerEnv();
-import IORedis from "ioredis";
 import { Worker } from "bullmq";
 import {
 	db,
@@ -37,12 +36,12 @@ import { getRedis } from "../../lib/get-redis";
 import {GetObjectCommand, PutObjectCommand} from "@aws-sdk/client-s3";
 import {s3} from "../../lib/create-s3-client";
 import MailComposer from "nodemailer/lib/mail-composer/index.js";
-const connection = new IORedis({
+const connection = {
 	maxRetriesPerRequest: null,
 	password: serverConfig.REDIS_PASSWORD,
 	host: serverConfig.REDIS_HOST || "redis",
 	port: Number(serverConfig.REDIS_PORT || 6379),
-});
+}
 
 type DbTransaction = Parameters<
 	Parameters<typeof db.transaction>[0]
@@ -372,6 +371,8 @@ export default defineNitroPlugin(async (nitroApp) => {
 
 			const mailerResponse = await mailer.sendEmail(data.to, {
 				from: mailbox.identity.value,
+				cc: data.cc ?? [],
+				bcc: data.bcc ?? [],
 				subject: String(newMessageBody.subject),
 				text: newMessageBody.text ?? "",
 				html: newMessageBody.html ?? "",

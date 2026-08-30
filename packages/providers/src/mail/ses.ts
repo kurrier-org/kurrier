@@ -863,6 +863,8 @@ export class SesMailer implements Mailer {
 	async sendEmail(
 		to: string[],
 		opts: {
+			cc?: string[];
+			bcc?: string[];
 			subject: string;
 			text: string;
 			html: string;
@@ -937,7 +939,11 @@ export class SesMailer implements Mailer {
 			const { MessageId } = await this.v2.send(
 				new SendEmailCommandV2({
 					FromEmailAddress: opts.from,
-					Destination: { ToAddresses: to },
+					Destination: {
+						ToAddresses: to,
+						CcAddresses: opts.cc?.length ? opts.cc : undefined,
+						BccAddresses: opts.bcc?.length ? opts.bcc : undefined,
+					},
 					// Source: opts.from,
 					Content: {
 						Simple: {

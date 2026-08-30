@@ -9,7 +9,7 @@ import { initSmtpClient } from "../../lib/imap/imap-client";
 import { mailSetFlags } from "../../lib/imap/imap-flags";
 import { moveMail } from "../../lib/imap/imap-move";
 
-import { getRedis } from "../../lib/get-redis";
+import {getRedis, redisConnection} from "../../lib/get-redis";
 import { deleteMail } from "../../lib/imap/imap-delete";
 import { addNewFolder } from "../../lib/imap/imap-new-folder";
 import { deleteFolder } from "../../lib/imap/imap-delete-folder";
@@ -31,7 +31,8 @@ import { gmailSetFlags } from "../../lib/gmail/gmail-flags";
 export default defineNitroPlugin(async (nitroApp) => {
 	const imapInstances = new Map<string, ImapFlow>();
 	const idleImapInstances = new Map<string, ImapFlow>();
-	const { connection, searchIngestQueue, smtpQueue } = await getRedis();
+	const { searchIngestQueue, smtpQueue } = await getRedis();
+	const connection = redisConnection.connection
 
 	const worker = new Worker(
 		"smtp-worker",
