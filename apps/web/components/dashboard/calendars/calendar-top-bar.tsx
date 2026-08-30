@@ -13,6 +13,7 @@ import NewEventButton from "@/components/dashboard/calendars/new-event-button";
 import { useAppearance } from "@/components/providers/appearance-provider";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
+import { DAYJS_LOCALES } from "@/lib/locale";
 
 const VIEW_LABEL_KEYS: Record<string, string> = {
 	day: "viewDay",
@@ -44,6 +45,9 @@ function CalendarTopBar({ workspacePublicId }: { workspacePublicId: string }) {
 					.month(Number(params.month) - 1)
 					.date(Number(params.day))
 			: today;
+	const localizedCurrentDay = currentDay.locale(
+		DAYJS_LOCALES[dict?.locale ?? "en"],
+	);
 
 	useEffect(() => {
 		const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -55,11 +59,11 @@ function CalendarTopBar({ workspacePublicId }: { workspacePublicId: string }) {
 
 	let currentViewTitle = "";
 	if (activeView === "week" || activeView === "month") {
-		currentViewTitle = currentDay.format("MMMM YYYY");
+		currentViewTitle = localizedCurrentDay.format("MMMM YYYY");
 	} else if (activeView === "year") {
-		currentViewTitle = currentDay.format("YYYY");
+		currentViewTitle = localizedCurrentDay.format("YYYY");
 	} else {
-		currentViewTitle = currentDay.format("DD MMMM YYYY");
+		currentViewTitle = localizedCurrentDay.format("DD MMMM YYYY");
 	}
 
 	const buildPath = (view: CalendarViewType, day = currentDay) => {
