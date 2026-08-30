@@ -55,26 +55,39 @@ export function isUnsafeWebPushAddress(address: string) {
 	const words = left
 		.concat(Array(8 - left.length - right.length).fill("0"), right)
 		.map((x) => parseInt(x, 16));
-	const value = words.reduce((n, word) => (n << 16n) | BigInt(word), 0n);
-	const prefix = (bits: number) => value >> BigInt(128 - bits);
-	const embeddedIPv4 = Number(value & 0xffffffffn);
-	const mappedIPv4 = value >> 32n === 0xffffn;
+	const hasPrefix = (bits: number, expected: number[]) => {
+		const wholeWords = Math.floor(bits / 16);
+		if (
+			words.some(
+				(word, index) => index < wholeWords && word !== expected[index],
+			)
+		)
+			return false;
+		const remainingBits = bits % 16;
+		if (!remainingBits) return true;
+		const mask = (0xffff << (16 - remainingBits)) & 0xffff;
+		return (words[wholeWords] & mask) === (expected[wholeWords] & mask);
+	};
+	const embeddedIPv4 = words[6] * 0x10000 + words[7];
+	// IPv4-mapped addresses have six zero words followed by ffff.
+	const mapped =
+		words.slice(0, 5).every((word) => word === 0) && words[5] === 0xffff;
 	const translatedIPv4 =
-		prefix(96) === 0x64ff9b0000000000000000n ||
-		prefix(48) === 0x64ff9b0001n ||
-		prefix(96) === 0n;
-	if (mappedIPv4 || translatedIPv4) return isUnsafeIPv4(embeddedIPv4);
+		hasPrefix(96, [0x64, 0xff9b, 0, 0, 0, 0]) ||
+		hasPrefix(48, [0x64, 0xff9b, 1]) ||
+		hasPrefix(96, [0, 0, 0, 0, 0, 0]);
+	if (mapped || translatedIPv4) return isUnsafeIPv4(embeddedIPv4);
 	return (
-		prefix(128) === 0n ||
-		prefix(128) === 1n ||
-		prefix(8) === 0xffn ||
-		prefix(7) === 0x7en ||
-		prefix(10) === 0x3fan ||
-		prefix(32) === 0x20010db8n ||
-		prefix(28) === 0x2001001n ||
-		prefix(64) === 0x100000000000000n ||
-		prefix(32) === 0x20010000n ||
-		prefix(16) === 0x2002n
+		hasPrefix(128, [0, 0, 0, 0, 0, 0, 0, 0]) ||
+		hasPrefix(128, [0, 0, 0, 0, 0, 0, 0, 1]) ||
+		hasPrefix(8, [0xff00]) ||
+		hasPrefix(7, [0xfc00]) ||
+		hasPrefix(10, [0xfe80]) ||
+		hasPrefix(32, [0x2001, 0xdb8]) ||
+		hasPrefix(28, [0x2001, 0x0010]) ||
+		hasPrefix(64, [0x0100, 0, 0, 0]) ||
+		hasPrefix(32, [0x2001, 0]) ||
+		hasPrefix(16, [0x2002])
 	);
 }
 
