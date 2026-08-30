@@ -257,10 +257,15 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 		`;
 	}, [message.html, message.text]);
 
-	const prepared = useMemo(
-		() => prepareHtml(rawHtml, showRemoteImages),
-		[rawHtml, showRemoteImages],
-	);
+	const [prepared, setPrepared] = useState({
+		html: "",
+		hasRemoteImages: false,
+		hasQuotes: false,
+	});
+
+	useEffect(() => {
+		setPrepared(prepareHtml(rawHtml, showRemoteImages));
+	}, [rawHtml, showRemoteImages]);
 
 	useEffect(() => {
 		const host = hostRef.current;
