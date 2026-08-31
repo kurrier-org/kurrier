@@ -1,5 +1,6 @@
 {
 	"compilerOptions": {
+		"noEmit": true,
 		"paths": {
 			"@db": ["../db/src/index.ts"],
 			"@db/*": ["../db/src/*"]
