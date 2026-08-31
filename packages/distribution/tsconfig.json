@@ -2,6 +2,7 @@
 	"compilerOptions": {
 		"noEmit": true,
 		"jsx": "react-jsx",
+		"types": ["next"],
 		"esModuleInterop": true,
 		"allowSyntheticDefaultImports": true,
 		"paths": {
