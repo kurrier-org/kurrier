@@ -9,5 +9,5 @@ export const ensureExtensionsRegistered = () => {
 
     registered = true;
 
-    registerDistributionHooks();
+    registerDistribution();
 };
