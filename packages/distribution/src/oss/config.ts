@@ -1,5 +1,7 @@
 import type { DistributionConfig } from "../config";
-type CustomConfig = DistributionConfig<{}>;
+type CustomConfig = DistributionConfig<{
+    instanceConfig: Record<string, unknown>;
+}>;
 export const DISTRIBUTION_CONFIG = {
     id: "oss",
     locales: ["en", "pt-BR", "ko", "pl", "ru"],
@@ -8,4 +10,5 @@ export const DISTRIBUTION_CONFIG = {
         drive: process.env.DISABLE_DRIVE !== "true",
         localLogin: process.env.DISABLE_LOCAL_LOGIN !== "true",
     },
+    instanceConfig: {},
 } as const satisfies CustomConfig;
