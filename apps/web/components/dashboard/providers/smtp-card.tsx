@@ -1,8 +1,10 @@
 "use client";
+
 import { Button } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { SMTP_SPEC } from "@schema";
 import { Plus } from "lucide-react";
+
 import NewSmtpAccountForm from "@/components/dashboard/providers/new-smtp-account-form";
 import SmtpAccountCard from "@/components/dashboard/providers/smtp-account-card";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
@@ -10,11 +12,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { FetchDecryptedSecretsResult } from "@/lib/actions/dashboard";
 
 export default function SMTPCard({
-	smtpSecrets,
-}: {
+									 smtpSecrets,
+								 }: {
 	smtpSecrets: FetchDecryptedSecretsResult;
 }) {
 	const dict = useOptionalDictionary();
+
 	const openAddModal = () => {
 		const openModalId = modals.open({
 			title: (
@@ -35,56 +38,62 @@ export default function SMTPCard({
 
 	return (
 		<div className="flex min-w-0 flex-col">
-			<Card className="min-w-0 border-border shadow-none">
-				<CardHeader className="gap-2">
-					<div className="flex flex-col 2xl:flex-row 2xl:items-center 2xl:justify-between">
-						<div className="max-w-2xl">
-							<CardTitle className="text-xl">SMTP/IMAP Accounts</CardTitle>
-							<p className="text-sm text-muted-foreground mt-1">
+			<Card className="h-full min-w-0 overflow-hidden border-border shadow-none">
+				<CardHeader className="px-5 py-4 sm:h-[210px] sm:px-6">
+					<div className="flex h-full flex-col">
+						<div className="min-w-0 max-w-2xl">
+							<CardTitle className="text-base font-semibold sm:text-lg">
+								SMTP/IMAP Accounts
+							</CardTitle>
+
+							<p className="mt-1 text-sm leading-5 text-muted-foreground">
 								Manage connected email accounts. Credentials are stored in your
 								vault.
 							</p>
-							<p className="text-xs text-muted-foreground/80 mt-1">
+
+							<p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground/80">
 								{dict?.platform?.smtpSpecHelp ?? SMTP_SPEC.help}
 							</p>
 						</div>
 
-						<div className="mt-3 w-full 2xl:mt-0 2xl:w-fit">
+						<div className="mt-4 w-full sm:mt-auto sm:w-auto sm:self-start">
 							<Button
 								fullWidth
 								size="sm"
 								onClick={openAddModal}
-								className="!min-h-11 !w-full gap-2 2xl:!min-h-9 2xl:!w-auto"
+								className="!min-h-11 !w-full sm:!min-h-10 sm:!w-auto sm:!px-5"
+								leftSection={<Plus className="size-4" />}
 							>
-								<Plus className="h-4 w-4" />
 								Add Generic Account
 							</Button>
 						</div>
 					</div>
 				</CardHeader>
 
-				<CardContent className="space-y-6">
+				<CardContent className="space-y-4 border-t px-5 py-4 sm:px-6">
 					{(!smtpSecrets || smtpSecrets.length === 0) && (
-						<div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground text-center flex flex-col items-center gap-4 bg-muted">
+						<div className="flex flex-col items-center gap-4 rounded-lg border border-dashed bg-muted/20 px-4 py-6 text-center">
 							<div>
-								<div className="font-medium text-card-foreground">
-									{dict?.platform?.noSmtpAccountsYet ?? "No SMTP accounts yet"}
+								<div className="text-sm font-medium text-foreground">
+									{dict?.platform?.noSmtpAccountsYet ??
+										"No SMTP accounts yet"}
 								</div>
-								<div className="text-xs text-card-foreground mt-1">
+
+								<div className="mt-1 text-xs leading-5 text-muted-foreground">
 									{dict?.platform?.addAccountToStartSending ??
 										"Add an account to start sending mail from your app."}
 								</div>
 							</div>
-							<div className="w-full sm:w-fit">
+
+							<div className="w-full sm:w-auto">
 								<Button
 									fullWidth
 									variant="default"
 									size="sm"
 									onClick={openAddModal}
-									className="!h-auto !min-h-9 gap-2 !py-2"
-									classNames={{ label: "!whitespace-normal text-center" }}
+									className="!min-h-10 !w-full sm:!w-auto"
+									leftSection={<Plus className="size-4" />}
 								>
-									<Plus className="h-4 w-4" />
 									Add Generic Account
 								</Button>
 							</div>
@@ -93,14 +102,12 @@ export default function SMTPCard({
 
 					<div className="grid grid-cols-1 gap-4">
 						{!!smtpSecrets?.length &&
-							smtpSecrets.map((smtpSecret) => {
-								return (
-									<SmtpAccountCard
-										smtpSecret={smtpSecret}
-										key={smtpSecret.metaId}
-									/>
-								);
-							})}
+							smtpSecrets.map((smtpSecret) => (
+								<SmtpAccountCard
+									smtpSecret={smtpSecret}
+									key={smtpSecret.metaId}
+								/>
+							))}
 					</div>
 				</CardContent>
 			</Card>
