@@ -1,25 +1,25 @@
-import React from "react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
-import ContactsShell from "@/components/dashboard/contacts/contacts-shell";
-import { getWorkspacePublicId, rlsClient } from "@/lib/actions/clients";
-import { addressBooks, contactLabels, contacts, labels } from "@db";
-import { eq } from "drizzle-orm";
-import { ContactWithFavorite } from "@/components/dashboard/contacts/contacts-list";
-import { getServerEnv } from "@schema";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { addressBooks, contactLabels, contacts, labels } from "@db";
+import { getServerEnv } from "@schema";
+import { eq } from "drizzle-orm";
+import type React from "react";
+import type { ContactWithFavorite } from "@/components/dashboard/contacts/contacts-list";
+import ContactsShell from "@/components/dashboard/contacts/contacts-shell";
+import DashboardPageHeader from "@/components/dashboard/dashboard-page-header";
+import { getWorkspacePublicId, rlsClient } from "@/lib/actions/clients";
 import { s3 } from "@/lib/create-s3-client";
 import { getDictionary } from "@/lib/dictionaries";
-import { cookies } from "next/headers";
 
 export default async function ContactsLayout({
-												 children,
-											 }: {
+	children,
+	params,
+}: {
 	children: React.ReactNode;
+	params: Promise<{ locale: string }>;
 }) {
-	const cookieStore = await cookies();
-	const dict = await getDictionary(cookieStore.get("locale")?.value ?? "en");
+	const { locale } = await params;
+	const dict = await getDictionary(locale);
 	const rls = await rlsClient();
 	const rows = await rls((tx) =>
 		tx
@@ -29,7 +29,7 @@ export default async function ContactsLayout({
 			})
 			.from(contacts)
 			.leftJoin(contactLabels, eq(contactLabels.contactId, contacts.id))
-			.leftJoin(labels, eq(labels.id, contactLabels.labelId))
+			.leftJoin(labels, eq(labels.id, contactLabels.labelId)),
 	);
 
 	const grouped = new Map<string, ContactWithFavorite & { labels: string[] }>();
@@ -58,7 +58,9 @@ export default async function ContactsLayout({
 
 	const { S3_BUCKET } = getServerEnv();
 	const uniqueKeys = Array.from(
-		new Set(allContacts.map((c) => c.profilePictureXs).filter(Boolean) as string[])
+		new Set(
+			allContacts.map((c) => c.profilePictureXs).filter(Boolean) as string[],
+		),
 	);
 
 	const profileImages = await Promise.all(
@@ -66,10 +68,10 @@ export default async function ContactsLayout({
 			const signedUrl = await getSignedUrl(
 				s3,
 				new GetObjectCommand({ Bucket: S3_BUCKET, Key: key }),
-				{ expiresIn: 600 }
+				{ expiresIn: 600 },
 			);
 			return { path: key, signedUrl };
-		})
+		}),
 	);
 
 	const workspacePublicId = await getWorkspacePublicId();
@@ -77,14 +79,7 @@ export default async function ContactsLayout({
 
 	return (
 		<>
-			<header className="flex items-center gap-2 border-b bg-background/60 backdrop-blur py-3 px-4">
-				<SidebarTrigger className="-ml-1" />
-				<Separator
-					orientation="vertical"
-					className="data-[orientation=vertical]:h-4"
-				/>
-				<h1 className="text-sm font-semibold text-foreground/80">{dict.contacts.contacts}</h1>
-			</header>
+			<DashboardPageHeader title={dict.contacts.contacts} />
 
 			<ContactsShell
 				userContacts={allContacts}

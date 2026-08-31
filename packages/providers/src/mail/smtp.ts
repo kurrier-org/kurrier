@@ -21,16 +21,17 @@ export class SmtpMailer implements Mailer {
 			auth: cfg.auth,
 			pool: cfg.pool ?? false,
 		} as SMTPTransport.Options);
+
 		this.imapClient = cfg.imap
 			? new ImapFlow({
-					host: cfg.imap.host,
-					port: cfg.imap.port,
-					secure: cfg.imap.secure,
-					auth: {
-						user: cfg.imap.user,
-						pass: cfg.imap.pass,
-					},
-				})
+				host: cfg.imap.host,
+				port: cfg.imap.port,
+				secure: cfg.imap.secure,
+				auth: {
+					user: cfg.imap.user,
+					pass: cfg.imap.pass,
+				},
+			})
 			: null;
 	}
 
@@ -40,7 +41,10 @@ export class SmtpMailer implements Mailer {
 	}
 
 	async verify(): Promise<VerifyResult> {
-		const meta: Record<string, unknown> = { send: false, receive: undefined };
+		const meta: Record<string, unknown> = {
+			send: false,
+			receive: undefined,
+		};
 
 		try {
 			const ok = await this.transporter.verify();
@@ -50,6 +54,7 @@ export class SmtpMailer implements Mailer {
 				try {
 					await this.imapClient.connect();
 					await this.imapClient.noop();
+
 					meta.receive = true;
 				} catch (err: any) {
 					meta.receive = false;
@@ -67,12 +72,19 @@ export class SmtpMailer implements Mailer {
 				}
 			}
 
-			return { ok: true, message: "OK", meta };
+			return {
+				ok: true,
+				message: "OK",
+				meta,
+			};
 		} catch (err: any) {
 			return {
 				ok: false,
 				message: err?.message ?? "SMTP verify failed",
-				meta: { code: err?.code, response: err?.response || err?.responseText },
+				meta: {
+					code: err?.code,
+					response: err?.response || err?.responseText,
+				},
 			};
 		} finally {
 			try {
@@ -83,7 +95,10 @@ export class SmtpMailer implements Mailer {
 
 	async sendTestEmail(
 		to: string,
-		opts?: { subject?: string; body?: string },
+		opts?: {
+			subject?: string;
+			body?: string;
+		},
 	): Promise<boolean> {
 		try {
 			await this.transporter.sendMail({
@@ -91,11 +106,14 @@ export class SmtpMailer implements Mailer {
 				to,
 				subject: opts?.subject ?? "Test email",
 				text:
-					opts?.body ?? "This is a test email from your configured provider.",
+					opts?.body ??
+					"This is a test email from your configured provider.",
 			});
+
 			return true;
 		} catch (err) {
 			console.error("sendTestEmail error", err);
+
 			return false;
 		}
 	}
@@ -105,7 +123,9 @@ export class SmtpMailer implements Mailer {
 			domain: "",
 			status: "unverified",
 			dns: [],
-			meta: { info: "SMTP does not support domain identities" },
+			meta: {
+				info: "SMTP does not support domain identities",
+			},
 		};
 	}
 
@@ -114,7 +134,9 @@ export class SmtpMailer implements Mailer {
 			domain: "",
 			status: "unverified",
 			dns: [],
-			meta: { info: "SMTP does not support domain identities" },
+			meta: {
+				info: "SMTP does not support domain identities",
+			},
 		};
 	}
 
@@ -123,7 +145,9 @@ export class SmtpMailer implements Mailer {
 			domain: "",
 			status: "unverified",
 			dns: [],
-			meta: { info: "SMTP does not support domain identities" },
+			meta: {
+				info: "SMTP does not support domain identities",
+			},
 		};
 	}
 
@@ -138,33 +162,53 @@ export class SmtpMailer implements Mailer {
 	async sendEmail(
 		to: string[],
 		opts: {
+			cc?: string[];
+			bcc?: string[];
 			subject: string;
 			text: string;
 			html: string;
 			from: string;
 			inReplyTo: string;
 			references: string[];
-			attachments?: { name: string; content: Blob; contentType: string }[];
+			attachments?: {
+				name: string;
+				content: Blob;
+				contentType: string;
+			}[];
 		},
-	): Promise<{ success: boolean; MessageId?: string }> {
+	): Promise<{
+		success: boolean;
+		MessageId?: string;
+	}> {
 		try {
-			// convert Blob attachments -> Nodemailer format (Buffer)
 			const attachments = await Promise.all(
-				(opts.attachments ?? []).map(async (a) => ({
-					filename: a.name,
-					content: Buffer.from(await a.content.arrayBuffer()),
-					contentType: a.contentType || "application/octet-stream",
+				(opts.attachments ?? []).map(async (attachment) => ({
+					filename: attachment.name,
+					content: Buffer.from(
+						await attachment.content.arrayBuffer(),
+					),
+					contentType:
+						attachment.contentType ||
+						"application/octet-stream",
 				})),
 			);
 
 			const headers: Record<string, string> = {};
-			if (opts.inReplyTo) headers["In-Reply-To"] = opts.inReplyTo;
-			if (opts.references?.length)
-				headers["References"] = opts.references.join(" ");
+
+			if (opts.inReplyTo) {
+				headers["In-Reply-To"] = opts.inReplyTo;
+			}
+
+			if (opts.references?.length) {
+				headers["References"] =
+					opts.references.join(" ");
+			}
 
 			const info = await this.transporter.sendMail({
 				from: opts.from,
-				to, // array is fine; Nodemailer will join
+				to,
+				cc: opts.cc?.length ? opts.cc : undefined,
+				bcc: opts.bcc?.length ? opts.bcc : undefined,
 				subject: opts.subject,
 				text: opts.text || undefined,
 				html: opts.html || undefined,
@@ -172,17 +216,16 @@ export class SmtpMailer implements Mailer {
 				attachments,
 			});
 
-			return { success: true, MessageId: String(info.messageId || "") };
+			return {
+				success: true,
+				MessageId: String(info.messageId || ""),
+			};
 		} catch (err) {
-			// You can add logging here if desired
-			return { success: false };
+			console.error("[smtp-mailer] sendEmail error", err);
+
+			return {
+				success: false,
+			};
 		}
 	}
-
-	// async close(): Promise<void> {
-	//     // best-effort close if transport supports it
-	//     try {
-	//         this.transporter.close?.();
-	//     } catch { /* ignore */ }
-	// }
 }

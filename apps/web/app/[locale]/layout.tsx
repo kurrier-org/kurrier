@@ -28,7 +28,7 @@ import { DictionaryProvider } from "@/components/providers/dictionary-provider";
 import { getDictionary, hasLocale } from "@/lib/dictionaries";
 import { DAYJS_LOCALES } from "@/lib/locale";
 import { createMantineTheme } from "@/lib/mantine-theme";
-import { SITE_FEATURES } from "@/lib/site-features";
+import {DISTRIBUTION_CONFIG} from "@distribution/config";
 
 const jakartaSans = Plus_Jakarta_Sans({
 	variable: "--font-sans",
@@ -95,7 +95,7 @@ export default async function RootLayout({
 			>
 				<AppearanceProvider initialTheme={theme} initialMode={mode}>
 					<ConfigProvider value={publicConfig}>
-						<SiteFeaturesProvider value={SITE_FEATURES}>
+						<SiteFeaturesProvider value={DISTRIBUTION_CONFIG.features}>
 							<MantineProvider
 								theme={mantineTheme}
 								defaultColorScheme={colorScheme}
@@ -115,5 +115,7 @@ export default async function RootLayout({
 }
 
 export function generateStaticParams() {
-	return [{ locale: "en" }];
+	return DISTRIBUTION_CONFIG.locales.map((locale) => ({
+		locale,
+	}));
 }

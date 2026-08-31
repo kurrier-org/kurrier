@@ -20,13 +20,13 @@ import {
 } from "@aws-sdk/client-s3";
 import {s3} from "@/lib/create-s3-client";
 import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
-import { SITE_FEATURES } from "@/lib/site-features";
+import { DISTRIBUTION_CONFIG } from "@distribution/config";
 
 
 const trimSlashes = (s: string) => s.replace(/^\/+|\/+$/g, "");
 
 function assertDriveEnabled() {
-	if (!SITE_FEATURES.drive) {
+	if (!DISTRIBUTION_CONFIG.features.drive) {
 		throw new Error("Drive is disabled");
 	}
 }
@@ -220,7 +220,10 @@ export async function addNewFolder(
 				});
 		});
 
-		revalidatePath("/w/[workspaceId]/dashboard/drive");
+		revalidatePath(
+			"/[locale]/w/[wPublicId]/dashboard/drive/[[...segments]]",
+			"page",
+		);
 
 		return {
 			success: true,
@@ -230,11 +233,6 @@ export async function addNewFolder(
 }
 
 
-
-export const refreshViewAfterUpload = async () => {
-	assertDriveEnabled();
-	return revalidatePath("/w/[workspaceId]/dashboard/drive");
-};
 
 function getVolumePrefix(volume: DriveVolumeEntity) {
 	return `drive/workspaces/${volume.workspaceId}/${volume.code}/`;
@@ -513,7 +511,10 @@ export async function deleteDriveEntry(entryId: string) {
 					),
 			);
 
-			revalidatePath("/w/[workspaceId]/dashboard/drive");
+			revalidatePath(
+				"/[locale]/w/[wPublicId]/dashboard/drive/[[...segments]]",
+				"page",
+			);
 
 			return {
 				success: true,
@@ -539,7 +540,10 @@ export async function deleteDriveEntry(entryId: string) {
 				),
 		);
 
-		revalidatePath("/w/[workspaceId]/dashboard/drive");
+		revalidatePath(
+			"/[locale]/w/[wPublicId]/dashboard/drive/[[...segments]]",
+			"page",
+		);
 
 		return {
 			success: true,

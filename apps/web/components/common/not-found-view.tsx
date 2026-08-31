@@ -25,6 +25,11 @@ const COPY: Record<Locale, { title: string; body: string; back: string }> = {
 		body: "The page you're looking for doesn't exist or may have been moved.",
 		back: "Back to Kurrier",
 	},
+	pl: {
+		title: "Nie znaleziono strony",
+		body: "Strona, której szukasz, nie istnieje lub została przeniesiona.",
+		back: "Wróć do Kurrier",
+	},
 	ru: {
 		title: "Страница не найдена",
 		body: "Страница, которую вы ищете, не существует или была перемещена.",

@@ -1,4 +1,5 @@
-export const LOCALES = ["en", "pt-BR", "ko", "ru"] as const;
+import { DISTRIBUTION_CONFIG } from "@distribution/config";
+export const LOCALES = DISTRIBUTION_CONFIG.locales;
 
 export type Locale = (typeof LOCALES)[number];
 
@@ -12,5 +13,6 @@ export const DAYJS_LOCALES: Record<Locale, string> = {
 	en: "en",
 	"pt-BR": "pt-br",
 	ko: "en",
+	pl: "pl",
 	ru: "ru",
 };

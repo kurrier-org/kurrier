@@ -1,4 +1,5 @@
 import "server-only";
+import { createLocaleFormatter } from "@/lib/locale-format";
 import { hasLocale, type Locale } from "@/lib/locale";
 
 async function loadEn() {
@@ -177,10 +178,54 @@ async function loadRu(): Promise<Dictionary> {
 	} as Dictionary;
 }
 
+async function loadPl(): Promise<Dictionary> {
+	const [
+		common,
+		auth,
+		mailbox,
+		platform,
+		contacts,
+		calendar,
+		drive,
+		dashboard,
+		validation,
+		actions,
+		vault,
+	] = await Promise.all([
+		import("@/lib/dictionaries/pl/common.json").then((m) => m.default),
+		import("@/lib/dictionaries/pl/auth.json").then((m) => m.default),
+		import("@/lib/dictionaries/pl/mailbox.json").then((m) => m.default),
+		import("@/lib/dictionaries/pl/platform.json").then((m) => m.default),
+		import("@/lib/dictionaries/pl/contacts.json").then((m) => m.default),
+		import("@/lib/dictionaries/pl/calendar.json").then((m) => m.default),
+		import("@/lib/dictionaries/pl/drive.json").then((m) => m.default),
+		import("@/lib/dictionaries/pl/dashboard.json").then((m) => m.default),
+		import("@/lib/dictionaries/pl/validation.json").then((m) => m.default),
+		import("@/lib/dictionaries/pl/actions.json").then((m) => m.default),
+		import("@/lib/dictionaries/pl/vault.json").then((m) => m.default),
+	]);
+
+	return {
+		locale: "pl",
+		common,
+		auth,
+		mailbox,
+		platform,
+		contacts,
+		calendar,
+		drive,
+		dashboard,
+		validation,
+		actions,
+		vault,
+	} as Dictionary;
+}
+
 const dictionaries: Record<Locale, () => Promise<Dictionary>> = {
 	en: loadEn,
 	"pt-BR": loadPtBr,
 	ko: loadKo,
+	pl: loadPl,
 	ru: loadRu,
 };
 
@@ -190,4 +235,10 @@ export { hasLocale };
 export async function getDictionary(locale: string): Promise<Dictionary> {
 	const key: Locale = hasLocale(locale) ? locale : "en";
 	return dictionaries[key]();
+}
+
+/** Loads a server-safe dictionary and the same locale formatter used by clients. */
+export async function getI18n(locale: string) {
+	const dict = await getDictionary(locale);
+	return { dict, format: createLocaleFormatter(dict.locale) };
 }

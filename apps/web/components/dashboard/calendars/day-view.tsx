@@ -1,26 +1,30 @@
 "use client";
-import React, { useEffect } from "react";
-import { useDynamicContext } from "@/hooks/use-dynamic-context";
-import {
+import { getDayjsTz } from "@common/day-js-extended";
+import type { CalendarEventAttendeeEntity, CalendarEventEntity } from "@db";
+import type {
 	AllDayFragment,
 	CalendarState,
 	ComposeContact,
 	EventSlotFragment,
 	EventSlotRenderFragment,
 } from "@schema";
-import { useParams } from "next/navigation";
-import CalendarDayHourBox from "@/components/dashboard/calendars/calendar-day-hour-box";
-import { CalendarEventAttendeeEntity, CalendarEventEntity } from "@db";
-import { layoutDayFragments } from "@/components/dashboard/calendars/client-helpers";
-import CalendarEventsLayer from "@/components/dashboard/calendars/calendar-events-layer";
-import { getDayjsTz } from "@common/day-js-extended";
-import AllDayEventsRow from "@/components/dashboard/calendars/all-day-events-row";
 import dayjs from "dayjs";
+import { useParams } from "next/navigation";
+import React, { useEffect } from "react";
+import AllDayEventsRow from "@/components/dashboard/calendars/all-day-events-row";
+import CalendarDayHourBox from "@/components/dashboard/calendars/calendar-day-hour-box";
+import CalendarEventsLayer from "@/components/dashboard/calendars/calendar-events-layer";
+import { layoutDayFragments } from "@/components/dashboard/calendars/client-helpers";
+import { useOptionalI18n } from "@/components/providers/dictionary-provider";
+import { useDynamicContext } from "@/hooks/use-dynamic-context";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
-function formatHourLabel(hour: number) {
-	return dayjs().hour(hour).minute(0).format("h A");
+function formatHourLabel(
+	hour: number,
+	format?: { time: (value: Date) => string },
+) {
+	return format?.time(dayjs().hour(hour).minute(0).toDate()) ?? "";
 }
 
 export function DayGrid({
@@ -36,6 +40,8 @@ export function DayGrid({
 	attendeeContacts: Promise<ComposeContact[]>;
 	allDayByDay: Map<string, AllDayFragment[]>;
 }) {
+	const i18n = useOptionalI18n();
+	const format = i18n?.format;
 	const { setState, state } = useDynamicContext<CalendarState>();
 	const params = useParams();
 	const dayjsTz = getDayjsTz(state.defaultCalendar.timezone);
@@ -106,7 +112,7 @@ export function DayGrid({
 					</div>
 				</div>
 				<AllDayEventsRow weekDays={[dayMeta]} allDayByDay={allDayByDay} />
-				<div className="flex flex-1 flex-col h-[calc(100vh-8rem)] overflow-y-auto">
+				<div className="flex h-[calc(100svh-8rem)] flex-1 flex-col overflow-y-auto">
 					<div className="grid grid-cols-[64px_1fr]">
 						<div className="border-r border-neutral-200 bg-neutral-100 dark:bg-neutral-900 dark:border-neutral-700">
 							{HOURS.map((hour) => (
@@ -114,7 +120,7 @@ export function DayGrid({
 									key={hour}
 									className="h-12 border-b border-neutral-200 dark:border-neutral-700 flex items-start justify-end pr-3 pt-1 text-xxs text-neutral-400 dark:text-brand-foreground"
 								>
-									{formatHourLabel(hour)}
+									{formatHourLabel(hour, format)}
 								</div>
 							))}
 						</div>

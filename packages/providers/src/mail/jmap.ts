@@ -100,6 +100,8 @@ export class JmapMailer implements Mailer {
             from: string;
             inReplyTo: string;
             references: string[];
+            cc?: string[];
+            bcc?: string[];
             attachments?: {
                 name: string;
                 content: Blob;
@@ -116,6 +118,8 @@ export class JmapMailer implements Mailer {
                 accountId: this.accountId,
                 from: opts.from || this.username,
                 to,
+                cc: opts.cc ?? [],
+                bcc: opts.bcc ?? [],
                 subject: opts.subject,
                 text: opts.text,
                 html: opts.html,

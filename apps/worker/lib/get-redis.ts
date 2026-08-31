@@ -11,7 +11,7 @@ const redis = new IORedis({
 	port: Number(serverConfig.REDIS_PORT || 6379),
 });
 
-const redisConnection = {
+export const redisConnection = {
 	connection: {
 		host: serverConfig.REDIS_HOST || "redis",
 		port: Number(serverConfig.REDIS_PORT || 6379),

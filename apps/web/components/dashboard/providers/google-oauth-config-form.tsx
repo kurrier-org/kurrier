@@ -3,7 +3,6 @@
 import { Button } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { Settings2 } from "lucide-react";
-import React from "react";
 
 import { ReusableForm } from "@/components/common/reusable-form";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
@@ -58,7 +57,13 @@ function GoogleOAuthConfigForm() {
 	);
 }
 
-export default function GoogleOAuthConfigButton() {
+export default function GoogleOAuthConfigButton({
+	fullWidth = false,
+	className,
+}: {
+	fullWidth?: boolean;
+	className?: string;
+}) {
 	const dict = useOptionalDictionary();
 	const openModal = () => {
 		modals.open({
@@ -92,6 +97,8 @@ export default function GoogleOAuthConfigButton() {
 
 	return (
 		<Button
+			fullWidth={fullWidth}
+			className={className}
 			size="sm"
 			variant="default"
 			leftSection={<Settings2 className="h-4 w-4" />}

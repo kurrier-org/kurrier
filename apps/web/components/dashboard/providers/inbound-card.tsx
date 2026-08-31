@@ -4,26 +4,20 @@ import { Button } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { INBOUND_SPEC } from "@schema";
 import { ArrowDownToLine, Plus } from "lucide-react";
-import * as React from "react";
-import InboundIdentityCard from "@/components/dashboard/providers/inbound-identity-card";
 
+import InboundIdentityCard from "@/components/dashboard/providers/inbound-identity-card";
 import NewInboundIdentityForm from "@/components/dashboard/providers/new-inbound-identity-form";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
-import {
-	Card,
-	CardAction,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { FetchInboundIdentitiesResult } from "@/lib/actions/dashboard";
 
 export default function InboundCard({
-	inboundIdentities,
-}: {
+										inboundIdentities,
+									}: {
 	inboundIdentities: FetchInboundIdentitiesResult;
 }) {
 	const dict = useOptionalDictionary();
+
 	const openAddModal = () => {
 		const openModalId = modals.open({
 			title: (
@@ -45,60 +39,71 @@ export default function InboundCard({
 	};
 
 	return (
-		<div className="flex flex-col">
-			<Card className="h-full shadow-none border-border">
-				<CardHeader className="gap-2">
-					<div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-						<div className="max-w-2xl">
+		<div className="flex min-w-0 flex-col">
+			<Card className="h-full min-w-0 overflow-hidden border-border shadow-none">
+				<CardHeader className="px-5 py-4 sm:h-[210px] sm:px-6">
+					<div className="flex h-full flex-col">
+						<div className="min-w-0 max-w-2xl">
 							<div className="flex items-center gap-2">
-								<ArrowDownToLine className="h-5 w-5 text-muted-foreground" />
-								<CardTitle className="text-xl">{INBOUND_SPEC.name}</CardTitle>
+								<ArrowDownToLine className="size-5 shrink-0 text-muted-foreground" />
+
+								<CardTitle className="text-base font-semibold sm:text-lg">
+									{INBOUND_SPEC.name}
+								</CardTitle>
 							</div>
 
-							<p className="text-sm text-muted-foreground mt-1">
+							<p className="mt-1 text-sm leading-5 text-muted-foreground">
 								{dict?.platform?.receiveRawEmailDescription ??
 									"Receive raw email directly into Kurrier."}
 							</p>
 
-							<p className="text-xs text-muted-foreground/80 mt-1">
+							<p className="mt-1 text-xs leading-5 text-muted-foreground/80">
 								{INBOUND_SPEC.help}
 							</p>
 						</div>
 
-						<CardAction className="mt-3 lg:mt-0">
-							<Button size="sm" className="gap-2" onClick={openAddModal}>
-								<Plus className="h-4 w-4" />
+						<div className="mt-4 w-full sm:mt-auto sm:w-auto sm:self-start">
+							<Button
+								fullWidth
+								size="sm"
+								className="!min-h-11 !w-full sm:!min-h-10 sm:!w-auto sm:!px-5"
+								onClick={openAddModal}
+								leftSection={<Plus className="size-4" />}
+							>
 								{dict?.platform?.createIdentity ?? "Create Identity"}
 							</Button>
-						</CardAction>
+						</div>
 					</div>
 				</CardHeader>
 
-				<CardContent className="space-y-6">
+				<CardContent className="space-y-4 border-t px-5 py-4 sm:px-6">
 					{(!inboundIdentities || inboundIdentities.length === 0) && (
-						<div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground text-center flex flex-col items-center gap-4 bg-muted">
+						<div className="flex flex-col items-center gap-4 rounded-lg border border-dashed bg-muted/20 px-4 py-6 text-center">
 							<div>
-								<div className="font-medium text-card-foreground">
+								<div className="text-sm font-medium text-foreground">
 									{dict?.platform?.noInboundIdentitiesYet ??
 										"No inbound identities yet"}
 								</div>
 
-								<div className="text-xs text-card-foreground mt-1">
+								<div className="mt-1 text-xs leading-5 text-muted-foreground">
 									{dict?.platform?.createIdentityToReceiveHelp ??
 										"Create an identity to receive RFC822/EML messages through the Kurrier API."}
 								</div>
 							</div>
 
-							<Button
-								variant="default"
-								size="sm"
-								className="gap-2"
-								onClick={openAddModal}
-							>
-								<Plus className="h-4 w-4" />
-								{dict?.platform?.createInboundIdentity ??
-									"Create Inbound Identity"}
-							</Button>
+							<div className="w-full sm:w-auto">
+								<Button
+									fullWidth
+									variant="default"
+									size="sm"
+									className="!min-h-10 !w-full sm:!w-auto"
+									onClick={openAddModal}
+									leftSection={<Plus className="size-4" />}
+								>
+									{dict?.platform?.createInboundIdentity ??
+										"Create Inbound Identity"}
+								</Button>
+							</div>
 						</div>
 					)}
 

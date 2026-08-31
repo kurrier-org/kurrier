@@ -9,7 +9,7 @@ import { initSmtpClient } from "../../lib/imap/imap-client";
 import { mailSetFlags } from "../../lib/imap/imap-flags";
 import { moveMail } from "../../lib/imap/imap-move";
 
-import { getRedis } from "../../lib/get-redis";
+import {getRedis, redisConnection} from "../../lib/get-redis";
 import { deleteMail } from "../../lib/imap/imap-delete";
 import { addNewFolder } from "../../lib/imap/imap-new-folder";
 import { deleteFolder } from "../../lib/imap/imap-delete-folder";
@@ -17,7 +17,8 @@ import {
 	imapIdleSync,
 	startRealtimeForIdentity,
 	stopRealtimeForIdentity,
-	beginRealtimeShutdown
+	beginRealtimeShutdown,
+	recoverOfflineRealtime
 } from "../../lib/imap/imap-idle-sync";
 import { discoverMailboxes } from "../../lib/imap/backfill/discover/discover-mailboxes";
 import {startBackfillForIdentity} from "../../lib/imap/backfill/backfill-full";
@@ -30,7 +31,8 @@ import { gmailSetFlags } from "../../lib/gmail/gmail-flags";
 export default defineNitroPlugin(async (nitroApp) => {
 	const imapInstances = new Map<string, ImapFlow>();
 	const idleImapInstances = new Map<string, ImapFlow>();
-	const { connection, searchIngestQueue, smtpQueue } = await getRedis();
+	const { searchIngestQueue, smtpQueue } = await getRedis();
+	const connection = redisConnection.connection
 
 	const worker = new Worker(
 		"smtp-worker",
@@ -197,6 +199,13 @@ export default defineNitroPlugin(async (nitroApp) => {
 					idleImapInstances,
 					imapInstances,
 				);
+			} else if (job.name === "imap:realtime-recovery") {
+				await recoverOfflineRealtime(
+					idleImapInstances,
+					imapInstances,
+				);
+				return { success: true };
+
 			}
 			return { success: true };
 		},
@@ -224,6 +233,19 @@ export default defineNitroPlugin(async (nitroApp) => {
 		},
 		{ override: true },
 
+	);
+
+	await scheduler.upsertJobScheduler(
+		"imap-realtime-recovery-scheduler",
+		{ every: 10 * 60 * 1000 },
+		"imap:realtime-recovery",
+		{},
+		{
+			removeOnComplete: true,
+			removeOnFail: true,
+			attempts: 1,
+		},
+		{ override: true },
 	);
 
 	await smtpQueue.add(

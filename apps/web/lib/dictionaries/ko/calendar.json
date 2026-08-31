@@ -1,1 +1,34 @@
-{}
+{
+	"emptyTitle": "아직 캘린더가 없습니다",
+	"emptyDescription": "이메일 계정을 연결하여 캘린더를 만드세요.",
+	"guestsCount": {
+		"other": "게스트 {count}명",
+		"one": "게스트 {count}명",
+		"few": "게스트 {count}명",
+		"many": "게스트 {count}명"
+	},
+	"intervalDaysCount": {
+		"other": "일",
+		"one": "일",
+		"few": "일",
+		"many": "일"
+	},
+	"intervalWeeksCount": {
+		"other": "주",
+		"one": "주",
+		"few": "주",
+		"many": "주"
+	},
+	"intervalMonthsCount": {
+		"other": "개월",
+		"one": "개월",
+		"few": "개월",
+		"many": "개월"
+	},
+	"intervalYearsCount": {
+		"other": "년",
+		"one": "년",
+		"few": "년",
+		"many": "년"
+	}
+}

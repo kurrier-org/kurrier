@@ -1,10 +1,10 @@
 import { defineNitroPlugin } from "nitropack/runtime";
 import {runMigrationsForWorkspace} from "../../lib/migrations/run-migration";
-import { getRedis } from "../../lib/get-redis";
+import { redisConnection } from "../../lib/get-redis";
 import { Worker } from "bullmq";
 
 async function runAllUserMigrations() {
-	const { connection } = await getRedis();
+	const connection = redisConnection.connection
 	const worker = new Worker(
 		"migration-worker",
 		async (job) => {

@@ -23,7 +23,7 @@ import { getWorkspacePublicId, getWorkspaceRole } from "@/lib/actions/clients";
 import { getDashboardStats } from "@/lib/actions/dashboard";
 import { fetchWorkspace } from "@/lib/actions/workspace";
 import { getDictionary } from "@/lib/dictionaries";
-import { SITE_FEATURES } from "@/lib/site-features";
+import { DISTRIBUTION_CONFIG } from "@distribution/config";
 
 export default async function Page({
 	params,
@@ -45,7 +45,7 @@ export default async function Page({
 		getDictionary(locale),
 	]);
 	const p = dict.platform;
-	const driveEnabled = SITE_FEATURES.drive;
+	const driveEnabled = DISTRIBUTION_CONFIG.features.drive;
 
 	const isOwner = workspaceRole === "owner";
 	const base = `/w/${workspacePublicId}/dashboard/platform`;
@@ -187,25 +187,25 @@ export default async function Page({
 		),
 	]);
 	const ownerConfigurationRows: [string, string][] = [
-		[p.providers, formatNumber(statsData?.connectedProviders || 0)],
-		[p.verifiedDomains, formatNumber(statsData?.verifiedDomains || 0)],
-		[p.identities, formatNumber(statsData?.activeIdentities || 0)],
+		[p.providers, formatNumber(locale, statsData?.connectedProviders || 0)],
+		[p.verifiedDomains, formatNumber(locale, statsData?.verifiedDomains || 0)],
+		[p.identities, formatNumber(locale, statsData?.activeIdentities || 0)],
 	];
 	if (driveEnabled) {
 		ownerConfigurationRows.push([
 			p.volumes,
-			formatNumber(statsData?.volumeCount || 0),
+			formatNumber(locale, statsData?.volumeCount || 0),
 		]);
 	}
 	const ownerRecordRows: [string, string][] = [
-		[p.messages, formatNumber(statsData?.emailsProcessedTotal || 0)],
-		[p.threads, formatNumber(statsData?.threadCount || 0)],
-		[p.drafts, formatNumber(statsData?.draftCount || 0)],
+		[p.messages, formatNumber(locale, statsData?.emailsProcessedTotal || 0)],
+		[p.threads, formatNumber(locale, statsData?.threadCount || 0)],
+		[p.drafts, formatNumber(locale, statsData?.draftCount || 0)],
 	];
 	if (driveEnabled) {
 		ownerRecordRows.push([
 			p.driveEntries,
-			formatNumber(statsData?.driveEntryCount || 0),
+			formatNumber(locale, statsData?.driveEntryCount || 0),
 		]);
 	}
 
@@ -249,16 +249,26 @@ export default async function Page({
 								</div>
 
 								{isOwner ? (
-									<div className="flex flex-wrap gap-3">
-										<Link href={`${base}/providers`}>
-											<Button>{p.addProvider}</Button>
+									<div className="grid w-full gap-3 lg:w-auto lg:grid-flow-col lg:auto-cols-max">
+										<Link
+											href={`${base}/providers`}
+											className="block w-full lg:w-auto"
+										>
+											<Button className="!min-h-11 !w-full lg:!min-h-9 lg:!w-auto">
+												{p.addProvider}
+											</Button>
 										</Link>
 
 										<Link
 											href={`${base}/identities`}
-											className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm text-muted-foreground transition hover:bg-muted"
+											className="block w-full lg:w-auto"
 										>
-											{p.createIdentity}
+											<Button
+												variant="outline"
+												className="!min-h-11 !w-full text-muted-foreground lg:!min-h-9 lg:!w-auto"
+											>
+												{p.createIdentity}
+											</Button>
 										</Link>
 									</div>
 								) : null}
@@ -288,21 +298,21 @@ export default async function Page({
 									rows={[
 										[
 											p.totalMessages,
-											formatNumber(statsData?.emailsProcessedTotal || 0),
+											formatNumber(locale, statsData?.emailsProcessedTotal || 0),
 										],
 										[
 											p.last24h,
-											formatNumber(statsData?.emailsProcessed24h || 0),
+											formatNumber(locale, statsData?.emailsProcessed24h || 0),
 										],
-										[p.threads, formatNumber(statsData?.threadCount || 0)],
-										[p.drafts, formatNumber(statsData?.draftCount || 0)],
+										[p.threads, formatNumber(locale, statsData?.threadCount || 0)],
+										[p.drafts, formatNumber(locale, statsData?.draftCount || 0)],
 										[
 											p.scheduledDrafts,
-											formatNumber(statsData?.scheduledDraftCount || 0),
+											formatNumber(locale, statsData?.scheduledDraftCount || 0),
 										],
 										[
 											p.attachments,
-											formatNumber(statsData?.attachmentCount || 0),
+											formatNumber(locale, statsData?.attachmentCount || 0),
 										],
 									]}
 								/>
@@ -402,10 +412,10 @@ export default async function Page({
 										: [
 												[
 													p.messages,
-													formatNumber(statsData?.emailsProcessedTotal || 0),
+													formatNumber(locale, statsData?.emailsProcessedTotal || 0),
 												],
-												[p.threads, formatNumber(statsData?.threadCount || 0)],
-												[p.drafts, formatNumber(statsData?.draftCount || 0)],
+												[p.threads, formatNumber(locale, statsData?.threadCount || 0)],
+												[p.drafts, formatNumber(locale, statsData?.draftCount || 0)],
 											]
 								}
 							/>
@@ -552,8 +562,8 @@ function QuickAction({
 	);
 }
 
-function formatNumber(value: unknown) {
-	return Number(value || 0).toLocaleString();
+function formatNumber(locale: string, value: unknown) {
+	return Number(value || 0).toLocaleString(locale);
 }
 
 function formatBytes(value: unknown) {

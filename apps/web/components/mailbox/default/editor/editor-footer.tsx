@@ -1,15 +1,19 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import type { MessageEntity } from "@db";
 import { ActionIcon, Button, Popover, Progress } from "@mantine/core";
-import { Baseline, Paperclip, X as IconX } from "lucide-react";
 import { RichTextEditor } from "@mantine/tiptap";
-import { useDynamicContext } from "@/hooks/use-dynamic-context";
+import { Baseline, X as IconX, Paperclip } from "lucide-react";
+import type React from "react";
+import { useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { MessageEntity } from "@db";
 import ScheduleSend from "@/components/mailbox/default/editor/schedule-send";
-import {createAttachmentDownloadUrl, createAttachmentUploadUrl} from "@/lib/actions/uploads-actions";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useDynamicContext } from "@/hooks/use-dynamic-context";
+import {
+	createAttachmentDownloadUrl,
+	createAttachmentUploadUrl,
+} from "@/lib/actions/uploads-actions";
 
 type UploadItem = {
 	name: string;
@@ -17,6 +21,14 @@ type UploadItem = {
 	progress: number;
 	status: "uploading" | "done" | "error";
 	error?: string;
+};
+
+type PendingAttachment = {
+	path: string;
+	sizeBytes: number;
+	messageId: string;
+	filenameOriginal: string;
+	contentType: string;
 };
 
 const formatBytes = (n: number) => {
@@ -39,7 +51,7 @@ export default function EditorFooter() {
 
 	const inputRef = useRef<HTMLInputElement | null>(null);
 	const [uploads, setUploads] = useState<UploadItem[]>([]);
-	const [attachments, setAttachments] = useState<any[]>([]);
+	const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
 
 	const newMessageId = useRef(uuidv4());
 
@@ -57,7 +69,7 @@ export default function EditorFooter() {
 			xhr.open("PUT", uploadUrl);
 			xhr.setRequestHeader(
 				"Content-Type",
-				file.type || "application/octet-stream"
+				file.type || "application/octet-stream",
 			);
 
 			xhr.upload.onprogress = (evt) => {
@@ -65,18 +77,20 @@ export default function EditorFooter() {
 				const pct = Math.round((evt.loaded / evt.total) * 100);
 
 				setUploads((prev) =>
-					prev.map((u) =>
-						u.name === file.name ? { ...u, progress: pct } : u
-					)
+					prev.map((u) => (u.name === file.name ? { ...u, progress: pct } : u)),
 				);
 			};
 
 			xhr.onload = () => {
 				if (xhr.status >= 200 && xhr.status < 300) resolve();
-				else reject(`${dict?.mailbox?.uploadFailedPrefix ?? "Upload failed: "}${xhr.status}`);
+				else
+					reject(
+						`${dict?.mailbox?.uploadFailedPrefix ?? "Upload failed: "}${xhr.status}`,
+					);
 			};
 
-			xhr.onerror = () => reject(dict?.mailbox?.networkError ?? "Network error");
+			xhr.onerror = () =>
+				reject(dict?.mailbox?.networkError ?? "Network error");
 
 			xhr.send(file);
 		});
@@ -94,9 +108,7 @@ export default function EditorFooter() {
 		]);
 	};
 
-	const onFileSelect = async (
-		event: React.ChangeEvent<HTMLInputElement>
-	) => {
+	const onFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
 		const files = event.target.files;
 		if (!files?.length) return;
 
@@ -116,23 +128,21 @@ export default function EditorFooter() {
 
 				setUploads((prev) =>
 					prev.map((u) =>
-						u.name === file.name
-							? { ...u, progress: 100, status: "done" }
-							: u
-					)
+						u.name === file.name ? { ...u, progress: 100, status: "done" } : u,
+					),
 				);
 			} catch (err) {
 				setUploads((prev) =>
 					prev.map((u) =>
 						u.name === file.name
 							? {
-								...u,
-								progress: 100,
-								status: "error",
-								error: String(err),
-							}
-							: u
-					)
+									...u,
+									progress: 100,
+									status: "error",
+									error: String(err),
+								}
+							: u,
+					),
 				);
 			}
 		}
@@ -149,13 +159,12 @@ export default function EditorFooter() {
 			{uploads.length > 0 && (
 				<div className="w-full rounded-md p-2 flex flex-col gap-2">
 					{uploads.map((u) => {
-						const showProgress =
-							u.status === "uploading" && u.progress < 100;
+						const showProgress = u.status === "uploading" && u.progress < 100;
 
 						return (
 							<div
 								key={u.name}
-								className="flex justify-between items-center w-full max-w-xl bg-zinc-100 dark:bg-neutral-900 rounded-xl px-4 py-3"
+								className="flex w-full max-w-xl flex-col gap-2 rounded-xl bg-zinc-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:bg-neutral-900"
 							>
 								<div className="flex items-center gap-3 min-w-0 flex-1">
 									<Paperclip size={16} className="text-neutral-500 shrink-0" />
@@ -167,12 +176,12 @@ export default function EditorFooter() {
 												className="truncate font-semibold text-sm text-base-600 hover:underline text-left w-full underline"
 												onClick={async () => {
 													const attachment = attachments.find(
-														(a) => a.filenameOriginal === u.name
+														(a) => a.filenameOriginal === u.name,
 													);
 													if (!attachment) return;
 
 													const { url } = await createAttachmentDownloadUrl(
-														attachment.path
+														attachment.path,
 													);
 
 													window.open(url, "_blank");
@@ -192,17 +201,12 @@ export default function EditorFooter() {
 									</div>
 								</div>
 
-								<div className="flex items-center gap-3">
+								<div className="flex items-center justify-between gap-3 sm:justify-end">
 									{showProgress && (
-										<div className="w-32">
-											<Progress
-												value={u.progress}
-												size="sm"
-												radius="xl"
-											/>
+										<div className="w-24 sm:w-32">
+											<Progress value={u.progress} size="sm" radius="xl" />
 										</div>
 									)}
-
 
 									<ActionIcon
 										variant="subtle"
@@ -218,7 +222,7 @@ export default function EditorFooter() {
 				</div>
 			)}
 
-			<div className="border-t items-center flex py-2 px-2">
+			<div className="flex flex-wrap items-center border-t px-2 py-2">
 				<div className="mx-2 flex items-center gap-[1px]">
 					<Button
 						loading={!!state.isPending}
@@ -280,11 +284,7 @@ export default function EditorFooter() {
 					/>
 				)}
 
-				<input
-					type="hidden"
-					name="newMessageId"
-					value={newMessageId.current}
-				/>
+				<input type="hidden" name="newMessageId" value={newMessageId.current} />
 
 				<input
 					type="hidden"

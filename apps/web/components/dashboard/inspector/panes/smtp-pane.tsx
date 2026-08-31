@@ -16,9 +16,9 @@ import {
 import type { MessageEntity } from "@db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useOptionalI18n } from "@/components/providers/dictionary-provider";
 
-type Dict = ReturnType<typeof useOptionalDictionary>;
+type Dict = NonNullable<ReturnType<typeof useOptionalI18n>>["dict"] | null | undefined;
 
 type SmtpPaneProps = {
     message?: MessageEntity;
@@ -264,7 +264,9 @@ function DetailRow({
 export default function SmtpPane({
                                      message,
                                  }: SmtpPaneProps) {
-    const dict = useOptionalDictionary();
+    const i18n = useOptionalI18n();
+    const dict = i18n?.dict;
+    const format = i18n?.format;
     const [copied, setCopied] = useState(false);
 
     const smtpData = useMemo(() => {
@@ -313,10 +315,7 @@ export default function SmtpPane({
                             className="gap-1.5"
                         >
                             <Route className="size-3" />
-                            {smtpData.hops.length} {dict?.mailbox?.deliveryLabel ?? "delivery"}{" "}
-                            {smtpData.hops.length === 1
-                                ? (dict?.mailbox?.hop ?? "hop")
-                                : (dict?.mailbox?.hopsPlural ?? "hops")}
+                            {format?.message(smtpData.hops.length, dict?.mailbox?.deliveryHopsCount ?? { other: "{count} delivery hops" }) ?? `${smtpData.hops.length} delivery hops` }
                         </Badge>
 
                         <Badge

@@ -1,16 +1,11 @@
 // @ts-nocheck
 import "@mantine/tiptap/styles.css";
-import { RichTextEditor, Link } from "@mantine/tiptap";
+import { Link, RichTextEditor } from "@mantine/tiptap";
+import Image from "@tiptap/extension-image";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Image from "@tiptap/extension-image";
 
-import React, {
-	forwardRef,
-	useImperativeHandle,
-	useRef,
-	useState,
-} from "react";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 
 export type TextEditorHandle = {
 	focus: (where?: "start" | "end") => void;
@@ -24,25 +19,11 @@ type TextEditorProps = {
 	onChange?: (html: string) => void;
 };
 
-import { Temporal } from "@js-temporal/polyfill";
-import EditorHeader from "@/components/mailbox/default/editor/editor-header";
-import EditorFooter from "@/components/mailbox/default/editor/editor-footer";
-import { useDynamicContext } from "@/hooks/use-dynamic-context";
-import { MessageEntity } from "@db";
+import type { MessageEntity } from "@db";
 import { FocusTrap } from "@mantine/core";
-
-function formatWhen(d: Date) {
-	return Temporal.Instant.from(d.toISOString())
-		.toZonedDateTimeISO(Temporal.Now.timeZoneId())
-		.toLocaleString("en-GB", {
-			day: "2-digit",
-			month: "short",
-			year: "numeric",
-			hour: "2-digit",
-			minute: "2-digit",
-			hour12: false,
-		});
-}
+import EditorFooter from "@/components/mailbox/default/editor/editor-footer";
+import EditorHeader from "@/components/mailbox/default/editor/editor-header";
+import { useDynamicContext } from "@/hooks/use-dynamic-context";
 
 export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(
 	({ name, defaultValue = "", onChange }, ref) => {
@@ -56,7 +37,9 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(
 			extensions: [StarterKit, Link, Image],
 			onUpdate: ({ editor }) => {
 				setTextValue(editor.getText().trim());
-				setValue(editor.getHTML().trim());
+				const html = editor.getHTML().trim();
+				setValue(html);
+				onChange?.(html);
 			},
 		});
 
@@ -93,7 +76,7 @@ export const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(
 				>
 					<EditorHeader focusOnSubject={setFocusOnSubject} />
 					<FocusTrap active={focusOnSubject}>
-						<RichTextEditor.Content className="prose min-h-96 text-sm p-2 leading-5" />
+						<RichTextEditor.Content className="prose min-h-64 max-w-none p-2 text-sm leading-5 sm:min-h-96" />
 					</FocusTrap>
 					<EditorFooter />
 				</RichTextEditor>

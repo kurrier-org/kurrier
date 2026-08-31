@@ -1,5 +1,41 @@
 # @kurrier/repo
 
+## 4.0.0
+
+### Major Changes
+
+- [#642](https://github.com/kurrier-org/kurrier/pull/642) [`7e918cc`](https://github.com/kurrier-org/kurrier/commit/7e918cc0e75916bf4a31e26b27de8c3054902175) Thanks [@krokhale](https://github.com/krokhale)! - Major mail reliability, responsive UI, email composer and viewer improvements, internationalization, and dependency updates.
+
+## 3.9.6
+
+### Patch Changes
+
+- [`4314d3d`](https://github.com/kurrier-org/kurrier/commit/4314d3df20499be596c2d9d1ce2c8e6510d1beaa) Thanks [@krokhale](https://github.com/krokhale)! - Add Russian language support, allow disabling local email/password login, and improve rendering for faster instant navigation.
+
+## 3.9.5
+
+### Patch Changes
+
+- [`02991f9`](https://github.com/kurrier-org/kurrier/commit/02991f9c8a9892d8042338e3efc5c9b0e0956aba) Thanks [@krokhale](https://github.com/krokhale)! - Add Russian language support, allow disabling local email/password login, and improve rendering for faster instant navigation.
+
+## 3.9.4
+
+### Patch Changes
+
+- [`e525941`](https://github.com/kurrier-org/kurrier/commit/e5259410115be72a2ee1680cdff2a750a8e79d4d) Thanks [@krokhale](https://github.com/krokhale)! - Add Russian language support, allow disabling local email/password login, and improve rendering for faster instant navigation.
+
+## 3.9.3
+
+### Patch Changes
+
+- [`7685a35`](https://github.com/kurrier-org/kurrier/commit/7685a352f2ba94e5e323d499bd6d75591084e530) Thanks [@krokhale](https://github.com/krokhale)! - Add Russian language support, allow disabling local email/password login, and improve rendering for faster instant navigation.
+
+## 3.9.2
+
+### Patch Changes
+
+- [`a6b2631`](https://github.com/kurrier-org/kurrier/commit/a6b263143aa9ea266e8b0d1fe76680b321af3421) Thanks [@krokhale](https://github.com/krokhale)! - Add Russian language support, allow disabling local email/password login, and improve rendering for faster instant navigation.
+
 ## 3.9.1
 
 ### Patch Changes

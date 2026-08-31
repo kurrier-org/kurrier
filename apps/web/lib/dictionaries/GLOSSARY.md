@@ -56,6 +56,31 @@ so subsequent PRs stay consistent instead of re-deciding it per file.
 | snoozed | отложенный | |
 | scheduled | запланированный | |
 
+
+## Polish (`pl`)
+
+- **Tone**: neutral, concise and professional; avoid gendered forms where a
+  natural impersonal construction is available.
+- **Buttons and actions**: use the imperative — „Zapisz”, „Usuń”, „Wyślij”.
+- **Typography**: use Polish quotation marks („…”) in user-facing text where
+  quotation marks are needed.
+
+### Fixed terms
+
+| English | Polish | Notes |
+|---|---|---|
+| mailbox | skrzynka pocztowa | |
+| thread | wątek | A group of related messages |
+| identity | tożsamość e-mail | Do not use literal „identyfikacja” |
+| workspace | obszar roboczy | |
+| draft | wersja robocza | |
+| label | etykieta | |
+| provider | dostawca | |
+| webhook | webhook | Kept as established technical usage |
+| API key | klucz API | |
+| snoozed | odłożone | Use verb „Odłóż” for the action |
+| scheduled | zaplanowane | |
+
 ## Adding a new locale
 
 1. Create `apps/web/lib/dictionaries/<code>/` with one `.json` file per

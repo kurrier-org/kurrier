@@ -3,7 +3,6 @@
 import {
 	Blocks,
 	ChevronRight,
-	CreditCard,
 	FolderSync,
 	HardDrive,
 	Key,
@@ -134,10 +133,13 @@ export function NavMain({
 									asChild
 									tooltip={item.title}
 									isActive={isActive}
+									className="h-auto min-h-8 items-start py-1.5 [&>span:last-child]:!overflow-visible [&>span:last-child]:!whitespace-normal [&>span:last-child]:!text-clip"
 								>
 									<Link href={item.url}>
-										<item.icon />
-										<span>{item.title}</span>
+										<item.icon className="mt-0.5" />
+										<span className="min-w-0 break-words leading-5">
+											{item.title}
+										</span>
 									</Link>
 								</SidebarMenuButton>
 

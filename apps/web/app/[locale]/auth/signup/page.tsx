@@ -7,6 +7,7 @@ import { LanguageSwitcher } from "@/components/common/language-switcher";
 import { getDictionary, type Locale } from "@/lib/dictionaries";
 import { getGenericOidcSettings } from "@/lib/generic-oidc";
 import { withLocale } from "@/lib/utils";
+import {DISTRIBUTION_CONFIG} from "@distribution/config";
 
 export default async function SignupPage({
 	params,
@@ -49,5 +50,7 @@ export default async function SignupPage({
 }
 
 export function generateStaticParams() {
-	return [{ locale: "en" }];
+	return DISTRIBUTION_CONFIG.locales.map((locale) => ({
+		locale,
+	}));
 }

@@ -5,7 +5,8 @@
 		"loggedIn": "Вход выполнен",
 		"accountAlreadyExists": "Учётная запись с таким адресом уже существует",
 		"welcome": "Добро пожаловать",
-		"signupDisabled": "Регистрация сейчас отключена. Обратитесь к администратору."
+		"signupDisabled": "Регистрация сейчас отключена. Обратитесь к администратору.",
+		"localLoginDisabled": "Локальный вход сейчас отключён. Для входа используйте единый вход (SSO)."
 	},
 	"contacts": {
 		"noDefaultAddressBook": "Для пользователя не найдена адресная книга по умолчанию."
@@ -61,7 +62,13 @@
 		"invalidVolumeName": "Недопустимое название тома",
 		"s3BucketNotConfigured": "Переменная S3_BUCKET не настроена",
 		"addedNewVolume": "Новый том добавлен",
-		"webhookCreated": "Вебхук создан"
+		"webhookCreated": "Вебхук создан",
+		"customProviderUnavailable": "Этот почтовый провайдер больше недоступен. Обновите страницу и попробуйте снова.",
+		"displayNameRequired": "Укажите отображаемое имя",
+		"mailboxAlreadyConnected": "Этот почтовый ящик уже подключён",
+		"customProviderAccountAdded": "Учётная запись провайдера добавлена",
+		"customProviderMailboxConnected": "Почтовый ящик подключён",
+		"customProviderMailboxSyncing": "Почтовый ящик подключён; синхронизация продолжится в фоновом режиме"
 	},
 	"workspace": {
 		"updated": "Рабочее пространство обновлено"

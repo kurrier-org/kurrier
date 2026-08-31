@@ -43,5 +43,6 @@
 	"deleteConfirmPrefix": "Delete \"",
 	"deleteConfirmSuffix": "\"? Anything using this secret may stop working.",
 	"secretDeletedToast": "Secret deleted",
-	"couldNotDeleteSecret": "Could not delete secret"
+	"couldNotDeleteSecret": "Could not delete secret",
+  "secretsCount": {"one": "{count} secret", "other": "{count} secrets", "few": "{count} secrets", "many": "{count} secrets"}
 }

@@ -94,6 +94,8 @@ export class GoogleMailer implements Mailer {
             subject: string;
             text: string;
             html: string;
+            cc?: string[];
+            bcc?: string[];
             from: string;
             inReplyTo: string;
             references: string[];
@@ -122,6 +124,8 @@ export class GoogleMailer implements Mailer {
             const composer = new MailComposer({
                 from: opts.from || googleAccount.email,
                 to,
+                cc: opts.cc?.length ? opts.cc : undefined,
+                bcc: opts.bcc?.length ? opts.bcc : undefined,
                 subject: opts.subject,
                 text: opts.text || undefined,
                 html: opts.html || undefined,
