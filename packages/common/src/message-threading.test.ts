@@ -5,8 +5,9 @@ import {
 	deduplicateThreadMessages,
 	extractThreadingHeader,
 	fallbackMessageId,
-	resolveMessageId,
 	normalizeMessageId,
+	parseThreadingReferences,
+	resolveMessageId,
 	selectThreadParent,
 } from "./message-threading";
 
@@ -46,6 +47,19 @@ test("accepts a folded references header represented as one string", () => {
 		buildThreadingCandidates(null, [
 			"<root@example.test>\n <parent@example.test>",
 		]),
+		["<root@example.test>", "<parent@example.test>"],
+	);
+});
+
+test("normalizes a raw References header into stored message IDs", () => {
+	const raw = [
+		"References: <root@example.test>",
+		"	<parent@example.test>",
+		"",
+	].join("\r\n");
+
+	assert.deepEqual(
+		parseThreadingReferences(extractThreadingHeader(raw, "references")),
 		["<root@example.test>", "<parent@example.test>"],
 	);
 });

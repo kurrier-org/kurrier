@@ -51,6 +51,12 @@ export function buildThreadingCandidates(
 	);
 }
 
+export function parseThreadingReferences(
+	value: string | null | undefined,
+): string[] {
+	return buildThreadingCandidates(null, value ? [value] : []);
+}
+
 export function selectThreadParent(
 	inReplyTo: string | null | undefined,
 	references: readonly (string | null | undefined)[],
