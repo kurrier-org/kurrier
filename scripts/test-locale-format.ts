@@ -9,8 +9,32 @@ function expectedTimeOfDay(locale: string, hour: number) {
 	}).format(new Date(Date.UTC(2026, 0, 15, hour)));
 }
 
+const expectedDateInputFormats = {
+	en: "DD MMM",
+	pl: "DD.MM.YYYY",
+	"pt-BR": "DD/MM/YYYY",
+	ru: "DD.MM.YYYY",
+	ko: "DD MMM",
+} as const;
+
 for (const locale of ["en", "pl", "pt-BR", "ru", "ko"] as const) {
 	const format = createLocaleFormatter(locale);
+	const dateInputFormat = expectedDateInputFormats[locale];
+	const timeInputFormat =
+		format.hourCycle() === "h23" || format.hourCycle() === "h24"
+			? "HH:mm"
+			: "hh:mm A";
+
+	assert.equal(
+		format.dateInputFormat(),
+		dateInputFormat,
+		`${locale} should use its locale-aware calendar date input format`,
+	);
+	assert.equal(
+		format.dateTimeInputFormat(),
+		`${dateInputFormat} ${timeInputFormat}`,
+		`${locale} should use its locale-aware calendar date-time input format`,
+	);
 
 	for (const hour of [0, 9, 18, 23]) {
 		assert.equal(

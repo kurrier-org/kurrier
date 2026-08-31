@@ -74,11 +74,14 @@ export function createLocaleFormatter(locale: string | undefined) {
 			return hourCycle;
 		},
 
+		dateInputFormat() {
+			return DATE_INPUT_FORMATS[resolvedLocale] ?? "DD MMM";
+		},
+
 		dateTimeInputFormat() {
-			const dateFormat = DATE_INPUT_FORMATS[resolvedLocale] ?? "DD MMM";
 			const timeFormat =
 				hourCycle === "h23" || hourCycle === "h24" ? "HH:mm" : "hh:mm A";
-			return `${dateFormat} ${timeFormat}`;
+			return `${this.dateInputFormat()} ${timeFormat}`;
 		},
 
 		plural(count: number) {
