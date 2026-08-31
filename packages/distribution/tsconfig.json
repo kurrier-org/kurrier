@@ -9,8 +9,8 @@
 			"@db/*": ["../../packages/db/src/*"],
 			"@common": ["../../packages/common/src/index.ts"],
 			"@common/*": ["../../packages/common/src/*"],
-			"@oss": ["../../packages/oss/src/index.ts"],
-			"@oss/*": ["../../packages/oss/src/*"]
+			"@extensions": ["../../packages/extensions/src/index.ts"],
+			"@extensions/*": ["../../packages/extensions/src/*"]
 		},
 		"lib": ["ES2021.String"]
 	},

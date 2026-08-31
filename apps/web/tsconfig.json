@@ -30,8 +30,6 @@
 			"@common/*": ["../../packages/common/src/*"],
 			"@jmap": ["../../packages/jmap/src/index.ts"],
 			"@jmap/*": ["../../packages/jmap/src/*"],
-			"@oss": ["../../packages/oss/src/index.ts"],
-			"@oss/*": ["../../packages/oss/src/*"],
 			"@extensions": ["../../packages/extensions/src/index.ts"],
 			"@extensions/*": ["../../packages/extensions/src/*"],
 			"@distribution": ["../../packages/distribution/src/index.ts"],

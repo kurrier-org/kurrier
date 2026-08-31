@@ -1,3 +1,1 @@
-export {
-    registerOssHooks as registerDistributionHooks,
-} from "@oss";
+export * from "./oss";

@@ -1,4 +1,4 @@
-import { registerDistributionHooks } from "@distribution";
+import { registerDistribution } from "@distribution";
 
 let registered = false;
 

@@ -1,5 +1,5 @@
 import { hooks } from "@extensions";
-import { enforceSingleWorkspace } from "./hooks/workspace/before-create";
+import { enforceSingleWorkspace } from "./workspace/before-create";
 
 let registered = false;
 
