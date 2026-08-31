@@ -5,6 +5,7 @@ import CustomEmailProviderCard from "@/components/dashboard/providers/custom-ema
 import GoogleCard from "@/components/dashboard/providers/google-card";
 import InboundCard from "@/components/dashboard/providers/inbound-card";
 import JmapCard from "@/components/dashboard/providers/jmap-card";
+import MicrosoftCard from "@/components/dashboard/providers/microsoft-card";
 import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
 import SMTPCard from "@/components/dashboard/providers/smtp-card";
 import { Separator } from "@/components/ui/separator";
@@ -110,6 +111,9 @@ export default async function ProvidersPage({
 						/>
 						<InboundCard inboundIdentities={inboundIdentities} />
 						<JmapCard jmapAccounts={jmapAccounts} />
+						<MicrosoftCard
+							configured={Boolean(process.env.MICROSOFT_CLIENT_ID)}
+						/>
 					</div>
 				</Container>
 			</div>

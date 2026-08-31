@@ -1,5 +1,15 @@
 {
 	"title": "Configuring Providers",
 	"defaultOpen": true,
-	"pages": ["ses", "smtp", "mailgun", "postmark", "sendgrid", "gmail", "inbound", "jmap"]
+	"pages": [
+		"ses",
+		"smtp",
+		"mailgun",
+		"postmark",
+		"sendgrid",
+		"gmail",
+		"inbound",
+		"jmap",
+		"microsoft"
+	]
 }

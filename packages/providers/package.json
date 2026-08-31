@@ -23,6 +23,7 @@
 		"@sendgrid/mail": "^8.1.6",
 		"googleapis": "^173.0.0",
 		"imapflow": "^1.0.198",
+		"ioredis": "^5.8.1",
 		"mailgun.js": "^12.1.0",
 		"nodemailer": "^7.0.6",
 		"postmark": "^4.0.5"

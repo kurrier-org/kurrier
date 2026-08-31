@@ -1,0 +1,22 @@
+---
+title: Microsoft 365 delegated OAuth
+---
+
+Kurrier supports delegated Microsoft 365 mail through IMAP and SMTP XOAUTH2. This MVP does not use Microsoft Graph.
+
+## Entra app registration
+
+Register a Web platform application in Microsoft Entra ID. Add the exact callback URL configured by Kurrier (`<WEB_URL>/api/oauth/microsoft/callback`) and grant delegated Microsoft Graph-free permissions:
+
+- `IMAP.AccessAsUser.All`
+- `SMTP.Send`
+- `offline_access`
+- `openid`, `profile`, and `email`
+
+Tenant administrators may need to grant consent, and IMAP/SMTP AUTH must be enabled for the mailbox and tenant. App-only credentials and password authentication are not supported by this flow.
+
+## Security and lifecycle
+
+The authorization-code flow uses PKCE and an opaque, single-use state value. Access and refresh tokens must be stored through Kurrier's encrypted secret store; never put client secrets or tokens in source control. Refresh responses may rotate the refresh token, so the replacement must overwrite the stored value. Expired, revoked, consent-blocked, or policy-blocked authorization requires reconnecting the mailbox.
+
+XOAUTH2 sends the access token to both IMAP and SMTP. Kurrier refreshes tokens before expiry and reports the provider error when Microsoft or the tenant disables the protocol.

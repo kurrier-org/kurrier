@@ -1,4 +1,13 @@
-import { db, decryptAdminSecrets, identities, smtpAccountSecrets } from "@db";
+import {
+	db,
+	decryptAdminSecrets,
+	identities,
+	smtpAccountSecrets,
+	updateSecretAdmin,
+} from "@db";
+import {
+	loadMicrosoftCredentials,
+} from "@providers";
 import { eq } from "drizzle-orm";
 import { ImapFlow } from "imapflow";
 
@@ -18,10 +27,7 @@ export const initSmtpClient = async (
 			existing.removeAllListeners();
 			existing.close();
 		} catch (err) {
-			console.warn(
-				`[IMAP:${identityId}] Failed to close stale client`,
-				err,
-			);
+			console.warn(`[IMAP:${identityId}] Failed to close stale client`, err);
 		}
 	}
 
@@ -44,21 +50,47 @@ export const initSmtpClient = async (
 			parentId: String(identity.smtpAccountId),
 		});
 
-		const credentials = secrets?.vault?.decrypted_secret
+		let credentials = secrets?.vault?.decrypted_secret
 			? JSON.parse(secrets.vault.decrypted_secret)
 			: {};
+
+		credentials = await loadMicrosoftCredentials(credentials, {
+			key: String(secrets.metaId),
+			distributed: true,
+			persist: async (next) => {
+				await updateSecretAdmin(String(secrets.metaId), {
+					value: JSON.stringify(next),
+					expectedEncryptedValue: secrets.encryptedValue,
+				});
+			},
+			load: async () => {
+				const [latest] = await decryptAdminSecrets({
+					linkTable: smtpAccountSecrets,
+					foreignCol: smtpAccountSecrets.accountId,
+					secretIdCol: smtpAccountSecrets.secretId,
+					ownerId: identity.ownerId,
+					parentId: String(identity.smtpAccountId),
+				});
+				return latest?.vault?.decrypted_secret ? JSON.parse(latest.vault.decrypted_secret) : null;
+			},
+		});
 
 		const client = new ImapFlow({
 			host: credentials.IMAP_HOST,
 			port: Number(credentials.IMAP_PORT),
 			secure:
-				credentials.IMAP_SECURE === "true" ||
-				credentials.IMAP_SECURE === true,
+				credentials.IMAP_SECURE === "true" || credentials.IMAP_SECURE === true,
 
-			auth: {
-				user: credentials.IMAP_USERNAME,
-				pass: credentials.IMAP_PASSWORD,
-			},
+			auth:
+				credentials.IMAP_AUTH_METHOD === "xoauth2"
+					? {
+							user: credentials.IMAP_USERNAME,
+							accessToken: credentials.IMAP_ACCESS_TOKEN,
+						}
+					: {
+							user: credentials.IMAP_USERNAME,
+							pass: credentials.IMAP_PASSWORD,
+						},
 
 			/*
 			 * Keep this unchanged for now.
@@ -69,16 +101,16 @@ export const initSmtpClient = async (
 			socketTimeout: 60_000,
 
 			logger: {
-				error(data: any) {
+				error(data: unknown) {
 					console.error(
 						`[IMAP:${identityId}]`,
-						data?.msg ?? data,
+						(data as { msg?: unknown })?.msg ?? data,
 					);
 				},
-				warn(data: any) {
+				warn(data: unknown) {
 					console.warn(
 						`[IMAP:${identityId}]`,
-						data?.msg ?? data,
+						(data as { msg?: unknown })?.msg ?? data,
 					);
 				},
 				info() {},
@@ -115,10 +147,7 @@ export const initSmtpClient = async (
 		try {
 			await client.connect();
 		} catch (err) {
-			console.error(
-				`[IMAP:${identityId}] connect() failed:`,
-				err,
-			);
+			console.error(`[IMAP:${identityId}] connect() failed:`, err);
 
 			if (imapInstances.get(identityId) === client) {
 				imapInstances.delete(identityId);
