@@ -1,4 +1,4 @@
-type DistributionConfig = {
+export type DistributionConfig = {
     id: string;
     locales: readonly string[];
     defaultLocale: string;

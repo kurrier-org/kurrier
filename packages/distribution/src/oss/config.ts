@@ -1,3 +1,4 @@
+import type { DistributionConfig } from "../config";
 export const DISTRIBUTION_CONFIG = {
     id: "oss",
     locales: ["en", "pt-BR", "ko", "pl", "ru"],
@@ -6,4 +7,4 @@ export const DISTRIBUTION_CONFIG = {
         drive: process.env.DISABLE_DRIVE !== "true",
         localLogin: process.env.DISABLE_LOCAL_LOGIN !== "true",
     },
-} as const;
+} as const satisfies DistributionConfig;
