@@ -54,23 +54,18 @@ export const createMantineTheme = ({
 }) => {
 	const palettes = paletteFor(theme);
 
-	// MantineThemeOverride is fine here; createTheme returns a frozen theme
 	const override: MantineThemeOverride = {
 		colors: palettes,
 		primaryColor: "brand",
 		primaryShade: { light: 6, dark: 4 },
-		// defaultRadius: 'md',
 		fontFamily: "var(--font-sans, Inter, system-ui, sans-serif)",
+
 		components: {
 			Button: {
 				defaultProps: {
 					w: { base: "100%", sm: "auto" },
 				},
 				styles: {
-					root: {
-						height: "auto",
-						minHeight: "var(--button-height)",
-					},
 					label: {
 						whiteSpace: "normal",
 						textAlign: "center",
@@ -78,6 +73,7 @@ export const createMantineTheme = ({
 				},
 			},
 		},
+
 		headings: {
 			fontFamily: "var(--font-sans, Inter, system-ui, sans-serif)",
 		},

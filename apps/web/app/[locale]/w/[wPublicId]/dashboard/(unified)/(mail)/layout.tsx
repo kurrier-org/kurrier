@@ -18,18 +18,19 @@ async function MailSidebar() {
 	const workspacePublicId = await getWorkspacePublicId();
 	const identityMailboxes = await fetchIdentityMailboxList();
 
-	const isInbound =
-		identityMailboxes[0]?.identity?.metaData?.provider === "inbound";
+	const sendableIdentityMailboxes = identityMailboxes.filter(
+		(item) => item.identity?.metaData?.provider !== "inbound",
+	);
 
 	return (
 		<AppSidebar
 			workspacePublicId={workspacePublicId}
 			sidebarTopContent={
 				<div className="-mt-1" key="mail-sidebar-compose">
-					{!isInbound && (
+					{sendableIdentityMailboxes.length > 0 && (
 						<MailComposerLauncher
 							publicConfig={publicConfig}
-							identityMailboxes={identityMailboxes}
+							identityMailboxes={sendableIdentityMailboxes}
 						/>
 					)}
 				</div>

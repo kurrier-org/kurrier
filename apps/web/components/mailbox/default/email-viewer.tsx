@@ -1,11 +1,18 @@
-// @ts-nocheck
 "use client";
 
 import type { MessageEntity } from "@db";
 import { ActionIcon, Button } from "@mantine/core";
-import DOMPurify from "dompurify";
-import { Ellipsis } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+	Ellipsis,
+	EyeOff,
+	ImageOff,
+} from "lucide-react";
+import {
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
@@ -19,10 +26,13 @@ const BASE_CSS = `
 	--quote-bar: #cbd5e1;
 
 	display: block;
+	width: 100%;
 	color: var(--text);
 }
 
 .email-root {
+	width: 100%;
+	min-width: 0;
 	background: var(--bg);
 	color: var(--text);
 	font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
@@ -30,8 +40,12 @@ const BASE_CSS = `
 	word-break: break-word;
 }
 
+.email-root,
 .email-root * {
 	box-sizing: border-box;
+}
+
+.email-root * {
 	max-width: 100%;
 	overflow-wrap: anywhere;
 }
@@ -67,10 +81,16 @@ const BASE_CSS = `
 	font-size: 1.125rem;
 }
 
+.email-root h4,
+.email-root h5,
+.email-root h6 {
+	font-size: 1rem;
+}
+
 .email-root ul,
 .email-root ol {
 	margin: 0.5rem 0 0.85rem;
-	padding-left: 1.25rem;
+	padding-left: 1.5rem;
 }
 
 .email-root li {
@@ -80,6 +100,7 @@ const BASE_CSS = `
 .email-root a {
 	color: #2563eb;
 	text-decoration: none;
+	overflow-wrap: anywhere;
 }
 
 .email-root a:hover {
@@ -94,8 +115,24 @@ const BASE_CSS = `
 	max-width: 100% !important;
 }
 
-.email-root table {
+.email-root img {
+	object-fit: contain;
+}
+
+.email-root iframe {
 	max-width: 100% !important;
+}
+
+.email-root table {
+	width: auto;
+	max-width: 100% !important;
+	border-collapse: collapse;
+}
+
+.email-root td,
+.email-root th {
+	max-width: 100%;
+	overflow-wrap: anywhere;
 }
 
 .email-root pre,
@@ -106,11 +143,13 @@ const BASE_CSS = `
 }
 
 .email-root pre {
+	max-width: 100%;
 	overflow: auto;
 	padding: 0.75rem;
 	border-radius: 0.375rem;
 	background: #0f172a0d;
 	white-space: pre-wrap;
+	word-break: break-word;
 }
 
 .email-root hr {
@@ -138,6 +177,11 @@ const BASE_CSS = `
 	color: var(--muted) !important;
 	font-size: 0.92rem !important;
 }
+
+.email-root .kurrier-plain-text {
+	white-space: pre-wrap;
+	word-break: break-word;
+}
 `;
 
 const QUOTE_HIDE_CSS = `
@@ -146,6 +190,7 @@ blockquote[type="cite"],
 .gmail_quote,
 .gmail_quote_container,
 .gmail_quote_container blockquote,
+.moz-cite-prefix,
 .moz-cite-prefix + blockquote,
 div[style*="border-left"][style*="solid"] blockquote {
 	display: none !important;
@@ -160,25 +205,48 @@ const QUOTE_SELECTOR = [
 	".moz-cite-prefix",
 ].join(",");
 
-const escapeText = (value: string) =>
-	value.replace(
-		/[<>&]/g,
-		(character) =>
-			({
-				"<": "&lt;",
-				">": "&gt;",
-				"&": "&amp;",
-			})[character] as string,
-	);
+type PreparedHtml = {
+	html: string;
+	hasRemoteImages: boolean;
+	hasQuotes: boolean;
+};
 
-const prepareHtml = (rawHtml: string, allowRemoteImages: boolean) => {
-	const sanitized = DOMPurify.sanitize(rawHtml, {
-		USE_PROFILES: {
-			html: true,
-		},
+const EMPTY_PREPARED: PreparedHtml = {
+	html: "",
+	hasRemoteImages: false,
+	hasQuotes: false,
+};
+
+const escapeText = (value: string) =>
+	value.replace(/[<>&]/g, (character) => {
+		const replacements: Record<string, string> = {
+			"<": "&lt;",
+			">": "&gt;",
+			"&": "&amp;",
+		};
+
+		return replacements[character] ?? character;
 	});
 
-	const doc = new DOMParser().parseFromString(sanitized, "text/html");
+const isRemoteUrl = (value: string) =>
+	/^https?:\/\//i.test(value.trim());
+
+const hasRemoteSrcset = (value: string) =>
+	value
+		.split(",")
+		.some((candidate) => {
+			const url = candidate.trim().split(/\s+/)[0] ?? "";
+			return isRemoteUrl(url);
+		});
+
+const prepareHtml = (
+	sanitizedHtml: string,
+	allowRemoteImages: boolean,
+): PreparedHtml => {
+	const doc = new DOMParser().parseFromString(
+		sanitizedHtml,
+		"text/html",
+	);
 
 	let hasRemoteImages = false;
 
@@ -186,11 +254,10 @@ const prepareHtml = (rawHtml: string, allowRemoteImages: boolean) => {
 		const src = image.getAttribute("src") ?? "";
 		const srcset = image.getAttribute("srcset") ?? "";
 
-		const hasRemoteSrc = /^https?:\/\//i.test(src);
+		const remoteSrc = isRemoteUrl(src);
+		const remoteSrcset = hasRemoteSrcset(srcset);
 
-		const hasRemoteSrcset = /(?:^|,\s*)https?:\/\//i.test(srcset);
-
-		if (!hasRemoteSrc && !hasRemoteSrcset) {
+		if (!remoteSrc && !remoteSrcset) {
 			return;
 		}
 
@@ -200,12 +267,12 @@ const prepareHtml = (rawHtml: string, allowRemoteImages: boolean) => {
 			return;
 		}
 
-		if (hasRemoteSrc) {
+		if (remoteSrc) {
 			image.dataset.blockedSrc = src;
 			image.removeAttribute("src");
 		}
 
-		if (hasRemoteSrcset) {
+		if (remoteSrcset) {
 			image.dataset.blockedSrcset = srcset;
 			image.removeAttribute("srcset");
 		}
@@ -215,6 +282,18 @@ const prepareHtml = (rawHtml: string, allowRemoteImages: boolean) => {
 		}
 	});
 
+	doc.querySelectorAll<HTMLAnchorElement>("a[href]").forEach((link) => {
+		const href = link.getAttribute("href")?.trim() ?? "";
+
+		if (/^javascript:/i.test(href)) {
+			link.removeAttribute("href");
+			return;
+		}
+
+		link.target = "_blank";
+		link.rel = "nofollow noopener noreferrer";
+	});
+
 	return {
 		html: doc.body.innerHTML,
 		hasRemoteImages,
@@ -222,28 +301,25 @@ const prepareHtml = (rawHtml: string, allowRemoteImages: boolean) => {
 	};
 };
 
-export default function EmailViewer({ message }: { message: MessageEntity }) {
+export default function EmailViewer({
+										message,
+									}: {
+	message: MessageEntity;
+}) {
 	const dict = useOptionalDictionary();
 	const hostRef = useRef<HTMLDivElement>(null);
 
 	const [hideQuotes, setHideQuotes] = useState(true);
 	const [showRemoteImages, setShowRemoteImages] = useState(false);
+	const [prepared, setPrepared] =
+		useState<PreparedHtml>(EMPTY_PREPARED);
 
 	const senderEmail =
-		message?.from?.value?.[0]?.address?.toLowerCase() ?? "unknown";
+		message?.from?.value?.[0]?.address?.toLowerCase() ??
+		"unknown";
 
-	const remoteImagePreferenceKey = `kurrier:remote-images:${senderEmail}`;
-
-	useEffect(() => {
-		if (senderEmail === "unknown") {
-			setShowRemoteImages(false);
-			return;
-		}
-
-		setShowRemoteImages(
-			localStorage.getItem(remoteImagePreferenceKey) === "true",
-		);
-	}, [remoteImagePreferenceKey, senderEmail]);
+	const remoteImagePreferenceKey =
+		`kurrier:remote-images:${senderEmail}`;
 
 	const rawHtml = useMemo(() => {
 		if (message.html?.trim()) {
@@ -251,25 +327,94 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 		}
 
 		return `
-			<div style="white-space: pre-wrap;">
-				${escapeText((message.text || "No content").toString())}
+			<div class="kurrier-plain-text">
+				${escapeText(
+			(message.text || "No content").toString(),
+		)}
 			</div>
 		`;
 	}, [message.html, message.text]);
 
-	const [prepared, setPrepared] = useState({
-		html: "",
-		hasRemoteImages: false,
-		hasQuotes: false,
-	});
+	useEffect(() => {
+		setHideQuotes(true);
+
+		if (senderEmail === "unknown") {
+			setShowRemoteImages(false);
+			return;
+		}
+
+		try {
+			setShowRemoteImages(
+				localStorage.getItem(
+					remoteImagePreferenceKey,
+				) === "true",
+			);
+		} catch {
+			setShowRemoteImages(false);
+		}
+	}, [
+		message.id,
+		remoteImagePreferenceKey,
+		senderEmail,
+	]);
 
 	useEffect(() => {
-		setPrepared(prepareHtml(rawHtml, showRemoteImages));
-	}, [rawHtml, showRemoteImages]);
+		let cancelled = false;
+
+		const prepare = async () => {
+			try {
+				const { default: DOMPurify } =
+					await import("dompurify");
+
+				const sanitized = DOMPurify.sanitize(rawHtml, {
+					USE_PROFILES: {
+						html: true,
+					},
+				});
+
+				const result = prepareHtml(
+					sanitized,
+					showRemoteImages,
+				);
+
+				if (!cancelled) {
+					setPrepared(result);
+				}
+			} catch {
+				if (!cancelled) {
+					setPrepared({
+						html: `
+							<div class="kurrier-plain-text">
+								${escapeText(
+							(message.text ||
+								"No content").toString(),
+						)}
+							</div>
+						`,
+						hasRemoteImages: false,
+						hasQuotes: false,
+					});
+				}
+			}
+		};
+
+		void prepare();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [
+		rawHtml,
+		showRemoteImages,
+		message.text,
+	]);
 
 	useEffect(() => {
 		const host = hostRef.current;
-		if (!host) return;
+
+		if (!host) {
+			return;
+		}
 
 		const shadow =
 			host.shadowRoot ??
@@ -287,16 +432,10 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 				${prepared.html}
 			</article>
 		`;
-
-		const root = shadow.querySelector<HTMLElement>(".email-root");
-
-		if (!root) return;
-
-		root.querySelectorAll<HTMLAnchorElement>("a[href]").forEach((link) => {
-			link.target = "_blank";
-			link.rel = "nofollow noopener noreferrer";
-		});
-	}, [prepared.html, hideQuotes]);
+	}, [
+		prepared.html,
+		hideQuotes,
+	]);
 
 	const allowRemoteImagesForSender = () => {
 		if (senderEmail === "unknown") {
@@ -304,50 +443,101 @@ export default function EmailViewer({ message }: { message: MessageEntity }) {
 			return;
 		}
 
-		localStorage.setItem(remoteImagePreferenceKey, "true");
+		try {
+			localStorage.setItem(
+				remoteImagePreferenceKey,
+				"true",
+			);
+		} catch {
+			// Preference persistence is optional.
+		}
 
 		setShowRemoteImages(true);
 	};
 
 	return (
 		<div className="mb-24 mt-6 min-w-0 overflow-x-hidden">
-			{prepared.hasRemoteImages && !showRemoteImages && (
-				<div className="mb-3 flex flex-wrap gap-2">
-					<Button
-						size="xs"
-						variant="default"
-						onClick={() => setShowRemoteImages(true)}
-					>
-						{dict?.mailbox?.loadRemoteImagesOnce ?? "Load remote images once"}
-					</Button>
+			{prepared.hasRemoteImages &&
+				!showRemoteImages && (
+					<div className="mb-4 flex flex-col gap-3 rounded-lg border bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+						<div className="flex min-w-0 items-start gap-3">
+							<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md border bg-background">
+								<ImageOff className="size-4 text-muted-foreground" />
+							</div>
 
-					<Button
-						size="xs"
-						variant="default"
-						onClick={allowRemoteImagesForSender}
-					>
-						{dict?.mailbox?.alwaysLoadForThisSender ??
-							"Always load for this sender"}
-					</Button>
-				</div>
-			)}
+							<div className="min-w-0">
+								<p className="text-sm font-medium">
+									Remote images are blocked
+								</p>
 
-			<div ref={hostRef} className="block w-full" />
+								<p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+									Images from external servers can be used to track when you open a message.
+								</p>
+							</div>
+						</div>
+
+						<div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+							<Button
+								size="xs"
+								variant="default"
+								onClick={() =>
+									setShowRemoteImages(true)
+								}
+							>
+								{dict?.mailbox
+										?.loadRemoteImagesOnce ??
+									"Load once"}
+							</Button>
+
+							<Button
+								size="xs"
+								variant="light"
+								onClick={
+									allowRemoteImagesForSender
+								}
+							>
+								{dict?.mailbox
+										?.alwaysLoadForThisSender ??
+									"Always for sender"}
+							</Button>
+						</div>
+					</div>
+				)}
+
+			<div
+				ref={hostRef}
+				className="block min-w-0 w-full"
+			/>
 
 			{prepared.hasQuotes && (
-				<ActionIcon
-					type="button"
-					variant="light"
-					size="xs"
-					onClick={() => setHideQuotes((current) => !current)}
-					className="my-2 rounded border px-2 py-1 text-[12px] text-gray-600 hover:bg-gray-50"
-					title={hideQuotes ? "Show previous emails" : "Hide previous emails"}
-					aria-label={
-						hideQuotes ? "Show previous emails" : "Hide previous emails"
-					}
-				>
-					<Ellipsis size={16} />
-				</ActionIcon>
+				<div className="mt-3">
+					<ActionIcon
+						type="button"
+						variant="subtle"
+						size="sm"
+						onClick={() =>
+							setHideQuotes(
+								(current) => !current,
+							)
+						}
+						title={
+							hideQuotes
+								? "Show previous emails"
+								: "Hide previous emails"
+						}
+						aria-label={
+							hideQuotes
+								? "Show previous emails"
+								: "Hide previous emails"
+						}
+					>
+						{hideQuotes ? (
+							<Ellipsis size={17} />
+						) : (
+							<EyeOff size={16} />
+						)}
+					</ActionIcon>
+				</div>
 			)}
 		</div>
 	);
