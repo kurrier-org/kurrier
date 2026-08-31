@@ -1,38 +1,41 @@
-import { SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/ui/dashboards/unified/default/app-sidebar";
-import { CalendarState } from "@schema";
-import * as React from "react";
-import NewEventButton from "@/components/dashboard/calendars/new-event-button";
-import {
-	fetchDefaultCalendar,
-	fetchOrganizers,
-} from "@/lib/actions/calendar";
+import type { CalendarState } from "@schema";
 import { getTimeZones } from "@vvo/tzdb";
-import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
-import { getWorkspacePublicId } from "@/lib/actions/clients";
-import { Suspense } from "react";
+import { CalendarDays } from "lucide-react";
 import { connection } from "next/server";
+import type * as React from "react";
+import { Suspense } from "react";
 import Loading from "@/app/loading";
-import NavUserWrapper from "@/components/ui/dashboards/workspace/nav-user-wrapper";
+import ContentPlaceholder from "@/components/common/content-placeholder";
 import CalendarSidebarWrapper from "@/components/dashboard/calendars/calendar-sidebar-wrapper";
+import CalendarTopBar from "@/components/dashboard/calendars/calendar-top-bar";
+import NewEventButton from "@/components/dashboard/calendars/new-event-button";
+import DashboardPageHeader from "@/components/dashboard/dashboard-page-header";
+import { AppSidebar } from "@/components/ui/dashboards/unified/default/app-sidebar";
+import NavUserWrapper from "@/components/ui/dashboards/workspace/nav-user-wrapper";
+import { Separator } from "@/components/ui/separator";
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
+import { fetchDefaultCalendar, fetchOrganizers } from "@/lib/actions/calendar";
+import { getWorkspacePublicId } from "@/lib/actions/clients";
 import { getDictionary } from "@/lib/dictionaries";
-import { cookies } from "next/headers";
 
 async function CalendarDashboard({
-									 children,
-								 }: {
+	children,
+	params,
+}: {
 	children: React.ReactNode;
+	params: Promise<{ locale: string }>;
 }) {
 	await connection();
 
-	const cookieStore = await cookies();
+	const { locale } = await params;
 
 	const [defaultCalendar, organizers, workspacePublicId, dict] =
 		await Promise.all([
 			fetchDefaultCalendar(),
 			fetchOrganizers(),
 			getWorkspacePublicId(),
-			getDictionary(cookieStore.get("locale")?.value ?? "en"),
+			getDictionary(locale),
 		]);
 
 	const timeZones = getTimeZones({ includeUtc: true });
@@ -61,6 +64,8 @@ async function CalendarDashboard({
 		tz,
 		organizersKey,
 	].join("::");
+	const emptyCalendarTitle =
+		dict.calendar.emptyTitle ?? dict.calendar.noCalendarFound;
 
 	return (
 		<DynamicContextProvider
@@ -85,7 +90,7 @@ async function CalendarDashboard({
 							<div className="-mt-1">
 								<NewEventButton
 									workspacePublicId={workspacePublicId}
-									hideOnMobile
+									className="hidden md:inline-flex"
 								/>
 							</div>
 						)}
@@ -95,11 +100,26 @@ async function CalendarDashboard({
 
 			<SidebarInset>
 				{defaultCalendar ? (
+					<header className="flex min-w-0 shrink-0 items-start gap-2 border-b bg-background/60 px-3 py-2 backdrop-blur sm:items-center sm:px-4 sm:py-3">
+						<SidebarTrigger className="-ml-1 size-11 shrink-0 md:size-7" />
+						<Separator
+							orientation="vertical"
+							className="mt-3 data-[orientation=vertical]:h-4 sm:mt-1.5"
+						/>
+						<CalendarTopBar workspacePublicId={workspacePublicId} />
+					</header>
+				) : (
+					<DashboardPageHeader title={dict.calendar.calendar ?? "Calendar"} />
+				)}
+
+				{defaultCalendar ? (
 					children
 				) : (
-					<div className="flex h-full items-center justify-center text-muted-foreground">
-						{dict.calendar.noCalendarFound}
-					</div>
+					<ContentPlaceholder
+						icon={<CalendarDays className="size-5" aria-hidden="true" />}
+						title={emptyCalendarTitle}
+						description={dict.calendar.emptyDescription}
+					/>
 				)}
 			</SidebarInset>
 		</DynamicContextProvider>
@@ -107,13 +127,15 @@ async function CalendarDashboard({
 }
 
 export default function DashboardLayout({
-											children,
-										}: {
+	children,
+	params,
+}: {
 	children: React.ReactNode;
+	params: Promise<{ locale: string }>;
 }) {
 	return (
 		<Suspense fallback={<Loading />}>
-			<CalendarDashboard>{children}</CalendarDashboard>
+			<CalendarDashboard params={params}>{children}</CalendarDashboard>
 		</Suspense>
 	);
 }

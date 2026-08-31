@@ -220,7 +220,10 @@ export async function addNewFolder(
 				});
 		});
 
-		revalidatePath("/w/[workspaceId]/dashboard/drive");
+		revalidatePath(
+			"/[locale]/w/[wPublicId]/dashboard/drive/[[...segments]]",
+			"page",
+		);
 
 		return {
 			success: true,
@@ -230,11 +233,6 @@ export async function addNewFolder(
 }
 
 
-
-export const refreshViewAfterUpload = async () => {
-	assertDriveEnabled();
-	return revalidatePath("/w/[workspaceId]/dashboard/drive");
-};
 
 function getVolumePrefix(volume: DriveVolumeEntity) {
 	return `drive/workspaces/${volume.workspaceId}/${volume.code}/`;
@@ -513,7 +511,10 @@ export async function deleteDriveEntry(entryId: string) {
 					),
 			);
 
-			revalidatePath("/w/[workspaceId]/dashboard/drive");
+			revalidatePath(
+				"/[locale]/w/[wPublicId]/dashboard/drive/[[...segments]]",
+				"page",
+			);
 
 			return {
 				success: true,
@@ -539,7 +540,10 @@ export async function deleteDriveEntry(entryId: string) {
 				),
 		);
 
-		revalidatePath("/w/[workspaceId]/dashboard/drive");
+		revalidatePath(
+			"/[locale]/w/[wPublicId]/dashboard/drive/[[...segments]]",
+			"page",
+		);
 
 		return {
 			success: true,

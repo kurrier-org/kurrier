@@ -8,13 +8,7 @@ import { ActionIcon, Button, Menu, Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import type { PublicConfig } from "@schema";
 import slugify from "@sindresorhus/slugify";
-import {
-	Code,
-	Download,
-	EllipsisVertical,
-	Forward,
-	Reply,
-} from "lucide-react";
+import { Code, Download, EllipsisVertical, Forward, Reply } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import type React from "react";
@@ -24,8 +18,7 @@ import ThreadLabelHoverButtons from "@/components/dashboard/labels/thread-label-
 import MailComposer from "@/components/mailbox/default/composer/mail-composer";
 import EditorAttachmentItem from "@/components/mailbox/default/editor/editor-attachment-item";
 import MailUnsubscriber from "@/components/mailbox/default/mail-unsubscriber";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
-
+import { useOptionalI18n } from "@/components/providers/dictionary-provider";
 import type {
 	FetchLabelsResult,
 	FetchMailboxThreadLabelsResult,
@@ -73,9 +66,7 @@ function getScrollParent(el: HTMLElement): HTMLElement {
 		parent = parent.parentElement;
 	}
 
-	return (
-		document.scrollingElement || document.documentElement
-	) as HTMLElement;
+	return (document.scrollingElement || document.documentElement) as HTMLElement;
 }
 
 export function scrollToEditor(
@@ -90,27 +81,21 @@ export function scrollToEditor(
 ) {
 	const container = getScrollParent(el);
 
-	const isWindow =
-		container ===
-		(document.scrollingElement as HTMLElement);
+	const isWindow = container === (document.scrollingElement as HTMLElement);
 
 	const containerRect = isWindow
 		? ({
-			top: 10,
-			height: window.innerHeight,
-		} as DOMRect)
+				top: 10,
+				height: window.innerHeight,
+			} as DOMRect)
 		: container.getBoundingClientRect();
 
 	const editorRect = el.getBoundingClientRect();
 
-	const currentTop = isWindow
-		? window.scrollY
-		: container.scrollTop;
+	const currentTop = isWindow ? window.scrollY : container.scrollTop;
 
 	const targetTop =
-		currentTop +
-		(editorRect.top - containerRect.top) -
-		offsetTop;
+		currentTop + (editorRect.top - containerRect.top) - offsetTop;
 
 	const doScroll = (top: number) => {
 		if (isWindow) {
@@ -129,19 +114,14 @@ export function scrollToEditor(
 	doScroll(targetTop);
 
 	setTimeout(() => {
-		const editorRectAfterScroll =
-			el.getBoundingClientRect();
+		const editorRectAfterScroll = el.getBoundingClientRect();
 
-		const viewHeight = isWindow
-			? window.innerHeight
-			: container.clientHeight;
+		const viewHeight = isWindow ? window.innerHeight : container.clientHeight;
 
-		const bottomGap =
-			viewHeight - editorRectAfterScroll.bottom;
+		const bottomGap = viewHeight - editorRectAfterScroll.bottom;
 
 		if (bottomGap < minBottomGap) {
-			const delta =
-				minBottomGap - bottomGap;
+			const delta = minBottomGap - bottomGap;
 
 			if (isWindow) {
 				window.scrollBy({
@@ -159,20 +139,20 @@ export function scrollToEditor(
 }
 
 function EmailRenderer({
-						   threadIndex,
-						   numberOfMessages,
-						   message,
-						   attachments,
-						   publicConfig,
-						   threadId,
-						   markSmtp,
-						   activeMailboxId,
-						   mailSubscription,
-						   identityMailboxes,
-						   allLabels,
-						   labelsByThreadId,
-						   children,
-					   }: {
+	threadIndex,
+	numberOfMessages,
+	message,
+	attachments,
+	publicConfig,
+	threadId,
+	markSmtp,
+	activeMailboxId,
+	mailSubscription,
+	identityMailboxes,
+	allLabels,
+	labelsByThreadId,
+	children,
+}: {
 	threadIndex: number;
 	numberOfMessages: number;
 	message: MessageEntity;
@@ -187,38 +167,28 @@ function EmailRenderer({
 	labelsByThreadId: FetchMailboxThreadLabelsResult;
 	children?: React.ReactNode;
 }) {
-	const dict = useOptionalDictionary();
+	const i18n = useOptionalI18n();
+	const dict = i18n?.dict;
+	const format = i18n?.format;
 	const params = useParams();
-
 	const composerRef = useRef<HTMLDivElement>(null);
-
-	const formatted = Temporal.Instant.from(
-		message.createdAt.toISOString(),
-	)
+	const formatted = Temporal.Instant.from(message.createdAt.toISOString())
 		.toZonedDateTimeISO(Temporal.Now.timeZoneId())
-		.toLocaleString("en-US", {
+		.toLocaleString(dict?.locale ?? "en", {
 			day: "2-digit",
 			month: "short",
 			year: "numeric",
 			hour: "2-digit",
 			minute: "2-digit",
-			hour12: true,
 		});
 
-	const [showEditor, setShowEditor] =
-		useState(false);
+	const [showEditor, setShowEditor] = useState(false);
 
-	const [showEditorMode, setShowEditorMode] =
-		useState<ComposerMode>("reply");
+	const [showEditorMode, setShowEditorMode] = useState<ComposerMode>("reply");
 
 	useEffect(() => {
 		if (activeMailboxId) {
-			markAsRead(
-				threadId,
-				activeMailboxId,
-				markSmtp,
-				true,
-			);
+			markAsRead(threadId, activeMailboxId, markSmtp, true);
 		}
 	}, [activeMailboxId, threadId, markSmtp]);
 
@@ -235,91 +205,59 @@ function EmailRenderer({
 				minBottomGap: 64,
 			});
 		});
-	}, [showEditor, showEditorMode]);
+	}, [showEditor]);
 
 	const downloadEml = async () => {
-		const { url } =
-			await getRawMessageDownloadUrl(
-				message.id,
-			);
+		const { url } = await getRawMessageDownloadUrl(message.id);
 
 		if (url) {
 			window.open(url, "_blank");
 		}
 	};
 
-	const [opened, { open, close }] =
-		useDisclosure(false);
+	const [opened, { open, close }] = useDisclosure(false);
 
-	const [emailString, setEmailString] =
-		useState<string | null>(null);
+	const [emailString, setEmailString] = useState<string | null>(null);
 
 	useEffect(() => {
 		if (!opened) return;
 
-		getRawMessageDownloadUrl(
-			message.id,
-		).then(({ url }) => {
+		getRawMessageDownloadUrl(message.id).then(({ url }) => {
 			if (!url) return;
 
 			fetch(url)
 				.then((res) => res.text())
-				.then((raw) =>
-					setEmailString(
-						raw.slice(0, 10000),
-					),
-				);
+				.then((raw) => setEmailString(raw.slice(0, 10000)));
 		});
 	}, [opened, message.id]);
 
 	const formattedTime = useMemo(() => {
-		return Temporal.Instant.from(
-			message.createdAt.toISOString(),
-		)
-			.toZonedDateTimeISO(
-				Temporal.Now.timeZoneId(),
-			)
-			.toLocaleString("en-GB", {
+		return Temporal.Instant.from(message.createdAt.toISOString())
+			.toZonedDateTimeISO(Temporal.Now.timeZoneId())
+			.toLocaleString(dict?.locale ?? "en", {
 				day: "numeric",
 				month: "long",
 				year: "numeric",
 				hour: "2-digit",
 				minute: "2-digit",
-				hour12: false,
-			})
-			.replace(",", " at");
-	}, [message.createdAt]);
+			});
+	}, [dict?.locale, message.createdAt]);
 
-	const activeIdentityPublicId =
-		useMemo(() => {
-			const routeIdentityPublicId =
-				String(
-					params.identityPublicId ??
-					"",
-				);
+	const activeIdentityPublicId = useMemo(() => {
+		const routeIdentityPublicId = String(params.identityPublicId ?? "");
 
-			const exists =
-				identityMailboxes.some(
-					(item) =>
-						item.identity
-							.publicId ===
-						routeIdentityPublicId,
-				);
+		const exists = identityMailboxes.some(
+			(item) => item.identity.publicId === routeIdentityPublicId,
+		);
 
-			if (exists) {
-				return routeIdentityPublicId;
-			}
+		if (exists) {
+			return routeIdentityPublicId;
+		}
 
-			return identityMailboxes[0]
-				?.identity.publicId;
-		}, [
-			params.identityPublicId,
-			identityMailboxes,
-		]);
+		return identityMailboxes[0]?.identity.publicId;
+	}, [params.identityPublicId, identityMailboxes]);
 
-	const openComposer = (
-		mode: ComposerMode,
-	) => {
+	const openComposer = (mode: ComposerMode) => {
 		setShowEditorMode(mode);
 		setShowEditor(true);
 	};
@@ -329,19 +267,13 @@ function EmailRenderer({
 			<Modal
 				opened={opened}
 				onClose={close}
-				title={
-					dict?.mailbox
-						?.originalMessage ??
-					"Original message"
-				}
+				title={dict?.mailbox?.originalMessage ?? "Original message"}
 				size="xl"
 			>
 				<div className="overflow-hidden rounded-md border text-sm">
-					<div className="grid grid-cols-[160px_1fr] border-b">
+					<div className="grid grid-cols-1 border-b sm:grid-cols-[160px_minmax(0,1fr)]">
 						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
-							{dict?.mailbox
-									?.messageId ??
-								"Message ID"}
+							{dict?.mailbox?.messageId ?? "Message ID"}
 						</div>
 
 						<div className="break-all px-3 py-2 text-green-700">
@@ -349,64 +281,41 @@ function EmailRenderer({
 						</div>
 					</div>
 
-					<div className="grid grid-cols-[160px_1fr] border-b">
+					<div className="grid grid-cols-1 border-b sm:grid-cols-[160px_minmax(0,1fr)]">
 						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
-							{dict?.mailbox
-									?.createdOn ??
-								"Created on"}
+							{dict?.mailbox?.createdOn ?? "Created on"}
 						</div>
 
-						<div className="px-3 py-2">
-							{formattedTime}
+						<div className="px-3 py-2">{formattedTime}</div>
+					</div>
+
+					<div className="grid grid-cols-1 border-b sm:grid-cols-[160px_minmax(0,1fr)]">
+						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
+							{dict?.mailbox?.from ?? "From"}
+						</div>
+
+						<div className="min-w-0 break-words px-3 py-2">
+							{String(message?.headersJson?.from?.text)}
 						</div>
 					</div>
 
-					<div className="grid grid-cols-[160px_1fr] border-b">
+					<div className="grid grid-cols-1 border-b sm:grid-cols-[160px_minmax(0,1fr)]">
 						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
-							{dict?.mailbox
-									?.from ??
-								"From"}
+							{dict?.mailbox?.to ?? "To"}
 						</div>
 
-						<div className="px-3 py-2">
-							{String(
-								message
-									?.headersJson
-									?.from
-									?.text,
-							)}
+						<div className="min-w-0 break-words px-3 py-2">
+							{String(message?.headersJson?.to?.text)}
 						</div>
 					</div>
 
-					<div className="grid grid-cols-[160px_1fr] border-b">
+					<div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)]">
 						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
-							{dict?.mailbox?.to ??
-								"To"}
+							{dict?.mailbox?.subject ?? "Subject"}
 						</div>
 
-						<div className="px-3 py-2">
-							{String(
-								message
-									?.headersJson
-									?.to
-									?.text,
-							)}
-						</div>
-					</div>
-
-					<div className="grid grid-cols-[160px_1fr]">
-						<div className="bg-muted px-3 py-2 font-medium text-muted-foreground">
-							{dict?.mailbox
-									?.subject ??
-								"Subject"}
-						</div>
-
-						<div className="px-3 py-2">
-							{
-								message
-									?.headersJson
-									?.subject
-							}
+						<div className="min-w-0 break-words px-3 py-2">
+							{message?.headersJson?.subject}
 						</div>
 					</div>
 				</div>
@@ -421,210 +330,118 @@ function EmailRenderer({
 					"
 				>
 					{emailString ||
-						(dict?.mailbox
-								?.loadingRawMessage ??
-							"Loading raw message...")}
+						(dict?.mailbox?.loadingRawMessage ?? "Loading raw message...")}
 				</div>
 			</Modal>
 
-			<div className="grid grid-cols-12">
-				<div className="col-span-12">
+			<div className="min-w-0">
+				<div className="min-w-0">
 					{threadIndex === 0 && (
-						<div className="flex items-center gap-3">
-							<div className="text-xl font-base">
+						<div className="flex min-w-0 flex-wrap items-start gap-2 sm:gap-3">
+							<h1 className="min-w-0 flex-1 break-words text-pretty text-lg font-semibold leading-7 sm:text-xl sm:leading-8">
 								{message.subject ||
-									(dict
-											?.mailbox
-											?.noSubjectTitle ??
-										"No Subject")}
-							</div>
+									(dict?.mailbox?.noSubjectTitle ?? "No Subject")}
+							</h1>
 
 							<MailUnsubscriber
-								mailSubscription={
-									mailSubscription
-								}
-								message={
-									message
-								}
+								mailSubscription={mailSubscription}
+								message={message}
 							/>
 						</div>
 					)}
 				</div>
 
-				<div className="col-span-12 flex flex-col md:col-span-6">
-					<div className="mt-4 flex items-center gap-1">
-						<div className="text-sm font-semibold capitalize">
-							{getMessageName(
-									message,
-									"from",
-								) ??
-								slugify(
-									String(
-										getMessageAddress(
-											message,
-											"from",
-										),
-									),
-									{
-										separator:
-											" ",
-									},
-								)}
+				<div className="mt-4 flex min-w-0 flex-col gap-3 sm:mt-5 md:flex-row md:items-end md:justify-between">
+					<div className="min-w-0">
+						<div className="flex min-w-0 flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-2">
+							<div className="min-w-0 break-words text-sm font-semibold capitalize">
+								{getMessageName(message, "from") ??
+									slugify(String(getMessageAddress(message, "from")), {
+										separator: " ",
+									})}
+							</div>
+
+							<div className="min-w-0 break-all text-xs text-muted-foreground sm:truncate">
+								{`<${
+									getMessageAddress(message, "from") ??
+									getMessageName(message, "from")
+								}>`}
+							</div>
 						</div>
 
-						<div className="text-xs">
+						<div className="mt-1 min-w-0 break-all text-xs text-muted-foreground">
+							{dict?.mailbox?.toLower ?? "to"}{" "}
 							{`<${
-								getMessageAddress(
-									message,
-									"from",
-								) ??
-								getMessageName(
-									message,
-									"from",
-								)
+								getMessageAddress(message, "to") ??
+								getMessageName(message, "to")
 							}>`}
 						</div>
 					</div>
 
-					<div className="flex items-center gap-1">
-						<div className="text-xs">
-							{dict?.mailbox
-									?.toLower ??
-								"to"}{" "}
-							{`<${
-								getMessageAddress(
-									message,
-									"to",
-								) ??
-								getMessageName(
-									message,
-									"to",
-								)
-							}>`}
-						</div>
-					</div>
-				</div>
-
-				<div className="col-span-12 my-1 flex items-center justify-between gap-2 md:col-span-6 md:justify-end">
-					<div className="text-xs">
-						{formatted}
-					</div>
-
-					<div className="flex items-center justify-end gap-1">
-						<ThreadLabelHoverButtons
-							mailboxThreadItem={{
-								threadId,
-								mailboxId:
-								activeMailboxId,
-							}}
-							allLabels={
-								allLabels
-							}
-							labelsByThreadId={
-								labelsByThreadId
-							}
-						/>
-
-						<ActionIcon
-							variant="transparent"
-							onClick={() =>
-								openComposer(
-									"reply",
-								)
-							}
+					<div className="flex min-w-0 items-center justify-between gap-3 border-t pt-2 md:shrink-0 md:border-0 md:pt-0">
+						<time
+							dateTime={message.createdAt.toISOString()}
+							className="min-w-0 text-xs text-muted-foreground sm:whitespace-nowrap"
 						>
-							<Reply size={18} />
-						</ActionIcon>
+							{formatted}
+						</time>
 
-						<div className="cursor-pointer">
-							<Menu
-								shadow="md"
-								width={175}
-								position="left-start"
+						<div className="flex shrink-0 items-center justify-end gap-1">
+							<ThreadLabelHoverButtons
+								mailboxThreadItem={{
+									threadId,
+									mailboxId: activeMailboxId,
+								}}
+								allLabels={allLabels}
+								labelsByThreadId={labelsByThreadId}
+							/>
+
+							<ActionIcon
+								variant="transparent"
+								size={44}
+								aria-label={dict?.mailbox?.reply ?? "Reply"}
+								onClick={() => openComposer("reply")}
 							>
+								<Reply size={18} />
+							</ActionIcon>
+
+							<Menu shadow="md" width={175} position="bottom-end">
 								<Menu.Target>
-									<EllipsisVertical
-										size={18}
-									/>
+									<ActionIcon
+										variant="transparent"
+										size={44}
+										aria-label={dict?.mailbox?.actions ?? "More actions"}
+									>
+										<EllipsisVertical size={18} />
+									</ActionIcon>
 								</Menu.Target>
 
 								<Menu.Dropdown>
 									<Menu.Item
-										leftSection={
-											<Reply
-												size={
-													14
-												}
-											/>
-										}
-										onClick={() =>
-											openComposer(
-												"reply",
-											)
-										}
+										leftSection={<Reply size={14} />}
+										onClick={() => openComposer("reply")}
 									>
-										{dict
-												?.mailbox
-												?.reply ??
-											"Reply"}
+										{dict?.mailbox?.reply ?? "Reply"}
 									</Menu.Item>
 
 									<Menu.Item
-										leftSection={
-											<Forward
-												size={
-													14
-												}
-											/>
-										}
-										onClick={() =>
-											openComposer(
-												"forward",
-											)
-										}
+										leftSection={<Forward size={14} />}
+										onClick={() => openComposer("forward")}
 									>
-										{dict
-												?.mailbox
-												?.forward ??
-											"Forward"}
+										{dict?.mailbox?.forward ?? "Forward"}
 									</Menu.Item>
 
 									<Menu.Divider />
 
 									<Menu.Item
-										leftSection={
-											<Download
-												size={
-													14
-												}
-											/>
-										}
-										onClick={
-											downloadEml
-										}
+										leftSection={<Download size={14} />}
+										onClick={downloadEml}
 									>
-										{dict
-												?.mailbox
-												?.download ??
-											"Download"}
+										{dict?.mailbox?.download ?? "Download"}
 									</Menu.Item>
 
-									<Menu.Item
-										leftSection={
-											<Code
-												size={
-													14
-												}
-											/>
-										}
-										onClick={
-											open
-										}
-									>
-										{dict
-												?.mailbox
-												?.showOriginal ??
-											"Show Original"}
+									<Menu.Item leftSection={<Code size={14} />} onClick={open}>
+										{dict?.mailbox?.showOriginal ?? "Show Original"}
 									</Menu.Item>
 								</Menu.Dropdown>
 							</Menu>
@@ -633,80 +450,54 @@ function EmailRenderer({
 				</div>
 			</div>
 
-			<InspectorBar
-				children={children}
-				message={message}
-				onDownloadEml={downloadEml}
-			/>
+			<InspectorBar message={message} onDownloadEml={downloadEml}>
+				{children}
+			</InspectorBar>
 
 			{attachments?.length > 0 && (
 				<div className="border-t border-dotted py-4">
 					<div className="mb-4 font-semibold">
-						{attachments.length}
-						{dict?.mailbox
-								?.attachmentsCountSuffix ??
-							" attachments"}
+						{format?.message(
+							attachments.length,
+							dict?.mailbox?.attachmentsCount ?? {
+								other: "{count} attachments",
+							},
+						) ?? `${attachments.length} attachments`}
 					</div>
 
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-						{attachments.map(
-							(attachment) => (
-								<EditorAttachmentItem
-									key={
-										attachment.id
-									}
-									attachment={
-										attachment
-									}
-									publicConfig={
-										publicConfig
-									}
-								/>
-							),
-						)}
+						{attachments.map((attachment) => (
+							<EditorAttachmentItem
+								key={attachment.id}
+								attachment={attachment}
+								publicConfig={publicConfig}
+							/>
+						))}
 					</div>
 				</div>
 			)}
 
-			{threadIndex ===
-				numberOfMessages - 1 &&
-				!showEditor && (
-					<div className="flex gap-6">
-						<Button
-							onClick={() =>
-								openComposer(
-									"reply",
-								)
-							}
-							leftSection={
-								<Reply />
-							}
-							variant="outline"
-							radius="xl"
-						>
-							{dict?.mailbox
-									?.reply ??
-								"Reply"}
-						</Button>
+			{threadIndex === numberOfMessages - 1 && !showEditor && (
+				<div className="flex flex-wrap gap-3 sm:gap-6">
+					<Button
+						onClick={() => openComposer("reply")}
+						leftSection={<Reply />}
+						variant="outline"
+						radius="xl"
+					>
+						{dict?.mailbox?.reply ?? "Reply"}
+					</Button>
 
-						<Button
-							onClick={() =>
-								openComposer(
-									"forward",
-								)
-							}
-							rightSection={
-								<Forward />
-							}
-							variant="outline"
-							radius="xl"
-						>
-							{dict?.mailbox
-									?.forward ??
-								"Forward"}
-						</Button>
-					</div>
-				)}
+					<Button
+						onClick={() => openComposer("forward")}
+						rightSection={<Forward />}
+						variant="outline"
+						radius="xl"
+					>
+						{dict?.mailbox?.forward ?? "Forward"}
+					</Button>
+				</div>
+			)}
 
 			{showEditor && (
 				<div
@@ -715,24 +506,12 @@ function EmailRenderer({
 				>
 					<MailComposer
 						key={`${message.id}-${showEditorMode}`}
-						publicConfig={
-							publicConfig
-						}
-						identityMailboxes={
-							identityMailboxes
-						}
-						activeIdentityPublicId={
-							activeIdentityPublicId
-						}
+						publicConfig={publicConfig}
+						identityMailboxes={identityMailboxes}
+						activeIdentityPublicId={activeIdentityPublicId}
 						message={message}
-						initialMode={
-							showEditorMode
-						}
-						onClose={() =>
-							setShowEditor(
-								false,
-							)
-						}
+						initialMode={showEditorMode}
+						onClose={() => setShowEditor(false)}
 					/>
 				</div>
 			)}

@@ -251,6 +251,7 @@
 	"attachmentsCountSuffix": " вложений",
 	"audio": "Аудио",
 	"attachment": "Вложение",
+	"dropFilesToAttach": "Перетащите файлы, чтобы прикрепить",
 	"rsvpYes": "Да",
 	"rsvpMaybe": "Возможно",
 	"rsvpNo": "Нет",
@@ -287,5 +288,9 @@
 	"identity": "Почтовый адрес",
 	"noScheduledMessages": "Нет запланированных писем",
 	"loadRemoteImagesOnce": "Загрузить внешние изображения один раз",
-	"alwaysLoadForThisSender": "Всегда загружать для этого отправителя"
+	"alwaysLoadForThisSender": "Всегда загружать для этого отправителя",
+  "attachmentsCount": {"one": "{count} вложение", "few": "{count} вложения", "many": "{count} вложений", "other": "{count} вложения"},
+  "headersCount": {"one": "{count} заголовок", "few": "{count} заголовка", "many": "{count} заголовков", "other": "{count} заголовка"},
+  "deliveryHopsCount": {"one": "{count} узел доставки", "few": "{count} узла доставки", "many": "{count} узлов доставки", "other": "{count} узла доставки"},
+  "deliveryEventsCount": {"one": "{count} событие доставки", "few": "{count} события доставки", "many": "{count} событий доставки", "other": "{count} события доставки"}
 }

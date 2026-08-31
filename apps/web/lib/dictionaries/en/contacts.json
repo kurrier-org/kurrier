@@ -1,5 +1,8 @@
 {
 	"contacts": "Contacts",
+	"emptyTitle": "No contacts yet",
+	"emptyDescription": "Create your first contact to keep names, email addresses, and phone numbers in one place.",
+	"selectContactTitle": "Select a contact",
 	"pleaseSelectAContact": "Please select a contact to view details.",
 	"noContactFound": "No contact found.",
 	"toggleFavorite": "Toggle favorite",
@@ -52,5 +55,6 @@
 	"addAddress": "Add address",
 	"selectDate": "Select date",
 	"editPrefix": "Edit ",
-	"newContactForm": "New Contact Form"
+	"newContactForm": "New Contact Form",
+  "locationsCount": {"one": "{count} location", "other": "{count} locations", "few": "{count} locations", "many": "{count} locations"}
 }

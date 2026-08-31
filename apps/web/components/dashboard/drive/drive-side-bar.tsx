@@ -1,9 +1,10 @@
 "use client";
 
+import type { DriveState } from "@schema";
+import { Cloud, HardDrive } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HardDrive } from "lucide-react";
-
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import {
 	SidebarGroup,
 	SidebarGroupLabel,
@@ -12,30 +13,33 @@ import {
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
-import { DriveState } from "@schema";
 
 export default function DriveSideBar({
+	workspacePublicId,
 	onComplete,
 }: {
+	workspacePublicId: string;
 	onComplete?: () => void;
 }) {
 	const pathName = usePathname();
 	const { state } = useDynamicContext<DriveState>();
+	const dict = useOptionalDictionary();
+	const driveBase = `/w/${workspacePublicId}/dashboard/drive`;
 
-	const isOnVolumes = pathName.startsWith("/dashboard/drive/volumes/");
+	const isOnVolumes = pathName.includes("/dashboard/drive/volumes/");
 	const isMyDriveActive =
-		pathName === "/dashboard/drive" ||
-		(pathName.startsWith("/dashboard/drive/") && !isOnVolumes);
+		pathName.endsWith("/dashboard/drive") ||
+		(pathName.includes("/dashboard/drive/") && !isOnVolumes);
 
 	return (
 		<>
 			<SidebarGroup>
-				<SidebarGroupLabel>Drive</SidebarGroupLabel>
+				<SidebarGroupLabel>{dict?.drive?.drive ?? "Drive"}</SidebarGroupLabel>
 				<SidebarMenu>
 					<SidebarMenuItem>
 						<SidebarMenuButton
 							asChild
-							tooltip="My Drive"
+							tooltip={dict?.drive?.myDrive ?? "My Drive"}
 							className={
 								"dark:hover:bg-neutral-800 hover:bg-neutral-100 px-2.5 md:px-2 " +
 								(isMyDriveActive
@@ -44,9 +48,9 @@ export default function DriveSideBar({
 							}
 							onClick={onComplete}
 						>
-							<Link href="/dashboard/drive">
+							<Link href={driveBase}>
 								<HardDrive />
-								<span>My Drive</span>
+								<span>{dict?.drive?.myDrive ?? "My Drive"}</span>
 							</Link>
 						</SidebarMenuButton>
 					</SidebarMenuItem>
@@ -54,19 +58,21 @@ export default function DriveSideBar({
 			</SidebarGroup>
 
 			<SidebarGroup>
-				<SidebarGroupLabel>Cloud volumes</SidebarGroupLabel>
+				<SidebarGroupLabel>
+					{dict?.drive?.cloudVolumes ?? "Cloud volumes"}
+				</SidebarGroupLabel>
 				<SidebarMenu>
 					{state?.cloudVolumes.length === 0 ? (
 						<SidebarMenuItem>
-							<div className="text-xs text-muted-foreground px-2.5 md:px-2 py-1.5">
-								No cloud volumes detected
+							<div className="px-2.5 py-1.5 text-xs leading-5 text-muted-foreground md:px-2">
+								{dict?.drive?.noVolumesSidebar ?? "No volumes yet"}
 							</div>
 						</SidebarMenuItem>
 					) : (
-						state?.cloudVolumes.map((vol: any) => {
-							const href = `/dashboard/drive/volumes/${vol.publicId}`;
+						state?.cloudVolumes.map((vol) => {
+							const href = `${driveBase}/volumes/${vol.publicId}`;
 							const isActive =
-								pathName === href || pathName.startsWith(href + "/");
+								pathName === href || pathName.startsWith(`${href}/`);
 
 							return (
 								<SidebarMenuItem key={vol.id ?? vol.code}>
@@ -82,7 +88,7 @@ export default function DriveSideBar({
 										onClick={onComplete}
 									>
 										<Link href={href}>
-											<HardDrive className="shrink-0" />
+											<Cloud className="shrink-0" />
 											<span className="truncate">{vol.label ?? vol.code}</span>
 										</Link>
 									</SidebarMenuButton>

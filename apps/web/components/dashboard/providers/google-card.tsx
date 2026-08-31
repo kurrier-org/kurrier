@@ -3,76 +3,76 @@
 import { Button } from "@mantine/core";
 import { GOOGLE_SPEC } from "@schema";
 import { Plus } from "lucide-react";
-import * as React from "react";
+
 import GoogleAccountCard from "@/components/dashboard/providers/google-account-card";
 import GoogleOAuthConfigButton from "@/components/dashboard/providers/google-oauth-config-form";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
-import {
-	Card,
-	CardAction,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { FetchGoogleAccountsResult } from "@/lib/actions/dashboard";
 
 export default function GoogleCard({
-	googleAccounts,
-	googleOAuthConfigured,
-}: {
+									   googleAccounts,
+									   googleOAuthConfigured,
+								   }: {
 	googleAccounts: FetchGoogleAccountsResult;
 	googleOAuthConfigured: boolean;
 }) {
 	const dict = useOptionalDictionary();
 
 	return (
-		<div className="flex flex-col">
-			<Card className="h-full shadow-none border-border">
-				<CardHeader className="gap-2">
-					<div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-						<div className="max-w-2xl">
-							<CardTitle className="text-xl">
+		<div className="flex min-w-0 flex-col">
+			<Card className="h-full min-w-0 overflow-hidden border-border shadow-none">
+				<CardHeader className="px-5 py-4 sm:h-[210px] sm:px-6">
+					<div className="flex h-full flex-col">
+						<div className="min-w-0 max-w-2xl">
+							<CardTitle className="text-base font-semibold sm:text-lg">
 								{dict?.platform?.providerNameGoogle ?? GOOGLE_SPEC.name}
 							</CardTitle>
-							<p className="text-sm text-muted-foreground mt-1">
+
+							<p className="mt-1 text-sm leading-5 text-muted-foreground">
 								{dict?.platform?.connectGmailDescription ??
 									"Connect Gmail and Google Workspace accounts using OAuth."}
 							</p>
-							<p className="text-xs text-muted-foreground/80 mt-1">
+
+							<p className="mt-1 text-xs leading-5 text-muted-foreground/80">
 								{dict?.platform?.googleSpecHelp ?? GOOGLE_SPEC.help}
 							</p>
 						</div>
 
-						<CardAction className="mt-3 lg:mt-0">
+						<div className="mt-4 w-full sm:mt-auto sm:w-auto sm:self-start">
 							{googleOAuthConfigured ? (
 								<Button
+									fullWidth
 									size="sm"
-									className="gap-2"
+									className="!min-h-11 !w-full sm:!min-h-10 sm:!w-auto sm:!px-5"
 									component="a"
 									href="/api/oauth/google/connect"
+									leftSection={<Plus className="size-4" />}
 								>
-									<Plus className="h-4 w-4" />
 									{dict?.platform?.addGoogleAccount ?? "Add Google Account"}
 								</Button>
 							) : (
-								<GoogleOAuthConfigButton />
+								<GoogleOAuthConfigButton
+									fullWidth
+									className="!min-h-11 !w-full sm:!min-h-10 sm:!w-auto"
+								/>
 							)}
-						</CardAction>
+						</div>
 					</div>
 				</CardHeader>
 
-				<CardContent className="space-y-6">
+				<CardContent className="space-y-4 border-t px-5 py-4 sm:px-6">
 					{(!googleAccounts || googleAccounts.length === 0) && (
-						<div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground text-center flex flex-col items-center gap-4 bg-muted">
+						<div className="flex flex-col items-center gap-4 rounded-lg border border-dashed bg-muted/20 px-4 py-6 text-center">
 							<div>
-								<div className="font-medium text-card-foreground">
+								<div className="text-sm font-medium text-foreground">
 									{googleOAuthConfigured
 										? (dict?.platform?.noGoogleAccountsConnected ??
 											"No Google accounts connected")
 										: "Google OAuth is not configured"}
 								</div>
 
-								<div className="text-xs text-card-foreground mt-1">
+								<div className="mt-1 text-xs leading-5 text-muted-foreground">
 									{googleOAuthConfigured
 										? (dict?.platform?.connectGmailOrWorkspace ??
 											"Connect Gmail or Google Workspace to send and sync mail.")
@@ -81,18 +81,24 @@ export default function GoogleCard({
 							</div>
 
 							{googleOAuthConfigured ? (
-								<Button
-									variant="default"
-									size="sm"
-									className="gap-2"
-									component="a"
-									href="/api/oauth/google/connect"
-								>
-									<Plus className="h-4 w-4" />
-									{dict?.platform?.addGoogleAccount ?? "Add Google Account"}
-								</Button>
+								<div className="w-full sm:w-auto">
+									<Button
+										fullWidth
+										variant="default"
+										size="sm"
+										className="!min-h-10 !w-full sm:!w-auto"
+										component="a"
+										href="/api/oauth/google/connect"
+										leftSection={<Plus className="size-4" />}
+									>
+										{dict?.platform?.addGoogleAccount ??
+											"Add Google Account"}
+									</Button>
+								</div>
 							) : (
-								<GoogleOAuthConfigButton />
+								<div className="w-full sm:w-auto">
+									<GoogleOAuthConfigButton fullWidth />
+								</div>
 							)}
 						</div>
 					)}

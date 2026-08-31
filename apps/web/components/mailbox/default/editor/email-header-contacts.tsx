@@ -1,23 +1,22 @@
 "use client";
 
-import React, { useState } from "react";
 import {
 	type ComboboxItem,
 	type OptionsFilter,
 	TagsInput,
 	type TagsInputProps,
 } from "@mantine/core";
-
+import type { ComposeContact } from "@schema";
+import { useState } from "react";
 import ContactSuggestionItem from "@/components/mailbox/default/editor/contact-suggestion-item";
 import { searchContactsForCompose } from "@/lib/actions/calendar";
-import type { ComposeContact } from "@schema";
 
 export default function EmailHeaderContacts({
-												name,
-												toEmail,
-												maxTags,
-												onChange,
-											}: {
+	name,
+	toEmail,
+	maxTags,
+	onChange,
+}: {
 	toEmail?: string;
 	maxTags?: number;
 	onChange?: (value: string[]) => void;
@@ -79,7 +78,7 @@ export default function EmailHeaderContacts({
 			name={name}
 			size="sm"
 			variant="unstyled"
-			className="min-h-[28px] w-96 text-sm"
+			className="min-h-7 w-full min-w-0 text-sm sm:w-96 sm:max-w-full"
 			comboboxProps={{
 				dropdownPadding: 0,
 				withinPortal: false,

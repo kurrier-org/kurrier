@@ -251,6 +251,7 @@
 	"attachmentsCountSuffix": " anexos",
 	"audio": "Áudio",
 	"attachment": "Anexo",
+	"dropFilesToAttach": "Solte os arquivos para anexá-los",
 	"rsvpYes": "Sim",
 	"rsvpMaybe": "Talvez",
 	"rsvpNo": "Não",
@@ -287,5 +288,9 @@
 	"identity": "Identidade",
 	"noScheduledMessages": "Nenhuma mensagem agendada",
 	"loadRemoteImagesOnce": "Carregar imagens remotas uma vez",
-	"alwaysLoadForThisSender": "Sempre carregar deste remetente"
+	"alwaysLoadForThisSender": "Sempre carregar deste remetente",
+  "attachmentsCount": {"one": "{count} anexo", "other": "{count} anexos", "few": "{count} anexos", "many": "{count} anexos"},
+  "headersCount": {"one": "{count} cabeçalho", "other": "{count} cabeçalhos", "few": "{count} cabeçalhos", "many": "{count} cabeçalhos"},
+  "deliveryHopsCount": {"one": "{count} salto de entrega", "other": "{count} saltos de entrega", "few": "{count} saltos de entrega", "many": "{count} saltos de entrega"},
+  "deliveryEventsCount": {"one": "{count} evento de entrega", "other": "{count} eventos de entrega", "few": "{count} eventos de entrega", "many": "{count} eventos de entrega"}
 }

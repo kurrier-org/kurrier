@@ -30,7 +30,8 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { Container } from "@/components/common/containers";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { ModalActions } from "@/components/common/modal-actions";
+import { useOptionalI18n } from "@/components/providers/dictionary-provider";
 import type { FetchVaultSecretsResult } from "@/lib/actions/vault";
 
 type VaultSecret = FetchVaultSecretsResult[number];
@@ -54,7 +55,9 @@ export default function ManageVault({
 	deleteSecret,
 	revealSecret,
 }: ManageVaultProps) {
-	const dict = useOptionalDictionary();
+	const i18n = useOptionalI18n();
+	const dict = i18n?.dict;
+	const format = i18n?.format;
 	const [opened, setOpened] = React.useState(false);
 	const [editing, setEditing] = React.useState<VaultSecret | null>(null);
 
@@ -189,14 +192,9 @@ export default function ManageVault({
 		});
 	};
 
-	const formatDate = (value: Date | string) =>
-		new Intl.DateTimeFormat(undefined, {
-			dateStyle: "medium",
-		}).format(value instanceof Date ? value : new Date(value));
-
 	return (
 		<Container variant="wide">
-			<div className="flex items-start justify-between gap-4 py-4">
+			<div className="flex flex-col items-stretch gap-4 py-4 sm:flex-row sm:items-start sm:justify-between">
 				<div>
 					<h1 className="text-xl font-semibold tracking-tight text-foreground">
 						{dict?.vault?.vault ?? "Vault"}
@@ -208,9 +206,15 @@ export default function ManageVault({
 					</p>
 				</div>
 
-				<Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
-					{dict?.vault?.addSecret ?? "Add secret"}
-				</Button>
+				<div className="w-full sm:w-fit">
+					<Button
+						fullWidth
+						leftSection={<IconPlus size={16} />}
+						onClick={openCreate}
+					>
+						{dict?.vault?.addSecret ?? "Add secret"}
+					</Button>
+				</div>
 			</div>
 
 			<Card className="mt-4 !rounded-2xl border shadow-none overflow-hidden">
@@ -232,10 +236,10 @@ export default function ManageVault({
 
 					{secrets.length > 0 && (
 						<Badge variant="light" radius="sm">
-							{secrets.length}{" "}
-							{secrets.length === 1
-								? (dict?.vault?.secretSingular ?? "secret")
-								: (dict?.vault?.secretPlural ?? "secrets")}
+							{format?.message(
+								secrets.length,
+								dict?.vault?.secretsCount ?? { other: "{count} secrets" },
+							) ?? `${secrets.length} secrets`}
 						</Badge>
 					)}
 				</div>
@@ -255,14 +259,16 @@ export default function ManageVault({
 								"Store API tokens, signing secrets and credentials that Kurrier integrations can use securely."}
 						</p>
 
-						<Button
-							className="mt-5"
-							variant="light"
-							leftSection={<IconPlus size={15} />}
-							onClick={openCreate}
-						>
-							{dict?.vault?.addFirstSecret ?? "Add your first secret"}
-						</Button>
+						<div className="mt-5 w-full sm:w-fit">
+							<Button
+								fullWidth
+								variant="light"
+								leftSection={<IconPlus size={15} />}
+								onClick={openCreate}
+							>
+								{dict?.vault?.addFirstSecret ?? "Add your first secret"}
+							</Button>
+						</div>
 					</div>
 				) : (
 					<Table verticalSpacing="md" highlightOnHover>
@@ -465,7 +471,7 @@ export default function ManageVault({
 							}
 						/>
 
-						<div className="flex justify-end gap-2 pt-2">
+						<ModalActions>
 							<Button
 								variant="default"
 								type="button"
@@ -486,7 +492,7 @@ export default function ManageVault({
 									? (dict?.vault?.saveChanges ?? "Save changes")
 									: (dict?.vault?.addSecret ?? "Add secret")}
 							</Button>
-						</div>
+						</ModalActions>
 					</div>
 				</form>
 			</Modal>

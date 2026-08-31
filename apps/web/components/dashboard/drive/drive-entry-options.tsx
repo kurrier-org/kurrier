@@ -1,15 +1,15 @@
 "use client";
 
+import type { DriveEntryEntity } from "@db";
 import { ActionIcon, Menu } from "@mantine/core";
 import { Download, MoreVertical, Trash2 } from "lucide-react";
-import type { DriveEntryEntity } from "@db";
-import { deleteDriveEntry, getDriveDownloadUrl } from "@/lib/actions/drive";
 import { toast } from "sonner";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { deleteDriveEntry, getDriveDownloadUrl } from "@/lib/actions/drive";
 
 export default function DriveEntryOptions({
-											  entry,
-										  }: {
+	entry,
+}: {
 	entry: DriveEntryEntity;
 }) {
 	const dict = useOptionalDictionary();

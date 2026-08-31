@@ -1,46 +1,61 @@
 "use client";
-import { ProviderSpec } from "@schema";
+
+import { Button } from "@mantine/core";
+import { modals } from "@mantine/modals";
+import type { ProviderSpec } from "@schema";
+import {
+	CheckCircle2,
+	Edit,
+	ExternalLink,
+	Globe2,
+	Play,
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+
+import ProviderEditForm from "@/components/dashboard/providers/provider-edit-form";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import {
 	Card,
-	CardAction,
 	CardContent,
+	CardFooter,
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { Edit, ExternalLink, Globe, Play } from "lucide-react";
-import * as React from "react";
 import {
-	FetchDecryptedSecretsResult,
-	SyncProvidersRow,
+	type FetchDecryptedSecretsResult,
+	type SyncProvidersRow,
 	verifyProviderAccount,
 } from "@/lib/actions/dashboard";
-import ProviderEditForm from "@/components/dashboard/providers/provider-edit-form";
-import { modals } from "@mantine/modals";
-import { Button } from "@mantine/core";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
 import { parseSecret } from "@/lib/utils";
 import IsVerifiedStatus from "@/components/dashboard/providers/is-verified-status";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export default function ProviderCard({
-	spec,
-	userProvider,
-	decryptedSecret,
-}: {
+										 spec,
+										 userProvider,
+										 decryptedSecret,
+									 }: {
 	spec: ProviderSpec;
 	userProvider: SyncProvidersRow;
 	decryptedSecret: FetchDecryptedSecretsResult[number];
 }) {
 	const dict = useOptionalDictionary();
+
 	const decryptedValues = useMemo(() => {
 		return parseSecret(decryptedSecret);
 	}, [decryptedSecret]);
 
+	const verified = Boolean(decryptedValues.verified);
+
+	const providerName =
+		(dict?.platform as Record<string, string> | undefined)?.[
+			`providerName${spec.key.charAt(0).toUpperCase()}${spec.key.slice(1)}`
+			] ?? spec.name;
+
 	const openEdit = () => {
 		const openModalId = modals.open({
 			title: (
-				<div className="font-semibold text-brand-foreground">
+				<div className="font-semibold text-foreground">
 					{dict?.platform?.editPrefix ?? "Edit "}
 					{spec.name}
 					{dict?.platform?.editAccountSuffix ?? " Account"}
@@ -48,13 +63,14 @@ export default function ProviderCard({
 			),
 			size: "lg",
 			children: (
-				<CardContent className={"my-6"}>
+				<CardContent className="my-6">
 					<div className="space-y-3">
 						<input
-							type={"hidden"}
-							name={"providerId"}
+							type="hidden"
+							name="providerId"
 							value={userProvider.id}
 						/>
+
 						<ProviderEditForm
 							spec={spec}
 							onCompleted={() => modals.close(openModalId)}
@@ -68,8 +84,10 @@ export default function ProviderCard({
 	};
 
 	const [testing, setTesting] = useState(false);
+
 	const initVerifyAccount = async () => {
 		setTesting(true);
+
 		try {
 			const { data: res } = await verifyProviderAccount(
 				userProvider.type,
@@ -78,7 +96,9 @@ export default function ProviderCard({
 
 			if (res.ok && (res.meta?.send || res.meta?.store)) {
 				toast.success(
-					`${userProvider.type.toUpperCase()} ${dict?.platform?.connectionVerified ?? "connection verified"}`,
+					`${userProvider.type.toUpperCase()} ${
+						dict?.platform?.connectionVerified ?? "connection verified"
+					}`,
 					{
 						description: (() => {
 							switch (userProvider.type) {
@@ -87,26 +107,31 @@ export default function ProviderCard({
 										dict?.platform?.sesCredentialsValid ??
 										"SES credentials are valid and the account is reachable."
 									);
+
 								case "postmark":
 									return (
 										dict?.platform?.postmarkCredentialsValid ??
 										"Postmark credentials are valid and the API is reachable."
 									);
+
 								case "sendgrid":
 									return (
 										dict?.platform?.sendgridCredentialsValid ??
 										"SendGrid API key is valid and sending is enabled."
 									);
+
 								case "mailgun":
 									return (
 										dict?.platform?.mailgunCredentialsValid ??
 										"Mailgun credentials are valid and the account is reachable."
 									);
+
 								case "s3":
 									return (
 										dict?.platform?.s3CredentialsValid ??
 										"S3 credentials are valid and the account is reachable."
 									);
+
 								default:
 									return (
 										dict?.platform?.outgoingMailServerReachable ??
@@ -118,7 +143,9 @@ export default function ProviderCard({
 				);
 			} else {
 				toast.error(
-					`${userProvider.type.toUpperCase()} ${dict?.platform?.verificationFailed ?? "verification failed"}`,
+					`${userProvider.type.toUpperCase()} ${
+						dict?.platform?.verificationFailed ?? "verification failed"
+					}`,
 					{
 						description:
 							String(res.meta?.response ?? res.message) ||
@@ -127,75 +154,91 @@ export default function ProviderCard({
 					},
 				);
 			}
-		} catch (err: any) {
-			toast.error(dict?.platform?.verificationError ?? "Verification error", {
-				description:
-					err?.message ??
-					dict?.platform?.unexpectedErrorTestingAccount ??
-					"Unexpected error while testing the account.",
-			});
+		} catch (err: unknown) {
+			toast.error(
+				dict?.platform?.verificationError ?? "Verification error",
+				{
+					description:
+						(err instanceof Error ? err.message : undefined) ??
+						dict?.platform?.unexpectedErrorTestingAccount ??
+						"Unexpected error while testing the account.",
+				},
+			);
 		} finally {
 			setTesting(false);
 		}
 	};
 
 	return (
-		<div>
-			<Card className="shadow-none relative">
-				<CardHeader className="gap-3">
-					<div className="flex flex-col gap-3">
-						<div className="flex min-w-0 items-start gap-3">
-							<Globe className="mt-1 size-4 shrink-0 text-muted-foreground" />
-							<div className="min-w-0">
-								<CardTitle className="text-lg sm:text-xl">
-									{(dict?.platform as Record<string, string> | undefined)?.[
-										`providerName${spec.key.charAt(0).toUpperCase()}${spec.key.slice(1)}`
-									] ?? spec.name}
-								</CardTitle>
-								<p className="text-sm text-muted-foreground">
-									{dict?.platform?.managedSecurelyVerifyByAdding ??
-										"Managed securely in a secure Vault. Verify by adding or removing stored credentials."}
-								</p>
-							</div>
+		<Card className="h-fit self-start overflow-hidden shadow-none transition-colors hover:border-foreground/15">
+			<CardHeader className="px-5 py-4 sm:px-6 sm:py-4">
+				<div className="flex items-start justify-between gap-3">
+					<div className="flex min-w-0 items-start gap-3">
+						<div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+							<Globe2 className="size-5 text-muted-foreground" />
 						</div>
 
-						<div className="flex flex-wrap gap-2">
-							<CardAction className="flex w-full flex-wrap gap-2 lg:w-auto lg:flex-nowrap lg:justify-end">
-								<Button
-									variant="outline"
-									component={"a"}
-									size={"xs"}
-									href={spec.docsUrl}
-									target="_blank"
-									leftSection={<ExternalLink className="size-4" />}
-								>
-									{dict?.platform?.docs ?? "Docs"}
-								</Button>
+						<div className="min-w-0">
+							<CardTitle className="text-base font-semibold sm:text-lg">
+								{providerName}
+							</CardTitle>
 
-								<Button
-									onClick={initVerifyAccount}
-									loading={testing}
-									size={"xs"}
-									leftSection={<Play className="size-4" />}
-								>
-									{dict?.platform?.verifyConnection ?? "Verify Connection"}
-								</Button>
-								<Button
-									onClick={openEdit}
-									size={"xs"}
-									leftSection={<Edit className="size-4" />}
-								>
-									{dict?.platform?.edit ?? "Edit"}
-								</Button>
-							</CardAction>
+							<p className="mt-1 max-w-md text-sm leading-5 text-muted-foreground">
+								{dict?.platform?.managedSecurelyVerifyByAdding ??
+									"Managed securely in a secure Vault. Verify by adding or removing stored credentials."}
+							</p>
 						</div>
 					</div>
-					<IsVerifiedStatus
-						verified={decryptedValues.verified}
-						statusName={""}
-					/>
-				</CardHeader>
-			</Card>
-		</div>
+
+					<div className="shrink-0 [&_*]:whitespace-nowrap">
+						<IsVerifiedStatus
+							verified={decryptedValues.verified}
+							statusName=""
+						/>
+					</div>
+				</div>
+			</CardHeader>
+
+			<CardFooter className="border-t bg-muted/15 px-4 py-3 sm:px-6 sm:py-3">
+				<div className="flex w-full flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+					<Button
+						onClick={initVerifyAccount}
+						loading={testing}
+						size="sm"
+						className="!min-h-11 !w-full sm:order-2 sm:!min-h-10 sm:!w-auto sm:!px-5"
+						leftSection={<Play className="size-4" />}
+					>
+						{dict?.platform?.verifyConnection ?? "Verify Connection"}
+					</Button>
+
+					<div className="grid w-full grid-cols-2 gap-2 sm:order-1 sm:flex sm:w-auto sm:items-center">
+						<Button
+							variant="subtle"
+							color="gray"
+							component="a"
+							size="sm"
+							className="!min-h-10 !w-full sm:!w-auto"
+							href={spec.docsUrl}
+							target="_blank"
+							rel="noreferrer"
+							leftSection={<ExternalLink className="size-4" />}
+						>
+							{dict?.platform?.docs ?? "Docs"}
+						</Button>
+
+						<Button
+							variant="subtle"
+							color="gray"
+							onClick={openEdit}
+							size="sm"
+							className="!min-h-10 !w-full sm:!w-auto"
+							leftSection={<Edit className="size-4" />}
+						>
+							{dict?.platform?.edit ?? "Edit"}
+						</Button>
+					</div>
+				</div>
+			</CardFooter>
+		</Card>
 	);
 }

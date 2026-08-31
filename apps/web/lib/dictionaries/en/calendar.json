@@ -1,5 +1,7 @@
 {
 	"noCalendarFound": "No calendar found. Connect an identity to create one.",
+	"emptyTitle": "No calendar yet",
+	"emptyDescription": "Connect an email identity to create your calendar.",
 	"today": "Today",
 	"viewDay": "day",
 	"viewWeek": "week",
@@ -70,5 +72,10 @@
 	"decline": "Decline",
 	"location": "Location",
 	"guests": "Guests",
-	"more": "more"
+	"more": "more",
+  "guestsCount": {"one": "{count} guest", "other": "{count} guests", "few": "{count} guests", "many": "{count} guests"},
+  "intervalDaysCount": {"one": "day", "other": "days", "few": "days", "many": "days"},
+  "intervalWeeksCount": {"one": "week", "other": "weeks", "few": "weeks", "many": "weeks"},
+  "intervalMonthsCount": {"one": "month", "other": "months", "few": "months", "many": "months"},
+  "intervalYearsCount": {"one": "year", "other": "years", "few": "years", "many": "years"}
 }

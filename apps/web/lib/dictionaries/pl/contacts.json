@@ -1,8 +1,11 @@
 {
 	"contacts": "Kontakty",
+	"emptyTitle": "Brak kontaktów",
+	"emptyDescription": "Utwórz pierwszy kontakt, aby przechowywać imiona, adresy e-mail i numery telefonów w jednym miejscu.",
+	"selectContactTitle": "Wybierz kontakt",
 	"pleaseSelectAContact": "Wybierz kontakt, aby wyświetlić szczegóły.",
 	"noContactFound": "Nie znaleziono kontaktu.",
-	"toggleFavorite": "Przełącz ulubiony kontakt",
+	"toggleFavorite": "Dodaj do ulubionych / usuń z ulubionych",
 	"editContact": "Edytuj kontakt",
 	"contactDetails": "Szczegóły kontaktu",
 	"emailAndPhoneOnFile": "Zapisany adres e-mail i telefon",
@@ -28,7 +31,7 @@
 	"delete": "Usuń",
 	"cancel": "Anuluj",
 	"createContact": "Utwórz kontakt",
-	"labelContact": "Etykieta kontaktu",
+	"labelContact": "Oznacz kontakt etykietą",
 	"profileAlt": "Profil",
 	"firstName": "Imię",
 	"lastName": "Nazwisko",
@@ -47,10 +50,11 @@
 	"streetAddress": "Adres ulicy",
 	"streetAddressLine2": "Adres ulicy — wiersz 2",
 	"city": "Miasto",
-	"state": "Województwo",
+	"state": "Stan / prowincja / region",
 	"postalZipCode": "Kod pocztowy",
 	"addAddress": "Dodaj adres",
 	"selectDate": "Wybierz datę",
 	"editPrefix": "Edytuj ",
-	"newContactForm": "Formularz nowego kontaktu"
+	"newContactForm": "Formularz nowego kontaktu",
+  "locationsCount": {"one": "{count} lokalizacja", "few": "{count} lokalizacje", "many": "{count} lokalizacji", "other": "{count} lokalizacji"}
 }

@@ -1,5 +1,7 @@
 {
 	"noCalendarFound": "Календарь не найден. Подключите почтовый адрес, чтобы создать календарь.",
+	"emptyTitle": "Пока нет календаря",
+	"emptyDescription": "Подключите почтовый адрес, чтобы создать календарь.",
 	"today": "Сегодня",
 	"viewDay": "день",
 	"viewWeek": "неделя",
@@ -70,5 +72,10 @@
 	"decline": "Отклонить",
 	"location": "Место",
 	"guests": "Гости",
-	"more": "ещё"
+	"more": "ещё",
+  "guestsCount": {"one": "{count} гость", "few": "{count} гостя", "many": "{count} гостей", "other": "{count} гостя"},
+  "intervalDaysCount": {"one": "день", "few": "дня", "many": "дней", "other": "дня"},
+  "intervalWeeksCount": {"one": "неделя", "few": "недели", "many": "недель", "other": "недели"},
+  "intervalMonthsCount": {"one": "месяц", "few": "месяца", "many": "месяцев", "other": "месяца"},
+  "intervalYearsCount": {"one": "год", "few": "года", "many": "лет", "other": "года"}
 }

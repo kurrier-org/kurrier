@@ -16,7 +16,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { setLocaleServer } from "@/lib/actions/locale";
-import { hasLocale, type Locale } from "@/lib/locale";
+import { hasLocale, LOCALES, type Locale } from "@/lib/locale";
 
 const LOCALE_LABELS: Record<Locale, string> = {
 	en: "English",
@@ -26,7 +26,7 @@ const LOCALE_LABELS: Record<Locale, string> = {
 	ru: "Русский",
 };
 
-const locales = Object.keys(LOCALE_LABELS) as Locale[];
+const locales = LOCALES;
 
 function useLocaleSwitch() {
 	const params = useParams<{ locale?: string }>();

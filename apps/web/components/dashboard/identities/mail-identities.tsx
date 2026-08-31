@@ -34,6 +34,7 @@ import IsVerifiedStatus from "@/components/dashboard/providers/is-verified-statu
 import { IconCheck, IconCopy, IconSend } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { responsiveModalActionsClassName } from "@/components/common/modal-actions";
 import AddDomainIdentityForm from "@/components/dashboard/identities/add-domain-identity-form";
 import { FormState, IdentityStatus, IdentityStatusMeta } from "@schema";
 import EmailIdentityStatus from "@/components/dashboard/identities/email-identity-status";
@@ -81,8 +82,8 @@ function SectionHeader({
 	action?: React.ReactNode;
 }) {
 	return (
-		<div className="flex items-start justify-between">
-			<div>
+		<div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-start sm:justify-between">
+			<div className="min-w-0">
 				<div className="flex items-center gap-2">
 					<h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
 						{title}
@@ -95,7 +96,7 @@ function SectionHeader({
 					<p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
 				) : null}
 			</div>
-			{action ? <div className="ml-4">{action}</div> : null}
+			{action ? <div className="w-full sm:ml-4 sm:w-auto">{action}</div> : null}
 		</div>
 	);
 }
@@ -242,6 +243,7 @@ export default function MailIdentities({
 			),
 			labels: { confirm: dict?.platform?.delete ?? "Delete", cancel: dict?.platform?.cancel ?? "Cancel" },
 			confirmProps: { color: "red" },
+			groupProps: { className: responsiveModalActionsClassName },
 			onConfirm: async () => {
 				const modalId = modals.open({
 					title: <div className="font-semibold text-brand-foreground">{dict?.platform?.deletingIdentity ?? "Deleting identity"}</div>,
@@ -328,6 +330,7 @@ export default function MailIdentities({
 			),
 			labels: { confirm: dict?.platform?.delete ?? "Delete", cancel: dict?.platform?.cancel ?? "Cancel" },
 			confirmProps: { color: "red" },
+			groupProps: { className: responsiveModalActionsClassName },
 			onConfirm: async () => {
 				const modalId = modals.open({
 					title: (
@@ -887,8 +890,10 @@ function EmptyState({
 						{dict?.platform?.noItemsMatchPrefix ?? "No "}{label}{dict?.platform?.noItemsMatchMiddle ?? " match"}{" "}
 						<span className="font-medium text-foreground">“{query}”</span>{dict?.platform?.noItemsMatchSuffix ?? ". Try a different search."}
 					</>
+				) : kind === "domain" ? (
+					dict?.platform?.noDomainsYet ?? "No domains yet — add your first one to get started."
 				) : (
-					<>{dict?.platform?.noItemsYetPrefix ?? "No "}{label}{dict?.platform?.noItemsYetSuffix ?? " yet — add your first one to get started."}</>
+					dict?.platform?.noEmailAddressesYet ?? "No email addresses yet — add your first one to get started."
 				)}
 			</p>
 		</div>

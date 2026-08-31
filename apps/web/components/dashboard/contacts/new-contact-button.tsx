@@ -1,38 +1,30 @@
 "use client";
-import React from "react";
 import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ActionIcon } from "@mantine/core";
-import { useIsMobile } from "@/hooks/use-mobile";
 import Link from "next/link";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { Button } from "@/components/ui/button";
 
 export default function NewContactButton({
 	hideOnMobile,
-	workspacePublicId
+	workspacePublicId,
 }: {
 	hideOnMobile?: boolean;
 	workspacePublicId: string;
 }) {
 	const dict = useOptionalDictionary();
-	const isMobile = useIsMobile();
 
 	return (
-		<>
-			{isMobile ? (
-				<ActionIcon>
-					<Link href={`/w/${workspacePublicId}/dashboard/contacts/new`}>
-						<Plus className="h-4 w-4" />
-					</Link>
-				</ActionIcon>
-			) : (
-				<Button asChild={true} hidden={!hideOnMobile} size="lg">
-					<Link href={`/w/${workspacePublicId}/dashboard/contacts/new`}>
-						<Plus className="h-5 w-5" />
-						{dict?.contacts?.createContact ?? "Create Contact"}
-					</Link>
-				</Button>
-			)}
-		</>
+		<Button
+			asChild
+			size={hideOnMobile ? "lg" : "icon"}
+			className={hideOnMobile ? "hidden w-full md:inline-flex" : "md:hidden"}
+		>
+			<Link href={`/w/${workspacePublicId}/dashboard/contacts/new`}>
+				<Plus />
+				<span className={hideOnMobile ? "" : "sr-only"}>
+					{dict?.contacts?.createContact ?? "Create Contact"}
+				</span>
+			</Link>
+		</Button>
 	);
 }
