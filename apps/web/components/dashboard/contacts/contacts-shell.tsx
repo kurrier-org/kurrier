@@ -1,32 +1,34 @@
 "use client";
 
-import React, {useState} from "react";
+import type { AddressBookEntity } from "@db";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { useParams, usePathname } from "next/navigation";
+import type React from "react";
+import { useState } from "react";
+import ContactsEmptyState from "@/components/dashboard/contacts/contacts-empty-state";
 import ContactsList, {
-	ContactWithFavorite,
+	type ContactWithFavorite,
 } from "@/components/dashboard/contacts/contacts-list";
 import NewContactButton from "@/components/dashboard/contacts/new-contact-button";
-import { useParams, usePathname } from "next/navigation";
-import { useMediaQuery } from "@mantine/hooks";
-import {AddressBookEntity} from "@db";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 export type ProfileImage = {
 	path: string;
 	signedUrl: string;
 };
 
-
 export default function ContactsShell({
 	children,
 	userContacts,
 	profileImages,
 	workspacePublicId,
-	userBook
+	userBook,
 }: {
 	children: React.ReactNode;
 	userContacts: ContactWithFavorite[];
 	profileImages: (ProfileImage | null)[];
 	workspacePublicId: string;
-	userBook: AddressBookEntity
+	userBook?: AddressBookEntity;
 }) {
 	const dict = useOptionalDictionary();
 	const pathname = usePathname();
@@ -35,37 +37,47 @@ export default function ContactsShell({
 		labelSlug?: string;
 	}>();
 
-	const isMobile = useMediaQuery("(max-width: 768px)");
-
 	const hasContactId = typeof params.contactsPublicId === "string";
 	const isNewRoute = pathname.endsWith("/new");
 	const isEditRoute = pathname.endsWith("/edit");
 
 	const isDetailRoute = hasContactId || isNewRoute || isEditRoute;
+	const isEmpty = userContacts.length === 0;
 
-	const showList = !isMobile || !isDetailRoute;
-	const showDetail = !isMobile || isDetailRoute;
-	const [selectedAddressBook, setSelectedAddressBook] = useState(userBook.id);
+	const [selectedAddressBook, setSelectedAddressBook] = useState(
+		userBook?.id ?? "all",
+	);
+	const listHref = params.labelSlug
+		? `/w/${workspacePublicId}/dashboard/contacts/label/${params.labelSlug}`
+		: `/w/${workspacePublicId}/dashboard/contacts`;
+	const listHeader = (
+		<div className="flex min-h-14 items-center justify-between gap-3 border-b px-4 py-3">
+			<div className="flex min-w-0 items-center gap-2">
+				<h2 className="truncate text-sm font-semibold text-foreground">
+					{dict?.contacts?.allContacts ?? "All contacts"}
+				</h2>
+				<span className="inline-flex min-w-6 items-center justify-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+					{userContacts.length}
+				</span>
+			</div>
+			{!isEmpty && <NewContactButton workspacePublicId={workspacePublicId} />}
+		</div>
+	);
 
 	return (
-		<main className="flex flex-1 flex-col h-[calc(100vh-4rem)] overflow-hidden p-3 sm:p-4">
-			<div className="flex flex-1 min-h-0 overflow-hidden rounded-xl border bg-background/70">
-				{showList && (
+		<div className="flex min-h-0 flex-1 overflow-hidden bg-background">
+			{isEmpty && !isDetailRoute ? (
+				<section className="flex min-w-0 flex-1 flex-col">
+					<ContactsEmptyState workspacePublicId={workspacePublicId} />
+				</section>
+			) : (
+				<>
 					<section
-						className={
-							isMobile
-								? "flex-1 max-w-full flex-col bg-muted/40"
-								: "flex max-w-full flex-col border-r bg-muted/40 md:w-80 lg:w-96"
-						}
+						className={`max-w-full flex-1 flex-col bg-muted/20 lg:w-80 lg:flex-none lg:border-r xl:w-96 ${
+							isDetailRoute ? "hidden lg:flex" : "flex"
+						}`}
 					>
-						<div className="flex items-center justify-between border-b px-3 py-3">
-							<span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-								{dict?.contacts?.allContacts ?? "All contacts"}
-							</span>
-							<div className={"flex gap-2"}>
-								<NewContactButton workspacePublicId={workspacePublicId} />
-							</div>
-						</div>
+						{listHeader}
 						<ContactsList
 							userContacts={userContacts}
 							selectedAddressBook={selectedAddressBook}
@@ -74,14 +86,27 @@ export default function ContactsShell({
 							workspacePublicId={workspacePublicId}
 						/>
 					</section>
-				)}
 
-				{showDetail && (
-					<section className="flex-1 flex-col bg-background/60">
+					<section
+						className={`min-w-0 flex-1 flex-col bg-background/60 ${
+							isDetailRoute ? "flex" : "hidden lg:flex"
+						}`}
+					>
+						{isDetailRoute && (
+							<div className="border-b px-3 py-2 lg:hidden">
+								<Link
+									href={listHref}
+									className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium hover:bg-muted"
+								>
+									<ArrowLeft className="size-4" />
+									{dict?.common?.back ?? "Back"}
+								</Link>
+							</div>
+						)}
 						{children}
 					</section>
-				)}
-			</div>
-		</main>
+				</>
+			)}
+		</div>
 	);
 }

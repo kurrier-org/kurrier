@@ -1,29 +1,38 @@
 "use client";
-import React, { useRef, useState } from "react";
-import { Plus, Upload, FolderPlus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input, Menu, Modal } from "@mantine/core";
+import { Menu, Modal, TextInput } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { addNewFolder } from "@/lib/actions/drive";
+import type { DriveState } from "@schema";
+import { FolderPlus, Plus, Upload } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 import { ReusableFormButton } from "@/components/common/reusable-form-button";
-import { useDynamicContext } from "@/hooks/use-dynamic-context";
-import { DriveState } from "@schema";
 import DriveUploader, {
-	DriveUploaderHandle,
+	type DriveUploaderHandle,
 } from "@/components/dashboard/drive/drive-uploader";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { Button } from "@/components/ui/button";
+import { useDynamicContext } from "@/hooks/use-dynamic-context";
+import { addNewFolder } from "@/lib/actions/drive";
+import { cn } from "@/lib/utils";
 
 export default function NewUploadButton({
-	hideOnMobile,
+	compact = false,
+	className,
 }: {
-	hideOnMobile?: boolean;
+	compact?: boolean;
+	className?: string;
 }) {
 	const dict = useOptionalDictionary();
+	const router = useRouter();
 	const [folderOpened, folderHandlers] = useDisclosure(false);
 	const { state } = useDynamicContext<DriveState>();
 	const uploaderRef = useRef<DriveUploaderHandle | null>(null);
 
 	const [menuOpened, setMenuOpened] = useState(false);
+	const canCreate = Boolean(
+		state?.driveRouteContext?.driveVolume &&
+			state.driveRouteContext.scope === "cloud",
+	);
 
 	return (
 		<>
@@ -36,33 +45,40 @@ export default function NewUploadButton({
 				closeOnItemClick={false}
 			>
 				<Menu.Target>
-					<Button hidden={!hideOnMobile} size="lg" className={"w-full"}>
-						<Plus className="h-5 w-5" />
-						{dict?.drive?.new ?? "New"}
+					<Button
+						size={compact ? "icon" : "lg"}
+						disabled={!canCreate}
+						aria-label={compact ? (dict?.drive?.new ?? "New") : undefined}
+						className={cn(!compact && "w-full", compact && "size-9", className)}
+					>
+						<Plus />
+						<span className={compact ? "sr-only" : ""}>
+							{dict?.drive?.new ?? "New"}
+						</span>
 					</Button>
 				</Menu.Target>
 
 				<Menu.Dropdown>
 					<Menu.Item
 						leftSection={<Upload size={14} />}
-						disabled={!state?.driveRouteContext}
+						disabled={!canCreate}
 						onClick={() => {
 							setMenuOpened(false);
 							uploaderRef.current?.openPicker();
 						}}
 					>
-						{dict?.drive?.upload ?? "Upload"}
+						{dict?.drive?.uploadFiles ?? dict?.drive?.upload ?? "Upload files"}
 					</Menu.Item>
 
 					<Menu.Item
-						disabled={!state?.driveRouteContext}
+						disabled={!canCreate}
 						leftSection={<FolderPlus size={14} />}
 						onClick={() => {
 							setMenuOpened(false);
 							folderHandlers.open();
 						}}
 					>
-						{dict?.drive?.folder ?? "Folder"}
+						{dict?.drive?.createFolder ?? "Create folder"}
 					</Menu.Item>
 				</Menu.Dropdown>
 			</Menu>
@@ -75,20 +91,29 @@ export default function NewUploadButton({
 				title={dict?.drive?.newFolder ?? "New folder"}
 				centered
 				size={"xs"}
-				trapFocus={false}
+				trapFocus
 			>
 				<ReusableFormButton
 					action={addNewFolder}
 					label={dict?.drive?.createFolder ?? "Create Folder"}
 					formWrapperClasses={"flex justify-center flex-col"}
-					onSuccess={() => folderHandlers.close()}
+					onSuccess={() => {
+						folderHandlers.close();
+						router.refresh();
+					}}
 					buttonProps={{
 						leftSection: <Plus size={16} />,
 						size: "sm",
-						className: "w-full mt-4",
+						className: "mt-4 w-full",
 					}}
 				>
-					<Input autoFocus name="name" />
+					<TextInput
+						autoFocus
+						required
+						name="name"
+						label={dict?.drive?.folderName ?? "Folder name"}
+						placeholder={dict?.drive?.folderNamePlaceholder ?? "Project files"}
+					/>
 					<input
 						type="hidden"
 						name="path"

@@ -1,25 +1,31 @@
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
-import React from "react";
+import { Container } from "@/components/common/containers";
 import ManageApiKeys from "@/components/dashboard/api-keys/manage-api-keys";
+import DashboardPageHeader from "@/components/dashboard/dashboard-page-header";
 import { fetchUserAPIKeys } from "@/lib/actions/dashboard";
+import { getDictionary, type Locale } from "@/lib/dictionaries";
 
-export default async function Page() {
-	const apiKeysList = await fetchUserAPIKeys();
+export default async function Page({
+	params,
+}: {
+	params: Promise<{ locale: Locale }>;
+}) {
+	const { locale } = await params;
+	const [dict, apiKeysList] = await Promise.all([
+		getDictionary(locale),
+		fetchUserAPIKeys(),
+	]);
+
 	return (
-		<>
-			<header className="flex h-16 shrink-0 items-center gap-2">
-				<div className="flex items-center gap-2 px-4">
-					<SidebarTrigger className="-ml-1" />
-					<Separator
-						orientation="vertical"
-						className="mr-2 data-[orientation=vertical]:h-4"
-					/>
-				</div>
-			</header>
-			<div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-				<ManageApiKeys apiKeysList={apiKeysList} />
+		<div className="flex min-h-0 flex-1 flex-col">
+			<DashboardPageHeader title={dict.platform.apiKeys} />
+			<div className="min-h-0 flex-1 overflow-y-auto">
+				<Container variant="wide" className="py-6 sm:py-8">
+					<p className="mb-6 max-w-prose text-sm leading-6 text-muted-foreground">
+						{dict.platform.apiKeysDescription}
+					</p>
+					<ManageApiKeys apiKeysList={apiKeysList} />
+				</Container>
 			</div>
-		</>
+		</div>
 	);
 }

@@ -43,5 +43,6 @@
 	"deleteConfirmPrefix": "Excluir \"",
 	"deleteConfirmSuffix": "\"? O que usa esse segredo pode parar de funcionar.",
 	"secretDeletedToast": "Segredo excluído",
-	"couldNotDeleteSecret": "Não foi possível excluir o segredo"
+	"couldNotDeleteSecret": "Não foi possível excluir o segredo",
+  "secretsCount": {"one": "{count} segredo", "other": "{count} segredos", "few": "{count} segredos", "many": "{count} segredos"}
 }

@@ -1,14 +1,13 @@
+import { ActionIcon, Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { Modal, ActionIcon } from "@mantine/core";
 import { Plus } from "lucide-react";
-import * as React from "react";
 import { ReusableForm } from "@/components/common/reusable-form";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useMailboxOptions } from "@/hooks/use-mailbox-options";
 import {
 	addNewMailboxFolder,
-	FetchIdentityMailboxListResult,
+	type FetchIdentityMailboxListResult,
 } from "@/lib/actions/mailbox";
-import { useMailboxOptions } from "@/hooks/use-mailbox-options";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export default function AddNewFolder({
 	mailboxes,
@@ -59,7 +58,11 @@ export default function AddNewFolder({
 
 	return (
 		<>
-			<Modal opened={opened} onClose={close} title={dict?.mailbox?.newFolder ?? "New folder"}>
+			<Modal
+				opened={opened}
+				onClose={close}
+				title={dict?.mailbox?.newFolder ?? "New folder"}
+			>
 				<ReusableForm
 					fields={fields}
 					onSuccess={close}
@@ -67,8 +70,14 @@ export default function AddNewFolder({
 				/>
 			</Modal>
 
-			<ActionIcon size={10} onClick={open}>
-				<Plus />
+			<ActionIcon
+				variant="subtle"
+				size={44}
+				onClick={open}
+				aria-label={dict?.mailbox?.newFolder ?? "New folder"}
+				title={dict?.mailbox?.newFolder ?? "New folder"}
+			>
+				<Plus size={18} />
 			</ActionIcon>
 		</>
 	);

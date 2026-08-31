@@ -1,27 +1,20 @@
 "use client";
-import { ProviderSpec } from "@schema";
-import {
-	Card,
-	CardAction,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
-import { Edit, ExternalLink, Globe, Play } from "lucide-react";
-import * as React from "react";
-import {
-	FetchDecryptedSecretsResult,
-	SyncProvidersRow,
-	verifyProviderAccount,
-} from "@/lib/actions/dashboard";
-import ProviderEditForm from "@/components/dashboard/providers/provider-edit-form";
-import { modals } from "@mantine/modals";
 import { Button } from "@mantine/core";
+import { modals } from "@mantine/modals";
+import type { ProviderSpec } from "@schema";
+import { Edit, ExternalLink, Globe, Play } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { parseSecret } from "@/lib/utils";
 import IsVerifiedStatus from "@/components/dashboard/providers/is-verified-status";
+import ProviderEditForm from "@/components/dashboard/providers/provider-edit-form";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	type FetchDecryptedSecretsResult,
+	type SyncProvidersRow,
+	verifyProviderAccount,
+} from "@/lib/actions/dashboard";
+import { parseSecret } from "@/lib/utils";
 
 export default function ProviderCard({
 	spec,
@@ -127,10 +120,10 @@ export default function ProviderCard({
 					},
 				);
 			}
-		} catch (err: any) {
+		} catch (err: unknown) {
 			toast.error(dict?.platform?.verificationError ?? "Verification error", {
 				description:
-					err?.message ??
+					(err instanceof Error ? err.message : undefined) ??
 					dict?.platform?.unexpectedErrorTestingAccount ??
 					"Unexpected error while testing the account.",
 			});
@@ -141,59 +134,64 @@ export default function ProviderCard({
 
 	return (
 		<div>
-			<Card className="shadow-none relative">
+			<Card className="relative shadow-none">
 				<CardHeader className="gap-3">
-					<div className="flex flex-col gap-3">
-						<div className="flex min-w-0 items-start gap-3">
-							<Globe className="mt-1 size-4 shrink-0 text-muted-foreground" />
-							<div className="min-w-0">
-								<CardTitle className="text-lg sm:text-xl">
-									{(dict?.platform as Record<string, string> | undefined)?.[
-										`providerName${spec.key.charAt(0).toUpperCase()}${spec.key.slice(1)}`
-									] ?? spec.name}
-								</CardTitle>
-								<p className="text-sm text-muted-foreground">
-									{dict?.platform?.managedSecurelyVerifyByAdding ??
-										"Managed securely in a secure Vault. Verify by adding or removing stored credentials."}
-								</p>
+					<div className="flex flex-col gap-4">
+						<div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+							<div className="flex min-w-0 items-start gap-3">
+								<Globe className="mt-1 size-4 shrink-0 text-muted-foreground" />
+								<div className="min-w-0">
+									<CardTitle className="text-lg sm:text-xl">
+										{(dict?.platform as Record<string, string> | undefined)?.[
+											`providerName${spec.key.charAt(0).toUpperCase()}${spec.key.slice(1)}`
+										] ?? spec.name}
+									</CardTitle>
+									<p className="text-sm text-muted-foreground">
+										{dict?.platform?.managedSecurelyVerifyByAdding ??
+											"Managed securely in a secure Vault. Verify by adding or removing stored credentials."}
+									</p>
+								</div>
+							</div>
+							<div className="shrink-0 [&_*]:whitespace-nowrap">
+								<IsVerifiedStatus
+									verified={decryptedValues.verified}
+									statusName={""}
+								/>
 							</div>
 						</div>
 
-						<div className="flex flex-wrap gap-2">
-							<CardAction className="flex w-full flex-wrap gap-2 lg:w-auto lg:flex-nowrap lg:justify-end">
-								<Button
-									variant="outline"
-									component={"a"}
-									size={"xs"}
-									href={spec.docsUrl}
-									target="_blank"
-									leftSection={<ExternalLink className="size-4" />}
-								>
-									{dict?.platform?.docs ?? "Docs"}
-								</Button>
+						<div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
+							<Button
+								variant="outline"
+								component={"a"}
+								size={"xs"}
+								className="!min-h-11 !w-full sm:col-start-1 sm:row-start-2 sm:!min-h-10"
+								href={spec.docsUrl}
+								target="_blank"
+								leftSection={<ExternalLink className="size-4" />}
+							>
+								{dict?.platform?.docs ?? "Docs"}
+							</Button>
 
-								<Button
-									onClick={initVerifyAccount}
-									loading={testing}
-									size={"xs"}
-									leftSection={<Play className="size-4" />}
-								>
-									{dict?.platform?.verifyConnection ?? "Verify Connection"}
-								</Button>
-								<Button
-									onClick={openEdit}
-									size={"xs"}
-									leftSection={<Edit className="size-4" />}
-								>
-									{dict?.platform?.edit ?? "Edit"}
-								</Button>
-							</CardAction>
+							<Button
+								onClick={initVerifyAccount}
+								loading={testing}
+								size={"xs"}
+								className="!min-h-11 !w-full sm:col-span-2 sm:col-start-1 sm:row-start-1 sm:!min-h-10"
+								leftSection={<Play className="size-4" />}
+							>
+								{dict?.platform?.verifyConnection ?? "Verify Connection"}
+							</Button>
+							<Button
+								onClick={openEdit}
+								size={"xs"}
+								className="!min-h-11 !w-full sm:col-start-2 sm:row-start-2 sm:!min-h-10"
+								leftSection={<Edit className="size-4" />}
+							>
+								{dict?.platform?.edit ?? "Edit"}
+							</Button>
 						</div>
 					</div>
-					<IsVerifiedStatus
-						verified={decryptedValues.verified}
-						statusName={""}
-					/>
 				</CardHeader>
 			</Card>
 		</div>

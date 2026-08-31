@@ -1,9 +1,11 @@
 import type { MessageEntity } from "@db";
 import { Divider } from "@mantine/core";
-import React, { Suspense } from "react";
 import { connection } from "next/server";
+import { Suspense } from "react";
 import Loading from "@/app/loading";
+import ThreadBackLink from "@/components/mailbox/default/thread-back-link";
 import ThreadItem from "@/components/mailbox/default/thread-item";
+import { getWorkspacePublicId } from "@/lib/actions/clients";
 import {
 	fetchLabelsByIdentityPublicId,
 	fetchMailboxThreadLabels,
@@ -15,8 +17,8 @@ import {
 } from "@/lib/actions/mailbox";
 
 async function ThreadContent({
-								 params,
-							 }: {
+	params,
+}: {
 	params: Promise<{
 		identityPublicId: string;
 		mailboxSlug: string;
@@ -27,12 +29,12 @@ async function ThreadContent({
 
 	const { threadId, identityPublicId, mailboxSlug } = await params;
 
-	const { activeMailbox, mailboxSync } = await fetchMailbox(
-		identityPublicId,
-		mailboxSlug,
-	);
-
-	const activeThread = await fetchWebMailThreadDetail(threadId);
+	const [{ activeMailbox, mailboxSync }, activeThread, workspacePublicId] =
+		await Promise.all([
+			fetchMailbox(identityPublicId, mailboxSlug),
+			fetchWebMailThreadDetail(threadId),
+			getWorkspacePublicId(),
+		]);
 
 	const { byMessageId } = await fetchThreadMailSubscriptions({
 		ownerId: activeMailbox.ownerId,
@@ -52,6 +54,9 @@ async function ThreadContent({
 
 	return (
 		<>
+			<ThreadBackLink
+				href={`/w/${workspacePublicId}/dashboard/mail/${identityPublicId}/${mailboxSlug}`}
+			/>
 			{activeThread?.messages.map((message, threadIndex) => (
 				<div key={message.id}>
 					<ThreadItem
@@ -66,11 +71,7 @@ async function ThreadContent({
 						allLabels={allLabels}
 						labelsByThreadId={labelsByThreadId}
 					/>
-					<Divider
-						className="opacity-50 mb-6"
-						ml="xl"
-						mr="xl"
-					/>
+					<Divider className="opacity-50 mb-6" ml="xl" mr="xl" />
 				</div>
 			))}
 		</>
@@ -78,8 +79,8 @@ async function ThreadContent({
 }
 
 function Page({
-				  params,
-			  }: {
+	params,
+}: {
 	params: Promise<{
 		identityPublicId: string;
 		mailboxSlug: string;

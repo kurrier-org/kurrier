@@ -1,4 +1,5 @@
 import "server-only";
+import { createLocaleFormatter } from "@/lib/locale-format";
 import { hasLocale, type Locale } from "@/lib/locale";
 
 async function loadEn() {
@@ -234,4 +235,10 @@ export { hasLocale };
 export async function getDictionary(locale: string): Promise<Dictionary> {
 	const key: Locale = hasLocale(locale) ? locale : "en";
 	return dictionaries[key]();
+}
+
+/** Loads a server-safe dictionary and the same locale formatter used by clients. */
+export async function getI18n(locale: string) {
+	const dict = await getDictionary(locale);
+	return { dict, format: createLocaleFormatter(dict.locale) };
 }

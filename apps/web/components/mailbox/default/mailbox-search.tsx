@@ -1,33 +1,31 @@
 "use client";
 
+import type { ThreadHit } from "@schema";
+import { IconStar, IconStarFilled } from "@tabler/icons-react";
+import { Paperclip, Search } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { Badge } from "@/components/ui/badge";
 import {
 	CommandDialog,
 	CommandInput,
 	CommandSeparator,
 } from "@/components/ui/command";
-import { Badge } from "@/components/ui/badge";
-import { Search, Paperclip } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { IconStar, IconStarFilled } from "@tabler/icons-react";
-import type { ThreadHit } from "@schema";
 import { initSearch } from "@/lib/actions/mailbox";
-import { useRouter } from 'next/navigation'
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 const DEBOUNCE_MS = 250;
 
 export default function MailboxSearch({
-										  publicId,
-										  mailboxSlug,
-										  workspacePublicId,
-									  }: {
+	publicId,
+	mailboxSlug,
+	workspacePublicId,
+}: {
 	publicId: string;
 	mailboxSlug: string;
 	workspacePublicId: string;
 }) {
-
 	const dict = useOptionalDictionary();
 	const [open, setOpen] = React.useState(false);
 	const [query, setQuery] = React.useState("");
@@ -104,25 +102,26 @@ export default function MailboxSearch({
 	const pathName = usePathname();
 	const inDashboard = pathName.includes("/dashboard/mail");
 
-	const searchBase = inDashboard
-		? `/w/${workspacePublicId}/dashboard/mail/${publicId}/${mailboxSlug}/search`
-		: `/w/${workspacePublicId}/mail/${publicId}/${mailboxSlug}/search`;
-
 	const threadBase = inDashboard
 		? `/w/${workspacePublicId}/dashboard/mail/${publicId}/${mailboxSlug}/threads`
 		: `/w/${workspacePublicId}/mail/${publicId}/${mailboxSlug}/threads`;
 
-	const router = useRouter()
+	const router = useRouter();
 
 	return (
 		<>
 			<button
 				type="button"
 				onClick={() => setOpen(true)}
-				className="flex w-full items-center gap-2 rounded-lg border bg-background px-4 py-2.5 text-muted-foreground hover:bg-muted/30"
+				className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded-lg border bg-background px-3 py-2.5 text-muted-foreground hover:bg-muted/30 sm:justify-start sm:px-4"
 			>
-				<Search className="h-4 w-4 opacity-60" />
-				<span className="text-sm">{dict?.mailbox?.searchMailboxHint ?? "Search this mailbox (⌘K)"}</span>
+				<Search className="size-4 shrink-0 opacity-60" />
+				<span className="hidden truncate text-sm sm:inline">
+					{dict?.mailbox?.searchMailboxHint ?? "Search this mailbox (⌘K)"}
+				</span>
+				<span className="sr-only sm:hidden">
+					{dict?.mailbox?.searchMailPlaceholder ?? "Search mail"}
+				</span>
 			</button>
 
 			<CommandDialog open={open} onOpenChange={setOpen}>
@@ -196,7 +195,10 @@ export default function MailboxSearch({
 										<div className="flex items-center gap-2">
 											<span className="mt-0.5 flex">
 												{t.starred ? (
-													<IconStarFilled className="text-yellow-400" size={12} />
+													<IconStarFilled
+														className="text-yellow-400"
+														size={12}
+													/>
 												) : (
 													<IconStar className="h-3 w-3" />
 												)}
@@ -210,7 +212,8 @@ export default function MailboxSearch({
 											/>
 
 											<div className="truncate text-[15px] font-medium">
-												{t.subject || (dict?.mailbox?.noSubject ?? "(no subject)")}
+												{t.subject ||
+													(dict?.mailbox?.noSubject ?? "(no subject)")}
 											</div>
 
 											{t.hasAttachment && (
@@ -247,10 +250,13 @@ export default function MailboxSearch({
 												<div className="flex min-w-16">
 													<span>•&nbsp;</span>
 													<span>
-														{new Date(t.createdAt).toLocaleDateString(undefined, {
-															month: "short",
-															day: "numeric",
-														})}
+														{new Date(t.createdAt).toLocaleDateString(
+															undefined,
+															{
+																month: "short",
+																day: "numeric",
+															},
+														)}
 													</span>
 												</div>
 											) : null}
@@ -272,7 +278,9 @@ export default function MailboxSearch({
 							<span className="font-medium text-foreground">{`‘${query || ""}’`}</span>
 						</span>
 					</div>
-					<div className="text-xs text-muted-foreground">{dict?.mailbox?.pressEnter ?? "Press ENTER"}</div>
+					<div className="text-xs text-muted-foreground">
+						{dict?.mailbox?.pressEnter ?? "Press ENTER"}
+					</div>
 				</div>
 			</CommandDialog>
 		</>

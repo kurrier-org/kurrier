@@ -1,7 +1,8 @@
 import type { MessageEntity } from "@db";
 import { Divider } from "@mantine/core";
-import React from "react";
+import ThreadBackLink from "@/components/mailbox/default/thread-back-link";
 import ThreadItem from "@/components/mailbox/default/thread-item";
+import { getWorkspacePublicId } from "@/lib/actions/clients";
 import {
 	fetchLabelsByIdentityPublicId,
 	fetchMailboxThreadLabels,
@@ -22,11 +23,12 @@ async function Page({
 	}>;
 }) {
 	const { threadId, identityPublicId, mailboxSlug } = await params;
-	const { activeMailbox, mailboxSync } = await fetchMailbox(
-		identityPublicId,
-		mailboxSlug,
-	);
-	const activeThread = await fetchWebMailThreadDetail(threadId);
+	const [{ activeMailbox, mailboxSync }, activeThread, workspacePublicId] =
+		await Promise.all([
+			fetchMailbox(identityPublicId, mailboxSlug),
+			fetchWebMailThreadDetail(threadId),
+			getWorkspacePublicId(),
+		]);
 
 	const { byMessageId } = await fetchThreadMailSubscriptions({
 		ownerId: activeMailbox.ownerId,
@@ -45,6 +47,9 @@ async function Page({
 
 	return (
 		<>
+			<ThreadBackLink
+				href={`/w/${workspacePublicId}/dashboard/mail/${identityPublicId}/${mailboxSlug}`}
+			/>
 			{activeThread?.messages.map((message, threadIndex) => {
 				return (
 					<div key={message.id}>

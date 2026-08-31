@@ -1,26 +1,24 @@
 "use client";
-import React from "react";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ActionIcon, Modal } from "@mantine/core";
-import { useIsMobile } from "@/hooks/use-mobile";
-import Link from "next/link";
-import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { getDayjsTz } from "@common/day-js-extended";
-import { CalendarState } from "@schema";
+import { Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
+import type { CalendarState } from "@schema";
+import { Plus } from "lucide-react";
 import NewCalendarEventForm from "@/components/dashboard/calendars/new-calendar-event-form";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { Button } from "@/components/ui/button";
+import { useDynamicContext } from "@/hooks/use-dynamic-context";
+import { cn } from "@/lib/utils";
 
 export default function NewEventButton({
-	hideOnMobile,
-	workspacePublicId
+	compact = false,
+	className,
 }: {
-	hideOnMobile?: boolean;
 	workspacePublicId: string;
+	compact?: boolean;
+	className?: string;
 }) {
 	const dict = useOptionalDictionary();
-	const isMobile = useIsMobile();
 	const { state } = useDynamicContext<CalendarState>();
 
 	const dayjsTz = getDayjsTz(state.defaultCalendar.timezone);
@@ -46,20 +44,16 @@ export default function NewEventButton({
 				<NewCalendarEventForm start={start} end={end} onCompleted={close} />
 			</Modal>
 
-			{isMobile ? (
-				<ActionIcon>
-					<Link href={`/w/${workspacePublicId}/dashboard/contacts/new`}>
-						<Plus className="h-4 w-4" />
-					</Link>
-				</ActionIcon>
-			) : (
-				<>
-					<Button hidden={!hideOnMobile} size="lg" onClick={open}>
-						<Plus className={"h-4 w-4"} />
-						{dict?.calendar?.createEvent ?? "Create Event"}
-					</Button>
-				</>
-			)}
+			<Button
+				size={compact ? "icon" : "lg"}
+				onClick={open}
+				className={cn(!compact && "w-full", className)}
+			>
+				<Plus />
+				<span className={compact ? "sr-only" : ""}>
+					{dict?.calendar?.createEvent ?? "Create Event"}
+				</span>
+			</Button>
 		</>
 	);
 }

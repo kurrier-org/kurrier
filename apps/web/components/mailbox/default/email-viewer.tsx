@@ -171,91 +171,68 @@ const escapeText = (value: string) =>
 			})[character] as string,
 	);
 
-const prepareHtml = (
-	rawHtml: string,
-	allowRemoteImages: boolean,
-) => {
+const prepareHtml = (rawHtml: string, allowRemoteImages: boolean) => {
 	const sanitized = DOMPurify.sanitize(rawHtml, {
 		USE_PROFILES: {
 			html: true,
 		},
 	});
 
-	const doc = new DOMParser().parseFromString(
-		sanitized,
-		"text/html",
-	);
+	const doc = new DOMParser().parseFromString(sanitized, "text/html");
 
 	let hasRemoteImages = false;
 
-	doc.querySelectorAll<HTMLImageElement>("img").forEach(
-		(image) => {
-			const src = image.getAttribute("src") ?? "";
-			const srcset =
-				image.getAttribute("srcset") ?? "";
+	doc.querySelectorAll<HTMLImageElement>("img").forEach((image) => {
+		const src = image.getAttribute("src") ?? "";
+		const srcset = image.getAttribute("srcset") ?? "";
 
-			const hasRemoteSrc =
-				/^https?:\/\//i.test(src);
+		const hasRemoteSrc = /^https?:\/\//i.test(src);
 
-			const hasRemoteSrcset =
-				/(?:^|,\s*)https?:\/\//i.test(srcset);
+		const hasRemoteSrcset = /(?:^|,\s*)https?:\/\//i.test(srcset);
 
-			if (!hasRemoteSrc && !hasRemoteSrcset) {
-				return;
-			}
+		if (!hasRemoteSrc && !hasRemoteSrcset) {
+			return;
+		}
 
-			hasRemoteImages = true;
+		hasRemoteImages = true;
 
-			if (allowRemoteImages) {
-				return;
-			}
+		if (allowRemoteImages) {
+			return;
+		}
 
-			if (hasRemoteSrc) {
-				image.dataset.blockedSrc = src;
-				image.removeAttribute("src");
-			}
+		if (hasRemoteSrc) {
+			image.dataset.blockedSrc = src;
+			image.removeAttribute("src");
+		}
 
-			if (hasRemoteSrcset) {
-				image.dataset.blockedSrcset = srcset;
-				image.removeAttribute("srcset");
-			}
+		if (hasRemoteSrcset) {
+			image.dataset.blockedSrcset = srcset;
+			image.removeAttribute("srcset");
+		}
 
-			if (!image.getAttribute("alt")) {
-				image.setAttribute(
-					"alt",
-					"Remote image blocked",
-				);
-			}
-		},
-	);
+		if (!image.getAttribute("alt")) {
+			image.setAttribute("alt", "Remote image blocked");
+		}
+	});
 
 	return {
 		html: doc.body.innerHTML,
 		hasRemoteImages,
-		hasQuotes: Boolean(
-			doc.querySelector(QUOTE_SELECTOR),
-		),
+		hasQuotes: Boolean(doc.querySelector(QUOTE_SELECTOR)),
 	};
 };
 
-export default function EmailViewer({
-										message,
-									}: {
-	message: MessageEntity;
-}) {
+export default function EmailViewer({ message }: { message: MessageEntity }) {
 	const dict = useOptionalDictionary();
 	const hostRef = useRef<HTMLDivElement>(null);
 
 	const [hideQuotes, setHideQuotes] = useState(true);
-	const [showRemoteImages, setShowRemoteImages] =
-		useState(false);
+	const [showRemoteImages, setShowRemoteImages] = useState(false);
 
 	const senderEmail =
-		message?.from?.value?.[0]?.address?.toLowerCase() ??
-		"unknown";
+		message?.from?.value?.[0]?.address?.toLowerCase() ?? "unknown";
 
-	const remoteImagePreferenceKey =
-		`kurrier:remote-images:${senderEmail}`;
+	const remoteImagePreferenceKey = `kurrier:remote-images:${senderEmail}`;
 
 	useEffect(() => {
 		if (senderEmail === "unknown") {
@@ -264,9 +241,7 @@ export default function EmailViewer({
 		}
 
 		setShowRemoteImages(
-			localStorage.getItem(
-				remoteImagePreferenceKey,
-			) === "true",
+			localStorage.getItem(remoteImagePreferenceKey) === "true",
 		);
 	}, [remoteImagePreferenceKey, senderEmail]);
 
@@ -277,21 +252,20 @@ export default function EmailViewer({
 
 		return `
 			<div style="white-space: pre-wrap;">
-				${escapeText(
-			(message.text || "No content").toString(),
-		)}
+				${escapeText((message.text || "No content").toString())}
 			</div>
 		`;
 	}, [message.html, message.text]);
 
-	const prepared = useMemo(
-		() =>
-			prepareHtml(
-				rawHtml,
-				showRemoteImages,
-			),
-		[rawHtml, showRemoteImages],
-	);
+	const [prepared, setPrepared] = useState({
+		html: "",
+		hasRemoteImages: false,
+		hasQuotes: false,
+	});
+
+	useEffect(() => {
+		setPrepared(prepareHtml(rawHtml, showRemoteImages));
+	}, [rawHtml, showRemoteImages]);
 
 	useEffect(() => {
 		const host = hostRef.current;
@@ -314,22 +288,14 @@ export default function EmailViewer({
 			</article>
 		`;
 
-		const root =
-			shadow.querySelector<HTMLElement>(
-				".email-root",
-			);
+		const root = shadow.querySelector<HTMLElement>(".email-root");
 
 		if (!root) return;
 
-		root
-			.querySelectorAll<HTMLAnchorElement>(
-				"a[href]",
-			)
-			.forEach((link) => {
-				link.target = "_blank";
-				link.rel =
-					"nofollow noopener noreferrer";
-			});
+		root.querySelectorAll<HTMLAnchorElement>("a[href]").forEach((link) => {
+			link.target = "_blank";
+			link.rel = "nofollow noopener noreferrer";
+		});
 	}, [prepared.html, hideQuotes]);
 
 	const allowRemoteImagesForSender = () => {
@@ -338,72 +304,46 @@ export default function EmailViewer({
 			return;
 		}
 
-		localStorage.setItem(
-			remoteImagePreferenceKey,
-			"true",
-		);
+		localStorage.setItem(remoteImagePreferenceKey, "true");
 
 		setShowRemoteImages(true);
 	};
 
 	return (
-		<div className="mb-24 mt-6 overflow-x-hidden">
-			{prepared.hasRemoteImages &&
-				!showRemoteImages && (
-					<div className="mb-3 flex flex-wrap gap-2">
-						<Button
-							size="xs"
-							variant="default"
-							onClick={() =>
-								setShowRemoteImages(
-									true,
-								)
-							}
-						>
-							{dict?.mailbox
-									?.loadRemoteImagesOnce ??
-								"Load remote images once"}
-						</Button>
+		<div className="mb-24 mt-6 min-w-0 overflow-x-hidden">
+			{prepared.hasRemoteImages && !showRemoteImages && (
+				<div className="mb-3 flex flex-wrap gap-2">
+					<Button
+						size="xs"
+						variant="default"
+						onClick={() => setShowRemoteImages(true)}
+					>
+						{dict?.mailbox?.loadRemoteImagesOnce ?? "Load remote images once"}
+					</Button>
 
-						<Button
-							size="xs"
-							variant="default"
-							onClick={
-								allowRemoteImagesForSender
-							}
-						>
-							{dict?.mailbox
-									?.alwaysLoadForThisSender ??
-								"Always load for this sender"}
-						</Button>
-					</div>
-				)}
+					<Button
+						size="xs"
+						variant="default"
+						onClick={allowRemoteImagesForSender}
+					>
+						{dict?.mailbox?.alwaysLoadForThisSender ??
+							"Always load for this sender"}
+					</Button>
+				</div>
+			)}
 
-			<div
-				ref={hostRef}
-				className="block w-full"
-			/>
+			<div ref={hostRef} className="block w-full" />
 
 			{prepared.hasQuotes && (
 				<ActionIcon
 					type="button"
 					variant="light"
 					size="xs"
-					onClick={() =>
-						setHideQuotes(
-							(current) => !current,
-						)
-					}
+					onClick={() => setHideQuotes((current) => !current)}
 					className="my-2 rounded border px-2 py-1 text-[12px] text-gray-600 hover:bg-gray-50"
-					title={
-						hideQuotes
-							? "Show previous emails"
-							: "Hide previous emails"
-					}
+					title={hideQuotes ? "Show previous emails" : "Hide previous emails"}
 					aria-label={
-						hideQuotes
-							? "Show previous emails"
-							: "Hide previous emails"
+						hideQuotes ? "Show previous emails" : "Hide previous emails"
 					}
 				>
 					<Ellipsis size={16} />

@@ -1,14 +1,15 @@
 import { cookies } from "next/headers";
-import React from "react";
+import ContactSelectionPlaceholder from "@/components/dashboard/contacts/contact-selection-placeholder";
 import { getDictionary } from "@/lib/dictionaries";
 
 async function Page() {
 	const cookieStore = await cookies();
 	const dict = await getDictionary(cookieStore.get("locale")?.value ?? "en");
 	return (
-		<div className={"flex items-center justify-center my-24 text-sm"}>
-			{dict.contacts.pleaseSelectAContact}
-		</div>
+		<ContactSelectionPlaceholder
+			title={dict.contacts.selectContactTitle}
+			description={dict.contacts.pleaseSelectAContact}
+		/>
 	);
 }
 
