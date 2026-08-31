@@ -1660,11 +1660,15 @@ export const verifyGoogleAccount = async (googleAccountId: string) => {
 // `inbound` (generates a `slug@inbound.kurrier` address from a label) and
 // `mailtrap` (takes a real external address as-is). Shared by the three
 // functions below instead of duplicating near-identical CRUD per provider.
-const INBOUND_IDENTITY_PROVIDERS = ["inbound", "mailtrap"] as const;
-type InboundIdentityProvider = (typeof INBOUND_IDENTITY_PROVIDERS)[number];
+const SIMPLE_EMAIL_IDENTITY_PROVIDERS = ["inbound", "mailtrap"] as const;
+type SimpleEmailIdentityProvider = (typeof SIMPLE_EMAIL_IDENTITY_PROVIDERS)[number];
 
-function isInboundIdentityProvider(v: unknown): v is InboundIdentityProvider {
-	return INBOUND_IDENTITY_PROVIDERS.includes(v as InboundIdentityProvider);
+function isSimpleEmailIdentityProvider(
+	v: unknown,
+): v is SimpleEmailIdentityProvider {
+	return SIMPLE_EMAIL_IDENTITY_PROVIDERS.includes(
+		v as SimpleEmailIdentityProvider,
+	);
 }
 
 export async function createProviderIdentity(
@@ -1675,7 +1679,7 @@ export async function createProviderIdentity(
 		const data = decode(formData);
 		const providerType = data.providerType;
 
-		if (!isInboundIdentityProvider(providerType)) {
+		if (!isSimpleEmailIdentityProvider(providerType)) {
 			return { success: false, error: "Unknown provider type" };
 		}
 
@@ -1789,7 +1793,7 @@ export async function createProviderIdentity(
 
 
 export const fetchProviderIdentities = async (
-	providerType: InboundIdentityProvider,
+	providerType: SimpleEmailIdentityProvider,
 ) => {
 	const rls = await rlsClient();
 	return rls((tx) =>
@@ -1816,7 +1820,7 @@ export type FetchProviderIdentitiesResultRow = FetchProviderIdentitiesResult[num
 
 export const deleteProviderIdentity = async (
 	identityId: string,
-	providerType: InboundIdentityProvider,
+	providerType: SimpleEmailIdentityProvider,
 ): Promise<FormState> => {
 	return handleAction(async () => {
 		const rls = await rlsClient();
@@ -2131,10 +2135,24 @@ async function listMailtrapInboxAddresses(apiToken: string): Promise<{
 }
 
 export const verifyMailtrapConnection = async (
-	providerSecret: FetchDecryptedSecretsResultRow,
+	_prev: FormState,
+	formData: FormData,
 ): Promise<FormState<VerifyResult>> => {
 	return handleAction(async () => {
-		const credentials = providerSecret.parsedSecret;
+		const providerId = String(formData.get("providerId") || "").trim();
+
+		if (!providerId) {
+			return { success: false, error: "Missing provider id" };
+		}
+
+		const [providerSecret] = await fetchDecryptedSecrets({
+			linkTable: providerSecrets,
+			foreignCol: providerSecrets.providerId,
+			secretIdCol: providerSecrets.secretId,
+			parentId: providerId,
+		});
+
+		const credentials = providerSecret?.parsedSecret;
 		const apiToken = credentials?.MAILTRAP_API_TOKEN;
 
 		let res: VerifyResult;
@@ -2169,15 +2187,19 @@ export const verifyMailtrapConnection = async (
 			}
 		}
 
-		const session = await currentSession();
-		const workspaceId = await getWorkspaceId();
+		if (providerSecret) {
+			const session = await currentSession();
+			const workspaceId = await getWorkspaceId();
 
-		await updateSecret(session, workspaceId, providerSecret.metaId, {
-			value: JSON.stringify({ ...credentials, verified: res.ok }),
-		});
+			await updateSecret(session, workspaceId, providerSecret.metaId, {
+				value: JSON.stringify({ ...credentials, verified: res.ok }),
+			});
+		}
 
 		revalidatePath(DASHBOARD_PATH);
 
-		return { success: true, data: res };
+		return res.ok
+			? { success: true, message: res.message, data: res }
+			: { success: false, error: res.message, data: res };
 	});
 };

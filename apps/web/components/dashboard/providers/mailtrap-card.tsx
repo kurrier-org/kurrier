@@ -3,9 +3,16 @@
 import { ActionIcon, Button } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { MAILTRAP_SPEC } from "@schema";
-import { ArrowDownToLine, Copy, ExternalLink, Info, Play, Plus } from "lucide-react";
-import * as React from "react";
+import {
+	ArrowDownToLine,
+	Copy,
+	ExternalLink,
+	Info,
+	Play,
+	Plus,
+} from "lucide-react";
 import { toast } from "sonner";
+import { ReusableFormButton } from "@/components/common/reusable-form-button";
 import IsVerifiedStatus from "@/components/dashboard/providers/is-verified-status";
 import MailtrapCredentialsButton from "@/components/dashboard/providers/mailtrap-credentials-form";
 import MailtrapIdentityCard from "@/components/dashboard/providers/mailtrap-identity-card";
@@ -31,32 +38,6 @@ export default function MailtrapCard({
 	decryptedSecret: FetchDecryptedSecretsResultRow | undefined;
 }) {
 	const verified = Boolean(parseSecret(decryptedSecret).verified);
-
-	const [testing, setTesting] = React.useState(false);
-
-	const runVerify = async () => {
-		if (!decryptedSecret) {
-			toast.error("Configure Mailtrap credentials first");
-			return;
-		}
-
-		setTesting(true);
-		try {
-			const { data: res } = await verifyMailtrapConnection(decryptedSecret);
-
-			if (res?.ok) {
-				toast.success("Mailtrap connection verified", {
-					description: res.message,
-				});
-			} else {
-				toast.error("Mailtrap verification failed", {
-					description: res?.message,
-				});
-			}
-		} finally {
-			setTesting(false);
-		}
-	};
 
 	const openAddModal = () => {
 		const openModalId = modals.open({
@@ -151,16 +132,19 @@ export default function MailtrapCard({
 									Verify we can access your Mailtrap account.
 								</p>
 
-								<Button
-									className="mt-3"
-									size="sm"
-									variant="filled"
-									leftSection={<Play className="h-4 w-4" />}
-									loading={testing}
-									onClick={runVerify}
+								<ReusableFormButton
+									action={verifyMailtrapConnection}
+									label="Verify Connection"
+									notify={{ kind: "toast" }}
+									buttonProps={{
+										className: "mt-3",
+										size: "xs",
+										variant: "filled",
+										leftSection: <Play className="size-4" />,
+									}}
 								>
-									Test Connection
-								</Button>
+									<input type="hidden" name="providerId" value={providerId} />
+								</ReusableFormButton>
 							</div>
 						</div>
 					</div>

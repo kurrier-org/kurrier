@@ -3,7 +3,6 @@
 import { ActionIcon, Button } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { Copy, Pencil } from "lucide-react";
-import React from "react";
 import { toast } from "sonner";
 
 import { ReusableForm } from "@/components/common/reusable-form";
@@ -133,9 +132,9 @@ export default function MailtrapCredentialsButton({
 
 	return (
 		<Button
-			size="sm"
+			size="xs"
 			variant="outline"
-			leftSection={<Pencil className="h-4 w-4" />}
+			leftSection={<Pencil className="size-4" />}
 			onClick={openModal}
 		>
 			Edit Credentials
