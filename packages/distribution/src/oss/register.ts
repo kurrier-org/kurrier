@@ -1,4 +1,4 @@
-import { registerOssHooks } from "./hooks/register";
+import { registerHooks } from "./hooks/register";
 
 let registered = false;
 
@@ -9,5 +9,5 @@ export const registerDistribution = () => {
 
     registered = true;
 
-    registerOssHooks();
+    registerHooks();
 };

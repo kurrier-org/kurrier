@@ -3,7 +3,7 @@ import { enforceSingleWorkspace } from "./workspace/before-create";
 
 let registered = false;
 
-export const registerOssHooks = () => {
+export const registerHooks = () => {
     if (registered) {
         return;
     }
