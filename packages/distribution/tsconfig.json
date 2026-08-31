@@ -1,6 +1,7 @@
 {
 	"compilerOptions": {
 		"noEmit": true,
+		"jsx": "react-jsx",
 		"esModuleInterop": true,
 		"allowSyntheticDefaultImports": true,
 		"paths": {

@@ -1,4 +1,5 @@
 export const DISTRIBUTION_CONFIG = {
+    id: "oss",
     locales: ["en", "pt-BR", "ko", "pl", "ru"],
     defaultLocale: "en",
     features: {

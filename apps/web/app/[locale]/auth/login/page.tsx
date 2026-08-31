@@ -1,13 +1,16 @@
 import { Suspense } from "react";
-import { LoginForm } from "@/components/auth/login-form";
 import Link from "next/link";
-import KurrierLogo from "@/components/common/kurrier-logo";
 import * as React from "react";
-import { getDictionary, Locale } from "@/lib/dictionaries";
-import { getGenericOidcSettings } from "@/lib/generic-oidc";
+
+import { LoginForm } from "@/components/auth/login-form";
+import KurrierLogo from "@/components/common/kurrier-logo";
 import { LanguageSwitcher } from "@/components/common/language-switcher";
 import Loading from "@/app/loading";
-import {DISTRIBUTION_CONFIG} from "@distribution/config";
+import { getDictionary, type Locale } from "@/lib/dictionaries";
+import { getGenericOidcSettings } from "@/lib/generic-oidc";
+
+import { DISTRIBUTION_CONFIG, DEFAULT_DISTRIBUTION } from "@distribution/config";
+import { DistributionLoginPage } from "@distribution/pages";
 
 type LoginPageProps = {
 	params: Promise<{ locale: Locale }>;
@@ -52,7 +55,7 @@ async function LoginContent({
 				</div>
 
 				{showSignupDisabledMessage && (
-					<div className="rounded-md bg-yellow-50 border border-yellow-200 p-3">
+					<div className="rounded-md border border-yellow-200 bg-yellow-50 p-3">
 						<p className="text-sm text-yellow-800">
 							User registration is currently disabled. Please contact your
 							administrator for access.
@@ -74,6 +77,10 @@ async function LoginContent({
 }
 
 export default function LoginPage(props: LoginPageProps) {
+	if (DISTRIBUTION_CONFIG.id !== DEFAULT_DISTRIBUTION) {
+		return <DistributionLoginPage {...props} />;
+	}
+
 	return (
 		<Suspense fallback={<Loading />}>
 			<LoginContent {...props} />
