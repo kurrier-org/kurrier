@@ -62,16 +62,14 @@ export function selectThreadParent(
 	references: readonly (string | null | undefined)[],
 	availableMessageIds: readonly string[],
 ): string | null {
-	const replyCandidate = normalizeMessageId(inReplyTo);
+	const replyCandidates = Array.from(new Set(extractMessageIds(inReplyTo)));
 	const referenceCandidates = Array.from(
 		new Set(references.flatMap(extractMessageIds)),
 	).reverse();
-	const ordered = replyCandidate
-		? [
-				replyCandidate,
-				...referenceCandidates.filter((id) => id !== replyCandidate),
-			]
-		: referenceCandidates;
+	const ordered = [
+		...replyCandidates,
+		...referenceCandidates.filter((id) => !replyCandidates.includes(id)),
+	];
 	const available = new Set(availableMessageIds);
 	return ordered.find((candidate) => available.has(candidate)) ?? null;
 }

@@ -179,6 +179,17 @@ test("selects the final References candidate when In-Reply-To is absent", () => 
 	);
 });
 
+test("uses valid message IDs from a multi-value In-Reply-To header", () => {
+	assert.equal(
+		selectThreadParent(
+			"<first@example.test> <reply@example.test>",
+			["<root@example.test>"],
+			["<reply@example.test>", "<root@example.test>"],
+		),
+		"<reply@example.test>",
+	);
+});
+
 test("prioritizes In-Reply-To and then scans References from final to earliest", () => {
 	assert.equal(
 		selectThreadParent(
