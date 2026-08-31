@@ -15,7 +15,6 @@ import {
 import {
 	buildThreadingCandidates,
 	extractThreadingHeader,
-	fallbackMessageId,
 	parseThreadingReferences,
 	resolveMessageId,
 	selectThreadParent,
