@@ -1,7 +1,7 @@
-import { db, mailboxes, type IdentityEntity, type MailboxEntity } from "@db";
-import { and, eq, sql } from "drizzle-orm";
+import { db, type IdentityEntity, type MailboxEntity, mailboxes } from "@db";
+import type { MailboxKind } from "@schema";
 import slugify from "@sindresorhus/slugify";
-import { MailboxKind } from "@schema";
+import { and, eq, sql } from "drizzle-orm";
 
 export type PathIdMap = Map<string, string>;
 
@@ -24,6 +24,41 @@ export async function findLocalByPath(identityId: string, path: string) {
 	return row as MailboxEntity | undefined;
 }
 
+export function createParentMailboxValues(opts: {
+	identity: Pick<IdentityEntity, "id" | "ownerId" | "workspaceId">;
+	parentPath: string;
+	parentId: string | null;
+	delimiter: string;
+}): typeof mailboxes.$inferInsert {
+	const { identity, parentPath, parentId, delimiter } = opts;
+	const { parentPath: grandparentPath, name: parentName } = splitParent(
+		parentPath,
+		delimiter,
+	);
+
+	return {
+		ownerId: identity.ownerId,
+		workspaceId: identity.workspaceId,
+		identityId: identity.id,
+		parentId,
+		name: parentName,
+		slug: slugify(parentPath),
+		kind: "custom" as const,
+		isDefault: false,
+		metaData: {
+			imap: {
+				path: parentPath,
+				name: parentName,
+				parentPath: grandparentPath,
+				delimiter,
+				flags: ["\\Noselect"],
+				specialUse: null,
+				selectable: false,
+			},
+		},
+	};
+}
+
 export async function ensureParentChain(opts: {
 	identity: IdentityEntity;
 	parentPath: string;
@@ -43,10 +78,7 @@ export async function ensureParentChain(opts: {
 		return existing.id;
 	}
 
-	const { parentPath: pp2, name: parentName } = splitParent(
-		parentPath,
-		delimiter,
-	);
+	const { parentPath: pp2 } = splitParent(parentPath, delimiter);
 	const grandId = await ensureParentChain({
 		identity,
 		parentPath: pp2,
@@ -56,26 +88,14 @@ export async function ensureParentChain(opts: {
 
 	const [parentRow] = await db
 		.insert(mailboxes)
-		.values({
-			ownerId: identity.ownerId,
-			identityId: identity.id,
-			parentId: grandId,
-			name: parentName,
-			slug: slugify(parentPath),
-			kind: "custom",
-			isDefault: false,
-			metaData: {
-				imap: {
-					path: parentPath,
-					name: parentName,
-					parentPath: pp2,
-					delimiter,
-					flags: ["\\Noselect"],
-					specialUse: null,
-					selectable: false,
-				},
-			},
-		} as any)
+		.values(
+			createParentMailboxValues({
+				identity,
+				parentPath,
+				parentId: grandId,
+				delimiter,
+			}),
+		)
 		.returning();
 
 	pathIdMap.set(parentPath, parentRow.id);
