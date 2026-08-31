@@ -33,7 +33,7 @@
 			"@extensions": ["../../packages/extensions/src/index.ts"],
 			"@extensions/*": ["../../packages/extensions/src/*"],
 			"@distribution": ["../../packages/distribution/src/index.ts"],
-			"@distribution/*": ["../../packages/distribution/src/*"]
+			"@distribution/*": ["../../packages/distribution/src/*"],
 		}
 	},
 	"include": [

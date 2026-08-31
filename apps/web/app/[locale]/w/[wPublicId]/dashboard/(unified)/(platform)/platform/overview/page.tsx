@@ -23,7 +23,7 @@ import { getWorkspacePublicId, getWorkspaceRole } from "@/lib/actions/clients";
 import { getDashboardStats } from "@/lib/actions/dashboard";
 import { fetchWorkspace } from "@/lib/actions/workspace";
 import { getDictionary } from "@/lib/dictionaries";
-import { SITE_FEATURES } from "@/lib/site-features";
+import { DISTRIBUTION_CONFIG } from "@distribution/config";
 
 export default async function Page({
 	params,
@@ -45,7 +45,7 @@ export default async function Page({
 		getDictionary(locale),
 	]);
 	const p = dict.platform;
-	const driveEnabled = SITE_FEATURES.drive;
+	const driveEnabled = DISTRIBUTION_CONFIG.features.drive;
 
 	const isOwner = workspaceRole === "owner";
 	const base = `/w/${workspacePublicId}/dashboard/platform`;

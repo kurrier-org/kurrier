@@ -13,14 +13,14 @@ import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
 import { isSignedIn } from "@/lib/actions/auth";
 import { getWorkspacePublicId } from "@/lib/actions/clients";
 import { fetchVolumes } from "@/lib/actions/drive";
-import { SITE_FEATURES } from "@/lib/site-features";
+import { DISTRIBUTION_CONFIG } from "@distribution/config";
 
 async function DriveDashboard({ children }: { children: React.ReactNode }) {
 	await connection();
 
 	const workspacePublicId = await getWorkspacePublicId();
 
-	if (!SITE_FEATURES.drive) {
+	if (!DISTRIBUTION_CONFIG.features.drive) {
 		redirect(`/w/${workspacePublicId}/dashboard/mail`);
 	}
 

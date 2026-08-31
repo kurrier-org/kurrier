@@ -1,14 +1,16 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { SiteFeatures } from "@/lib/site-features";
+import { DISTRIBUTION_CONFIG } from "@distribution/config";
+
+type SiteFeatures = typeof DISTRIBUTION_CONFIG.features;
 
 const SiteFeaturesContext = createContext<SiteFeatures | undefined>(undefined);
 
 export function SiteFeaturesProvider({
-	value,
-	children,
-}: {
+										 value,
+										 children,
+									 }: {
 	value: SiteFeatures;
 	children: React.ReactNode;
 }) {
@@ -21,10 +23,12 @@ export function SiteFeaturesProvider({
 
 export function useSiteFeatures() {
 	const features = useContext(SiteFeaturesContext);
+
 	if (!features) {
 		throw new Error(
 			"useSiteFeatures must be used within <SiteFeaturesProvider>",
 		);
 	}
+
 	return features;
 }

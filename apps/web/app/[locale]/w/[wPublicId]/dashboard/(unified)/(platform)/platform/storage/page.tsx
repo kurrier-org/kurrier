@@ -9,7 +9,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { getWorkspacePublicId, rlsClient } from "@/lib/actions/clients";
 import { syncProviders } from "@/lib/actions/dashboard";
 import { getDictionary } from "@/lib/dictionaries";
-import { SITE_FEATURES } from "@/lib/site-features";
+import { DISTRIBUTION_CONFIG } from "@distribution/config";
 
 export default async function ProvidersPage({
 	params,
@@ -19,7 +19,7 @@ export default async function ProvidersPage({
 	const { locale } = await params;
 	const dict = await getDictionary(locale);
 	const workspacePublicId = await getWorkspacePublicId();
-	if (!SITE_FEATURES.drive) {
+	if (!DISTRIBUTION_CONFIG.features.drive) {
 		redirect(`/${locale}/w/${workspacePublicId}/dashboard/platform/overview`);
 	}
 

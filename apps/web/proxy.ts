@@ -1,9 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { LOCALES } from "@/lib/locale";
 import { updateSession } from "@/lib/supabase/middleware";
+import { DISTRIBUTION_CONFIG } from "@distribution/config";
 
 const locales = LOCALES;
-const defaultLocale = "en";
+const defaultLocale = DISTRIBUTION_CONFIG.defaultLocale;
 
 function normalizeLocale(tag: string): string | null {
 	const lower = tag.toLowerCase();

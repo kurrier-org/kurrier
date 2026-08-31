@@ -7,6 +7,7 @@ import { getDictionary, Locale } from "@/lib/dictionaries";
 import { getGenericOidcSettings } from "@/lib/generic-oidc";
 import { LanguageSwitcher } from "@/components/common/language-switcher";
 import Loading from "@/app/loading";
+import {DISTRIBUTION_CONFIG} from "@distribution/config";
 
 type LoginPageProps = {
 	params: Promise<{ locale: Locale }>;
@@ -81,5 +82,7 @@ export default function LoginPage(props: LoginPageProps) {
 }
 
 export function generateStaticParams() {
-	return [{ locale: "en" }];
+	return DISTRIBUTION_CONFIG.locales.map((locale) => ({
+		locale,
+	}));
 }

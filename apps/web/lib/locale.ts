@@ -1,4 +1,5 @@
-export const LOCALES = ["en", "pt-BR", "ko", "pl", "ru"] as const;
+import { DISTRIBUTION_CONFIG } from "@distribution/config";
+export const LOCALES = DISTRIBUTION_CONFIG.locales;
 
 export type Locale = (typeof LOCALES)[number];
 

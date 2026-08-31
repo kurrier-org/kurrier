@@ -13,7 +13,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getRedis } from "@/lib/actions/get-redis";
 import { updateWorkSpaceContext } from "@/lib/actions/workspace";
-import { SITE_FEATURES } from "@/lib/site-features";
+import { DISTRIBUTION_CONFIG } from "@distribution/config";
 import { withLocale } from "@/lib/utils";
 import { runHook } from "@/lib/extensions/hooks";
 
@@ -149,7 +149,7 @@ export async function login(
 	_prev: FormState,
 	formData: FormData,
 ): Promise<FormState> {
-	if (!SITE_FEATURES.localLogin) {
+	if (!DISTRIBUTION_CONFIG.features.localLogin) {
 		return {
 			success: false,
 			error: "auth.localLoginDisabled",

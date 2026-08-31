@@ -20,13 +20,13 @@ import {
 } from "@aws-sdk/client-s3";
 import {s3} from "@/lib/create-s3-client";
 import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
-import { SITE_FEATURES } from "@/lib/site-features";
+import { DISTRIBUTION_CONFIG } from "@distribution/config";
 
 
 const trimSlashes = (s: string) => s.replace(/^\/+|\/+$/g, "");
 
 function assertDriveEnabled() {
-	if (!SITE_FEATURES.drive) {
+	if (!DISTRIBUTION_CONFIG.features.drive) {
 		throw new Error("Drive is disabled");
 	}
 }
