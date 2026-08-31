@@ -6,7 +6,11 @@ import {
 	MailComposeInput,
 } from "@schema";
 import { getMessageAddress, getMessageName } from "@common/mail-client";
-import { generateSnippet, upsertMailboxThreadItem } from "@common";
+import {
+	generateSnippet,
+	parseThreadingReferences,
+	upsertMailboxThreadItem,
+} from "@common";
 const serverConfig = getServerEnv();
 import { Worker } from "bullmq";
 import {
@@ -337,9 +341,11 @@ export default defineNitroPlugin(async (nitroApp) => {
 					? Array.from(
 						new Set(
 							[
-								...(Array.isArray(origRow.message.references)
-									? origRow.message.references
-									: []),
+								...parseThreadingReferences(
+									Array.isArray(origRow.message.references)
+										? origRow.message.references
+										: [],
+								),
 								origRow.message.messageId ?? null,
 							].filter(Boolean),
 						),

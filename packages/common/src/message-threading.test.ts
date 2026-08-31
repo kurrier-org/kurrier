@@ -59,7 +59,14 @@ test("normalizes a raw References header into stored message IDs", () => {
 	].join("\r\n");
 
 	assert.deepEqual(
-		parseThreadingReferences(extractThreadingHeader(raw, "references")),
+		parseThreadingReferences([extractThreadingHeader(raw, "references")]),
+		["<root@example.test>", "<parent@example.test>"],
+	);
+});
+
+test("normalizes legacy stored References values before reply composition", () => {
+	assert.deepEqual(
+		parseThreadingReferences(["<root@example.test> <parent@example.test>"]),
 		["<root@example.test>", "<parent@example.test>"],
 	);
 });

@@ -271,7 +271,9 @@ export async function parseAndStoreEmail(
 	const rawInReplyTo = extractThreadingHeader(rawEmail, "in-reply-to");
 	const rawReferences = extractThreadingHeader(rawEmail, "references");
 	const inReplyTo = rawInReplyTo ?? null;
-	const references = parseThreadingReferences(rawReferences);
+	const references = parseThreadingReferences(
+		rawReferences ? [rawReferences] : [],
+	);
 	const messageId = resolveMessageId(rawEmail, parsed.messageId, String(headers.get("message-id") || ""));
 
 	/**
