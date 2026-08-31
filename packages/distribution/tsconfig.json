@@ -9,8 +9,11 @@
 			"@db": ["../../packages/db/src/index.ts"],
 			"@db/*": ["../../packages/db/src/*"],
 			"@common": ["../../packages/common/src/index.ts"],
-			"@common/*": ["../../packages/common/src/*"]
-		}
+			"@common/*": ["../../packages/common/src/*"],
+			"@extensions": ["../../packages/extensions/src/index.ts"],
+			"@extensions/*": ["../../packages/extensions/src/*"]
+		},
+		"lib": ["ES2021.String"]
 	},
 	"exclude": ["node_modules"]
 }

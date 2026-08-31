@@ -3,7 +3,7 @@
 import * as crypto from "node:crypto";
 import { APP_VERSION } from "@common";
 import { db, identities, users, workspaceMembers, workspaces } from "@db";
-import { type FormState, getPublicEnv, getServerEnv } from "@schema";
+import {type FormState, getPublicEnv, getServerEnv, handleAction} from "@schema";
 import argon2 from "argon2";
 import { Queue, QueueEvents } from "bullmq";
 import { decode } from "decode-formdata";
@@ -15,6 +15,7 @@ import { getRedis } from "@/lib/actions/get-redis";
 import { updateWorkSpaceContext } from "@/lib/actions/workspace";
 import { SITE_FEATURES } from "@/lib/site-features";
 import { withLocale } from "@/lib/utils";
+import { runHook } from "@/lib/extensions/hooks";
 
 const initProviders = async (userId: string, workspaceId: string) => {
 	const { REDIS_PASSWORD, REDIS_HOST, REDIS_PORT } = getServerEnv();
@@ -35,6 +36,9 @@ const initProviders = async (userId: string, workspaceId: string) => {
 };
 
 const createUserWorkspace = async (userId: string, name?: string) => {
+	await runHook("workspace.beforeCreate", {
+		userId,
+	});
 	const [workspace] = await db
 		.insert(workspaces)
 		.values({
@@ -183,41 +187,45 @@ export async function signup(
 	_prev: FormState,
 	formData: FormData,
 ): Promise<FormState> {
-	const { DISABLE_SIGNUP } = getPublicEnv();
+	return handleAction(async () => {
+		const { DISABLE_SIGNUP } = getPublicEnv();
 
-	if (DISABLE_SIGNUP) {
-		return {
-			success: false,
-			error: "auth.signupDisabled",
+		if (DISABLE_SIGNUP) {
+			return {
+				success: false,
+				error: "auth.signupDisabled",
+			};
+		}
+
+		const { workspaceName, email, password, locale } = decode(formData) as {
+			email: string;
+			password: string;
+			workspaceName: string;
+			locale?: string;
 		};
-	}
 
-	const { workspaceName, email, password, locale } = decode(formData) as {
-		email: string;
-		password: string;
-		workspaceName: string;
-		locale?: string;
-	};
+		if (!email || !password) {
+			return { error: "auth.missingCredentials" };
+		}
 
-	if (!email || !password) {
-		return { error: "auth.missingCredentials" };
-	}
+		const passwordHash = await argon2.hash(password);
 
-	const passwordHash = await argon2.hash(password);
+		const user = await createUserWithWorkspace({
+			email,
+			passwordHash,
+			workspaceName,
+		});
 
-	const user = await createUserWithWorkspace({
-		email,
-		passwordHash,
-		workspaceName,
-	});
+		if ("error" in user) {
+			return { error: user.error };
+		}
 
-	if ("error" in user) {
-		return { error: user.error };
-	}
+		await signInUserAndRedirect(user, locale);
 
-	await signInUserAndRedirect(user, locale);
+		return { success: true, message: "auth.welcome" };
 
-	return { success: true, message: "auth.welcome" };
+	})
+
 }
 
 export type TokenClaims = JWTPayload & {

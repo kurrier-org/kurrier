@@ -6,9 +6,12 @@
 		"paths": {
 			"@schema": ["../../packages/schema/src/index.ts"],
 			"@schema/*": ["../../packages/schema/src/*"],
-			"@providers": ["../../packages/providers/src/index.ts"],
-			"@providers/*": ["../../packages/providers/src/*"]
-		}
+			"@db": ["../../packages/db/src/index.ts"],
+			"@db/*": ["../../packages/db/src/*"],
+			"@common": ["../../packages/common/src/index.ts"],
+			"@common/*": ["../../packages/common/src/*"]
+		},
+		"lib": ["ES2021.String"]
 	},
 	"exclude": ["node_modules"]
 }
