@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 4.0.0
+
+### Major Changes
+
+- [`d07e129`](https://github.com/kurrier-org/kurrier/commit/d07e1290b9517ce7e2c71bb35716a1400acead10) Thanks [@krokhale](https://github.com/krokhale)! - Major mail reliability, responsive UI, email composer and viewer improvements, internationalization, and dependency updates.
+
 ## 3.9.6
 
 ### Patch Changes
