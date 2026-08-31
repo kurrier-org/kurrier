@@ -158,10 +158,11 @@ export type MicrosoftCredentials = Record<string, unknown>;
 export function createMicrosoftCredentials(input: {
 	email: string;
 	clientId: string;
+	clientSecret?: string;
 	tenant: string;
 	token: MicrosoftTokenSet;
 }): MicrosoftCredentials {
-	const { email, clientId, tenant, token } = input;
+	const { email, clientId, clientSecret, tenant, token } = input;
 	return {
 		provider: "microsoft",
 		SMTP_HOST: "smtp.office365.com",
@@ -181,6 +182,7 @@ export function createMicrosoftCredentials(input: {
 		MICROSOFT_REFRESH_TOKEN: token.refreshToken,
 		MICROSOFT_TENANT: tenant,
 		MICROSOFT_CLIENT_ID: clientId,
+		...(clientSecret ? { MICROSOFT_CLIENT_SECRET: clientSecret } : {}),
 		MICROSOFT_SCOPES: MICROSOFT_MAIL_SCOPES.join(" "),
 	};
 }

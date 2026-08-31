@@ -94,6 +94,7 @@ export async function GET(req: NextRequest) {
 		...createMicrosoftCredentials({
 			email,
 			clientId,
+			clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
 			tenant: process.env.MICROSOFT_TENANT ?? "common",
 			token,
 		}),

@@ -18,6 +18,7 @@ test("OAuth-created Microsoft credentials reach the refresh loader", async () =>
 	const credentials = createMicrosoftCredentials({
 		email: "person@example.com",
 		clientId: "client",
+		clientSecret: "client-secret",
 		tenant: "common",
 		token: {
 			accessToken: "expired-access",
@@ -43,6 +44,7 @@ test("OAuth-created Microsoft credentials reach the refresh loader", async () =>
 			),
 	});
 	assert.equal(result.provider, "microsoft");
+	assert.equal(result.MICROSOFT_CLIENT_SECRET, "client-secret");
 	assert.equal(result.IMAP_ACCESS_TOKEN, "fresh-access");
 	assert.equal(persisted?.MICROSOFT_REFRESH_TOKEN, "fresh-refresh");
 });
