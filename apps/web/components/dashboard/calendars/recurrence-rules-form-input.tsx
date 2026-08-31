@@ -9,11 +9,12 @@ import {
 	type UntilMode,
 	WEEKDAY_OPTIONS,
 } from "@schema";
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ReusableFormItems } from "@/components/common/reusable-form-items";
-import { useOptionalI18n } from "@/components/providers/dictionary-provider";
+import { useI18n } from "@/components/providers/dictionary-provider";
+import type { Dictionary } from "@/lib/dictionaries";
 
-const WEEKDAY_LABEL_KEYS: Record<string, string> = {
+const WEEKDAY_LABEL_KEYS = {
 	MO: "weekdayMon",
 	TU: "weekdayTue",
 	WE: "weekdayWed",
@@ -21,7 +22,12 @@ const WEEKDAY_LABEL_KEYS: Record<string, string> = {
 	FR: "weekdayFri",
 	SA: "weekdaySat",
 	SU: "weekdaySun",
-};
+} as const satisfies Record<string, keyof Dictionary["calendar"]>;
+
+function weekdayLabel(dict: Dictionary, value: string, fallback: string) {
+	const key = WEEKDAY_LABEL_KEYS[value as keyof typeof WEEKDAY_LABEL_KEYS];
+	return key ? dict.calendar[key] : fallback;
+}
 
 function parseInitialRrule(value?: string | null): ParsedRRuleState {
 	const base: ParsedRRuleState = {
@@ -41,7 +47,7 @@ function parseInitialRrule(value?: string | null): ParsedRRuleState {
 		return acc;
 	}, {});
 
-	const freqRaw = parts["FREQ"];
+	const freqRaw = parts.FREQ;
 	if (
 		freqRaw === "DAILY" ||
 		freqRaw === "WEEKLY" ||
@@ -51,19 +57,19 @@ function parseInitialRrule(value?: string | null): ParsedRRuleState {
 		base.freq = freqRaw;
 	}
 
-	if (parts["INTERVAL"]) {
-		const parsed = Number(parts["INTERVAL"]);
+	if (parts.INTERVAL) {
+		const parsed = Number(parts.INTERVAL);
 		if (!Number.isNaN(parsed) && parsed > 0) {
 			base.interval = parsed;
 		}
 	}
 
-	if (parts["BYDAY"]) {
-		base.byWeekdays = parts["BYDAY"].split(",").filter(Boolean);
+	if (parts.BYDAY) {
+		base.byWeekdays = parts.BYDAY.split(",").filter(Boolean);
 	}
 
-	if (parts["UNTIL"]) {
-		const s = parts["UNTIL"];
+	if (parts.UNTIL) {
+		const s = parts.UNTIL;
 		const datePart = s.slice(0, 8);
 		const year = Number(datePart.slice(0, 4));
 		const month = Number(datePart.slice(4, 6));
@@ -72,8 +78,8 @@ function parseInitialRrule(value?: string | null): ParsedRRuleState {
 			base.untilDate = new Date(Date.UTC(year, month - 1, day));
 			base.untilMode = "on";
 		}
-	} else if (parts["COUNT"]) {
-		const c = Number(parts["COUNT"]);
+	} else if (parts.COUNT) {
+		const c = Number(parts.COUNT);
 		if (!Number.isNaN(c) && c > 0) {
 			base.count = c;
 			base.untilMode = "after";
@@ -103,9 +109,7 @@ function RecurrenceRulesFormInput({
 	name,
 	defaultValue,
 }: RecurrenceRulesFormInputProps) {
-	const i18n = useOptionalI18n();
-	const dict = i18n?.dict;
-	const format = i18n?.format;
+	const { dict, format } = useI18n();
 	const initial = useMemo(
 		() => parseInitialRrule(defaultValue),
 		[defaultValue],
@@ -151,13 +155,13 @@ function RecurrenceRulesFormInput({
 
 	const intervalUnitLabel =
 		freq === "DAILY"
-			? format?.message(interval, dict?.calendar?.intervalDaysCount ?? { other: "days" }) ?? "days"
+			? format.message(interval, dict.calendar.intervalDaysCount)
 			: freq === "WEEKLY"
-				? format?.message(interval, dict?.calendar?.intervalWeeksCount ?? { other: "weeks" }) ?? "weeks"
+				? format.message(interval, dict.calendar.intervalWeeksCount)
 				: freq === "MONTHLY"
-					? format?.message(interval, dict?.calendar?.intervalMonthsCount ?? { other: "months" }) ?? "months"
+					? format.message(interval, dict.calendar.intervalMonthsCount)
 					: freq === "YEARLY"
-						? format?.message(interval, dict?.calendar?.intervalYearsCount ?? { other: "years" }) ?? "years"
+						? format.message(interval, dict.calendar.intervalYearsCount)
 						: "";
 
 	const fields: BaseFormProps["fields"] = [
@@ -316,11 +320,7 @@ function RecurrenceRulesFormInput({
 										<Checkbox
 											key={opt.value}
 											value={opt.value}
-											label={
-												(
-													dict?.calendar as Record<string, string> | undefined
-												)?.[WEEKDAY_LABEL_KEYS[opt.value]] ?? opt.label
-											}
+											label={weekdayLabel(dict, opt.value, opt.label)}
 											size="xs"
 										/>
 									))}

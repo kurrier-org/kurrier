@@ -10,7 +10,7 @@ import type {
 } from "@schema";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect } from "react";
-import { useOptionalI18n } from "@/components/providers/dictionary-provider";
+import { useI18n } from "@/components/providers/dictionary-provider";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 
 type MonthGridProps = {
@@ -31,9 +31,7 @@ export default function MonthGrid({
 	attendeeContacts,
 	workspacePublicId,
 }: MonthGridProps) {
-	const i18n = useOptionalI18n();
-	const dict = i18n?.dict;
-	const format = i18n?.format;
+	const { dict, format } = useI18n();
 	const { state, setState } = useDynamicContext<CalendarState>();
 	const params = useParams();
 	const router = useRouter();
