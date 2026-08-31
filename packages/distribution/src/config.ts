@@ -1,4 +1,6 @@
-export type DistributionConfig = {
+export type DistributionConfig<
+    Extra extends Record<string, unknown> = Record<string, never>,
+> = {
     id: string;
     locales: readonly string[];
     defaultLocale: string;
@@ -6,7 +8,7 @@ export type DistributionConfig = {
         drive: boolean;
         localLogin: boolean;
     };
-};
+} & Extra;
 const configs = import.meta.glob("./*/config.ts", {
     eager: true,
 }) as Record<
