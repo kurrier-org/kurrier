@@ -7,7 +7,9 @@
 			"@schema": ["../../packages/schema/src/index.ts"],
 			"@schema/*": ["../../packages/schema/src/*"],
 			"@providers": ["../../packages/providers/src/index.ts"],
-			"@providers/*": ["../../packages/providers/src/*"]
+			"@providers/*": ["../../packages/providers/src/*"],
+			"@distribution": ["../../packages/distribution/src/index.ts"],
+			"@distribution/*": ["../../packages/distribution/src/*"]
 		}
 	},
 	"exclude": ["node_modules"]
