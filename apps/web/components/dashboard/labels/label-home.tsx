@@ -13,6 +13,7 @@ import colors from "tailwindcss/colors";
 import AddNewLabel from "@/components/dashboard/labels/add-new-label";
 import ManageLabels from "@/components/dashboard/labels/manage-labels";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useDashboardPath } from "@/hooks/use-dashboard-path";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 
 type LabelWithCount = LabelEntity & {
@@ -77,8 +78,14 @@ function LabelHome() {
 	const labels = (state.labels ?? []) as LabelWithCount[];
 
 	const treeData = buildLabelTree(labels);
-	const { identityPublicId, mailboxSlug, labelSlug } = useParams();
+	const { identityPublicId, mailboxSlug, labelSlug, wPublicId } = useParams<{
+		identityPublicId: string;
+		mailboxSlug: string;
+		labelSlug: string;
+		wPublicId: string;
+	}>();
 	const router = useRouter();
+	const dashboardPath = useDashboardPath(wPublicId);
 
 	const selected = React.useMemo(() => {
 		const match = labels.find((l) => l.slug === labelSlug);
@@ -99,11 +106,14 @@ function LabelHome() {
 		const color = labelNode.colorBg ?? colors.indigo["500"];
 		const routeTo =
 			state.scope === "contact"
-				? `/w/${state.workspacePublicId}/dashboard/contacts/label/${labelNode.slug}`
-				: `/w/${state.workspacePublicId}/dashboard/mail/${identityPublicId}/${mailboxSlug}/label/${labelNode.slug}`;
+				? dashboardPath(`contacts/label/${labelNode.slug}`)
+				: dashboardPath(
+						`mail/${identityPublicId}/${mailboxSlug}/label/${labelNode.slug}`,
+					);
 
 		return (
-			<div
+			<button
+				type="button"
 				{...elementProps}
 				onClick={(e) => {
 					elementProps.onClick?.(e);
@@ -112,8 +122,17 @@ function LabelHome() {
 					}
 					router.push(routeTo);
 				}}
+				onKeyDown={(event) => {
+					if (event.key !== "Enter" && event.key !== " ") {
+						return;
+					}
+					event.preventDefault();
+					if (selected !== labelNode.value) {
+						router.push(routeTo);
+					}
+				}}
 				className={`
-          flex items-center gap-2 rounded-md px-2 py-1 cursor-pointer
+		  flex w-full items-center gap-2 rounded-md px-2 py-1 cursor-pointer text-left
           hover:bg-gray-100 dark:hover:bg-slate-800/60
           ${isSelected ? "bg-gray-200 dark:bg-slate-800/80" : ""}
         `}
@@ -141,7 +160,7 @@ function LabelHome() {
 				<span className="ml-auto text-xs text-muted-foreground tabular-nums mr-6">
 					{labelNode.count}
 				</span>
-			</div>
+			</button>
 		);
 	};
 

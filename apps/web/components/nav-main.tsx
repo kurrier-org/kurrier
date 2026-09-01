@@ -33,6 +33,7 @@ import {
 	SidebarMenuSubButton,
 	SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import { useDashboardPath } from "@/hooks/use-dashboard-path";
 
 export function NavMain({
 	workspacePublicId,
@@ -44,6 +45,7 @@ export function NavMain({
 	const pathname = usePathname();
 	const dict = useDictionary();
 	const { drive } = useSiteFeatures();
+	const dashboardPath = useDashboardPath(workspacePublicId);
 
 	const navPlatformItems: {
 		title: string;
@@ -53,7 +55,7 @@ export function NavMain({
 	}[] = [
 		{
 			title: dict.dashboard.overview,
-			url: `/w/${workspacePublicId}/dashboard/platform/overview`,
+			url: dashboardPath("platform/overview"),
 			icon: LayoutDashboard,
 			items: [],
 		},
@@ -61,13 +63,13 @@ export function NavMain({
 			? [
 					{
 						title: dict.platform.providers,
-						url: `/w/${workspacePublicId}/dashboard/platform/providers`,
+						url: dashboardPath("platform/providers"),
 						icon: Plug,
 						items: [],
 					},
 					{
 						title: dict.platform.identities,
-						url: `/w/${workspacePublicId}/dashboard/platform/identities`,
+						url: dashboardPath("platform/identities"),
 						icon: Send,
 						items: [],
 					},
@@ -77,7 +79,7 @@ export function NavMain({
 			? [
 					{
 						title: dict.platform.workspace,
-						url: `/w/${workspacePublicId}/dashboard/platform/workspace`,
+						url: dashboardPath("platform/workspace"),
 						icon: Blocks,
 						items: [],
 					},
@@ -85,7 +87,7 @@ export function NavMain({
 						? [
 								{
 									title: dict.platform.storage,
-									url: `/w/${workspacePublicId}/dashboard/platform/storage`,
+									url: dashboardPath("platform/storage"),
 									icon: HardDrive,
 									items: [],
 								},
@@ -93,25 +95,25 @@ export function NavMain({
 						: []),
 					{
 						title: dict.vault.vault,
-						url: `/w/${workspacePublicId}/dashboard/platform/vault`,
+						url: dashboardPath("platform/vault"),
 						icon: Vault,
 						items: [],
 					},
 					{
 						title: dict.platform.apiKeys,
-						url: `/w/${workspacePublicId}/dashboard/platform/api-keys`,
+						url: dashboardPath("platform/api-keys"),
 						icon: Key,
 						items: [],
 					},
 					{
 						title: dict.platform.webhooks,
-						url: `/w/${workspacePublicId}/dashboard/platform/webhooks`,
+						url: dashboardPath("platform/webhooks"),
 						icon: Webhook,
 						items: [],
 					},
 					{
 						title: dict.platform.syncServices,
-						url: `/w/${workspacePublicId}/dashboard/platform/sync-services`,
+						url: dashboardPath("platform/sync-services"),
 						icon: FolderSync,
 						items: [],
 					},

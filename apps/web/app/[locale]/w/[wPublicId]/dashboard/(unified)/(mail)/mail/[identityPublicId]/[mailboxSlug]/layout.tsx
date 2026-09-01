@@ -1,6 +1,6 @@
-import React, { ReactNode, Suspense } from "react";
+import { type ReactNode, Suspense } from "react";
+import { DashboardHeaderLoading } from "@/components/dashboard/dashboard-loading";
 import MailboxSearchHeader from "@/components/mailbox/mailbox-search-header";
-import Loading from "@/app/loading";
 
 type LayoutProps = {
 	children: ReactNode;
@@ -12,13 +12,13 @@ type LayoutProps = {
 };
 
 export default function DashboardLayout({
-											children,
-											thread,
-											params,
-										}: LayoutProps) {
+	children,
+	thread,
+	params,
+}: LayoutProps) {
 	return (
 		<>
-			<Suspense fallback={<Loading />}>
+			<Suspense fallback={<DashboardHeaderLoading />}>
 				<MailboxSearchHeader params={params} />
 			</Suspense>
 
