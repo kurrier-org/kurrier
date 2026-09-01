@@ -2,10 +2,10 @@ import Link from "next/link";
 import * as React from "react";
 
 import KurrierLogo from "@/components/common/kurrier-logo";
+import { DISTRIBUTION_CONFIG } from "@distribution/config";
 
-export async function LandingPage({ locale }: {
-    locale: string;
-}) {
+export async function LandingPage() {
+    const locale = DISTRIBUTION_CONFIG.defaultLocale;
 
     return (
         <div className="bg-muted flex min-h-svh items-center justify-center p-6">
@@ -22,6 +22,7 @@ export async function LandingPage({ locale }: {
                         <h1 className="text-xl font-semibold">
                             Welcome to Kurrier
                         </h1>
+
                         <p className="text-muted-foreground mt-2 text-sm">
                             Your open source email workspace.
                         </p>
