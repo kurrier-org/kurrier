@@ -43,6 +43,7 @@ import { isSignedIn } from "@/lib/actions/auth";
 import slugify from "@sindresorhus/slugify";
 import { redirect } from "next/navigation";
 import { PAGE_SIZE } from "@common/mail-client";
+import { deduplicateThreadMessages } from "@common";
 import { getRedis } from "@/lib/actions/get-redis";
 import dayjs from "dayjs";
 import {fetchWorkspace} from "@/lib/actions/workspace";
@@ -630,9 +631,16 @@ export const backfillAccount = async (identityId: string, workspaceId: string) =
 	);
 };
 
-export const fetchWebMailThreadDetail = cache(async (threadId: string) => {
+export const fetchWebMailThreadDetail = cache(async (threadId: string, mailboxId: string) => {
 	const rls = await rlsClient();
 	const result = await rls(async (tx) => {
+		const [activeMailbox] = await tx
+			.select({ identityId: mailboxes.identityId })
+			.from(mailboxes)
+			.where(eq(mailboxes.id, mailboxId))
+			.limit(1);
+		if (!activeMailbox) return { thread: null, messages: [] };
+
 		const rows = await tx
 			.select({
 				thread: threads,
@@ -640,7 +648,8 @@ export const fetchWebMailThreadDetail = cache(async (threadId: string) => {
 			})
 			.from(threads)
 			.innerJoin(messages, eq(messages.threadId, threads.id))
-			.where(eq(threads.id, threadId))
+			.innerJoin(mailboxes, eq(messages.mailboxId, mailboxes.id))
+			.where(and(eq(threads.id, threadId), eq(mailboxes.identityId, activeMailbox.identityId)))
 			.orderBy(asc(sql`coalesce(${messages.date}, ${messages.createdAt})`));
 
 		if (rows.length === 0) {
@@ -651,7 +660,10 @@ export const fetchWebMailThreadDetail = cache(async (threadId: string) => {
 		}
 
 		const thread = rows[0].thread;
-		const msgs = rows.map((r) => r.message);
+		const msgs = deduplicateThreadMessages(
+			rows.map((r) => r.message),
+			mailboxId,
+		);
 		return { thread, messages: msgs };
 	});
 	return result;

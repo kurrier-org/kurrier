@@ -9,11 +9,20 @@ import {
 	MessageAttachmentCreate,
 	MessageAttachmentInsertSchema,
 	mailSubscriptions,
+	mailboxes,
 	workspaces,
 } from "@db";
-import { generateSnippet, upsertMailboxThreadItem } from "@common";
-import { randomUUID } from "crypto";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import {
+	buildThreadingCandidates,
+	extractThreadingHeader,
+	parseThreadingReferences,
+	resolveMessageId,
+	selectThreadParent,
+	generateSnippet,
+	upsertMailboxThreadItem,
+} from "@common";
+import { randomUUID } from "node:crypto";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { getRedis } from "../lib/get-redis";
 import {s3} from "../lib/create-s3-client";
 import {PutObjectCommand} from "@aws-sdk/client-s3";
@@ -140,21 +149,25 @@ function generateFileName(att: Attachment) {
 }
 
 export async function createOrInitializeThread(
-	parsed: ParsedMail & { ownerId: string, workspaceId: string },
+	parsed: ParsedMail & { ownerId: string; workspaceId: string; mailboxId: string },
 ) {
-	const { ownerId, workspaceId } = parsed;
-	const inReplyTo = parsed.inReplyTo?.trim() || null;
+	const { ownerId, workspaceId, mailboxId } = parsed;
+	const inReplyTo = parsed.inReplyTo ?? null;
 	const refs = Array.isArray(parsed.references)
 		? parsed.references
 		: parsed.references
 			? [parsed.references]
 			: [];
-	const candidates = Array.from(
-		new Set([inReplyTo, ...refs].filter(Boolean).map((s) => String(s))),
-	);
+	const candidates = buildThreadingCandidates(inReplyTo, refs);
 
 	return db.transaction(async (tx) => {
 		let existingThread = null;
+		const [mailbox] = await tx
+			.select({ identityId: mailboxes.identityId })
+			.from(mailboxes)
+			.where(eq(mailboxes.id, mailboxId))
+			.limit(1);
+		if (!mailbox) throw new Error(`Mailbox ${mailboxId} not found`);
 
 		if (candidates.length > 0) {
 			const parentMsgs = await tx
@@ -165,18 +178,22 @@ export async function createOrInitializeThread(
 					date: messages.date,
 				})
 				.from(messages)
+				.innerJoin(mailboxes, eq(messages.mailboxId, mailboxes.id))
 				.where(
 					and(
 						eq(messages.ownerId, ownerId),
+						eq(mailboxes.identityId, mailbox.identityId),
 						inArray(messages.messageId, candidates),
 					),
-				)
-				.orderBy(desc(messages.date ?? sql`now()`));
+				);
 
 			if (parentMsgs.length) {
-				const chosen = inReplyTo
-					? parentMsgs.find((m) => m.messageId === inReplyTo)
-					: parentMsgs[0];
+				const selectedId = selectThreadParent(
+					inReplyTo,
+					refs,
+					parentMsgs.map((message) => message.messageId),
+				);
+				const chosen = parentMsgs.find((m) => m.messageId === selectedId);
 
 				if (chosen?.threadId) {
 					const [t] = await tx
@@ -250,16 +267,13 @@ export async function parseAndStoreEmail(
 
 	const parsed = await simpleParser(rawEmail);
 	const headers = parsed.headers as Map<string, any>;
-
-	const messageId =
-		parsed.messageId || String(headers.get("message-id") || "").trim();
-
-	if (!messageId) {
-		console.warn(
-			`[parseAndStoreEmail] Skipping message with no Message-ID (mailboxId=${mailboxId}, storageKey=${rawStorageKey})`,
-		);
-		return null;
-	}
+	const rawInReplyTo = extractThreadingHeader(rawEmail, "in-reply-to");
+	const rawReferences = extractThreadingHeader(rawEmail, "references");
+	const inReplyTo = rawInReplyTo ?? null;
+	const references = parseThreadingReferences(
+		rawReferences ? [rawReferences] : [],
+	);
+	const messageId = resolveMessageId(rawEmail, parsed.messageId, String(headers.get("message-id") || ""));
 
 	/**
 	 * Important for IMAP replay / UIDVALIDITY recovery:
@@ -334,12 +348,18 @@ export async function parseAndStoreEmail(
 
 	const thread = await createOrInitializeThread({
 		...parsed,
+		inReplyTo,
+		references,
 		ownerId,
 		workspaceId,
+		mailboxId,
 	});
 
 	const decoratedParsed = {
 		...parsed,
+		messageId,
+		inReplyTo,
+		references: references.length ? references : null,
 		mailboxId,
 		workspaceId,
 		threadId: thread.id,
@@ -347,11 +367,6 @@ export async function parseAndStoreEmail(
 		headersJson: Object.fromEntries(parsed.headers as Map<string, any>),
 		hasAttachments: (parsed.attachments?.length ?? 0) > 0,
 		rawStorageKey,
-		references: Array.isArray(parsed.references)
-			? parsed.references
-			: parsed.references
-				? [parsed.references]
-				: null,
 		seen: false,
 		answered: false,
 		flagged: false,

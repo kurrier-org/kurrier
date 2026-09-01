@@ -23,12 +23,15 @@ async function Page({
 	}>;
 }) {
 	const { threadId, identityPublicId, mailboxSlug } = await params;
-	const [{ activeMailbox, mailboxSync }, activeThread, workspacePublicId] =
-		await Promise.all([
-			fetchMailbox(identityPublicId, mailboxSlug),
-			fetchWebMailThreadDetail(threadId),
-			getWorkspacePublicId(),
-		]);
+	const { activeMailbox, mailboxSync } = await fetchMailbox(
+		identityPublicId,
+		mailboxSlug,
+	);
+
+	const [activeThread, workspacePublicId] = await Promise.all([
+		fetchWebMailThreadDetail(threadId, activeMailbox.id),
+		getWorkspacePublicId(),
+	]);
 
 	const { byMessageId } = await fetchThreadMailSubscriptions({
 		ownerId: activeMailbox.ownerId,
