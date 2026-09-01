@@ -1,23 +1,25 @@
-import { simpleParser, ParsedMail, Attachment } from "mailparser";
+import { randomUUID } from "node:crypto";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { generateSnippet, upsertMailboxThreadItem } from "@common";
 import {
 	db,
-	messages,
-	messageAttachments,
-	threads,
-	MessageInsertSchema,
-	MessageCreate,
 	MessageAttachmentCreate,
 	MessageAttachmentInsertSchema,
+	MessageCreate,
+	MessageInsertSchema,
 	mailSubscriptions,
+	messageAttachments,
+	messages,
+	threads,
+	webPushDeliveries,
+	webPushSubscriptions,
 	workspaces,
 } from "@db";
-import { generateSnippet, upsertMailboxThreadItem } from "@common";
-import { randomUUID } from "crypto";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { type Attachment, type ParsedMail, simpleParser } from "mailparser";
+import { s3 } from "../lib/create-s3-client";
 import { getRedis } from "../lib/get-redis";
-import {s3} from "../lib/create-s3-client";
-import {PutObjectCommand} from "@aws-sdk/client-s3";
-import {upsertWorkspaceSharedContactFromMessage} from "../lib/message-parser-contacts";
+import { upsertWorkspaceSharedContactFromMessage } from "../lib/message-parser-contacts";
 
 const SEARCH_BATCH_SIZE = 100;
 const WEBHOOK_BATCH_SIZE = 100;
@@ -381,13 +383,26 @@ export async function parseAndStoreEmail(
 		MessageInsertSchema.parse(decoratedParsed),
 	);
 
-	const [message] = await db
-		.insert(messages)
-		.values(messagePayload as MessageCreate)
-		.onConflictDoNothing({
-			target: [messages.mailboxId, messages.messageId],
-		})
-		.returning();
+	const [message, pushSubscriptions] = await db.transaction(async (tx) => {
+		const [inserted] = await tx
+			.insert(messages)
+			.values(messagePayload as MessageCreate)
+			.onConflictDoNothing({
+				target: [messages.mailboxId, messages.messageId],
+			})
+			.returning();
+		if (!inserted) return [inserted, []] as const;
+		const subscriptions = await tx
+			.select({ id: webPushSubscriptions.id })
+			.from(webPushSubscriptions)
+			.where(eq(webPushSubscriptions.userId, ownerId));
+		if (subscriptions.length) {
+			await tx.insert(webPushDeliveries).values(
+				subscriptions.map(({ id }) => ({ messageId: inserted.id, subscriptionId: id })),
+			);
+		}
+		return [inserted, subscriptions] as const;
+	});
 
 	/**
 	 * Another worker/replay may have inserted the message between our
@@ -407,6 +422,19 @@ export async function parseAndStoreEmail(
 		}
 
 		return null;
+	}
+
+	if (!existingMessage) {
+		const { webPushQueue } = await getRedis();
+		for (const subscription of pushSubscriptions) {
+			await webPushQueue.add("web-push:deliver", { messageId: message.id, subscriptionId: subscription.id }, {
+				jobId: `web-push:${message.id}:${subscription.id}`,
+				attempts: 5,
+				backoff: { type: "exponential", delay: 5000 },
+				removeOnComplete: true,
+				removeOnFail: false,
+			});
+		}
 	}
 
 	await db

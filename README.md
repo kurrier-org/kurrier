@@ -204,3 +204,7 @@ Please read the guidelines:
 PRs, issues, ideas, and feedback are all appreciated.
 
 ---
+
+## Web Push configuration
+
+Set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` in the worker and web environments. Generate keys with `pnpm exec web-push generate-vapid-keys`; never commit the private key.
