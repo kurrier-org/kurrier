@@ -1,20 +1,8 @@
-import { redirect } from "next/navigation";
-import { getDefaultWorkspacePath, isSignedIn } from "@/lib/actions/auth";
-import { withLocale } from "@/lib/utils";
+import { DISTRIBUTION_LAYOUTS } from "@distribution/layouts";
 
-export default async function DashboardLayout({
-	children,
-	params,
-}: {
+export default function AuthLayout(props: {
 	children: React.ReactNode;
 	params: Promise<{ locale: string }>;
 }) {
-	const { locale } = await params;
-	const user = await isSignedIn();
-
-	if (user) {
-		redirect(withLocale(locale, await getDefaultWorkspacePath(user)));
-	}
-
-	return <>{children}</>;
+	return <DISTRIBUTION_LAYOUTS.AuthLayout {...props} />;
 }

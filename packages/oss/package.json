@@ -1,0 +1,23 @@
+{
+	"name": "@kurrier/oss",
+	"private": true,
+	"version": "1.0.0",
+	"description": "Open-source Kurrier implementation, including OSS-specific pages, components, features, and integrations.",
+	"type": "module",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "Krishna Rokhale",
+	"license": "ISC",
+	"dependencies": {
+		"@headlessui/react": "^2.2.10",
+		"@heroicons/react": "^2.2.0",
+		"next": "^16.3.4",
+		"react": "^19.2.8",
+		"react-dom": "^19.2.8"
+	},
+	"devDependencies": {
+		"@types/react": "^19.2.0"
+	}
+}

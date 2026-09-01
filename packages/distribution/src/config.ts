@@ -14,7 +14,7 @@ const configs = import.meta.glob("./*/config.ts", {
 }) as Record<
     string,
     {
-        DISTRIBUTION_CONFIG: DistributionConfig;
+        DISTRIBUTION_CONFIG: DistributionConfig<{}>;
     }
 >;
 export const DEFAULT_DISTRIBUTION = "oss" as const;

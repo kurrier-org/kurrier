@@ -1,9 +1,4 @@
 export { DISTRIBUTION_CONFIG, DEFAULT_DISTRIBUTION } from "./config";
-
-export {
-    DistributionLandingPage,
-    DistributionLoginPage,
-    DistributionSignupPage,
-} from "./pages";
-
+export { DISTRIBUTION_PAGES } from "./pages";
+export { DISTRIBUTION_LAYOUTS } from "./layouts";
 export { registerDistribution } from "./register";
