@@ -10,7 +10,7 @@ import GuestList, {
 	UiGuest,
 	UiGuestStatus,
 } from "@/components/dashboard/calendars/guest-list";
-import { useOptionalI18n } from "@/components/providers/dictionary-provider";
+import { useI18n } from "@/components/providers/dictionary-provider";
 
 type SearchableContactsOption = ComboboxItem & {
 	row?: {
@@ -28,9 +28,7 @@ function AddGuests({
 	name: string;
 	onChange?: (value: string[]) => void;
 }) {
-	const i18n = useOptionalI18n();
-	const dict = i18n?.dict;
-	const format = i18n?.format;
+	const { dict, format } = useI18n();
 	const { state } = useDynamicContext<CalendarState>();
 	const editEvent = state.activePopoverEditEvent;
 	const editEventId = editEvent?.id || "";

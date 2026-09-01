@@ -8,7 +8,6 @@ import type {
 	EventSlotFragment,
 	EventSlotRenderFragment,
 } from "@schema";
-import dayjs from "dayjs";
 import { useParams } from "next/navigation";
 import React, { useEffect } from "react";
 import AllDayEventsRow from "@/components/dashboard/calendars/all-day-events-row";
@@ -18,16 +17,16 @@ import {
 	layoutDayFragments,
 	splitFragmentIntoHours,
 } from "@/components/dashboard/calendars/client-helpers";
-import { useOptionalI18n } from "@/components/providers/dictionary-provider";
+import { useI18n } from "@/components/providers/dictionary-provider";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 function formatHourLabel(
 	hour: number,
-	format?: { time: (value: Date) => string },
+	format: { timeOfDay: (hour: number) => string },
 ) {
-	return format?.time(dayjs().hour(hour).minute(0).toDate()) ?? "";
+	return format.timeOfDay(hour);
 }
 
 export function WeekGrid({
@@ -43,8 +42,7 @@ export function WeekGrid({
 	attendeeContacts: Promise<ComposeContact[]>;
 	allDayByDay: Map<string, AllDayFragment[]>;
 }) {
-	const i18n = useOptionalI18n();
-	const format = i18n?.format;
+	const { format } = useI18n();
 	const { setState, state } = useDynamicContext<CalendarState>();
 	const params = useParams();
 	const dayjsTz = getDayjsTz(state.defaultCalendar.timezone);

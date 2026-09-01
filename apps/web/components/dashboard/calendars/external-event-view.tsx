@@ -12,7 +12,7 @@ import {
 	yesCalendarInvite,
 } from "@/lib/actions/calendar";
 import { getDayjsTz } from "@common/day-js-extended";
-import { useOptionalI18n } from "@/components/providers/dictionary-provider";
+import { useI18n } from "@/components/providers/dictionary-provider";
 
 type UiGuestStatus =
 	| "accepted"
@@ -22,9 +22,7 @@ type UiGuestStatus =
 	| null;
 
 function ExternalEventView() {
-	const i18n = useOptionalI18n();
-	const dict = i18n?.dict;
-	const format = i18n?.format;
+	const { dict, format } = useI18n();
 	const { state } = useDynamicContext<CalendarState>();
 	const editEvent = state.activePopoverEditEvent ?? null;
 	const editEventId = editEvent?.id ?? null;
