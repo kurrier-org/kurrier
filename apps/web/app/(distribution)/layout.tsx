@@ -1,9 +1,19 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { cookies } from "next/headers";
 
 import "../globals.css";
 
 import { getPublicEnv } from "@schema";
+import {
+    MODE_COOKIE,
+    RESOLVED_COOKIE,
+    THEME_COOKIE,
+    type ThemeMode,
+    ThemeModeSchema,
+    type ThemeName,
+    ThemeNameSchema,
+} from "@schema/types/themes";
 
 import { AppearanceProvider } from "@/components/providers/appearance-provider";
 import { ConfigProvider } from "@/components/providers/config-provider";
@@ -37,13 +47,31 @@ export const metadata: Metadata = {
     description: "Mailbox, but nice.",
 };
 
-export default function LandingLayout({
-                                          children,
-                                      }: {
+export default async function DistributionLayout({
+                                                     children,
+                                                 }: {
     children: React.ReactNode;
 }) {
-    const theme = "indigo" as const;
-    const mode = "system" as const;
+    const jar = await cookies();
+
+    const theme: ThemeName = ThemeNameSchema.catch("indigo").parse(
+        jar.get(THEME_COOKIE)?.value,
+    );
+
+    const mode: ThemeMode = ThemeModeSchema.catch("system").parse(
+        jar.get(MODE_COOKIE)?.value,
+    );
+
+    const resolved = jar.get(RESOLVED_COOKIE)?.value as
+        | Partial<ThemeMode>
+        | undefined;
+
+    const initialDark =
+        mode === "dark"
+            ? true
+            : mode === "light"
+                ? false
+                : resolved === "dark";
 
     const publicConfig = getPublicEnv();
 
@@ -56,13 +84,11 @@ export default function LandingLayout({
         <html
             lang={DISTRIBUTION_CONFIG.defaultLocale}
             data-theme={theme}
+            className={initialDark ? "dark" : ""}
             {...mantineHtmlProps}
         >
         <head>
-            <ColorSchemeScript
-                defaultColorScheme={colorScheme}
-                nonce="8IBTHwOdqNKAWeKl7plt8g=="
-            />
+            <ColorSchemeScript defaultColorScheme={colorScheme} />
         </head>
 
         <body

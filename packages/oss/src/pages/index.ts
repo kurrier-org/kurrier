@@ -1,3 +1,13 @@
-export { LoginPage } from "./auth/login";
-export { SignupPage } from "./auth/signup";
-export { LandingPage } from "./landing";
+import { LoginPage } from "./auth/login";
+import { SignupPage } from "./auth/signup";
+import { RootPage } from "./root";
+
+export {
+    LoginPage,
+    SignupPage,
+    RootPage
+};
+
+export const routes = {
+    "/": RootPage
+};

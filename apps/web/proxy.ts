@@ -50,20 +50,46 @@ export async function proxy(request: NextRequest) {
 		return await updateSession(request);
 	}
 
-	if (pathname === "/") {
+	if ( pathname === "/distribution" || pathname.startsWith("/distribution/")) {
 		return await updateSession(request);
 	}
 
-	const redirectLocale = getRedirectLocale(request);
+	const pathnameHasLocale = locales.some(
+		(locale) =>
+			pathname === `/${locale}` ||
+			pathname.startsWith(`/${locale}/`),
+	);
 
-	if (redirectLocale) {
-		const url = request.nextUrl.clone();
-		url.pathname = `/${redirectLocale}${url.pathname}`;
-
-		return NextResponse.redirect(url);
+	if (pathnameHasLocale) {
+		return await updateSession(request);
 	}
 
-	return await updateSession(request);
+	const requiresLocale =
+		pathname === "/auth" ||
+		pathname.startsWith("/auth/") ||
+		pathname === "/w" ||
+		pathname.startsWith("/w/");
+
+	if (requiresLocale) {
+		const redirectLocale = getRedirectLocale(request);
+
+		if (redirectLocale) {
+			const url = request.nextUrl.clone();
+			url.pathname = `/${redirectLocale}${pathname}`;
+
+			return NextResponse.redirect(url);
+		}
+
+		return await updateSession(request);
+	}
+
+	const url = request.nextUrl.clone();
+	url.pathname =
+		pathname === "/"
+			? "/distribution"
+			: `/distribution${pathname}`;
+
+	return NextResponse.rewrite(url);
 }
 
 export const config = {

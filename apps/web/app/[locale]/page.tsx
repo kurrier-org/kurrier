@@ -6,6 +6,6 @@ export default async function LocaleRootPage({ params }: {
 	const { locale } = await params;
 
 	return (
-		<DISTRIBUTION_PAGES.LandingPage locale={locale}/>
+		<DISTRIBUTION_PAGES.RootPage locale={locale}/>
 	);
 }

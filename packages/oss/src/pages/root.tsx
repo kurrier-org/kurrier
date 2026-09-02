@@ -4,7 +4,7 @@ import * as React from "react";
 import KurrierLogo from "@/components/common/kurrier-logo";
 import { DISTRIBUTION_CONFIG } from "@distribution/config";
 
-export async function LandingPage() {
+export async function RootPage() {
     const locale = DISTRIBUTION_CONFIG.defaultLocale;
 
     return (
