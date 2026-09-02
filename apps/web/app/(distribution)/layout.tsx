@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { cookies } from "next/headers";
+import { DISTRIBUTION_METADATA } from "@distribution/metadata";
+import { DISTRIBUTION_HEAD } from "@distribution/head";
 
 import "../globals.css";
 
@@ -42,10 +44,7 @@ const jetbrains = JetBrains_Mono({
     subsets: ["cyrillic", "latin"],
 });
 
-export const metadata: Metadata = {
-    title: "Kurrier",
-    description: "Mailbox, but nice.",
-};
+export const metadata: Metadata = DISTRIBUTION_METADATA;
 
 export default async function DistributionLayout({
                                                      children,
@@ -89,6 +88,7 @@ export default async function DistributionLayout({
         >
         <head>
             <ColorSchemeScript defaultColorScheme={colorScheme} />
+            <DISTRIBUTION_HEAD />
         </head>
 
         <body
