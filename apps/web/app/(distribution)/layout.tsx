@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { cookies } from "next/headers";
-import { DISTRIBUTION_METADATA } from "@distribution/metadata";
-import { DISTRIBUTION_HEAD } from "@distribution/head";
+import {
+    DISTRIBUTION_HEAD,
+    DISTRIBUTION_METADATA,
+} from "@distribution/metadata";
 
 import "../globals.css";
 
