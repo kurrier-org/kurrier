@@ -1,33 +1,45 @@
 import { Suspense } from "react";
+import type React from "react";
 import { notFound } from "next/navigation";
 
-import { DISTRIBUTION_PAGES } from "@distribution/pages";
+import { registerDistribution } from "@distribution";
+import { getDashboardPages } from "@extensions";
 
-async function DistributionContent({
-                                       params,
-                                   }: {
-    params: Promise<{ slug?: string[] }>;
+async function ExtensionContent({
+                                    params,
+                                }: {
+    params: Promise<{
+        slug: string[];
+    }>;
 }) {
-    const { slug = [] } = await params;
+    registerDistribution();
 
-    const path = `/${slug.join("/")}`;
-    const Page = DISTRIBUTION_PAGES.routes[path];
+    const { slug } = await params;
+    const path = slug.join("/");
 
-    if (!Page) {
+    const page = getDashboardPages().find(
+        (item) => item.path === path,
+    );
+
+    if (!page) {
         notFound();
     }
+
+    const Page = page.component as React.ComponentType;
 
     return <Page />;
 }
 
-export default function DistributionPage({
-                                             params,
-                                         }: {
-    params: Promise<{ slug?: string[] }>;
+export default function ExtensionPage({
+                                          params,
+                                      }: {
+    params: Promise<{
+        slug: string[];
+    }>;
 }) {
     return (
         <Suspense fallback={null}>
-            <DistributionContent params={params} />
+            <ExtensionContent params={params} />
         </Suspense>
     );
 }

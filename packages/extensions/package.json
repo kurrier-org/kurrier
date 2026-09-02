@@ -11,5 +11,8 @@
 	},
 	"keywords": [],
 	"author": "Krishna Rokhale",
-	"license": "ISC"
+	"license": "ISC",
+	"dependencies": {
+		"lucide-react": "^1.39.0"
+	}
 }

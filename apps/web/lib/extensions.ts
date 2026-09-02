@@ -1,12 +1,12 @@
 import type { HookMap, HookName } from "@schema";
 import { hooks } from "@extensions";
-import { ensureExtensionsRegistered } from "./register";
+import { registerDistribution } from "@distribution";
 
 export const runHook = async <K extends HookName>(
     name: K,
     context: HookMap[K],
 ): Promise<void> => {
-    ensureExtensionsRegistered();
+    registerDistribution();
 
     await hooks.run(name, context);
 };

@@ -1,0 +1,74 @@
+---
+title: What are Extensions
+description: Add self-contained features to Kurrier with dashboard pages, navigation, and hooks.
+---
+
+Extensions are the easiest way to add a self-contained application feature to Kurrier.
+
+They are useful when a feature needs to:
+
+- add a page to the Kurrier dashboard
+- add an item to the dashboard navigation
+- run code when Kurrier reaches a supported lifecycle event
+- combine these pieces into one feature
+
+Kurrier itself uses the same extension system, so the extensions in the source tree are working examples.
+
+## A simple example
+
+Imagine adding an **Email Templates** feature.
+
+```ts
+import type { KurrierExtension } from "@extensions";
+import EmailTemplatesPage from "./email-templates-page";
+
+export const emailTemplatesExtension = {
+    manifest: {
+        id: "oss.email-templates",
+        name: "Email Templates",
+    },
+    contributions: {
+        navigation: {
+            dashboard: [
+                {
+                    id: "email-templates",
+                    title: "Email Templates",
+                    path: "extensions/email-templates",
+                    icon: "FileText",
+                },
+            ],
+        },
+        pages: {
+            dashboard: [
+                {
+                    id: "email-templates",
+                    path: "email-templates",
+                    component: EmailTemplatesPage,
+                },
+            ],
+        },
+    },
+} satisfies KurrierExtension;
+```
+
+Kurrier provides the normal dashboard shell. Your extension owns the content rendered inside it.
+
+## Start here
+
+If you are building a new feature, continue to **Creating an extension**.
+
+You do not need to understand the distribution or registration internals first.
+
+You can also look at the existing implementation under:
+
+```text
+packages/oss/src/extensions/
+```
+
+It provides a working example of the extension manifest, hooks, dashboard pages, and navigation.
+
+## Trusted code
+
+Extensions run as part of the Kurrier application and should be treated as trusted code.
+
+They may have access to application data and server resources. Review third-party extension code before installing or running it on your Kurrier server.

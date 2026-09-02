@@ -1,0 +1,5 @@
+{
+	"title": "Extensions",
+	"defaultOpen": true,
+	"pages": ["what","creating", "hooks", "nav", "arch"]
+}

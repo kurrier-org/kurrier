@@ -1,0 +1,117 @@
+---
+title: How extensions work
+description: Understand how Kurrier discovers and activates trusted extensions.
+---
+
+You do not need to understand this page to create an extension. If you just want to add a feature, start with **Creating an extension**.
+
+## The short version
+
+A package exposes a list of extensions. The active distribution selects them, and Kurrier registers their capabilities.
+
+```text
+Feature package
+    ↓
+Extension list
+    ↓
+Active distribution
+    ↓
+Extension registration
+    ↓
+Hooks and dashboard contributions
+```
+
+## Extension lists
+
+For example, the OSS package exposes its extensions from:
+
+```text
+packages/oss/src/extensions/index.ts
+```
+
+Conceptually:
+
+```ts
+export const extensions = [
+    singleWorkspaceExtension,
+    emailTemplatesExtension,
+];
+```
+
+## The distribution selects extensions
+
+Different Kurrier distributions can enable different functionality.
+
+The distribution layer selects the extensions belonging to the active distribution and exposes the final collection as:
+
+```ts
+DISTRIBUTION_EXTENSIONS
+```
+
+Think of this simply as **the extensions enabled for this Kurrier distribution**. It is a list and does not execute extension behavior itself.
+
+## Registration
+
+`registerDistribution()` activates the selected extensions:
+
+```ts
+for (const extension of DISTRIBUTION_EXTENSIONS) {
+    registerExtension(extension);
+}
+```
+
+`registerExtension()` activates the capabilities declared by an individual extension.
+
+For hooks, this attaches handlers to the shared hook registry. Dashboard pages and navigation remain available as contributions Kurrier can collect and render.
+
+Registration is idempotent, so Kurrier can safely ensure registration has happened whenever extension-backed functionality is used.
+
+## Application code stays independent
+
+Core application code interacts with extension points rather than individual implementations.
+
+For example:
+
+```ts
+await runHook("workspace.beforeCreate", context);
+```
+
+The application does not need to know which extension implements that behavior.
+
+Likewise, the dashboard collects page and navigation contributions without hardcoding each extension feature into the core dashboard.
+
+## Trusted extensions
+
+The current Kurrier extension system is designed for trusted code.
+
+Extensions run as part of the Kurrier application and can use the same application packages and server capabilities as other Kurrier code. Depending on the extension, this can include access to application data, database clients, environment variables, and other server resources.
+
+Treat installing an extension like installing server-side application code. Review third-party extension code before running it.
+
+This model works well for Kurrier's own OSS features, distribution-specific features, private extensions, self-hosted extensions whose source you trust, and contributed extensions reviewed before being merged into Kurrier.
+
+A future remote marketplace can use a separate permission-based security model without changing this trusted extension model.
+
+## Distribution or extension?
+
+A useful rule is:
+
+**An extension is an application feature.**
+
+Authenticated dashboard pages, navigation entries, and lifecycle behavior are good extension candidates.
+
+**A distribution defines the product around those features.**
+
+Public website pages, product metadata, configuration, and which extensions are enabled belong to the distribution.
+
+Most contributors adding application functionality should start with an extension.
+
+## Working example
+
+Kurrier includes a working extension implementation under:
+
+```text
+packages/oss/src/extensions/
+```
+
+It is the best reference for the current extension API and demonstrates the registration flow described above.

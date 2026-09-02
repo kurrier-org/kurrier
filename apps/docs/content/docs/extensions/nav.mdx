@@ -1,0 +1,117 @@
+---
+title: Pages and navigation
+description: Add pages and navigation inside the Kurrier dashboard.
+---
+
+Extensions can add their own feature areas to the authenticated Kurrier dashboard.
+
+Kurrier owns the surrounding dashboard shell. Your extension supplies the content rendered inside it.
+
+## Add a dashboard page
+
+Start with a normal React component:
+
+```tsx
+export default function EmailTemplatesPage() {
+    return (
+        <div>
+            <h1 className="text-2xl font-semibold">Email Templates</h1>
+            <p className="text-muted-foreground">
+                Create and manage reusable email templates.
+            </p>
+        </div>
+    );
+}
+```
+
+Expose it under `contributions.pages.dashboard`:
+
+```ts
+pages: {
+    dashboard: [
+        {
+            id: "email-templates",
+            path: "email-templates",
+            component: EmailTemplatesPage,
+        },
+    ],
+},
+```
+
+Kurrier renders the component inside its existing dashboard shell.
+
+The page is available under:
+
+```text
+/w/{workspace}/dashboard/extensions/email-templates
+```
+
+## Add dashboard navigation
+
+Usually users also need a way to reach the page:
+
+```ts
+contributions: {
+    navigation: {
+        dashboard: [
+            {
+                id: "email-templates",
+                title: "Email Templates",
+                path: "extensions/email-templates",
+                icon: "FileText",
+            },
+        ],
+    },
+    pages: {
+        dashboard: [
+            {
+                id: "email-templates",
+                path: "email-templates",
+                component: EmailTemplatesPage,
+            },
+        ],
+    },
+},
+```
+
+Kurrier collects navigation contributions from registered extensions and adds them to the dashboard navigation.
+
+Navigation data is serializable, so icons are identified by name rather than passing React components through the extension definition.
+
+An item can also be restricted to workspace owners:
+
+```ts
+{
+    id: "email-templates",
+    title: "Email Templates",
+    path: "extensions/email-templates",
+    icon: "FileText",
+    ownerOnly: true,
+}
+```
+
+## Keep the feature together
+
+A useful pattern is:
+
+```text
+extensions/
+└── email-templates/
+    ├── extension.ts
+    ├── email-templates-page.tsx
+    ├── actions.ts
+    ├── components/
+    └── lib/
+```
+
+The page can use the same components, server actions, and application utilities as other trusted Kurrier code.
+
+## Working example
+
+There is a working extension example under:
+
+```text
+packages/oss/src/extensions/
+```
+
+Use it as the reference for the current dashboard page and navigation contribution shape.

@@ -1,0 +1,77 @@
+---
+title: Hooks
+description: Run extension logic when something happens in Kurrier.
+---
+
+Hooks let an extension react to lifecycle events without putting feature-specific behavior directly into core application code.
+
+For example, Kurrier runs a hook before creating a workspace:
+
+```ts
+await runHook("workspace.beforeCreate", {
+    userId,
+});
+```
+
+An extension can attach a handler to it:
+
+```ts
+import type { KurrierExtension } from "@extensions";
+import { beforeCreateWorkspace } from "./before-create-workspace";
+
+export const exampleExtension = {
+    manifest: {
+        id: "oss.example",
+        name: "Example",
+    },
+    hooks: {
+        "workspace.beforeCreate": beforeCreateWorkspace,
+    },
+} satisfies KurrierExtension;
+```
+
+When Kurrier runs `workspace.beforeCreate`, the registered handler is called.
+
+## A real example in Kurrier
+
+The OSS package uses this mechanism to enforce its single-workspace behavior:
+
+```ts
+hooks: {
+    "workspace.beforeCreate": enforceSingleWorkspace,
+},
+```
+
+Workspace creation itself only runs:
+
+```ts
+await runHook("workspace.beforeCreate", {
+    userId,
+});
+```
+
+The business action does not need to know which extension implements the behavior.
+
+You can find the working extension under:
+
+```text
+packages/oss/src/extensions/
+```
+
+and its hook implementation under:
+
+```text
+packages/oss/src/hooks/
+```
+
+## Finding available hooks
+
+Supported hook names and their context types are defined by Kurrier's `HookMap`.
+
+The hook name determines the context passed to its handler, allowing TypeScript to check the handler receives the correct data.
+
+Use an existing hook when one matches your feature. If a feature genuinely needs a new lifecycle point, add a new typed hook to Kurrier's hook contract and run it from the appropriate core application code.
+
+## Hooks are optional
+
+Many extensions only need dashboard pages and navigation. Only add hooks when the feature needs to participate in behavior happening elsewhere in Kurrier.

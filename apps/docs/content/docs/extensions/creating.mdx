@@ -1,0 +1,142 @@
+---
+title: Creating an extension
+description: Create your first Kurrier extension in a few steps.
+---
+
+Let's create an **Email Templates** extension.
+
+It will add a page inside the Kurrier dashboard and an item in the dashboard navigation.
+
+## 1. Create the feature
+
+For an OSS feature, create a directory under:
+
+```text
+packages/oss/src/extensions/
+```
+
+For example:
+
+```text
+packages/oss/src/extensions/
+├── email-templates/
+│   ├── extension.ts
+│   └── email-templates-page.tsx
+└── index.ts
+```
+
+Your feature can contain any other components, actions, helpers, or server code it needs.
+
+## 2. Create the dashboard content
+
+Create `email-templates/email-templates-page.tsx`:
+
+```tsx
+export default function EmailTemplatesPage() {
+    return (
+        <div>
+            <h1 className="text-2xl font-semibold">Email Templates</h1>
+            <p className="text-muted-foreground">
+                Create and manage reusable email templates.
+            </p>
+        </div>
+    );
+}
+```
+
+This is a normal React component.
+
+You do not need to create the Kurrier sidebar, dashboard layout, or sidebar trigger. Kurrier provides the surrounding dashboard shell.
+
+## 3. Create the extension
+
+Create `email-templates/extension.ts`:
+
+```ts
+import type { KurrierExtension } from "@extensions";
+import EmailTemplatesPage from "./email-templates-page";
+
+export const emailTemplatesExtension = {
+    manifest: {
+        id: "oss.email-templates",
+        name: "Email Templates",
+    },
+    contributions: {
+        navigation: {
+            dashboard: [
+                {
+                    id: "email-templates",
+                    title: "Email Templates",
+                    path: "extensions/email-templates",
+                    icon: "FileText",
+                },
+            ],
+        },
+        pages: {
+            dashboard: [
+                {
+                    id: "email-templates",
+                    path: "email-templates",
+                    component: EmailTemplatesPage,
+                },
+            ],
+        },
+    },
+} satisfies KurrierExtension;
+```
+
+Every extension has a manifest. `id` uniquely identifies the extension and `name` is its human-readable name. Everything else is optional.
+
+## 4. Add it to the extension list
+
+Add the extension to the package's extension list:
+
+```ts
+import type { KurrierExtension } from "@extensions";
+import { emailTemplatesExtension } from "./email-templates/extension";
+
+export const extensions = [
+    emailTemplatesExtension,
+] satisfies KurrierExtension[];
+```
+
+That's it.
+
+Kurrier discovers the extension through the active distribution and registers it when extension functionality is needed. You should not call `registerExtension()` yourself.
+
+## 5. Build the feature normally
+
+From here, build the inside of `EmailTemplatesPage` like any other Kurrier feature.
+
+```text
+email-templates/
+├── extension.ts
+├── email-templates-page.tsx
+├── actions.ts
+├── components/
+└── lib/
+```
+
+The extension definition is simply the feature's connection to Kurrier.
+
+## Need lifecycle behavior?
+
+If the feature needs to react to something happening elsewhere in Kurrier, it can also declare hooks:
+
+```ts
+hooks: {
+    // Add supported Kurrier hooks here.
+},
+```
+
+See **Hooks** for details.
+
+## See a working example
+
+Kurrier includes a working extension example under:
+
+```text
+packages/oss/src/extensions/
+```
+
+It demonstrates the current extension contract, including hooks and dashboard contributions. When in doubt, the existing implementation is the best reference for the current API.

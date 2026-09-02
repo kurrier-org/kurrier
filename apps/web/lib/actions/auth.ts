@@ -15,7 +15,7 @@ import { getRedis } from "@/lib/actions/get-redis";
 import { updateWorkSpaceContext } from "@/lib/actions/workspace";
 import { DISTRIBUTION_CONFIG } from "@distribution/config";
 import { withLocale } from "@/lib/utils";
-import { runHook } from "@/lib/extensions/hooks";
+import { runHook } from "@/lib/extensions";
 
 const initProviders = async (userId: string, workspaceId: string) => {
 	const { REDIS_PASSWORD, REDIS_HOST, REDIS_PORT } = getServerEnv();
