@@ -5,12 +5,18 @@ import { getDashboardPages } from "@extensions";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 
+type SearchParams = Promise<{
+    [key: string]: string | string[] | undefined;
+}>;
+
 async function ExtensionContent({
                                     params,
+                                    searchParams,
                                 }: {
     params: Promise<{
         slug: string[];
     }>;
+    searchParams: SearchParams;
 }) {
     const { slug } = await params;
     const path = slug.join("/");
@@ -23,17 +29,33 @@ async function ExtensionContent({
         notFound();
     }
 
-    const Page = page.component as React.ComponentType;
+    const Page = page.component as React.ComponentType<{
+        searchParams: SearchParams;
+    }>;
 
-    return <Page />;
+    const Layout = page.layout as
+        | React.ComponentType<{
+        children: React.ReactNode;
+    }>
+        | undefined;
+
+    const content = <Page searchParams={searchParams} />;
+
+    return Layout ? (
+        <Layout>{content}</Layout>
+    ) : (
+        content
+    );
 }
 
 export default function ExtensionPage({
                                           params,
+                                          searchParams,
                                       }: {
     params: Promise<{
         slug: string[];
     }>;
+    searchParams: SearchParams;
 }) {
     registerDistribution();
 
@@ -51,7 +73,10 @@ export default function ExtensionPage({
 
             <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
                 <Suspense fallback={null}>
-                    <ExtensionContent params={params} />
+                    <ExtensionContent
+                        params={params}
+                        searchParams={searchParams}
+                    />
                 </Suspense>
             </div>
         </>

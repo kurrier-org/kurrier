@@ -37,4 +37,6 @@ export type ExtensionPage<TComponent = unknown> = {
     id: string;
     path: string;
     component: TComponent;
+    layout?: TComponent;
 };
+
