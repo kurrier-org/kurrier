@@ -1,6 +1,7 @@
 import {rlsClient} from "@/lib/actions/clients";
 import {db, users, workspaceMembers, workspaces} from "@db";
 import {eq} from "drizzle-orm";
+import {revalidatePath} from "next/cache";
 
 export const fetchWorkspace = async () => {
     const rls = await rlsClient();
@@ -28,3 +29,7 @@ export const fetchWorkspaceMembers = async (id: string) => {
 export type FetchWorkspaceMembersResult = Awaited<
     ReturnType<typeof fetchWorkspaceMembers>
 >;
+
+export const refreshView = async (path: string) => {
+    return revalidatePath(path);
+};

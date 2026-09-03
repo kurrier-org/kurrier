@@ -20,6 +20,7 @@ import {redirect} from "next/navigation";
 import {
     fetchWorkspace as fetchWorkspaceShared,
     fetchWorkspaceMembers as fetchWorkspaceMembersShared,
+    refreshView as refreshViewShared
 } from "./shared";
 
 export type {
@@ -33,6 +34,10 @@ export async function fetchWorkspace() {
 export async function fetchWorkspaceMembers(id: string) {
     return fetchWorkspaceMembersShared(id);
 }
+
+export const refreshView = async (path: string) => {
+    return refreshViewShared(path);
+};
 
 export const fetchWorkspaceIdentities = async () => {
     const rls = await rlsClient();
@@ -148,11 +153,6 @@ export async function updateWorkspace(
 function sha256Hex(input: string) {
     return createHash("sha256").update(input).digest("hex");
 }
-
-
-export const refreshView = async (path: string) => {
-    return revalidatePath(path);
-};
 
 export const switchWorkSpace = async (workspacePublicId: string, id: string) => {
     await updateWorkSpaceContext(workspacePublicId, id);
