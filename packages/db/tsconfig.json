@@ -9,7 +9,9 @@
 			"@providers": ["../../packages/providers/src/index.ts"],
 			"@providers/*": ["../../packages/providers/src/*"],
 			"@distribution": ["../../packages/distribution/src/index.ts"],
-			"@distribution/*": ["../../packages/distribution/src/*"]
+			"@distribution/*": ["../../packages/distribution/src/*"],
+			"@db": ["../../packages/db/src/index.ts"],
+			"@db/*": ["../../packages/db/src/*"]
 		}
 	},
 	"exclude": ["node_modules"]

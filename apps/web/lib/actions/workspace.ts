@@ -1,6 +1,5 @@
 "use server"
 
-import {cache} from "react";
 import {getWorkspaceId, rlsClient} from "@/lib/actions/clients";
 import {and, eq} from "drizzle-orm";
 import {
@@ -18,14 +17,22 @@ import {isSignedIn} from "@/lib/actions/auth";
 import {cookies} from "next/headers";
 import {redirect} from "next/navigation";
 
-export const fetchWorkspace = cache(async () => {
-    const rls = await rlsClient();
-    const [workspace] = await rls(async (tx) => {
-        return tx.select().from(workspaces)
-    });
-    return workspace;
-});
+import {
+    fetchWorkspace as fetchWorkspaceShared,
+    fetchWorkspaceMembers as fetchWorkspaceMembersShared,
+} from "./shared";
 
+export type {
+    FetchWorkspaceMembersResult,
+} from "./shared";
+
+export async function fetchWorkspace() {
+    return fetchWorkspaceShared();
+}
+
+export async function fetchWorkspaceMembers(id: string) {
+    return fetchWorkspaceMembersShared(id);
+}
 
 export const fetchWorkspaceIdentities = async () => {
     const rls = await rlsClient();
@@ -75,25 +82,6 @@ export const fetchWorkspaces = async () => {
 
 export type FetchWorkspacesResult = Awaited<
     ReturnType<typeof fetchWorkspaces>
->;
-
-export const fetchWorkspaceMembers = async (id: string) => {
-    return await db
-        .select({
-            workspace_members: workspaceMembers,
-            users: {
-                id: users.id,
-                email: users.email,
-                createdAt: users.createdAt,
-            },
-        })
-        .from(workspaceMembers)
-        .leftJoin(users, eq(workspaceMembers.userId, users.id))
-        .where(eq(workspaceMembers.workspaceId, id));
-};
-
-export type FetchWorkspaceMembersResult = Awaited<
-    ReturnType<typeof fetchWorkspaceMembers>
 >;
 
 export const setWorkspaceDefaultIdentity = async (identityId: string) => {
