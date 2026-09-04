@@ -1,8 +1,13 @@
 import type { HookHandler, HookName } from "@schema";
 
+export type ExtensionCompatibility = {
+    kurrier?: string;
+};
+
 export type ExtensionManifest = {
     id: string;
     name: string;
+    compatibility?: ExtensionCompatibility;
 };
 
 export type ExtensionHooks = {

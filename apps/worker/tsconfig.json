@@ -40,6 +40,7 @@
 			"@common/*": ["../../packages/common/src/*"],
 			"@jmap": ["../../packages/jmap/src/index.ts"],
 			"@jmap/*": ["../../packages/jmap/src/*"],
+			"@distribution/kurrier-server": ["../../packages/distribution/src/kurrier-server.ts"]
 			"@extensions": ["../../packages/extensions/src/index.ts"],
 			"@extensions/*": ["../../packages/extensions/src/*"]
 		}

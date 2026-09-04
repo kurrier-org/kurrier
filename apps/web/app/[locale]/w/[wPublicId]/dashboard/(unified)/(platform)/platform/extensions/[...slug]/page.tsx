@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { registerDistribution } from "@distribution";
-import { getDashboardPages } from "@extensions";
+import { kurrierWeb } from "@distribution/kurrier-web";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 
@@ -9,10 +8,7 @@ type SearchParams = Promise<{
     [key: string]: string | string[] | undefined;
 }>;
 
-async function ExtensionContent({
-                                    params,
-                                    searchParams,
-                                }: {
+async function ExtensionContent({ params, searchParams }: {
     params: Promise<{
         slug: string[];
     }>;
@@ -21,9 +17,7 @@ async function ExtensionContent({
     const { slug } = await params;
     const path = slug.join("/");
 
-    const page = getDashboardPages().find(
-        (item) => item.path === path,
-    );
+    const page = kurrierWeb.pages.dashboard().find((item) => item.path === path);
 
     if (!page) {
         notFound();
@@ -57,8 +51,6 @@ export default function ExtensionPage({
     }>;
     searchParams: SearchParams;
 }) {
-    registerDistribution();
-
     return (
         <>
             <header className="flex h-16 shrink-0 items-center gap-2">

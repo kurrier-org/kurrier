@@ -1,16 +1,10 @@
 import type { KurrierExtension } from "@extensions";
-
-import { enforceSingleWorkspace } from "../hooks/workspace/before-create";
 import TestExtensionPage from "./test-page";
 
-export const singleWorkspaceExtension = {
+export const singleWorkspaceWebExtension = {
     manifest: {
         id: "oss.single-workspace",
         name: "Single Workspace",
-    },
-
-    hooks: {
-        "workspace.beforeCreate": enforceSingleWorkspace,
     },
 
     contributions: {

@@ -2,8 +2,7 @@ import { Suspense } from "react";
 import type React from "react";
 import { notFound } from "next/navigation";
 
-import { registerDistribution } from "@distribution";
-import { getDashboardPages } from "@extensions";
+import { kurrierWeb } from "@distribution/kurrier-web";
 
 async function ExtensionContent({
                                     params,
@@ -12,14 +11,10 @@ async function ExtensionContent({
         slug: string[];
     }>;
 }) {
-    registerDistribution();
-
     const { slug } = await params;
     const path = slug.join("/");
 
-    const page = getDashboardPages().find(
-        (item) => item.path === path,
-    );
+    const page = kurrierWeb.pages.dashboard().find((item) => item.path === path);
 
     if (!page) {
         notFound();

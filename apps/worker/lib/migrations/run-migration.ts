@@ -4,7 +4,7 @@ import { LabelScope } from "@schema";
 import { createAccount } from "../../lib/dav/dav-create-account";
 import {createAddressBookViaHttp} from "../../lib/dav/dav-http";
 import {davAddressbooks, davDb} from "../../lib/dav/dav-schema";
-import { extensions } from "@extensions";
+import { kurrierServer } from "@distribution/kurrier-server";
 
 const seedFavoriteLabel = async (userId: string, workspaceId: string) => {
 	console.log(`Seeding favorite label for user ${userId} in workspace ${workspaceId}`, workspaceId);
@@ -139,7 +139,7 @@ export async function runMigrationsForWorkspace(
 	await seedFavoriteLabel(userId, workspaceId);
 	await ensureDefaultDavAccountForWorkspace({ ownerId: userId, workspaceId, email });
 	await ensureDefaultAddressBookForUser({ownerId: userId, workspaceId});
-	await extensions.runHook("workspace.afterCreate", {
+	await kurrierServer.hooks.run("workspace.afterCreate", {
 		userId,
 		workspaceId,
 	});
