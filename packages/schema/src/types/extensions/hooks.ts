@@ -3,23 +3,9 @@ export type HookMap = {
         userId: string;
     };
 
-    "identity.beforeCreate": {
+    "workspace.afterCreate": {
+        userId: string;
         workspaceId: string;
-    };
-
-    "mail.beforeSend": {
-        workspaceId: string;
-        identityId: string;
-    };
-
-    "mail.beforeSync": {
-        workspaceId: string;
-        identityId: string;
-    };
-
-    "storage.beforeUpload": {
-        workspaceId: string;
-        bytes: number;
     };
 };
 

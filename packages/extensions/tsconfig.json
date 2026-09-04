@@ -9,7 +9,9 @@
 			"@db": ["../../packages/db/src/index.ts"],
 			"@db/*": ["../../packages/db/src/*"],
 			"@common": ["../../packages/common/src/index.ts"],
-			"@common/*": ["../../packages/common/src/*"]
+			"@common/*": ["../../packages/common/src/*"],
+			"@distribution": ["../../packages/distribution/src/index.ts"],
+			"@distribution/*": ["../../packages/distribution/src/*"],
 		},
 		"lib": ["ES2021.String"]
 	},

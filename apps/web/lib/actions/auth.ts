@@ -15,7 +15,7 @@ import { getRedis } from "@/lib/actions/get-redis";
 import { updateWorkSpaceContext } from "@/lib/actions/workspace";
 import { DISTRIBUTION_CONFIG } from "@distribution/config";
 import { withLocale } from "@/lib/utils";
-import { runHook } from "@/lib/extensions";
+import { extensions } from "@extensions";
 
 const initProviders = async (userId: string, workspaceId: string) => {
 	const { REDIS_PASSWORD, REDIS_HOST, REDIS_PORT } = getServerEnv();
@@ -36,7 +36,7 @@ const initProviders = async (userId: string, workspaceId: string) => {
 };
 
 const createUserWorkspace = async (userId: string, name?: string) => {
-	await runHook("workspace.beforeCreate", {
+	await extensions.runHook("workspace.beforeCreate", {
 		userId,
 	});
 	const [workspace] = await db
