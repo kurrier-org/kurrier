@@ -54,6 +54,10 @@ export async function proxy(request: NextRequest) {
 		return await updateSession(request);
 	}
 
+	if ( pathname === "/auth/invite" || pathname.startsWith("/auth/invite/")) {
+		return await updateSession(request);
+	}
+
 	const pathnameHasLocale = locales.some(
 		(locale) =>
 			pathname === `/${locale}` ||
