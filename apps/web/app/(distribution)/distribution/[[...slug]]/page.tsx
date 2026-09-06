@@ -4,37 +4,42 @@ import { notFound } from "next/navigation";
 
 import { kurrierWeb } from "@distribution/kurrier-web";
 
-async function ExtensionContent({
-                                    params,
-                                }: {
+async function DistributionContent({
+                                       params,
+                                   }: {
     params: Promise<{
-        slug: string[];
+        slug?: string[];
     }>;
 }) {
-    const { slug } = await params;
-    const path = slug.join("/");
+    const { slug = [] } = await params;
 
-    const page = kurrierWeb.pages.dashboard().find((item) => item.path === path);
+    const path = slug.length > 0
+        ? `/${slug.join("/")}`
+        : "/";
 
-    if (!page) {
+    const pages = kurrierWeb.pages.distribution();
+
+    const Page = pages.routes?.[path] as
+        | React.ComponentType
+        | undefined;
+
+    if (!Page) {
         notFound();
     }
-
-    const Page = page.component as React.ComponentType;
 
     return <Page />;
 }
 
-export default function ExtensionPage({
-                                          params,
-                                      }: {
+export default function DistributionPage({
+                                             params,
+                                         }: {
     params: Promise<{
-        slug: string[];
+        slug?: string[];
     }>;
 }) {
     return (
         <Suspense fallback={null}>
-            <ExtensionContent params={params} />
+            <DistributionContent params={params} />
         </Suspense>
     );
 }

@@ -14,6 +14,7 @@ export type KurrierWeb = {
     pages: {
         distribution: () => typeof DISTRIBUTION_PAGES;
         dashboard: () => ExtensionPage[];
+        auth: () => ExtensionPage[];
     };
 
     navigation: {
@@ -35,6 +36,14 @@ export const kurrierWeb: KurrierWeb = {
             return getRegisteredExtensions().flatMap(
                 (extension) =>
                     extension.contributions?.pages?.dashboard ?? [],
+            );
+        },
+        auth() {
+            registerWebExtensions();
+
+            return getRegisteredExtensions().flatMap(
+                (extension) =>
+                    extension.contributions?.pages?.auth ?? [],
             );
         },
     },

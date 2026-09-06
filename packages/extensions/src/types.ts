@@ -34,6 +34,7 @@ export type ExtensionContributions<TComponent = unknown> = {
     };
     pages?: {
         dashboard?: ExtensionPage<TComponent>[];
+        auth?: ExtensionPage<TComponent>[];
     };
 };
 
