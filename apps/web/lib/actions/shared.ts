@@ -2,6 +2,7 @@ import {rlsClient} from "@/lib/actions/clients";
 import {db, users, workspaceMembers, workspaces} from "@db";
 import {eq} from "drizzle-orm";
 import {revalidatePath} from "next/cache";
+import {DISTRIBUTION_ACCESS, WorkspaceAccess} from "@distribution";
 
 export const fetchWorkspace = async () => {
     const rls = await rlsClient();
@@ -32,4 +33,25 @@ export type FetchWorkspaceMembersResult = Awaited<
 
 export const refreshView = async (path: string) => {
     return revalidatePath(path);
+};
+
+export const access = async <K extends keyof Omit<WorkspaceAccess, "reason">>(
+    key: K,
+): Promise<Pick<WorkspaceAccess, K | "reason">> => {
+    const workspace = await fetchWorkspace();
+
+    if (!workspace) {
+        return {
+            [key]: false,
+            reason: "Workspace not found",
+        } as Pick<WorkspaceAccess, K | "reason">;
+    }
+
+    const workspaceAccess =
+        await DISTRIBUTION_ACCESS.workspace(workspace.id);
+
+    return {
+        [key]: workspaceAccess[key],
+        reason: workspaceAccess.reason,
+    } as Pick<WorkspaceAccess, K | "reason">;
 };

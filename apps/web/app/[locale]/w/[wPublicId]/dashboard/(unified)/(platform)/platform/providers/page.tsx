@@ -99,7 +99,7 @@ export default async function ProvidersPage({
 						{PROVIDERS.map((p) => (
 							<ProviderCardShell
 								key={p.key}
-								provisioned={false}
+								mode="configurable"
 								spec={p}
 								userProviders={userProviders}
 							/>

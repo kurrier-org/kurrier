@@ -1,31 +1,6 @@
-import { Suspense } from "react";
-import { connection } from "next/server";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { fetchWorkspace } from "@/lib/actions/workspace";
-import { getDictionary } from "@/lib/dictionaries";
-
-async function StorageLimitBanner({
-									  locale,
-								  }: {
-	locale: string;
-}) {
-	await connection();
-
-	const [workspace, dict] = await Promise.all([
-		fetchWorkspace(),
-		getDictionary(locale),
-	]);
-
-	if (!workspace?.isStorageOverLimit) {
-		return null;
-	}
-
-	return (
-		<div className="bg-red-100 w-full mb-4 rounded text-center z-10 text-sm text-red-700 p-2">
-			{dict.dashboard.storageOverLimit}
-		</div>
-	);
-}
+import { redirect } from "next/navigation";
+import { access } from "@/lib/actions/shared";
 
 export default async function DashboardLayout({
 												  children,
@@ -36,22 +11,22 @@ export default async function DashboardLayout({
 }) {
 	const { locale } = await params;
 
-	return (
-		<>
-			<Suspense fallback={null}>
-				<StorageLimitBanner locale={locale} />
-			</Suspense>
+	const { canUseWorkspace } = await access("canUseWorkspace");
 
-			<SidebarProvider
-				style={
-					{
-						"--sidebar-width": "250px",
-					} as React.CSSProperties
-				}
-				className="sidebar-animation"
-			>
-				{children}
-			</SidebarProvider>
-		</>
+	if (!canUseWorkspace) {
+		redirect(`/${locale}/auth/login`);
+	}
+
+	return (
+		<SidebarProvider
+			style={
+				{
+					"--sidebar-width": "250px",
+				} as React.CSSProperties
+			}
+			className="sidebar-animation"
+		>
+			{children}
+		</SidebarProvider>
 	);
 }

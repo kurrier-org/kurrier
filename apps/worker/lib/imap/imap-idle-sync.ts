@@ -3,6 +3,7 @@ import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { initSmtpClient } from "./imap-client";
 import type { FlagsEvent, ImapFlow } from "imapflow";
 import { deltaFetch } from "../../lib/imap/imap-delta-fetch";
+import { canSyncIdentity } from "../access";
 
 const MAX_RECONNECT_ATTEMPTS = 5;
 const RECONNECT_BACKOFFS_MS = [5000, 10000, 20000, 40000, 80000];
@@ -522,6 +523,13 @@ export async function startRealtimeForIdentity(
 	}
 
 	if (stoppedIdentities.has(identityId)) {
+		return;
+	}
+
+	if (!(await canSyncIdentity(identityId))) {
+		console.info(
+			`[realtime:${identityId}] mail sync disabled`,
+		);
 		return;
 	}
 

@@ -65,6 +65,7 @@ import {
 	updateSMTPAccount,
 	verifySMTPAccount
 } from "@/lib/actions/email-identity";
+import { access } from "@/lib/actions/shared";
 
 const DASHBOARD_PATH = "/w/[workspaceId]/dashboard/providers";
 const CURRENT_API_VERSION = 1;
@@ -87,6 +88,19 @@ export async function upsertProviderAccount(
 		const session = await currentSession();
 		const data = decode(formData);
 		const workspaceId = await getWorkspaceId();
+
+
+		const { canCreateProvider, reason } = await access("canCreateProvider");
+		if (!canCreateProvider) {
+			return {
+				success: false,
+				error:
+					reason ??
+					"dashboard.providerCreationDisabled",
+			};
+		}
+
+
 		const parsed = ProviderAccountFormSchema.parse(data);
 
 		const rls = await rlsClient();
@@ -1317,8 +1331,7 @@ export const getDashboardStats = async () => {
 				attachmentBytes,
 				driveStorageBytes,
 				totalStorageBytes,
-				storageBytesUsed: totalStorageBytes,
-				isStorageOverLimit: false,
+				storageBytesUsed: totalStorageBytes
 			};
 		});
 
@@ -1434,21 +1447,37 @@ export const regenerateDavPassword = async () => {
 	return job.returnvalue;
 };
 
-
 export async function addNewVolume(_prev: FormState, formData: FormData) {
 	return handleAction(async () => {
 		if (!DISTRIBUTION_CONFIG.features.drive) {
 			throw new Error("Drive is disabled");
 		}
 
+		const { canCreateStorageVolume, reason } =
+			await access("canCreateStorageVolume");
+
+		if (!canCreateStorageVolume) {
+			return {
+				success: false,
+				error:
+					reason ??
+					"dashboard.storageVolumeCreationDisabled",
+			};
+		}
+
 		const rls = await rlsClient();
 		const data = decode(formData);
 		const user = await isSignedIn();
 
-		const label = String(data.volumeName || data.bucketName || "").trim();
+		const label = String(
+			data.volumeName || data.bucketName || "",
+		).trim();
 
 		if (!label) {
-			return { success: false, error: "dashboard.volumeNameRequired" };
+			return {
+				success: false,
+				error: "dashboard.volumeNameRequired",
+			};
 		}
 
 		const code = label
@@ -1457,13 +1486,19 @@ export async function addNewVolume(_prev: FormState, formData: FormData) {
 			.replace(/^-+|-+$/g, "");
 
 		if (!code) {
-			return { success: false, error: "dashboard.invalidVolumeName" };
+			return {
+				success: false,
+				error: "dashboard.invalidVolumeName",
+			};
 		}
 
 		const bucket = process.env.S3_BUCKET;
 
 		if (!bucket) {
-			return { success: false, error: "dashboard.s3BucketNotConfigured" };
+			return {
+				success: false,
+				error: "dashboard.s3BucketNotConfigured",
+			};
 		}
 
 		await rls((tx) =>
@@ -1977,6 +2012,18 @@ export async function saveGoogleOAuthConfig(
 
 		const session = await currentSession();
 		const workspaceId = await getWorkspaceId();
+
+		const { canCreateProvider, reason } = await access("canCreateProvider");
+		if (!canCreateProvider) {
+			return {
+				success: false,
+				error:
+					reason ??
+					"dashboard.providerCreationDisabled",
+			};
+		}
+
+
 		const rls = await rlsClient();
 
 		const [existing] = await rls((tx) =>
@@ -2046,6 +2093,18 @@ export async function saveMailtrapCredentials(
 
 		const session = await currentSession();
 		const workspaceId = await getWorkspaceId();
+
+		const { canCreateProvider, reason } = await access("canCreateProvider");
+		if (!canCreateProvider) {
+			return {
+				success: false,
+				error:
+					reason ??
+					"dashboard.providerCreationDisabled",
+			};
+		}
+
+
 		const rls = await rlsClient();
 
 		const value = JSON.stringify({
@@ -2106,7 +2165,7 @@ async function mailtrapGet(url: string, apiToken: string) {
 
 // List all inboxes in the Mailtrap account,
 // up to MAILTRAP_MAX_FOLDERS_CHECKED number of folders checked
-// (to avoid excessive API calls). 
+// (to avoid excessive API calls).
 // Returns a `truncated` flag if there are more folders than checked.
 async function listMailtrapInboxAddresses(apiToken: string): Promise<{
 	inboxes: { name: string; address: string }[];

@@ -17,6 +17,7 @@ import { checkDefaultWorkspaceIdentity } from "@/lib/actions/workspace";
 import {assignIdentityToAllWorkspaceMembers, fetchDecryptedSecrets, initializeMailboxes} from "@/lib/actions/dashboard";
 import {createMailer, VerifyResult} from "@providers";
 import {eq} from "drizzle-orm";
+import {access} from "@/lib/actions/shared";
 
 export type CreateEmailIdentityInput = {
     email: string;
@@ -117,6 +118,18 @@ export async function createSMTPAccount(
     return handleAction(async () => {
         const session = await currentSession();
         const workspaceId = await getWorkspaceId();
+
+        const { canCreateProvider, reason } = await access("canCreateProvider");
+        if (!canCreateProvider) {
+            return {
+                success: false,
+                error:
+                    reason ??
+                    "dashboard.providerCreationDisabled",
+            };
+        }
+
+
         const rls = await rlsClient();
 
         const smtpConfig: Record<string, unknown> = {
@@ -192,6 +205,17 @@ export async function updateSMTPAccount(
     return handleAction(async () => {
         const session = await currentSession();
         const workspaceId = await getWorkspaceId();
+
+        const { canCreateProvider, reason } = await access("canCreateProvider");
+        if (!canCreateProvider) {
+            return {
+                success: false,
+                error:
+                    reason ??
+                    "dashboard.providerCreationDisabled",
+            };
+        }
+
         const rls = await rlsClient();
 
         const [smtpSecret] = await fetchDecryptedSecrets({

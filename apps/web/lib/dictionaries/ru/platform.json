@@ -7,8 +7,6 @@
 	"messagesStored": "Сохранённые письма",
 	"inLast24h": "за последние 24 часа",
 	"storageUsed": "Использовано хранилища",
-	"overStorageLimit": "Лимит хранилища превышен",
-	"withinPlanLimit": "В пределах лимита тарифа",
 	"messages": "Письма",
 	"threads": "Цепочки",
 	"accessibleConversations": "Доступные переписки",

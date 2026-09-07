@@ -1,7 +1,9 @@
-import type React from "react";
-
-export default function ExtensionsLayout({ children }: {
+export default function ExtensionAuthLayout({ children }: {
     children: React.ReactNode;
 }) {
-    return children;
+    return (
+        <div className="flex min-h-screen items-center justify-center p-6">
+            {children}
+        </div>
+    );
 }

@@ -51,6 +51,7 @@ import {GetObjectCommand} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { s3 } from "@/lib/create-s3-client";
 import { isGmailIdentity } from "@common";
+import {access} from "@/lib/actions/shared";
 
 let typeSenseClient: Client | null = null;
 function getTypeSenseClient(): Client {
@@ -310,13 +311,6 @@ export async function sendMail(
 	_prev: FormState,
 	formData: FormData,
 ): Promise<FormState> {
-	const workspace = await fetchWorkspace()
-	if (workspace.isStorageOverLimit){
-		return {
-			success: false,
-			error: "Cannot send mail: Workspace storage limit exceeded.",
-		}
-	}
 	const decodedForm = decode(formData) as any;
 
 	const rls = await rlsClient();
@@ -443,6 +437,16 @@ export const deltaFetch = async ({
 		.where(eq(identities.id, identityId))
 		.limit(1);
 
+	if (!identity) {
+		return;
+	}
+	if (!(await canSyncWorkspace())) {
+		console.info(
+			`[delta-fetch:${identityId}] mail sync disabled for workspace ${identity.workspaceId}`,
+		);
+		return;
+	}
+
 	const isGmail = await isGmailIdentity(identityId);
 
 	const isSmtp = Boolean(identity?.smtpAccountId);
@@ -552,9 +556,20 @@ export const initSearch = async (
 };
 
 
+async function canSyncWorkspace(): Promise<boolean> {
+	const { canSyncMail } = await access("canSyncMail");
+	return canSyncMail;
+}
 
 
 export const backfillMailboxes = async (identityId: string, workspaceId: string) => {
+	if (!(await canSyncWorkspace())) {
+		console.info(
+			`[backfill:${identityId}] mail sync disabled for workspace ${workspaceId}`,
+		);
+		return;
+	}
+
 	const { smtpQueue, smtpEvents } = await getRedis();
 	const job = await smtpQueue.add(
 		"imap:backfill-discover",
@@ -576,6 +591,13 @@ export const backfillGoogleMailboxes = async (
 	identityId: string,
 	workspaceId: string,
 ) => {
+	if (!(await canSyncWorkspace())) {
+		console.info(
+			`[backfill:${identityId}] mail sync disabled for workspace ${workspaceId}`,
+		);
+		return;
+	}
+
 	const { gmailQueue, gmailEvents } = await getRedis();
 
 	const job = await gmailQueue.add(
