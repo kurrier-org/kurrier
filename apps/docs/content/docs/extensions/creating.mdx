@@ -1,33 +1,27 @@
 ---
 title: Creating an extension
-description: Create your first Kurrier extension in a few steps.
+description: Create a trusted Kurrier extension with separate server and web entry points.
 ---
 
 Let's create an **Email Templates** extension.
 
-It will add a page inside the Kurrier dashboard and an item in the dashboard navigation.
+It will contribute a dashboard page and navigation item. We will keep its server and web entry points separate so each Kurrier runtime only loads what it needs.
 
-## 1. Create the feature
+## 1. Create the feature directory
 
-For an OSS feature, create a directory under:
-
-```text
-packages/oss/src/extensions/
-```
-
-For example:
+For an OSS feature:
 
 ```text
 packages/oss/src/extensions/
-├── email-templates/
-│   ├── extension.ts
-│   └── email-templates-page.tsx
-└── index.ts
+└── email-templates/
+    ├── server.ts
+    ├── web.ts
+    └── email-templates-page.tsx
 ```
 
-Your feature can contain any other components, actions, helpers, or server code it needs.
+The feature directory can also contain normal components, actions, helpers, schemas, or other trusted application code.
 
-## 2. Create the dashboard content
+## 2. Create the dashboard page
 
 Create `email-templates/email-templates-page.tsx`:
 
@@ -46,17 +40,17 @@ export default function EmailTemplatesPage() {
 
 This is a normal React component.
 
-You do not need to create the Kurrier sidebar, dashboard layout, or sidebar trigger. Kurrier provides the surrounding dashboard shell.
+Do not recreate Kurrier's dashboard shell, sidebar, header, or content framing. Kurrier owns the surrounding dashboard UI.
 
-## 3. Create the extension
+## 3. Create the web extension
 
-Create `email-templates/extension.ts`:
+Create `email-templates/web.ts`:
 
 ```ts
 import type { KurrierExtension } from "@extensions";
 import EmailTemplatesPage from "./email-templates-page";
 
-export const emailTemplatesExtension = {
+export const emailTemplatesWebExtension = {
     manifest: {
         id: "oss.email-templates",
         name: "Email Templates",
@@ -67,7 +61,7 @@ export const emailTemplatesExtension = {
                 {
                     id: "email-templates",
                     title: "Email Templates",
-                    path: "extensions/email-templates",
+                    path: "platform/extensions/email-templates",
                     icon: "FileText",
                 },
             ],
@@ -85,58 +79,111 @@ export const emailTemplatesExtension = {
 } satisfies KurrierExtension;
 ```
 
-Every extension has a manifest. `id` uniquely identifies the extension and `name` is its human-readable name. Everything else is optional.
+Every extension has a manifest. `id` uniquely identifies the extension and `name` is its human-readable name.
 
-## 4. Add it to the extension list
+Everything else is optional.
 
-Add the extension to the package's extension list:
+## 4. Add server behavior only when needed
+
+If the feature does not need lifecycle hooks, `server.ts` can be omitted.
+
+If it does, create a separate server extension:
 
 ```ts
 import type { KurrierExtension } from "@extensions";
-import { emailTemplatesExtension } from "./email-templates/extension";
+import { beforeWorkspaceCreate } from "./before-workspace-create";
 
-export const extensions = [
-    emailTemplatesExtension,
+export const emailTemplatesServerExtension = {
+    manifest: {
+        id: "oss.email-templates",
+        name: "Email Templates",
+    },
+    hooks: {
+        "workspace.beforeCreate": beforeWorkspaceCreate,
+    },
+} satisfies KurrierExtension;
+```
+
+Keeping server and web definitions separate prevents the worker from importing React/UI code and prevents web registration from unnecessarily loading worker-only behavior.
+
+## 5. Add the extension to the package lists
+
+Packages expose separate server and web extension collections.
+
+For example, `extensions/web.ts`:
+
+```ts
+import type { KurrierExtension } from "@extensions";
+import { emailTemplatesWebExtension } from "./email-templates/web";
+
+export const webExtensions = [
+    emailTemplatesWebExtension,
 ] satisfies KurrierExtension[];
 ```
 
-That's it.
+And, when needed, `extensions/server.ts`:
 
-Kurrier discovers the extension through the active distribution and registers it when extension functionality is needed. You should not call `registerExtension()` yourself.
+```ts
+import type { KurrierExtension } from "@extensions";
+import { emailTemplatesServerExtension } from "./email-templates/server";
 
-## 5. Build the feature normally
+export const serverExtensions = [
+    emailTemplatesServerExtension,
+] satisfies KurrierExtension[];
+```
 
-From here, build the inside of `EmailTemplatesPage` like any other Kurrier feature.
+The active distribution adapts these lists and registers them for the appropriate runtime.
+
+Do not call `registerExtension()` from feature code.
+
+## 6. Build the feature normally
+
+The extension definition is only the feature's connection to Kurrier.
+
+The rest can be organized like any other feature:
 
 ```text
 email-templates/
-├── extension.ts
+├── server.ts
+├── web.ts
 ├── email-templates-page.tsx
 ├── actions.ts
 ├── components/
 └── lib/
 ```
 
-The extension definition is simply the feature's connection to Kurrier.
+Trusted extensions can use normal Kurrier application packages and server capabilities.
 
-## Need lifecycle behavior?
+## Adding an auth page
 
-If the feature needs to react to something happening elsewhere in Kurrier, it can also declare hooks:
+Extensions can also contribute authenticated auth-flow pages:
 
 ```ts
-hooks: {
-    // Add supported Kurrier hooks here.
+pages: {
+    auth: [
+        {
+            id: "template-import",
+            path: "template-import",
+            component: TemplateImportPage,
+        },
+    ],
 },
 ```
 
-See **Hooks** for details.
+Kurrier resolves the contributed route and renders the extension component inside the auth routing boundary.
 
-## See a working example
+A contributed page can also specify its own inner `layout` when the feature needs additional framing. Kurrier still owns the outer application route.
 
-Kurrier includes a working extension example under:
+## Need lifecycle behavior?
+
+See **Hooks** for the typed server hook API.
+
+## Working examples
+
+The current source tree is the best reference:
 
 ```text
 packages/oss/src/extensions/
 ```
 
-It demonstrates the current extension contract, including hooks and dashboard contributions. When in doubt, the existing implementation is the best reference for the current API.
+In particular, look for features with separate `server.ts` and `web.ts` entry points.

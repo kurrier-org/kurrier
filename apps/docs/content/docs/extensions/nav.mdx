@@ -1,13 +1,18 @@
 ---
 title: Pages and navigation
-description: Add pages and navigation inside the Kurrier dashboard.
+description: Contribute authenticated dashboard and auth pages to Kurrier.
 ---
 
-Extensions can add their own feature areas to the authenticated Kurrier dashboard.
+Web extensions can contribute pages to Kurrier's authenticated UI.
 
-Kurrier owns the surrounding dashboard shell. Your extension supplies the content rendered inside it.
+The current page contribution areas are:
 
-## Add a dashboard page
+- `pages.dashboard`
+- `pages.auth`
+
+Dashboard navigation is contributed separately through `navigation.dashboard`.
+
+## Dashboard pages
 
 Start with a normal React component:
 
@@ -38,17 +43,13 @@ pages: {
 },
 ```
 
-Kurrier renders the component inside its existing dashboard shell.
+Kurrier resolves the contributed page inside its extension dashboard route.
 
-The page is available under:
+The extension owns the content inside the main area. Kurrier owns the dashboard shell, including the surrounding sidebar and application layout.
 
-```text
-/w/{workspace}/dashboard/extensions/email-templates
-```
+## Dashboard navigation
 
-## Add dashboard navigation
-
-Usually users also need a way to reach the page:
+Add a navigation contribution when users need a visible route to the feature:
 
 ```ts
 contributions: {
@@ -57,7 +58,7 @@ contributions: {
             {
                 id: "email-templates",
                 title: "Email Templates",
-                path: "extensions/email-templates",
+                path: "platform/extensions/email-templates",
                 icon: "FileText",
             },
         ],
@@ -74,44 +75,85 @@ contributions: {
 },
 ```
 
-Kurrier collects navigation contributions from registered extensions and adds them to the dashboard navigation.
+Kurrier collects navigation from registered web extensions and renders it as part of the normal dashboard navigation.
 
-Navigation data is serializable, so icons are identified by name rather than passing React components through the extension definition.
+Navigation data is serializable. Icons are identified by name rather than by passing React components through the contribution definition.
 
-An item can also be restricted to workspace owners:
+## Owner-only navigation
+
+A dashboard navigation item can be restricted to workspace owners:
 
 ```ts
 {
-    id: "email-templates",
-    title: "Email Templates",
-    path: "extensions/email-templates",
-    icon: "FileText",
+    id: "workspace-members",
+    title: "Members",
+    path: "platform/extensions/workspace-members",
+    icon: "Users",
     ownerOnly: true,
 }
 ```
 
-## Keep the feature together
+This controls navigation presentation. Sensitive server operations should still enforce their own authorization.
 
-A useful pattern is:
+## Auth pages
+
+Extensions can also contribute pages to Kurrier's authenticated auth-flow route:
+
+```ts
+pages: {
+    auth: [
+        {
+            id: "workspace-invite",
+            path: "invite",
+            component: WorkspaceInviteLandingPage,
+        },
+    ],
+},
+```
+
+For example, an invitation feature can use a route under:
+
+```text
+/{locale}/auth/invite/...
+```
+
+Kurrier resolves the matching extension contribution by path and passes the remaining route segments and search parameters to the contributed page.
+
+## Extension page layouts
+
+A page contribution may provide an optional inner layout:
+
+```ts
+{
+    id: "workspace-invite",
+    path: "invite",
+    component: WorkspaceInviteLandingPage,
+    layout: WorkspaceInviteLayout,
+}
+```
+
+This lets the extension provide feature-specific framing without taking ownership of Kurrier's outer application routing.
+
+## Public pages are different
+
+Public landing pages are not generic extension contributions.
+
+They belong to the active **distribution**, because public website composition, metadata, and product presentation are distribution concerns.
+
+Use extension pages for authenticated application features.
+
+## Keep feature code together
+
+A typical UI feature can stay self-contained:
 
 ```text
 extensions/
-└── email-templates/
-    ├── extension.ts
-    ├── email-templates-page.tsx
+└── workspace-members/
+    ├── web.ts
     ├── actions.ts
-    ├── components/
-    └── lib/
+    ├── workspace-members-page.tsx
+    ├── workspace-invite-landing-page.tsx
+    └── components/
 ```
 
-The page can use the same components, server actions, and application utilities as other trusted Kurrier code.
-
-## Working example
-
-There is a working extension example under:
-
-```text
-packages/oss/src/extensions/
-```
-
-Use it as the reference for the current dashboard page and navigation contribution shape.
+The contributed components can use the same trusted application utilities, actions, and packages as other Kurrier code.

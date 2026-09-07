@@ -1,49 +1,85 @@
 ---
 title: What are Extensions
-description: Add self-contained features to Kurrier with dashboard pages, navigation, and hooks.
+description: Add trusted, self-contained features to Kurrier with pages, navigation, and lifecycle hooks.
 ---
 
-Extensions are the easiest way to add a self-contained application feature to Kurrier.
+Extensions are Kurrier's trusted in-process feature mechanism.
 
-They are useful when a feature needs to:
+They let a feature connect to Kurrier without hardcoding distribution-specific behavior into the core application. An extension can contribute server lifecycle hooks, authenticated dashboard pages and navigation, and authenticated auth-flow pages.
 
-- add a page to the Kurrier dashboard
-- add an item to the dashboard navigation
-- run code when Kurrier reaches a supported lifecycle event
-- combine these pieces into one feature
+Kurrier itself uses the same extension contract for first-party features.
 
-Kurrier itself uses the same extension system, so the extensions in the source tree are working examples.
+## What belongs in an extension?
 
-## A simple example
+An extension is a good fit when a feature needs to:
 
-Imagine adding an **Email Templates** feature.
+- add a page inside the authenticated Kurrier dashboard
+- add an item to dashboard navigation
+- add a page to an authenticated auth flow, such as an invitation
+- run code at a supported Kurrier lifecycle event
+- combine server behavior and web UI into one feature
+
+For example, a workspace-members extension might contribute a **Members** dashboard page and an **Invite** auth page, while a single-workspace extension might only contribute a server hook.
+
+## Server and web are separate
+
+Kurrier's web application and worker are separate runtimes. Extensions therefore expose server and web contributions separately.
+
+A typical feature looks like:
+
+```text
+extensions/
+└── workspace-members/
+    ├── server.ts
+    ├── web.ts
+    ├── actions.ts
+    ├── workspace-members-page.tsx
+    └── workspace-invite-landing-page.tsx
+```
+
+`server.ts` contains server-side extension behavior such as hooks.
+
+`web.ts` contains UI contributions such as pages and navigation.
+
+An extension does not need both. A server-only feature can expose only `server.ts`, and a UI-only feature can expose only `web.ts`.
+
+## A web extension
 
 ```ts
 import type { KurrierExtension } from "@extensions";
-import EmailTemplatesPage from "./email-templates-page";
+import WorkspaceMembersPage from "./workspace-members-page";
+import WorkspaceInviteLandingPage from "./workspace-invite-landing-page";
 
-export const emailTemplatesExtension = {
+export const workspaceMembersWebExtension = {
     manifest: {
-        id: "oss.email-templates",
-        name: "Email Templates",
+        id: "oss.workspace-members",
+        name: "Workspace Members",
     },
     contributions: {
         navigation: {
             dashboard: [
                 {
-                    id: "email-templates",
-                    title: "Email Templates",
-                    path: "extensions/email-templates",
-                    icon: "FileText",
+                    id: "workspace-members",
+                    title: "Members",
+                    path: "platform/extensions/workspace-members",
+                    icon: "Users",
+                    ownerOnly: true,
                 },
             ],
         },
         pages: {
             dashboard: [
                 {
-                    id: "email-templates",
-                    path: "email-templates",
-                    component: EmailTemplatesPage,
+                    id: "workspace-members",
+                    path: "workspace-members",
+                    component: WorkspaceMembersPage,
+                },
+            ],
+            auth: [
+                {
+                    id: "workspace-invite",
+                    path: "invite",
+                    component: WorkspaceInviteLandingPage,
                 },
             ],
         },
@@ -51,24 +87,59 @@ export const emailTemplatesExtension = {
 } satisfies KurrierExtension;
 ```
 
-Kurrier provides the normal dashboard shell. Your extension owns the content rendered inside it.
+Kurrier owns the surrounding dashboard or auth route. The extension owns the feature content rendered inside it.
+
+## A server extension
+
+```ts
+import type { KurrierExtension } from "@extensions";
+import { enforceSingleWorkspace } from "./before-create";
+
+export const singleWorkspaceServerExtension = {
+    manifest: {
+        id: "oss.single-workspace",
+        name: "Single Workspace",
+    },
+    hooks: {
+        "workspace.beforeCreate": enforceSingleWorkspace,
+    },
+} satisfies KurrierExtension;
+```
+
+Core application code runs the lifecycle hook through `kurrierServer`; it does not know which distribution or extension implements the behavior.
+
+## Extensions and distributions
+
+Extensions and distributions solve different problems.
+
+**Extensions define features.**
+
+They contribute application behavior and authenticated UI.
+
+**Distributions compose the product.**
+
+A distribution decides which extensions are installed, owns public website pages and product metadata, provides static product configuration, and defines runtime product access policy.
+
+The OSS distribution composes the extensions shipped with Kurrier and provides the default runtime access policy.
+
+## Trusted code
+
+The current extension system is for trusted in-process code.
+
+Extensions run with the Kurrier application and may use the same database, environment, application packages, server actions, and other resources as Kurrier itself.
+
+Installing a trusted extension should therefore be treated like installing server-side application code.
+
+A future remote marketplace can use a separate permission-based model. It does not change the trusted extension mechanism documented here.
 
 ## Start here
 
-If you are building a new feature, continue to **Creating an extension**.
+If you are building a feature, continue to **Creating an extension**.
 
-You do not need to understand the distribution or registration internals first.
-
-You can also look at the existing implementation under:
+For working examples, see:
 
 ```text
 packages/oss/src/extensions/
 ```
 
-It provides a working example of the extension manifest, hooks, dashboard pages, and navigation.
-
-## Trusted code
-
-Extensions run as part of the Kurrier application and should be treated as trusted code.
-
-They may have access to application data and server resources. Review third-party extension code before installing or running it on your Kurrier server.
+These docs describe the extension system as shipped in the Kurrier OSS repository.
