@@ -20,15 +20,16 @@ import {
 } from "@db";
 import {
 	apiScopeList,
-	CustomEmailProviderCredentialsSchema,
+	CustomEmailProviderCredentialsSchema, CustomEmailProviderSchema,
 	defaultImapQuota,
 	DomainIdentityFormSchema,
-	FormState,
+	FormState, getCustomEmailProviders,
 	getPublicEnv,
 	handleAction,
 	MailboxKindDisplay,
 	materializeCustomEmailProvider,
 	parseCustomEmailProviders,
+	parseCustomEmailProvidersValue,
 	ProviderAccountFormSchema,
 	Providers,
 	SmtpAccountFormSchema,
@@ -194,7 +195,7 @@ export async function connectCustomEmailProvider(
 		const credentials = CustomEmailProviderCredentialsSchema.parse(
 			decode(formData),
 		);
-		const preset = parseCustomEmailProviders().find(
+		const preset = (await fetchCustomEmailProviders()).find(
 			(provider) => provider.id === credentials.presetId,
 		);
 
@@ -1936,6 +1937,41 @@ export type GoogleOAuthConfig = {
 };
 
 const GOOGLE_MAIL_OAUTH_SECRET_NAME = "GOOGLE_MAIL_OAUTH_CONFIG";
+const CUSTOM_EMAIL_PROVIDERS_SECRET_NAME = "CUSTOM_EMAIL_PROVIDERS";
+
+export async function fetchCustomEmailProviders() {
+	const rls = await rlsClient();
+	const session = await currentSession();
+	const workspaceId = await getWorkspaceId();
+
+	const [row] = await rls((tx) =>
+		tx
+			.select({
+				id: secretsMeta.id,
+			})
+			.from(secretsMeta)
+			.where(
+				and(
+					eq(secretsMeta.workspaceId, workspaceId),
+					eq(secretsMeta.name, CUSTOM_EMAIL_PROVIDERS_SECRET_NAME),
+					eq(secretsMeta.managedBy, "user"),
+				),
+			)
+			.limit(1),
+	);
+
+	if (!row) {
+		return getCustomEmailProviders();
+	}
+
+	const { vault } = await getSecret(session, row.id, workspaceId);
+
+	if (!vault?.decrypted_secret) {
+		return getCustomEmailProviders();
+	}
+
+	return parseCustomEmailProvidersValue(vault.decrypted_secret);
+}
 
 export async function fetchGoogleOAuthConfig(): Promise<GoogleOAuthConfig | null> {
 	const rls = await rlsClient();
@@ -2262,3 +2298,196 @@ export const verifyMailtrapConnection = async (
 			: { success: false, error: res.message, data: res };
 	});
 };
+
+export async function saveCustomEmailProvider(
+	_prev: FormState,
+	formData: FormData,
+): Promise<FormState> {
+	return handleAction(async () => {
+		const data = decode(formData);
+
+		const name = String(data.name ?? "").trim();
+		const description = String(data.description ?? "").trim();
+		const credentialMode = String(data.credentialMode ?? "shared");
+
+		const smtpHost = String(data.smtpHost ?? "").trim();
+		const smtpPort = Number(data.smtpPort);
+		const smtpSecure = data.smtpSecure === "true";
+		const smtpPool = data.smtpPool === "true";
+
+		const imapHost = String(data.imapHost ?? "").trim();
+		const imapPort = Number(data.imapPort);
+		const imapSecure = data.imapSecure === "true";
+
+		if (!name || !smtpHost || !smtpPort) {
+			return {
+				success: false,
+				error: "Provider name, SMTP host and SMTP port are required.",
+			};
+		}
+
+		const id = name
+			.toLowerCase()
+			.trim()
+			.replace(/[^a-z0-9_-]+/g, "-")
+			.replace(/^-+|-+$/g, "");
+
+		if (!id) {
+			return {
+				success: false,
+				error: "Could not create a valid provider id from the name.",
+			};
+		}
+
+		const provider = CustomEmailProviderSchema.parse({
+			id,
+			name,
+			description: description || undefined,
+			credentialMode,
+			smtp: {
+				host: smtpHost,
+				port: smtpPort,
+				secure: smtpSecure,
+				pool: smtpPool,
+			},
+			...(imapHost
+				? {
+					imap: {
+						host: imapHost,
+						port: imapPort,
+						secure: imapSecure,
+					},
+				}
+				: {}),
+		});
+
+		const existingProviders = await fetchCustomEmailProviders();
+
+		if (existingProviders.some((item) => item.id === provider.id)) {
+			return {
+				success: false,
+				error: "An email provider with this name already exists.",
+			};
+		}
+
+		const providers = [...existingProviders, provider];
+
+		const session = await currentSession();
+		const workspaceId = await getWorkspaceId();
+
+		const { canCreateProvider, reason } = await access("canCreateProvider");
+
+		if (!canCreateProvider) {
+			return {
+				success: false,
+				error: reason ?? "dashboard.providerCreationDisabled",
+			};
+		}
+
+		const rls = await rlsClient();
+
+		const [existing] = await rls((tx) =>
+			tx
+				.select()
+				.from(secretsMeta)
+				.where(
+					and(
+						eq(secretsMeta.workspaceId, workspaceId),
+						eq(
+							secretsMeta.name,
+							CUSTOM_EMAIL_PROVIDERS_SECRET_NAME,
+						),
+						eq(secretsMeta.managedBy, "user"),
+					),
+				)
+				.limit(1),
+		);
+
+		const value = JSON.stringify(providers);
+
+		if (existing) {
+			await updateSecret(session, workspaceId, existing.id, {
+				value,
+				description: "Configured email provider presets",
+			});
+		} else {
+			await createSecret(session, workspaceId, {
+				name: CUSTOM_EMAIL_PROVIDERS_SECRET_NAME,
+				value,
+				description: "Configured email provider presets",
+				managedBy: "user",
+			});
+		}
+
+		revalidatePath(DASHBOARD_PATH);
+
+		return {
+			success: true,
+			message: "Email provider added.",
+		};
+	});
+}
+
+
+export async function deleteCustomEmailProvider(
+	providerId: string,
+): Promise<FormState> {
+	return handleAction(async () => {
+		const providers = await fetchCustomEmailProviders();
+
+		const nextProviders = providers.filter(
+			(provider) => provider.id !== providerId,
+		);
+
+		if (nextProviders.length === providers.length) {
+			return {
+				success: false,
+				error: "Email provider not found.",
+			};
+		}
+
+		const session = await currentSession();
+		const workspaceId = await getWorkspaceId();
+		const rls = await rlsClient();
+
+		const [existing] = await rls((tx) =>
+			tx
+				.select()
+				.from(secretsMeta)
+				.where(
+					and(
+						eq(secretsMeta.workspaceId, workspaceId),
+						eq(
+							secretsMeta.name,
+							CUSTOM_EMAIL_PROVIDERS_SECRET_NAME,
+						),
+						eq(secretsMeta.managedBy, "user"),
+					),
+				)
+				.limit(1),
+		);
+
+		if (!existing) {
+			return {
+				success: false,
+				error: "Configured email provider secret not found.",
+			};
+		}
+
+		if (nextProviders.length === 0) {
+			await deleteSecretAdmin(existing.id);
+		} else {
+			await updateSecret(session, workspaceId, existing.id, {
+				value: JSON.stringify(nextProviders),
+				description: "Configured email provider presets",
+			});
+		}
+
+		revalidatePath(DASHBOARD_PATH);
+
+		return {
+			success: true,
+			message: "Email provider removed.",
+		};
+	});
+}

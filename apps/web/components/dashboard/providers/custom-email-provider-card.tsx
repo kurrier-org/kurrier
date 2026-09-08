@@ -3,8 +3,9 @@
 import { Button } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import type { CustomEmailProvider } from "@schema";
-import { Inbox, Mail, Plus, Send } from "lucide-react";
+import { Inbox, Mail, Plus, Send, Trash2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
+
 import NewCustomEmailProviderAccountForm from "@/components/dashboard/providers/new-custom-email-provider-account-form";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import {
@@ -13,13 +14,14 @@ import {
 	CardDescription,
 	CardTitle,
 } from "@/components/ui/card";
+import { deleteCustomEmailProvider } from "@/lib/actions/dashboard";
 
 function Endpoint({
-	icon,
-	label,
-	host,
-	port,
-}: {
+					  icon,
+					  label,
+					  host,
+					  port,
+				  }: {
 	icon: React.ReactNode;
 	label: string;
 	host: string;
@@ -41,8 +43,8 @@ function Endpoint({
 }
 
 export default function CustomEmailProviderCard({
-	provider,
-}: {
+													provider,
+												}: {
 	provider: CustomEmailProvider;
 }) {
 	const dict = useOptionalDictionary();
@@ -66,6 +68,7 @@ export default function CustomEmailProviderCard({
 						provider={provider}
 						onCompleted={(data) => {
 							modals.close(modalId);
+
 							if (data?.identityPublicId && data.mailboxSlug) {
 								router.push(
 									`/w/${params.wPublicId}/dashboard/mail/${data.identityPublicId}/${data.mailboxSlug}`,
@@ -79,13 +82,43 @@ export default function CustomEmailProviderCard({
 		});
 	};
 
+	const deleteProvider = () => {
+		modals.openConfirmModal({
+			title: "Remove configured provider",
+			children: (
+				<p className="text-sm text-muted-foreground">
+					This removes the provider preset only. Existing connected
+					mailboxes will continue to work.
+				</p>
+			),
+			labels: {
+				confirm: "Remove provider",
+				cancel: "Cancel",
+			},
+			confirmProps: {
+				color: "red",
+			},
+			onConfirm: async () => {
+				const result = await deleteCustomEmailProvider(provider.id);
+
+				if (result.success) {
+					router.refresh();
+				}
+			},
+		});
+	};
+
 	return (
 		<Card className="grid gap-0 overflow-hidden py-0 shadow-none xl:grid-cols-[minmax(14rem,0.75fr)_minmax(20rem,1.25fr)_auto]">
 			<CardContent className="flex flex-col p-5">
 				<div className="flex min-w-0 items-start gap-3">
 					<Mail className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+
 					<div className="min-w-0">
-						<CardTitle className="text-lg">{provider.name}</CardTitle>
+						<CardTitle className="text-lg">
+							{provider.name}
+						</CardTitle>
+
 						<CardDescription className="mt-1">
 							{provider.description ??
 								dict?.platform?.configuredByAdminDescription ??
@@ -93,14 +126,17 @@ export default function CustomEmailProviderCard({
 						</CardDescription>
 					</div>
 				</div>
+
 				<span className="mt-4 inline-flex self-start rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
 					{!provider.imap
 						? (dict?.platform?.smtpOnlyBadge ?? "SMTP only")
 						: provider.credentialMode === "shared"
 							? (dict?.platform?.sharedLoginBadge ?? "Shared login")
-							: (dict?.platform?.separateLoginsBadge ?? "Separate logins")}
+							: (dict?.platform?.separateLoginsBadge ??
+								"Separate logins")}
 				</span>
 			</CardContent>
+
 			<CardContent className="grid gap-3 border-t p-5 xl:border-t-0 xl:border-l">
 				<div className="grid gap-2">
 					<Endpoint
@@ -109,6 +145,7 @@ export default function CustomEmailProviderCard({
 						host={provider.smtp.host}
 						port={provider.smtp.port}
 					/>
+
 					{provider.imap ? (
 						<Endpoint
 							icon={<Inbox className="size-4" />}
@@ -119,8 +156,9 @@ export default function CustomEmailProviderCard({
 					) : null}
 				</div>
 			</CardContent>
+
 			<CardContent className="flex items-center border-t bg-muted/10 p-5 xl:border-t-0 xl:border-l">
-				<div className="w-full xl:w-fit">
+				<div className="flex w-full items-center gap-2 xl:w-auto">
 					<Button
 						fullWidth
 						size="xs"
@@ -131,6 +169,17 @@ export default function CustomEmailProviderCard({
 						{provider.imap
 							? (dict?.platform?.addMailbox ?? "Add mailbox")
 							: (dict?.platform?.addAccount ?? "Add account")}
+					</Button>
+
+					<Button
+						variant="subtle"
+						color="red"
+						size="xs"
+						className="!min-h-11 xl:!min-h-9"
+						aria-label={`Remove ${provider.name}`}
+						onClick={deleteProvider}
+					>
+						<Trash2 className="size-4" />
 					</Button>
 				</div>
 			</CardContent>

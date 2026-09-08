@@ -7,6 +7,7 @@ export type DistributionConfig<
     features: {
         drive: boolean;
         localLogin: boolean;
+        jmap: boolean;
     };
 } & Extra;
 const configs = import.meta.glob("./*/config.ts", {
