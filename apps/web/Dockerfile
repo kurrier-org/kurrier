@@ -82,6 +82,12 @@ RUN pnpm run build
 # -----------------------------
 FROM node:22-alpine
 WORKDIR /app
+
+RUN apk add --no-cache postgresql-client bash
+COPY db/init/db-bootstrap.sh /scripts/db-bootstrap.sh
+COPY db/init/migrations /scripts/migrations
+RUN chmod +x /scripts/db-bootstrap.sh
+
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000
