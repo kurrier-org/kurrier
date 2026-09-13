@@ -1,7 +1,7 @@
 {
 	"name": "@kurrier/oss",
 	"private": true,
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"description": "Open-source Kurrier implementation, including OSS-specific pages, components, features, and integrations.",
 	"type": "module",
 	"scripts": {

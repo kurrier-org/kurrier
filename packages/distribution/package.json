@@ -1,7 +1,7 @@
 {
 	"name": "@kurrier/distribution",
 	"private": true,
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"description": "Distribution composition layer for configuring Kurrier-specific hooks, extensions, and plugins.",
 	"types": "src/index.ts",
 	"main": "src/index.ts",
