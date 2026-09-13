@@ -4,7 +4,7 @@ import type { DriveVolumeEntity } from "@db";
 import { Button } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { IconDatabaseShare } from "@tabler/icons-react";
-import { CheckCircle, Clock, HardDrive, Plus } from "lucide-react";
+import { CheckCircle, HardDrive, Plus } from "lucide-react";
 import Link from "next/link";
 import type * as React from "react";
 import { Container } from "@/components/common/containers";
@@ -14,11 +14,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { SyncProvidersRow } from "@/lib/actions/dashboard";
 
 function SectionHeader({
-	title,
-	count,
-	action,
-	subtitle,
-}: {
+						   title,
+						   count,
+						   action,
+						   subtitle,
+					   }: {
 	title: string;
 	count?: number;
 	subtitle?: string;
@@ -35,17 +35,26 @@ function SectionHeader({
 						{count ?? 0}
 					</span>
 				</div>
+
 				{subtitle ? (
-					<p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
+					<p className="mt-1 text-xs text-muted-foreground">
+						{subtitle}
+					</p>
 				) : null}
 			</div>
-			{action ? <div className="w-full sm:ml-4 sm:w-auto">{action}</div> : null}
+
+			{action ? (
+				<div className="w-full sm:ml-4 sm:w-auto">
+					{action}
+				</div>
+			) : null}
 		</div>
 	);
 }
 
 function EmptyState() {
 	const dict = useOptionalDictionary();
+
 	return (
 		<div className="rounded-lg border border-dashed p-6 text-center">
 			<p className="text-sm text-muted-foreground">
@@ -56,51 +65,35 @@ function EmptyState() {
 	);
 }
 
-function VolumeStatusPill({
-	verified,
-	provisioned,
-}: {
-	verified: boolean;
-	provisioned: boolean;
-}) {
+function VolumeStatusPill() {
 	const dict = useOptionalDictionary();
-
-	if (provisioned) {
-		return (
-			<span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
-				<CheckCircle className="size-3.5" />
-				{dict?.platform?.providerVerified ?? "Provider verified"}
-			</span>
-		);
-	}
 
 	return (
 		<span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
-			{verified ? (
-				<CheckCircle className="size-3.5" />
-			) : (
-				<Clock className="size-3.5" />
-			)}
-			{verified
-				? (dict?.platform?.providerVerified ?? "Provider verified")
-				: (dict?.platform?.providerNotVerified ?? "Provider not verified")}
+			<CheckCircle className="size-3.5" />
+			{dict?.platform?.providerVerified ?? "Provider verified"}
 		</span>
 	);
 }
 
 export default function VolumesManager({
-	userProviders,
-	volumes,
-	workspacePublicId,
-	provisioned,
-}: {
+										   userProviders,
+										   volumes,
+										   workspacePublicId,
+										   canCreateVolume,
+									   }: {
 	userProviders: SyncProvidersRow[];
 	volumes: DriveVolumeEntity[];
 	workspacePublicId: string;
-	provisioned: boolean;
+	canCreateVolume: boolean;
 }) {
 	const dict = useOptionalDictionary();
+
 	const openAddVolumeForm = async () => {
+		if (!canCreateVolume) {
+			return;
+		}
+
 		const openModalId = modals.open({
 			title: (
 				<div className="font-semibold text-brand-foreground">
@@ -112,7 +105,9 @@ export default function VolumesManager({
 			size: "lg",
 			children: (
 				<div className="p-2">
-					<AddVolumeForm onCompleted={() => modals.close(openModalId)} />
+					<AddVolumeForm
+						onCompleted={() => modals.close(openModalId)}
+					/>
 				</div>
 			),
 		});
@@ -139,7 +134,7 @@ export default function VolumesManager({
 							count={volumes.length}
 							subtitle={
 								dict?.platform?.volumesSubtitle ??
-								"Volumes are named roots (local paths or buckets) that users can browse in Drive."
+								"Volumes are named roots that users can browse in Drive."
 							}
 							action={
 								<Button
@@ -147,12 +142,15 @@ export default function VolumesManager({
 									variant="outline"
 									size="sm"
 									className="gap-2"
+									disabled={!canCreateVolume}
 									aria-label={
-										dict?.platform?.createVolumeAriaLabel ?? "Create volume"
+										dict?.platform?.createVolumeAriaLabel ??
+										"Create volume"
 									}
 								>
 									<Plus className="size-4" />
-									{dict?.platform?.createVolume ?? "Create Volume"}
+									{dict?.platform?.createVolume ??
+										"Create Volume"}
 								</Button>
 							}
 						/>
@@ -163,15 +161,16 @@ export default function VolumesManager({
 							<div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
 								{volumes.map((v) => {
 									const volumeProvider = userProviders.find(
-										(provider) => provider.id === v.providerId,
+										(provider) =>
+											provider.id === v.providerId,
 									);
-									const verification = userProviders.find(
-										(provider) => provider.id === v.providerId,
-									)?.metaData?.verification;
+
 									const providerType =
 										volumeProvider?.type ??
-										(v.kind === "cloud" ? "s3" : "local");
-									const isLocal = v.kind === "local";
+										(v.kind === "cloud"
+											? "s3"
+											: "local");
+
 									return (
 										<div
 											key={v.id}
@@ -180,29 +179,38 @@ export default function VolumesManager({
 											<div className="min-w-0">
 												<div className="flex items-start gap-2">
 													<HardDrive className="mt-1 size-4 shrink-0 text-muted-foreground" />
+
 													<div className="min-w-0">
 														<div className="truncate font-semibold text-brand-foreground flex gap-2 flex-wrap items-center">
-															<span>{v.label}</span>
+															<span>
+																{v.label}
+															</span>
 															<span className="text-xxs text-muted-foreground font-normal">
-																· {providerType?.toUpperCase()}
+																·{" "}
+																{providerType?.toUpperCase()}
 															</span>
 														</div>
 
 														<div className="mt-2 flex flex-wrap items-center gap-2">
-															<VolumeStatusPill
-																verified={isLocal ? true : verification?.store}
-																provisioned={provisioned}
-															/>
+															<VolumeStatusPill />
+
 															{v.createdAt ? (
 																<span className="text-xs text-muted-foreground">
-																	{dict?.platform?.createdColonPrefix ??
+																	{dict?.platform
+																			?.createdColonPrefix ??
 																		"Created:"}{" "}
 																	{new Intl.DateTimeFormat(
-																		dict?.locale ?? "en",
+																		dict?.locale ??
+																		"en",
 																		{
-																			dateStyle: "medium",
+																			dateStyle:
+																				"medium",
 																		},
-																	).format(new Date(v.createdAt))}
+																	).format(
+																		new Date(
+																			v.createdAt,
+																		),
+																	)}
 																</span>
 															) : null}
 														</div>
@@ -212,13 +220,16 @@ export default function VolumesManager({
 
 											<div className="flex gap-2 sm:gap-3 w-full sm:w-auto flex-wrap">
 												<Button
-													leftSection={<IconDatabaseShare className="size-4" />}
+													leftSection={
+														<IconDatabaseShare className="size-4" />
+													}
 													size="xs"
 													className="flex-1 sm:flex-none"
 													href={`/w/${workspacePublicId}/dashboard/drive/volumes/${v.publicId}`}
 													component={Link}
 												>
-													{dict?.platform?.view ?? "View"}
+													{dict?.platform?.view ??
+														"View"}
 												</Button>
 											</div>
 										</div>

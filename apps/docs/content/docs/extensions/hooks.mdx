@@ -1,0 +1,105 @@
+---
+title: Hooks
+description: Run typed server extension logic at supported Kurrier lifecycle events.
+---
+
+Hooks let trusted extensions participate in Kurrier lifecycle behavior without putting distribution-specific feature logic directly into core actions.
+
+Hooks are server-side extension capabilities.
+
+## Running a hook
+
+Core Kurrier code runs hooks through `kurrierServer`:
+
+```ts
+await kurrierServer.hooks.run("workspace.beforeCreate", {
+    userId,
+});
+```
+
+The application code knows the lifecycle event and its context, but does not know which distribution or extension handles it.
+
+## Declaring a hook
+
+A server extension attaches handlers by declaring them in `hooks`:
+
+```ts
+import type { KurrierExtension } from "@extensions";
+import { enforceSingleWorkspace } from "./before-create";
+
+export const singleWorkspaceServerExtension = {
+    manifest: {
+        id: "oss.single-workspace",
+        name: "Single Workspace",
+    },
+    hooks: {
+        "workspace.beforeCreate": enforceSingleWorkspace,
+    },
+} satisfies KurrierExtension;
+```
+
+When Kurrier runs `workspace.beforeCreate`, every registered handler for that hook is awaited.
+
+## Typed hook contexts
+
+Supported hook names and their context types are defined by Kurrier's `HookMap`.
+
+For example, the current workspace lifecycle includes contexts shaped like:
+
+```ts
+export type HookMap = {
+    "workspace.beforeCreate": {
+        userId: string;
+    };
+    "workspace.afterCreate": {
+        userId: string;
+        workspaceId: string;
+    };
+};
+```
+
+The exact `HookMap` in the source tree is authoritative.
+
+Because the hook name determines its context type, TypeScript checks both the caller and handler against the same contract.
+
+## Before and after hooks
+
+A `before` hook is useful for validation, policy, or behavior that must happen before the core operation.
+
+For example, the OSS distribution can enforce its single-workspace rule from:
+
+```ts
+hooks: {
+    "workspace.beforeCreate": enforceSingleWorkspace,
+},
+```
+
+An `after` hook is useful for work that depends on the completed core operation:
+
+```ts
+hooks: {
+    "workspace.afterCreate": logWorkspaceCreated,
+},
+```
+
+## Adding a new lifecycle point
+
+Use an existing hook when one already represents the lifecycle event your feature needs.
+
+If a genuinely new lifecycle point is required:
+
+1. add the hook name and typed context to `HookMap`
+2. run it from the appropriate core application code through `kurrierServer.hooks.run(...)`
+3. implement the feature-specific handler in the extension
+
+Keep the core hook context focused on the data extensions need.
+
+## Registration
+
+Server extensions are registered by the active distribution. Feature code should declare hooks but should not register itself manually.
+
+The web application and worker are separate runtimes, so each runtime performs its own server extension registration when needed.
+
+## Hooks are optional
+
+Many extensions only contribute UI. Do not add hooks unless the feature needs to participate in behavior elsewhere in Kurrier.

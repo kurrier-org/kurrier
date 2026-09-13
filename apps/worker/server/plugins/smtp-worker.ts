@@ -27,6 +27,7 @@ import {eq, and, gt, or} from "drizzle-orm";
 import { isGmailMailbox, isGmailThread } from "@common";
 import { moveGmailMail } from "../../lib/gmail/gmail-move";
 import { gmailSetFlags } from "../../lib/gmail/gmail-flags";
+import { canSyncIdentity } from "../../lib/access";
 
 export default defineNitroPlugin(async (nitroApp) => {
 	const imapInstances = new Map<string, ImapFlow>();
@@ -39,6 +40,13 @@ export default defineNitroPlugin(async (nitroApp) => {
 		async (job) => {
 			if (job.name === "delta-fetch") {
 				const identityId = job.data.identityId;
+				if (!(await canSyncIdentity(identityId))) {
+					console.info(
+						`[SMTP] delta fetch disabled identity=${identityId}`,
+					);
+					return { success: true };
+				}
+
 				await deltaFetch(identityId, imapInstances);
 				return { success: true };
 			} else if (job.name === "mail:move") {
@@ -90,6 +98,12 @@ export default defineNitroPlugin(async (nitroApp) => {
 
 			} else if (job.name === "imap:backfill-account") {
 				const { identityId } = job.data as { identityId: string };
+				if (!(await canSyncIdentity(identityId))) {
+					console.info(
+						`[IMAP] backfill disabled identity=${identityId}`,
+					);
+					return { success: true };
+				}
 
 				const canContinue = await startBackfillForIdentity(
 					identityId,
@@ -171,6 +185,14 @@ export default defineNitroPlugin(async (nitroApp) => {
 			} else if (job.name === "imap:backfill-discover") {
 				const identityId = job.data.identityId;
 				const workspaceId = job.data.workspaceId;
+				if (!(await canSyncIdentity(identityId))) {
+					console.info(
+						`[IMAP] mailbox discovery disabled identity=${identityId}`,
+					);
+					return { success: true };
+				}
+
+
 				const client = await initSmtpClient(identityId, imapInstances);
 				if (client?.authenticated && client?.usable) {
 					await discoverMailboxes(client, identityId, workspaceId);

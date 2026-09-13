@@ -1,0 +1,159 @@
+---
+title: Pages and navigation
+description: Contribute authenticated dashboard and auth pages to Kurrier.
+---
+
+Web extensions can contribute pages to Kurrier's authenticated UI.
+
+The current page contribution areas are:
+
+- `pages.dashboard`
+- `pages.auth`
+
+Dashboard navigation is contributed separately through `navigation.dashboard`.
+
+## Dashboard pages
+
+Start with a normal React component:
+
+```tsx
+export default function EmailTemplatesPage() {
+    return (
+        <div>
+            <h1 className="text-2xl font-semibold">Email Templates</h1>
+            <p className="text-muted-foreground">
+                Create and manage reusable email templates.
+            </p>
+        </div>
+    );
+}
+```
+
+Expose it under `contributions.pages.dashboard`:
+
+```ts
+pages: {
+    dashboard: [
+        {
+            id: "email-templates",
+            path: "email-templates",
+            component: EmailTemplatesPage,
+        },
+    ],
+},
+```
+
+Kurrier resolves the contributed page inside its extension dashboard route.
+
+The extension owns the content inside the main area. Kurrier owns the dashboard shell, including the surrounding sidebar and application layout.
+
+## Dashboard navigation
+
+Add a navigation contribution when users need a visible route to the feature:
+
+```ts
+contributions: {
+    navigation: {
+        dashboard: [
+            {
+                id: "email-templates",
+                title: "Email Templates",
+                path: "platform/extensions/email-templates",
+                icon: "FileText",
+            },
+        ],
+    },
+    pages: {
+        dashboard: [
+            {
+                id: "email-templates",
+                path: "email-templates",
+                component: EmailTemplatesPage,
+            },
+        ],
+    },
+},
+```
+
+Kurrier collects navigation from registered web extensions and renders it as part of the normal dashboard navigation.
+
+Navigation data is serializable. Icons are identified by name rather than by passing React components through the contribution definition.
+
+## Owner-only navigation
+
+A dashboard navigation item can be restricted to workspace owners:
+
+```ts
+{
+    id: "workspace-members",
+    title: "Members",
+    path: "platform/extensions/workspace-members",
+    icon: "Users",
+    ownerOnly: true,
+}
+```
+
+This controls navigation presentation. Sensitive server operations should still enforce their own authorization.
+
+## Auth pages
+
+Extensions can also contribute pages to Kurrier's authenticated auth-flow route:
+
+```ts
+pages: {
+    auth: [
+        {
+            id: "workspace-invite",
+            path: "invite",
+            component: WorkspaceInviteLandingPage,
+        },
+    ],
+},
+```
+
+For example, an invitation feature can use a route under:
+
+```text
+/{locale}/auth/invite/...
+```
+
+Kurrier resolves the matching extension contribution by path and passes the remaining route segments and search parameters to the contributed page.
+
+## Extension page layouts
+
+A page contribution may provide an optional inner layout:
+
+```ts
+{
+    id: "workspace-invite",
+    path: "invite",
+    component: WorkspaceInviteLandingPage,
+    layout: WorkspaceInviteLayout,
+}
+```
+
+This lets the extension provide feature-specific framing without taking ownership of Kurrier's outer application routing.
+
+## Public pages are different
+
+Public landing pages are not generic extension contributions.
+
+They belong to the active **distribution**, because public website composition, metadata, and product presentation are distribution concerns.
+
+Use extension pages for authenticated application features.
+
+## Keep feature code together
+
+A typical UI feature can stay self-contained:
+
+```text
+extensions/
+└── workspace-members/
+    ├── web.ts
+    ├── actions.ts
+    ├── workspace-members-page.tsx
+    ├── workspace-invite-landing-page.tsx
+    └── components/
+```
+
+The contributed components can use the same trusted application utilities, actions, and packages as other Kurrier code.

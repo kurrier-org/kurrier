@@ -1,0 +1,21 @@
+import { redirect } from "next/navigation";
+
+import { getDefaultWorkspacePath, isSignedIn } from "@/lib/actions/auth";
+import { withLocale } from "@/lib/utils";
+
+export async function AuthLayout({
+                                     children,
+                                     params,
+                                 }: {
+    children: React.ReactNode;
+    params: Promise<{ locale: string }>;
+}) {
+    const { locale } = await params;
+    const user = await isSignedIn();
+
+    if (user) {
+        redirect(withLocale(locale, await getDefaultWorkspacePath(user)));
+    }
+
+    return <>{children}</>;
+}

@@ -1,57 +1,27 @@
-import { Suspense } from "react";
-import { connection } from "next/server";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { fetchWorkspace } from "@/lib/actions/workspace";
-import { getDictionary } from "@/lib/dictionaries";
+import { access } from "@/lib/actions/shared";
+import {WorkspaceUnavailable} from "@/components/dashboard/workspace-unavailable";
 
-async function StorageLimitBanner({
-									  locale,
-								  }: {
-	locale: string;
+export default async function DashboardLayout({ children }: {
+	children: React.ReactNode;
 }) {
-	await connection();
 
-	const [workspace, dict] = await Promise.all([
-		fetchWorkspace(),
-		getDictionary(locale),
-	]);
+	const { canUseWorkspace, reason } = await access("canUseWorkspace");
 
-	if (!workspace?.isStorageOverLimit) {
-		return null;
+	if (!canUseWorkspace) {
+		return <WorkspaceUnavailable reason={reason} />;
 	}
 
 	return (
-		<div className="bg-red-100 w-full mb-4 rounded text-center z-10 text-sm text-red-700 p-2">
-			{dict.dashboard.storageOverLimit}
-		</div>
-	);
-}
-
-export default async function DashboardLayout({
-												  children,
-												  params,
-											  }: {
-	children: React.ReactNode;
-	params: Promise<{ locale: string }>;
-}) {
-	const { locale } = await params;
-
-	return (
-		<>
-			<Suspense fallback={null}>
-				<StorageLimitBanner locale={locale} />
-			</Suspense>
-
-			<SidebarProvider
-				style={
-					{
-						"--sidebar-width": "250px",
-					} as React.CSSProperties
-				}
-				className="sidebar-animation"
-			>
-				{children}
-			</SidebarProvider>
-		</>
+		<SidebarProvider
+			style={
+				{
+					"--sidebar-width": "250px",
+				} as React.CSSProperties
+			}
+			className="sidebar-animation"
+		>
+			{children}
+		</SidebarProvider>
 	);
 }

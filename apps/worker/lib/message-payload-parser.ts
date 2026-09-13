@@ -30,7 +30,10 @@ type SearchJob = {
 	contactId: string | null;
 	ownerId?: string;
 };
-type WebhookJob = { message: any; rawEmail: string };
+type WebhookJob = {
+	messageId: string;
+	rawStorageKey: string;
+};
 type ICSJob = {
 	messageId: string;
 	messageAttachmentId: string;
@@ -96,8 +99,12 @@ async function flushBatches() {
 			const jobs = webhookBuffer.map((job) => ({
 				name: "webhook:message.received",
 				data: {
-					message: job.message,
-					rawEmail: job.rawEmail,
+					messageId: job.messageId,
+					rawStorageKey: job.rawStorageKey,
+				},
+				opts: {
+					removeOnComplete: true,
+					removeOnFail: true,
 				},
 			}));
 
@@ -545,8 +552,8 @@ export async function parseAndStoreEmail(
 
 	if (mode === "live") {
 		webhookBuffer.push({
-			message,
-			rawEmail,
+			messageId: message.id,
+			rawStorageKey,
 		});
 
 		rulesBuffer.push({

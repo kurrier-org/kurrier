@@ -85,14 +85,12 @@ export type MaterializedSmtpConfig = Record<string, string> & {
 
 type Warn = (message: string) => void;
 
-/** Parse non-secret instance-level email provider presets from an environment variable. */
-export function parseCustomEmailProviders(
+export function parseCustomEmailProvidersValue(
+	raw: string,
 	warn: Warn = console.warn,
 ): CustomEmailProvider[] {
-	const raw = process.env.CUSTOM_EMAIL_PROVIDERS;
-	if (!raw?.trim()) return [];
-
 	let input: unknown;
+
 	try {
 		input = JSON.parse(raw);
 	} catch {
@@ -114,6 +112,7 @@ export function parseCustomEmailProviders(
 
 	input.forEach((candidate, index) => {
 		const parsed = CustomEmailProviderSchema.safeParse(candidate);
+
 		if (!parsed.success) {
 			warn(
 				`[CUSTOM_EMAIL_PROVIDERS] Skipping invalid provider at index ${index}: ${z.prettifyError(parsed.error)}`,
@@ -135,7 +134,22 @@ export function parseCustomEmailProviders(
 	return providers;
 }
 
-/** Build the existing encrypted SMTP/IMAP account payload from a trusted preset. */
+export function parseCustomEmailProviders(
+	warn: Warn = console.warn,
+): CustomEmailProvider[] {
+	const raw = process.env.CUSTOM_EMAIL_PROVIDERS;
+
+	if (!raw?.trim()) {
+		return [];
+	}
+
+	return parseCustomEmailProvidersValue(raw, warn);
+}
+
+export function getCustomEmailProviders(): CustomEmailProvider[] {
+	return parseCustomEmailProviders();
+}
+
 export function materializeCustomEmailProvider(
 	provider: CustomEmailProvider,
 	credentials: CustomEmailProviderCredentials,

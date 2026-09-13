@@ -7,6 +7,7 @@ export type DistributionConfig<
     features: {
         drive: boolean;
         localLogin: boolean;
+        jmap: boolean;
     };
 } & Extra;
 const configs = import.meta.glob("./*/config.ts", {
@@ -14,10 +15,11 @@ const configs = import.meta.glob("./*/config.ts", {
 }) as Record<
     string,
     {
-        DISTRIBUTION_CONFIG: DistributionConfig;
+        DISTRIBUTION_CONFIG: DistributionConfig<{}>;
     }
 >;
-export const DEFAULT_DISTRIBUTION = "oss" as const;
+import { DEFAULT_DISTRIBUTION } from "./constants";
+export { DEFAULT_DISTRIBUTION };
 const distribution = process.env.NEXT_PUBLIC_KURRIER_DISTRIBUTION ?? DEFAULT_DISTRIBUTION;
 const selected = configs[`./${distribution}/config.ts`];
 if (!selected) {

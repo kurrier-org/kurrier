@@ -78,9 +78,7 @@ export default async function Page({
 					value: formatBytes(
 						statsData?.totalStorageBytes || statsData?.storageBytesUsed || 0,
 					),
-					hint: statsData?.isStorageOverLimit
-						? p.overStorageLimit
-						: p.withinPlanLimit,
+					hint: p.storage,
 				},
 			]
 		: [

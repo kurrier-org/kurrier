@@ -1,5 +1,6 @@
 import { driveVolumes } from "@db";
 import { STORAGE_PROVIDERS } from "@schema";
+import { DISTRIBUTION_CONFIG } from "@distribution";
 import { redirect } from "next/navigation";
 import { Container } from "@/components/common/containers";
 import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
@@ -8,20 +9,25 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { getWorkspacePublicId, rlsClient } from "@/lib/actions/clients";
 import { syncProviders } from "@/lib/actions/dashboard";
+import { access } from "@/lib/actions/shared";
 import { getDictionary } from "@/lib/dictionaries";
-import { DISTRIBUTION_CONFIG } from "@distribution/config";
 
 export default async function ProvidersPage({
-	params,
-}: {
+												params,
+											}: {
 	params: Promise<{ locale: string }>;
 }) {
 	const { locale } = await params;
 	const dict = await getDictionary(locale);
 	const workspacePublicId = await getWorkspacePublicId();
+
 	if (!DISTRIBUTION_CONFIG.features.drive) {
-		redirect(`/${locale}/w/${workspacePublicId}/dashboard/platform/overview`);
+		redirect(
+			`/${locale}/w/${workspacePublicId}/dashboard/platform/overview`,
+		);
 	}
+
+	const { canCreateStorageVolume } = await access("canCreateStorageVolume");
 
 	const userProviders = await syncProviders();
 	const rls = await rlsClient();
@@ -38,6 +44,7 @@ export default async function ProvidersPage({
 					/>
 				</div>
 			</header>
+
 			<div className="flex flex-1 flex-col gap-4 p-4 pt-0">
 				<Container variant="wide">
 					<div className="flex items-center justify-between my-4">
@@ -54,19 +61,20 @@ export default async function ProvidersPage({
 						{STORAGE_PROVIDERS.map((p) => (
 							<ProviderCardShell
 								key={p.key}
-								provisioned={true}
+								mode="managed"
 								spec={p}
 								userProviders={userProviders}
 							/>
 						))}
 					</div>
 				</Container>
-				<div className={"mx-1"}>
+
+				<div className="mx-1">
 					<VolumesManager
 						userProviders={userProviders}
 						workspacePublicId={workspacePublicId}
 						volumes={vols}
-						provisioned={true}
+						canCreateVolume={canCreateStorageVolume}
 					/>
 				</div>
 			</div>

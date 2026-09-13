@@ -7,8 +7,6 @@
 	"messagesStored": "Messages Stored",
 	"inLast24h": "in last 24h",
 	"storageUsed": "Storage Used",
-	"overStorageLimit": "Over storage limit",
-	"withinPlanLimit": "Within plan limit",
 	"messages": "Messages",
 	"threads": "Threads",
 	"accessibleConversations": "Accessible conversations",

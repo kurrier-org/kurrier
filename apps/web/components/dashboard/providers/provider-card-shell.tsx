@@ -1,7 +1,7 @@
 import { providerSecrets } from "@db";
 import type { ProviderSpec } from "@schema";
 import ProviderCard from "@/components/dashboard/providers/provider-card";
-import ProvisionedProviderCard from "@/components/dashboard/providers/provisioned-provider-card";
+import ManagedProviderCard from "@/components/dashboard/providers/managed-provider-card";
 import {
 	fetchDecryptedSecrets,
 	type SyncProvidersRow,
@@ -9,18 +9,23 @@ import {
 
 type Props = {
 	userProviders: SyncProvidersRow[];
-	provisioned: boolean;
+	mode: "managed" | "configurable";
 	spec: ProviderSpec;
 };
 
 export default async function ProviderCardShell({
-	userProviders,
-	provisioned,
-	spec,
-}: Props) {
+													userProviders,
+													mode,
+													spec,
+												}: Props) {
 	const userProvider = userProviders.find((p) => p.type === spec.key);
+
 	if (!userProvider) {
 		return null;
+	}
+
+	if (mode === "managed") {
+		return <ManagedProviderCard spec={spec} />;
 	}
 
 	const [decryptedSecret] = await fetchDecryptedSecrets({
@@ -30,13 +35,7 @@ export default async function ProviderCardShell({
 		parentId: userProvider.id,
 	});
 
-	return provisioned ? (
-		<ProvisionedProviderCard
-			spec={spec}
-			userProvider={userProvider}
-			decryptedSecret={decryptedSecret}
-		/>
-	) : (
+	return (
 		<ProviderCard
 			spec={spec}
 			userProvider={userProvider}

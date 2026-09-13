@@ -2,14 +2,14 @@
 
 import {
 	Blocks,
-	ChevronRight,
+	ChevronRight, CreditCard,
 	FolderSync,
 	HardDrive,
 	Key,
 	LayoutDashboard,
 	type LucideIcon,
 	Plug,
-	Send,
+	Send, Users,
 	Vault,
 	Webhook,
 } from "lucide-react";
@@ -33,17 +33,35 @@ import {
 	SidebarMenuSubButton,
 	SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import {DashboardNavItem} from "@extensions";
 
 export function NavMain({
 	workspacePublicId,
 	workspaceRole,
+	extensionNavItems
 }: {
 	workspacePublicId?: string;
 	workspaceRole?: string;
+	extensionNavItems: DashboardNavItem[];
 }) {
 	const pathname = usePathname();
 	const dict = useDictionary();
 	const { drive } = useSiteFeatures();
+	const extensionIcons: Record<string, LucideIcon> = {
+		Users,
+		CreditCard,
+	};
+
+	const extensionPlatformItems = extensionNavItems
+		.filter((item) => !item.ownerOnly || workspaceRole === "owner")
+		.map((item) => ({
+			title: item.title,
+			url: `/w/${workspacePublicId}/dashboard/${item.path}`,
+			icon: item.icon
+				? extensionIcons[item.icon] ?? Blocks
+				: Blocks,
+			items: [],
+		}));
 
 	const navPlatformItems: {
 		title: string;
@@ -117,6 +135,7 @@ export function NavMain({
 					},
 				]
 			: []),
+		...extensionPlatformItems,
 	];
 
 	return (

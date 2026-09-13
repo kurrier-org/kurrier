@@ -18,7 +18,6 @@ import { SiteFeaturesProvider } from "@/components/providers/site-features-provi
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import {
-	ColorSchemeScript,
 	MantineProvider,
 	mantineHtmlProps,
 } from "@mantine/core";
@@ -84,12 +83,6 @@ export default async function RootLayout({
 			className={`${initialDark ? "dark" : ""}`}
 			{...mantineHtmlProps}
 		>
-			<head>
-				<ColorSchemeScript
-					defaultColorScheme={colorScheme}
-					nonce="8IBTHwOdqNKAWeKl7plt8g=="
-				/>
-			</head>
 			<body
 				className={`${jakartaSans.variable} ${jetbrains.variable} font-sans bg-background text-foreground antialiased`}
 			>

@@ -1,14 +1,14 @@
 import { defineNitroPlugin } from "nitropack/runtime";
 import { JobScheduler, Worker } from "bullmq";
 import { redisConnection } from "../../lib/get-redis";
-import { db, mailboxThreads, MessageEntity, providers } from "@db";
+import {db, mailboxThreads, messages, providers} from "@db";
 import {INBOUND_SPEC, JMAP_SPEC, MAILTRAP_SPEC, PROVIDERS, STORAGE_PROVIDERS} from "@schema";
 import { kvDel, kvGet, kvSet } from "@common";
 import { processWebhook } from "../../lib/webhooks/message.received";
-import { and, isNull, lte } from "drizzle-orm";
+import {and, eq, isNull, lte} from "drizzle-orm";
 import { processRules } from "../../lib/rules/rules-processor";
 
-import { PutBucketCorsCommand } from "@aws-sdk/client-s3";
+import {GetObjectCommand, PutBucketCorsCommand} from "@aws-sdk/client-s3";
 import { s3 } from "../../lib/create-s3-client";
 import { getServerEnv } from "@schema";
 
@@ -86,11 +86,38 @@ export default defineNitroPlugin(async (nitroApp) => {
 					return { success: true };
 				}
 				case "webhook:message.received": {
-					const { message, rawEmail } = job.data as {
-						message: MessageEntity;
-						rawEmail: string;
+					const { messageId, rawStorageKey } = job.data as {
+						messageId: string;
+						rawStorageKey: string;
 					};
+
+					const [message] = await db
+						.select()
+						.from(messages)
+						.where(eq(messages.id, messageId))
+						.limit(1);
+
+					if (!message) {
+						return { success: false, reason: "message-not-found" };
+					}
+
+					const response = await s3.send(
+						new GetObjectCommand({
+							Bucket: process.env.S3_BUCKET!,
+							Key: rawStorageKey,
+						}),
+					);
+
+					if (!response.Body) {
+						throw new Error(
+							`Raw email not found in storage: ${rawStorageKey}`,
+						);
+					}
+
+					const rawEmail = await response.Body.transformToString();
+
 					await processWebhook({ message, rawEmail });
+
 					return { success: true };
 				}
 				case "rules:processor": {

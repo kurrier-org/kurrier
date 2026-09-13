@@ -1,0 +1,145 @@
+---
+title: What are Extensions
+description: Add trusted, self-contained features to Kurrier with pages, navigation, and lifecycle hooks.
+---
+
+Extensions are Kurrier's trusted in-process feature mechanism.
+
+They let a feature connect to Kurrier without hardcoding distribution-specific behavior into the core application. An extension can contribute server lifecycle hooks, authenticated dashboard pages and navigation, and authenticated auth-flow pages.
+
+Kurrier itself uses the same extension contract for first-party features.
+
+## What belongs in an extension?
+
+An extension is a good fit when a feature needs to:
+
+- add a page inside the authenticated Kurrier dashboard
+- add an item to dashboard navigation
+- add a page to an authenticated auth flow, such as an invitation
+- run code at a supported Kurrier lifecycle event
+- combine server behavior and web UI into one feature
+
+For example, a workspace-members extension might contribute a **Members** dashboard page and an **Invite** auth page, while a single-workspace extension might only contribute a server hook.
+
+## Server and web are separate
+
+Kurrier's web application and worker are separate runtimes. Extensions therefore expose server and web contributions separately.
+
+A typical feature looks like:
+
+```text
+extensions/
+└── workspace-members/
+    ├── server.ts
+    ├── web.ts
+    ├── actions.ts
+    ├── workspace-members-page.tsx
+    └── workspace-invite-landing-page.tsx
+```
+
+`server.ts` contains server-side extension behavior such as hooks.
+
+`web.ts` contains UI contributions such as pages and navigation.
+
+An extension does not need both. A server-only feature can expose only `server.ts`, and a UI-only feature can expose only `web.ts`.
+
+## A web extension
+
+```ts
+import type { KurrierExtension } from "@extensions";
+import WorkspaceMembersPage from "./workspace-members-page";
+import WorkspaceInviteLandingPage from "./workspace-invite-landing-page";
+
+export const workspaceMembersWebExtension = {
+    manifest: {
+        id: "oss.workspace-members",
+        name: "Workspace Members",
+    },
+    contributions: {
+        navigation: {
+            dashboard: [
+                {
+                    id: "workspace-members",
+                    title: "Members",
+                    path: "platform/extensions/workspace-members",
+                    icon: "Users",
+                    ownerOnly: true,
+                },
+            ],
+        },
+        pages: {
+            dashboard: [
+                {
+                    id: "workspace-members",
+                    path: "workspace-members",
+                    component: WorkspaceMembersPage,
+                },
+            ],
+            auth: [
+                {
+                    id: "workspace-invite",
+                    path: "invite",
+                    component: WorkspaceInviteLandingPage,
+                },
+            ],
+        },
+    },
+} satisfies KurrierExtension;
+```
+
+Kurrier owns the surrounding dashboard or auth route. The extension owns the feature content rendered inside it.
+
+## A server extension
+
+```ts
+import type { KurrierExtension } from "@extensions";
+import { enforceSingleWorkspace } from "./before-create";
+
+export const singleWorkspaceServerExtension = {
+    manifest: {
+        id: "oss.single-workspace",
+        name: "Single Workspace",
+    },
+    hooks: {
+        "workspace.beforeCreate": enforceSingleWorkspace,
+    },
+} satisfies KurrierExtension;
+```
+
+Core application code runs the lifecycle hook through `kurrierServer`; it does not know which distribution or extension implements the behavior.
+
+## Extensions and distributions
+
+Extensions and distributions solve different problems.
+
+**Extensions define features.**
+
+They contribute application behavior and authenticated UI.
+
+**Distributions compose the product.**
+
+A distribution decides which extensions are installed, owns public website pages and product metadata, provides static product configuration, and defines runtime product access policy.
+
+The OSS distribution composes the extensions shipped with Kurrier and provides the default runtime access policy.
+
+## Trusted code
+
+The current extension system is for trusted in-process code.
+
+Extensions run with the Kurrier application and may use the same database, environment, application packages, server actions, and other resources as Kurrier itself.
+
+Installing a trusted extension should therefore be treated like installing server-side application code.
+
+A future remote marketplace can use a separate permission-based model. It does not change the trusted extension mechanism documented here.
+
+## Start here
+
+If you are building a feature, continue to **Creating an extension**.
+
+For working examples, see:
+
+```text
+packages/oss/src/extensions/
+```
+
+These docs describe the extension system as shipped in the Kurrier OSS repository.

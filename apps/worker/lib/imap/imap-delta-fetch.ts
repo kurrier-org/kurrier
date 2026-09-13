@@ -13,6 +13,7 @@ import type { ImapFlow } from "imapflow";
 import { syncMailbox } from "./imap-sync-mailbox";
 import { upsertMailboxThreadItem } from "@common";
 import { getRedis } from "../../lib/get-redis";
+import { canSyncIdentity } from "../access";
 
 /**
  * Prevent more than one delta sync from running for the same
@@ -411,6 +412,13 @@ export const deltaFetch = async (
 	identityId: string,
 	imapInstances: Map<string, ImapFlow>,
 ) => {
+	if (!(await canSyncIdentity(identityId))) {
+		console.info(
+			`[IMAP] delta sync disabled identity=${identityId}`,
+		);
+		return;
+	}
+
 	const existing =
 		runningDeltaFetches.get(identityId);
 

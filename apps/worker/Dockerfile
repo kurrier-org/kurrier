@@ -1,4 +1,4 @@
-FROM node:22-alpine AS build
+FROM node:24.20.0-alpine AS build
 WORKDIR /repo
 RUN corepack enable && corepack prepare pnpm@10.18.3 --activate
 
@@ -13,8 +13,17 @@ WORKDIR /repo/apps/worker
 ENV NITRO_PRESET=node-server
 RUN pnpm run build
 
-FROM node:22-alpine
+RUN rm -rf .output/server/node_modules/.nitro/nodemailer@9.0.6 \
+    && cp -RL node_modules/nodemailer .output/server/node_modules/.nitro/nodemailer@9.0.6
+
+FROM node:24.20.0-alpine
 WORKDIR /app
+
+RUN apk add --no-cache postgresql-client bash
+COPY db/init/db-bootstrap.sh /scripts/db-bootstrap.sh
+COPY db/init/migrations /scripts/migrations
+RUN chmod +x /scripts/db-bootstrap.sh
+
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3001
@@ -24,5 +33,6 @@ COPY pnpm-lock.yaml ./pnpm-lock.yaml
 RUN corepack enable && corepack prepare pnpm@10.18.3 --activate && pnpm install --prod
 
 COPY --from=build /repo/apps/worker/.output ./.output
+
 EXPOSE 3001
-CMD ["node",".output/server/index.mjs"]
+CMD ["node", ".output/server/index.mjs"]

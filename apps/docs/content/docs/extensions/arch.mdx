@@ -1,0 +1,241 @@
+---
+title: How extensions work
+description: Understand distributions, runtime registration, and Kurrier's trusted extension architecture.
+---
+
+You do not need to understand this page to create a feature. If you just want to add one, start with **Creating an extension**.
+
+## The short version
+
+Feature packages expose separate server and web extension lists. The active distribution selects those lists, and each Kurrier runtime registers only what it needs.
+
+```text
+Feature implementation
+    ↓
+server.ts / web.ts
+    ↓
+package server/web extension lists
+    ↓
+active distribution adapters
+    ↓
+server/web registration
+    ↓
+kurrierServer / kurrierWeb
+    ↓
+hooks, pages and navigation
+```
+
+## Why server and web are separate
+
+Kurrier's Next.js application and Nitro worker are separate Node runtimes with separate in-memory registries.
+
+A worker must not load React dashboard components just because a feature also has server hooks. Likewise, web contribution registration should not require importing unrelated worker behavior.
+
+For that reason, extension packages expose separate entry points:
+
+```text
+extension/
+├── server.ts
+└── web.ts
+```
+
+A feature only needs the entry points it actually uses.
+
+## Package extension lists
+
+A package groups its features into runtime-specific collections.
+
+Conceptually:
+
+```ts
+export const serverExtensions = [
+    singleWorkspaceServerExtension,
+];
+
+export const webExtensions = [
+    someWebExtension,
+];
+```
+
+For Kurrier's OSS features, these live under:
+
+```text
+packages/oss/src/extensions/
+```
+
+
+## Distribution adapters
+
+The distribution layer decides which extension lists belong to a product.
+
+The OSS distribution adapter exposes the server and web extensions shipped with Kurrier.
+
+The generic registration layer then selects the active distribution.
+
+Server-side distribution selection uses explicit static imports and a distribution switch. This keeps the runtime composition obvious and ensures bundlers can see every supported implementation.
+
+Conceptually:
+
+```ts
+switch (distribution) {
+    case "oss":
+        registerOssExtensions();
+        return;
+}
+```
+
+The same idea is used for the web registration boundary.
+
+## Registration is runtime-local
+
+Web and worker processes do not share an extension registry.
+
+Each runtime registers the appropriate extension collection for itself.
+
+`kurrierServer` ensures server extensions are registered before running hooks:
+
+```ts
+await kurrierServer.hooks.run("workspace.beforeCreate", {
+    userId,
+});
+```
+
+`kurrierWeb` exposes registered UI contributions in structured areas such as:
+
+```ts
+kurrierWeb.pages.dashboard();
+kurrierWeb.pages.auth();
+kurrierWeb.navigation.dashboard();
+```
+
+Application code consumes these extension points rather than importing individual distribution features.
+
+## The extension registry
+
+`registerExtension()` activates a trusted extension in the current runtime.
+
+For server extensions, registration attaches declared handlers to the hook registry.
+
+For web extensions, registration makes page and navigation contributions available to `kurrierWeb`.
+
+Feature implementations should not call `registerExtension()` themselves. The active distribution owns composition and registration.
+
+## Distribution responsibilities
+
+A distribution is more than a list of extensions.
+
+It defines the product composition around Kurrier core, including:
+
+- which extensions are enabled
+- public website pages
+- metadata and product presentation
+- layouts
+- static feature configuration
+- schema composition for distribution tooling
+- runtime product access policy
+
+Static product capabilities belong in distribution config. For example, whether a distribution includes Drive at all can be represented as a static feature flag.
+
+Workspace-specific runtime entitlement is separate.
+
+## Runtime access policy is not an extension
+
+Runtime product access is a distribution concern.
+
+Kurrier exposes a distribution access contract for workspace-level capabilities such as:
+
+```ts
+type WorkspaceAccess = {
+    canUseWorkspace: boolean;
+    canCreateProvider: boolean;
+    canSyncMail: boolean;
+    canCreateStorageVolume: boolean;
+    reason: string | null;
+};
+```
+
+The exact current contract in the source tree is authoritative.
+
+The OSS distribution implements the default access policy. The contract keeps runtime policy separate from feature code.
+
+Shared application code therefore asks the active distribution for access rather than hard-coding product policy into feature code.
+
+This is deliberately separate from extensions:
+
+- **extensions** contribute features and lifecycle behavior
+- **distribution access** decides whether the product/workspace may perform runtime operations
+
+## Application boundaries
+
+Core application code should depend on stable Kurrier facades and distribution contracts rather than individual implementations.
+
+Server lifecycle behavior:
+
+```ts
+kurrierServer.hooks.run(...)
+```
+
+Web contributions:
+
+```ts
+kurrierWeb.pages.dashboard()
+kurrierWeb.pages.auth()
+kurrierWeb.navigation.dashboard()
+```
+
+Runtime entitlement:
+
+```ts
+DISTRIBUTION_ACCESS.workspace(workspaceId)
+```
+
+Application-specific helper functions may wrap the access contract so normal actions do not need to know how a distribution computes policy.
+
+## Trusted extensions
+
+The current extension system is designed for trusted in-process code.
+
+Trusted extensions can use the same application packages and server capabilities as Kurrier itself. Depending on the feature, this can include database access, environment variables, server actions, and other internal resources.
+
+This model is appropriate for:
+
+- Kurrier's own OSS features
+- private extensions
+- self-hosted extensions whose source is trusted
+- reviewed contributions shipped with Kurrier
+
+It is not a sandbox.
+
+## Future remote extensions
+
+A future marketplace can use a different security boundary: manifests, explicit permissions, remote APIs, and isolated or hosted UI such as iframe-based surfaces.
+
+Remote marketplace extensions should not be assumed to have arbitrary Kurrier database or Node runtime access.
+
+That future model is separate from, and does not weaken, the trusted extension system documented here.
+
+## Extension or distribution?
+
+A useful rule:
+
+**An extension is an application feature.**
+
+Use it for authenticated pages, navigation, and lifecycle behavior.
+
+**A distribution defines the product.**
+
+Use it for public pages, metadata, product configuration, enabled extensions, and runtime access policy.
+
+Most contributors adding application functionality should start with an extension.
+
+## Working source
+
+Use the current source tree as the final authority for the API:
+
+```text
+packages/extensions/src/
+packages/oss/src/extensions/
+packages/distribution/src/
+```
+
+These docs describe the architecture as shipped in the Kurrier OSS repository.

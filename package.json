@@ -60,5 +60,11 @@
 		"uuid": "^13.0.0",
 		"validator": "^13.15.15",
 		"zod": "^4.4.3"
+	},
+	"pnpm": {
+		"overrides": {
+			"@types/react": "19.2.15",
+			"@types/react-dom": "19.2.3"
+		}
 	}
 }

@@ -15,7 +15,7 @@ import {
     deleteGmailLabel, removeGmailLabelFromThread,
     updateGmailLabel
 } from "../../lib/gmail/gmail-lablels";
-
+import { canSyncIdentity } from "../../lib/access";
 
 
 async function enqueueDeltaSyncForAllGoogleIdentities() {
@@ -123,6 +123,15 @@ export default defineNitroPlugin(async (nitroApp) => {
                 job.name === "gmail:backfill-account" ||
                 job.name === "gmail:delta-sync"
             ) {
+
+                const identityId = job.data.identityId as string;
+
+                if (!(await canSyncIdentity(identityId))) {
+                    console.info(
+                        `[GMAIL] sync disabled identity=${identityId}`,
+                    );
+                    return { success: true };
+                }
 
                 if (job.name === "gmail:backfill-discover") {
                     await discoverGmailMailboxes(job);
