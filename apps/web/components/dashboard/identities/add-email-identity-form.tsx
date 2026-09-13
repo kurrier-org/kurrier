@@ -67,6 +67,83 @@ function AddEmailIdentityForm({
 		setSharedWithWorkspace(mustBeShared);
 	}, [mustBeShared]);
 
+	const availableProviderOptions = React.useMemo(() => {
+		const existingEmails = new Set(
+			userEmailIdentities.map((identity) =>
+				identity.identities.value.toLowerCase(),
+			),
+		);
+
+		const usedGoogleAccountIds = new Set(
+			userEmailIdentities
+				.map((identity) => {
+					const metaData = identity.identities.metaData as
+						| {
+						gmail?: {
+							googleAccountId?: string;
+						};
+					}
+						| null
+						| undefined;
+
+					return metaData?.gmail?.googleAccountId;
+				})
+				.filter((id): id is string => Boolean(id)),
+		);
+
+		const seenSmtpEmails = new Set<string>();
+		const seenOptions = new Set<string>();
+
+		return providerOptions.filter((option) => {
+			const optionId = option.value.replace(/^[a-z]+-/, "");
+
+			if (option.value.startsWith("smtp-")) {
+				const smtpAccount = smtpAccounts.find(
+					(account) => String(account.linkRow.id) === optionId,
+				);
+
+				if (!smtpAccount) {
+					return false;
+				}
+
+				const secret = parseSecret(smtpAccount);
+				const email = String(secret.SMTP_USERNAME ?? "")
+					.trim()
+					.toLowerCase();
+
+				if (!email) {
+					return false;
+				}
+
+				if (existingEmails.has(email)) {
+					return false;
+				}
+
+				if (seenSmtpEmails.has(email)) {
+					return false;
+				}
+
+				seenSmtpEmails.add(email);
+				return true;
+			}
+
+			if (option.value.startsWith("google-")) {
+				return !usedGoogleAccountIds.has(optionId);
+			}
+
+			if (seenOptions.has(option.value)) {
+				return false;
+			}
+
+			seenOptions.add(option.value);
+			return true;
+		});
+	}, [
+		providerOptions,
+		smtpAccounts,
+		userEmailIdentities,
+	]);
+
 	function getSmtpFields() {
 		const parsedVaultValues = parseSecret(smtpAccount);
 		return [
@@ -306,7 +383,7 @@ function AddEmailIdentityForm({
 			label:
 				dict?.platform?.chooseAVerifiedProvider ?? "Choose a verified provider",
 			kind: "select" as const,
-			options: providerOptions,
+			options: availableProviderOptions,
 			wrapperClasses: "col-span-12",
 			props: {
 				defaultValue: rawProvider || undefined,
