@@ -1,7 +1,7 @@
 {
 	"name": "@kurrier/extensions",
 	"private": true,
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"description": "Extensibility framework for Kurrier, including hooks, plugins, UI extension points, and themes.",
 	"types": "src/index.ts",
 	"main": "src/index.ts",
