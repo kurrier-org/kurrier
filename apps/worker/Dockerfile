@@ -1,4 +1,4 @@
-FROM node:22-alpine AS build
+FROM node:24.20.0-alpine AS build
 WORKDIR /repo
 RUN corepack enable && corepack prepare pnpm@10.18.3 --activate
 
@@ -13,7 +13,10 @@ WORKDIR /repo/apps/worker
 ENV NITRO_PRESET=node-server
 RUN pnpm run build
 
-FROM node:22-alpine
+RUN rm -rf .output/server/node_modules/.nitro/nodemailer@9.0.6 \
+    && cp -RL node_modules/nodemailer .output/server/node_modules/.nitro/nodemailer@9.0.6
+
+FROM node:24.20.0-alpine
 WORKDIR /app
 
 RUN apk add --no-cache postgresql-client bash
