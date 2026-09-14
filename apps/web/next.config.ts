@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
+const assetPrefix = process.env.NEXT_PUBLIC_ASSET_PREFIX || "/";
 const nextConfig: NextConfig = {
+	assetPrefix,
 	devIndicators: { position: "top-right" },
 	output: "standalone",
 	cacheComponents: true,
@@ -24,11 +26,11 @@ const nextConfig: NextConfig = {
 			beforeFiles: [
 				{
 					source: "/api/v1/:path*",
-					destination: `${process.env.WORKER_URL}:3001/api/v1/:path*`,
+					destination: `${process.env.WORKER_URL}/api/v1/:path*`,
 				},
 				{
 					source: "/api/kurrier/:path*",
-					destination: `${process.env.WORKER_URL}:3001/api/kurrier/:path*`,
+					destination: `${process.env.WORKER_URL}/api/kurrier/:path*`,
 				},
 
 				{
