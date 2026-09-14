@@ -10,6 +10,7 @@ export const DISTRIBUTION_CONFIG = {
         drive: process.env.DISABLE_DRIVE !== "true",
         localLogin: process.env.DISABLE_LOCAL_LOGIN !== "true",
         jmap: true,
+        gmail: true
     },
     instanceConfig: {},
 } as const satisfies CustomConfig;

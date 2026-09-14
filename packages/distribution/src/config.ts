@@ -8,6 +8,7 @@ export type DistributionConfig<
         drive: boolean;
         localLogin: boolean;
         jmap: boolean;
+        gmail: boolean;
     };
 } & Extra;
 const configs = import.meta.glob("./*/config.ts", {

@@ -48,13 +48,17 @@ export default async function ProvidersPage({
 			foreignCol: smtpAccountSecrets.accountId,
 			secretIdCol: smtpAccountSecrets.secretId,
 		}),
-		fetchGoogleAccounts(),
+		DISTRIBUTION_CONFIG.features.gmail
+			? fetchGoogleAccounts()
+			: Promise.resolve([]),
 		fetchProviderIdentities("inbound"),
 		DISTRIBUTION_CONFIG.features.jmap
 			? fetchJmapAccounts()
 			: Promise.resolve([]),
 		fetchProviderIdentities("mailtrap"),
-		hasGoogleOAuthConfig(),
+		DISTRIBUTION_CONFIG.features.gmail
+			? hasGoogleOAuthConfig()
+			: Promise.resolve(false),
 		fetchCustomEmailProviders(),
 	]);
 
@@ -140,10 +144,12 @@ export default async function ProvidersPage({
 					<div className="my-8 grid gap-6 xl:grid-cols-2">
 						<SMTPCard smtpSecrets={smtpSecrets} />
 
-						<GoogleCard
-							googleAccounts={googleAccounts}
-							googleOAuthConfigured={googleOAuthConfigured}
-						/>
+						{DISTRIBUTION_CONFIG.features.gmail && (
+							<GoogleCard
+								googleAccounts={googleAccounts}
+								googleOAuthConfigured={googleOAuthConfigured}
+							/>
+						)}
 
 						<InboundCard inboundIdentities={inboundIdentities} />
 
