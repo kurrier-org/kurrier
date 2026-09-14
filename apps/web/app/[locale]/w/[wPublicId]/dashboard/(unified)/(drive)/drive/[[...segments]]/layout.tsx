@@ -1,7 +1,7 @@
 import { connection } from "next/server";
 import type React from "react";
 import { Suspense } from "react";
-import Loading from "@/app/loading";
+import { DashboardHeaderLoading } from "@/components/dashboard/dashboard-loading";
 import DriveTopBar from "@/components/dashboard/drive/drive-top-bar";
 import NewUploadButton from "@/components/dashboard/drive/new-upload-button";
 import { Separator } from "@/components/ui/separator";
@@ -58,7 +58,7 @@ export default function DriveSegmentsLayout({
 }) {
 	return (
 		<>
-			<Suspense fallback={<Loading />}>
+			<Suspense fallback={<DashboardHeaderLoading />}>
 				<DriveHeader params={params} />
 			</Suspense>
 

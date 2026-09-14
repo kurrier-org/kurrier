@@ -24,6 +24,7 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@/components/ui/sidebar";
+import { useDashboardPath } from "@/hooks/use-dashboard-path";
 
 type UnifiedSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	navUserContent: React.ReactNode;
@@ -43,24 +44,25 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 	} = props;
 	const { setOpen, setOpenMobile } = useSidebar();
 	const dict = useOptionalDictionary();
+	const dashboardPath = useDashboardPath(workspacePublicId);
 
 	const data = {
 		navMain: [
 			{
 				title: dict?.dashboard?.navMail ?? "All Mail",
-				url: `/w/${workspacePublicId}/dashboard/mail`,
+				url: dashboardPath("mail"),
 				icon: Inbox,
 				isActive: true,
 			},
 			{
 				title: dict?.dashboard?.navContacts ?? "Contacts",
-				url: `/w/${workspacePublicId}/dashboard/contacts`,
+				url: dashboardPath("contacts"),
 				icon: Contact,
 				isActive: true,
 			},
 			{
 				title: dict?.dashboard?.navCalendar ?? "Calendar",
-				url: `/w/${workspacePublicId}/dashboard/calendar`,
+				url: dashboardPath("calendar"),
 				icon: Calendar,
 				isActive: true,
 			},
@@ -68,7 +70,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				? [
 						{
 							title: dict?.dashboard?.navDrive ?? "Drive",
-							url: `/w/${workspacePublicId}/dashboard/drive`,
+							url: dashboardPath("drive"),
 							icon: HardDrive,
 							isActive: true,
 						},
@@ -76,7 +78,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				: []),
 			{
 				title: dict?.dashboard?.navPlatform ?? "Platform",
-				url: `/w/${workspacePublicId}/dashboard/platform/overview`,
+				url: dashboardPath("platform/overview"),
 				icon: IconFrame,
 				isActive: false,
 			},
@@ -127,7 +129,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 				<SidebarHeader className="border-b md:border-b-0">
 					<div className="flex items-center justify-between px-1 py-1 md:hidden">
 						<Link
-							href={`/w/${workspacePublicId}/dashboard/mail`}
+							href={dashboardPath("mail")}
 							className="flex items-center gap-2"
 						>
 							<KurrierLogo size={30} />
@@ -148,9 +150,7 @@ export function AppSidebar({ ...props }: UnifiedSidebarProps) {
 					<SidebarMenu className="hidden md:flex">
 						<SidebarMenuItem>
 							<SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
-								<Link
-									href={`/w/${workspacePublicId}/dashboard/platform/overview`}
-								>
+								<Link href={dashboardPath("platform/overview")}>
 									<div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
 										<MailOpen className="size-4" />
 									</div>

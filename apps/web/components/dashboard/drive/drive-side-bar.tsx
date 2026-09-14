@@ -12,6 +12,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useDashboardPath } from "@/hooks/use-dashboard-path";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 
 export default function DriveSideBar({
@@ -24,7 +25,8 @@ export default function DriveSideBar({
 	const pathName = usePathname();
 	const { state } = useDynamicContext<DriveState>();
 	const dict = useOptionalDictionary();
-	const driveBase = `/w/${workspacePublicId}/dashboard/drive`;
+	const dashboardPath = useDashboardPath(workspacePublicId);
+	const driveBase = dashboardPath("drive");
 
 	const isOnVolumes = pathName.includes("/dashboard/drive/volumes/");
 	const isMyDriveActive =

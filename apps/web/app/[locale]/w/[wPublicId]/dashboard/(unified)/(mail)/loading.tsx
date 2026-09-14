@@ -1,2 +1,1 @@
-import Loading from "@/app/loading";
-export default Loading;
+export { DashboardContentLoading as default } from "@/components/dashboard/dashboard-loading";

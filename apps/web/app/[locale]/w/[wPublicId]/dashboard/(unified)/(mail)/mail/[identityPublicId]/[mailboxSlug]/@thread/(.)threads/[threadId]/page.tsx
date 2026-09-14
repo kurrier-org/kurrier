@@ -2,7 +2,7 @@ import type { MessageEntity } from "@db";
 import { Divider } from "@mantine/core";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import Loading from "@/app/loading";
+import { DashboardContentLoading } from "@/components/dashboard/dashboard-loading";
 import ThreadBackLink from "@/components/mailbox/default/thread-back-link";
 import ThreadItem from "@/components/mailbox/default/thread-item";
 import { getWorkspacePublicId } from "@/lib/actions/clients";
@@ -88,7 +88,7 @@ function Page({
 	}>;
 }) {
 	return (
-		<Suspense fallback={<Loading />}>
+		<Suspense fallback={<DashboardContentLoading />}>
 			<ThreadContent params={params} />
 		</Suspense>
 	);

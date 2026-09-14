@@ -1,10 +1,14 @@
+import { DISTRIBUTION_CONFIG } from "@distribution/config";
 import type { DriveState } from "@schema";
 import { redirect } from "next/navigation";
-import { connection } from "next/server";
 import type * as React from "react";
-import { Suspense } from "react";
-import Loading from "@/app/loading";
+import { cache, Suspense } from "react";
+import {
+	DashboardSidebarFooterLoading,
+	DashboardSidebarSectionLoading,
+} from "@/components/dashboard/dashboard-loading";
 import DriveSideBar from "@/components/dashboard/drive/drive-side-bar";
+import DriveStateSync from "@/components/dashboard/drive/drive-state-sync";
 import NewUploadButton from "@/components/dashboard/drive/new-upload-button";
 import { AppSidebar } from "@/components/ui/dashboards/unified/default/app-sidebar";
 import NavUserWrapper from "@/components/ui/dashboards/workspace/nav-user-wrapper";
@@ -13,35 +17,60 @@ import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
 import { isSignedIn } from "@/lib/actions/auth";
 import { getWorkspacePublicId } from "@/lib/actions/clients";
 import { fetchVolumes } from "@/lib/actions/drive";
-import { DISTRIBUTION_CONFIG } from "@distribution/config";
 
-async function DriveDashboard({ children }: { children: React.ReactNode }) {
-	await connection();
+const EMPTY_DRIVE_STATE: DriveState = {
+	localVolumes: [],
+	cloudVolumes: [],
+	driveRouteContext: null,
+	userId: "",
+};
 
+const loadDriveDashboardData = cache(async () => {
 	const workspacePublicId = await getWorkspacePublicId();
 
 	if (!DISTRIBUTION_CONFIG.features.drive) {
 		redirect(`/w/${workspacePublicId}/dashboard/mail`);
 	}
 
-	const [vols, user] = await Promise.all([fetchVolumes(), isSignedIn()]);
-
+	const [volumes, user] = await Promise.all([fetchVolumes(), isSignedIn()]);
 	const initialState: DriveState = {
 		localVolumes: [],
-		cloudVolumes: vols,
+		cloudVolumes: volumes,
 		driveRouteContext: null,
 		userId: String(user?.id),
 	};
 
+	return { initialState, workspacePublicId };
+});
+
+async function DriveSidebarSection() {
+	const { initialState, workspacePublicId } = await loadDriveDashboardData();
+
 	return (
-		<DynamicContextProvider initialState={initialState}>
+		<>
+			<DriveStateSync state={initialState} />
+			<DynamicContextProvider initialState={initialState}>
+				<DriveSideBar workspacePublicId={workspacePublicId} />
+			</DynamicContextProvider>
+		</>
+	);
+}
+
+export default function DriveLayout({
+	children,
+}: {
+	children: React.ReactNode;
+}) {
+	return (
+		<DynamicContextProvider initialState={EMPTY_DRIVE_STATE}>
 			<AppSidebar
-				workspacePublicId={workspacePublicId}
 				sidebarSectionContent={
-					<DriveSideBar workspacePublicId={workspacePublicId} />
+					<Suspense fallback={<DashboardSidebarSectionLoading />}>
+						<DriveSidebarSection />
+					</Suspense>
 				}
 				navUserContent={
-					<Suspense fallback={<Loading />}>
+					<Suspense fallback={<DashboardSidebarFooterLoading />}>
 						<NavUserWrapper />
 					</Suspense>
 				}
@@ -54,17 +83,5 @@ async function DriveDashboard({ children }: { children: React.ReactNode }) {
 
 			<SidebarInset>{children}</SidebarInset>
 		</DynamicContextProvider>
-	);
-}
-
-export default function DriveLayout({
-	children,
-}: {
-	children: React.ReactNode;
-}) {
-	return (
-		<Suspense fallback={<Loading />}>
-			<DriveDashboard>{children}</DriveDashboard>
-		</Suspense>
 	);
 }
