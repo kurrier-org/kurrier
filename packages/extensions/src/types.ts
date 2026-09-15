@@ -1,3 +1,4 @@
+import type { Job } from "bullmq";
 import type { HookHandler, HookName } from "@schema";
 
 export type ExtensionCompatibility = {
@@ -36,6 +37,7 @@ export type ExtensionContributions<TComponent = unknown> = {
         dashboard?: ExtensionPage<TComponent>[];
         auth?: ExtensionPage<TComponent>[];
     };
+    workers?: ExtensionWorker[];
 };
 
 
@@ -46,3 +48,8 @@ export type ExtensionPage<TComponent = unknown> = {
     layout?: TComponent;
 };
 
+export type ExtensionWorker = {
+    queue: string;
+    concurrency?: number;
+    handler: (job: Job) => Promise<unknown>;
+};
