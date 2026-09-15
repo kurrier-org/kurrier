@@ -2,7 +2,7 @@ import * as client from "openid-client";
 import argon2 from "argon2";
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { connection, NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import {
 	authAccounts,
@@ -24,6 +24,12 @@ import {
 const GENERIC_PROVIDER_NAME = "generic";
 
 export async function GET(request: NextRequest) {
+	// With cacheComponents, a GET handler that returns before touching
+	// request-time data is prerendered at build time. At build there is no
+	// OIDC config, so the "not configured" redirect (to the build-time
+	// WEB_URL) would be served forever. Always render per request.
+	await connection();
+
 	// Behind a reverse proxy, Next.js standalone rewrites request.url's host
 	// to the server's own hostname (e.g. the pod name on Kubernetes), and
 	// openid-client derives the token-exchange redirect_uri from the current
