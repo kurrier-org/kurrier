@@ -9,6 +9,9 @@
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
+	"peerDependencies": {
+		"lucide-react": "^1.37.0"
+	},
 	"keywords": [],
 	"author": "Krishna Rokhale",
 	"license": "ISC"

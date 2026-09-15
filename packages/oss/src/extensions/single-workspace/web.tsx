@@ -1,5 +1,6 @@
 import type { KurrierExtension } from "@extensions";
 import TestExtensionPage from "./test-page";
+import {Blocks} from "lucide-react"
 
 export const singleWorkspaceWebExtension = {
     manifest: {
@@ -14,7 +15,7 @@ export const singleWorkspaceWebExtension = {
                     id: "test-page",
                     title: "Extension Test",
                     path: "platform/extensions/test",
-                    icon: "Blocks",
+                    icon: Blocks,
                 },
             ],
         },

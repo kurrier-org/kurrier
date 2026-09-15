@@ -2,16 +2,16 @@
 
 import {
 	Blocks,
-	ChevronRight, CreditCard,
+	ChevronRight,
 	FolderSync,
 	HardDrive,
 	Key,
 	LayoutDashboard,
 	type LucideIcon,
 	Plug,
-	Send, Users,
+	Send,
 	Vault,
-	Webhook,
+	Webhook
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -47,19 +47,13 @@ export function NavMain({
 	const pathname = usePathname();
 	const dict = useDictionary();
 	const { drive } = useSiteFeatures();
-	const extensionIcons: Record<string, LucideIcon> = {
-		Users,
-		CreditCard,
-	};
 
 	const extensionPlatformItems = extensionNavItems
 		.filter((item) => !item.ownerOnly || workspaceRole === "owner")
 		.map((item) => ({
 			title: item.title,
 			url: `/w/${workspacePublicId}/dashboard/${item.path}`,
-			icon: item.icon
-				? extensionIcons[item.icon] ?? Blocks
-				: Blocks,
+			icon: item.icon ?? Blocks,
 			items: [],
 		}));
 

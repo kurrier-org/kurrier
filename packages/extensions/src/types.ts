@@ -1,5 +1,6 @@
 import type { Job } from "bullmq";
 import type { HookHandler, HookName } from "@schema";
+import type { LucideIcon } from "lucide-react";
 
 export type ExtensionCompatibility = {
     kurrier?: string;
@@ -25,7 +26,7 @@ export type DashboardNavItem = {
     id: string;
     title: string;
     path: string;
-    icon?: string;
+    icon?: LucideIcon;
     ownerOnly?: boolean;
 };
 
