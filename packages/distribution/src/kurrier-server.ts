@@ -1,5 +1,6 @@
 import type { HookMap, HookName } from "@schema";
 import {
+    ExtensionScheduler,
     type ExtensionWorker,
     getRegisteredExtensions,
     hooks,
@@ -30,6 +31,9 @@ export type KurrierServer = {
 
     workers: {
         get(): ExtensionWorker[];
+    };
+    schedulers: {
+        get(): ExtensionScheduler[];
     };
 };
 
@@ -64,6 +68,17 @@ export const kurrierServer: KurrierServer = {
             return getRegisteredExtensions().flatMap(
                 (extension) =>
                     extension.contributions?.workers ?? [],
+            );
+        },
+    },
+
+    schedulers: {
+        get() {
+            registerWorkerExtensions();
+
+            return getRegisteredExtensions().flatMap(
+                (extension) =>
+                    extension.contributions?.schedulers ?? [],
             );
         },
     },

@@ -1,7 +1,6 @@
 import type { Job } from "bullmq";
 import type { HookHandler, HookName } from "@schema";
 import type { IconName } from "lucide-react/dynamic";
-import {LucideIcon} from "lucide-react";
 
 export type ExtensionCompatibility = {
     kurrier?: string;
@@ -27,7 +26,7 @@ export type DashboardNavItem = {
     id: string;
     title: string;
     path: string;
-    icon: LucideIcon | IconName;
+    icon: IconName;
     ownerOnly?: boolean;
 };
 
@@ -40,6 +39,7 @@ export type ExtensionContributions<TComponent = unknown> = {
         auth?: ExtensionPage<TComponent>[];
     };
     workers?: ExtensionWorker[];
+    schedulers?: ExtensionScheduler[];
 };
 
 
@@ -54,4 +54,12 @@ export type ExtensionWorker = {
     queue: string;
     concurrency?: number;
     handler: (job: Job) => Promise<unknown>;
+};
+
+export type ExtensionScheduler = {
+    queue: string;
+    id: string;
+    jobName: string;
+    every: number;
+    data?: unknown;
 };
