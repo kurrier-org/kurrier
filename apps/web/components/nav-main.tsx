@@ -1,5 +1,5 @@
 "use client";
-
+import type React from "react";
 import {
 	Blocks,
 	ChevronRight,
@@ -34,6 +34,14 @@ import {
 	SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import {DashboardNavItem} from "@extensions";
+import {DynamicIcon, IconName} from "lucide-react/dynamic";
+
+type NavPlatformItem = {
+	title: string;
+	url: string;
+	icon: LucideIcon | IconName;
+	items?: { title: string; url: string }[];
+};
 
 export function NavMain({
 	workspacePublicId,
@@ -48,21 +56,16 @@ export function NavMain({
 	const dict = useDictionary();
 	const { drive } = useSiteFeatures();
 
-	const extensionPlatformItems = extensionNavItems
+	const extensionPlatformItems: NavPlatformItem[] = extensionNavItems
 		.filter((item) => !item.ownerOnly || workspaceRole === "owner")
 		.map((item) => ({
 			title: item.title,
 			url: `/w/${workspacePublicId}/dashboard/${item.path}`,
-			icon: item.icon ?? Blocks,
+			icon: item.icon ?? "blocks",
 			items: [],
 		}));
 
-	const navPlatformItems: {
-		title: string;
-		url: string;
-		icon: LucideIcon;
-		items?: { title: string; url: string }[];
-	}[] = [
+	const navPlatformItems: NavPlatformItem[] = [
 		{
 			title: dict.dashboard.overview,
 			url: `/w/${workspacePublicId}/dashboard/platform/overview`,
@@ -149,7 +152,11 @@ export function NavMain({
 									className="h-auto min-h-8 items-start py-1.5 [&>span:last-child]:!overflow-visible [&>span:last-child]:!whitespace-normal [&>span:last-child]:!text-clip"
 								>
 									<Link href={item.url}>
-										<item.icon className="mt-0.5" />
+										{typeof item.icon === "string" ? (
+											<DynamicIcon name={item.icon} className="mt-0.5" />
+										) : (
+											<item.icon className="mt-0.5" />
+										)}
 										<span className="min-w-0 break-words leading-5">
 											{item.title}
 										</span>
