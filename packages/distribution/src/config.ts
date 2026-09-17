@@ -16,7 +16,7 @@ const configs = import.meta.glob("./*/config.ts", {
 }) as Record<
     string,
     {
-        DISTRIBUTION_CONFIG: DistributionConfig<{}>;
+        DISTRIBUTION_CONFIG: DistributionConfig<Record<string, unknown>>;
     }
 >;
 import { DEFAULT_DISTRIBUTION } from "./constants";
