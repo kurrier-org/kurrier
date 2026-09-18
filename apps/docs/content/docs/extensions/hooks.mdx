@@ -5,7 +5,7 @@ description: Run typed server extension logic at supported Kurrier lifecycle eve
 
 Hooks let trusted extensions participate in Kurrier lifecycle behavior without putting distribution-specific feature logic directly into core actions.
 
-Hooks are server-side extension capabilities.
+Hooks are server-side lifecycle capabilities. They are different from background workers and schedulers: hooks run as part of an application lifecycle point, while workers process queued jobs in the Nitro worker runtime.
 
 ## Running a hook
 
@@ -44,7 +44,7 @@ When Kurrier runs `workspace.beforeCreate`, every registered handler for that ho
 
 Supported hook names and their context types are defined by Kurrier's `HookMap`.
 
-For example, the current workspace lifecycle includes contexts shaped like:
+For example, the workspace lifecycle can include contexts shaped like:
 
 ```ts
 export type HookMap = {
@@ -82,6 +82,16 @@ hooks: {
 },
 ```
 
+## Hooks versus queued work
+
+Do not use a lifecycle hook merely because some work should happen eventually.
+
+Use a hook when the behavior belongs directly to the lifecycle operation and the caller should await it.
+
+Use a worker when the work belongs on a queue, needs independent retries, or should run outside the request lifecycle.
+
+A hook can enqueue work when appropriate, leaving the actual processing to a registered extension worker.
+
 ## Adding a new lifecycle point
 
 Use an existing hook when one already represents the lifecycle event your feature needs.
@@ -98,8 +108,10 @@ Keep the core hook context focused on the data extensions need.
 
 Server extensions are registered by the active distribution. Feature code should declare hooks but should not register itself manually.
 
-The web application and worker are separate runtimes, so each runtime performs its own server extension registration when needed.
+Kurrier runtimes have their own in-memory extension state, so registration happens inside the runtime that consumes the contribution.
+
+Background worker and scheduler contributions follow the same composition principle but are consumed by the Nitro worker runtime.
 
 ## Hooks are optional
 
-Many extensions only contribute UI. Do not add hooks unless the feature needs to participate in behavior elsewhere in Kurrier.
+Many extensions only contribute UI or background processing. Do not add hooks unless the feature needs to participate directly in a Kurrier lifecycle event.

@@ -1,11 +1,11 @@
 ---
 title: Creating an extension
-description: Create a trusted Kurrier extension with separate server and web entry points.
+description: Create a trusted Kurrier extension with separate server, worker, and web entry points.
 ---
 
 Let's create an **Email Templates** extension.
 
-It will contribute a dashboard page and navigation item. We will keep its server and web entry points separate so each Kurrier runtime only loads what it needs.
+It will contribute a dashboard page and navigation item. We will keep runtime-specific entry points separate so each Kurrier runtime only loads what it needs.
 
 ## 1. Create the feature directory
 
@@ -15,11 +15,12 @@ For an OSS feature:
 packages/oss/src/extensions/
 └── email-templates/
     ├── server.ts
+    ├── worker.ts
     ├── web.ts
     └── email-templates-page.tsx
 ```
 
-The feature directory can also contain normal components, actions, helpers, schemas, or other trusted application code.
+Only create the entry points the feature needs. The feature directory can also contain normal components, actions, helpers, schemas, job handlers, or other trusted application code.
 
 ## 2. Create the dashboard page
 
@@ -104,11 +105,67 @@ export const emailTemplatesServerExtension = {
 } satisfies KurrierExtension;
 ```
 
-Keeping server and web definitions separate prevents the worker from importing React/UI code and prevents web registration from unnecessarily loading worker-only behavior.
+Keeping server and web definitions separate prevents unrelated runtime code from being pulled into the wrong application.
 
-## 5. Add the extension to the package lists
+## 5. Add background behavior only when needed
 
-Packages expose separate server and web extension collections.
+If the feature needs to process queued work, expose a worker contribution from `worker.ts`.
+
+Conceptually:
+
+```ts
+import type { KurrierExtension } from "@extensions";
+
+export const emailTemplatesWorkerExtension = {
+    manifest: {
+        id: "oss.email-templates",
+        name: "Email Templates",
+    },
+    contributions: {
+        workers: [
+            {
+                queue: "email-templates",
+                concurrency: 1,
+                handler: async (job) => {
+                    // Process the job.
+                },
+            },
+        ],
+    },
+} satisfies KurrierExtension;
+```
+
+If the feature also needs recurring work, it can contribute a scheduler:
+
+```ts
+contributions: {
+    workers: [
+        {
+            queue: "email-templates",
+            concurrency: 1,
+            handler: processEmailTemplateJob,
+        },
+    ],
+    schedulers: [
+        {
+            queue: "email-templates",
+            id: "email-templates-maintenance",
+            jobName: "email-templates:maintenance",
+            every: 60 * 60 * 1000,
+        },
+    ],
+},
+```
+
+Worker and scheduler contributions are declarative.
+
+Do not instantiate BullMQ `Worker` or `JobScheduler` objects inside the extension. Kurrier's Nitro worker runtime owns their lifecycle.
+
+Use the exact current contribution types in `packages/extensions/src/` when implementing a feature.
+
+## 6. Add the extension to the runtime lists
+
+Packages expose separate extension collections for the runtimes they support.
 
 For example, `extensions/web.ts`:
 
@@ -121,7 +178,7 @@ export const webExtensions = [
 ] satisfies KurrierExtension[];
 ```
 
-And, when needed, `extensions/server.ts`:
+When server hooks are needed, `extensions/server.ts`:
 
 ```ts
 import type { KurrierExtension } from "@extensions";
@@ -132,11 +189,35 @@ export const serverExtensions = [
 ] satisfies KurrierExtension[];
 ```
 
+When background processing is needed, `extensions/worker.ts` exposes the worker-side extensions for the package.
+
 The active distribution adapts these lists and registers them for the appropriate runtime.
 
 Do not call `registerExtension()` from feature code.
 
-## 6. Build the feature normally
+## 7. Enqueue jobs through shared queue infrastructure
+
+A feature that needs to submit work should use Kurrier's shared queue infrastructure rather than constructing unrelated queue infrastructure inside the feature.
+
+The shared queue helpers live in `@common`. The current source is authoritative for the exact API.
+
+This separation is intentional:
+
+```text
+feature/action
+    ↓
+shared queue
+    ↓
+Nitro worker
+    ↓
+registered extension worker
+    ↓
+feature handler
+```
+
+The producer does not need to own the worker lifecycle.
+
+## 8. Build the feature normally
 
 The extension definition is only the feature's connection to Kurrier.
 
@@ -145,9 +226,11 @@ The rest can be organized like any other feature:
 ```text
 email-templates/
 ├── server.ts
+├── worker.ts
 ├── web.ts
 ├── email-templates-page.tsx
 ├── actions.ts
+├── jobs/
 ├── components/
 └── lib/
 ```
@@ -184,6 +267,7 @@ The current source tree is the best reference:
 
 ```text
 packages/oss/src/extensions/
+packages/extensions/src/
 ```
 
-In particular, look for features with separate `server.ts` and `web.ts` entry points.
+Look for features with separate runtime entry points and use the current types as the final API reference.

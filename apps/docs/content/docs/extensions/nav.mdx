@@ -12,6 +12,8 @@ The current page contribution areas are:
 
 Dashboard navigation is contributed separately through `navigation.dashboard`.
 
+These are web-runtime contributions. Background workers and schedulers belong in worker extensions rather than web extensions.
+
 ## Dashboard pages
 
 Start with a normal React component:
@@ -77,7 +79,19 @@ contributions: {
 
 Kurrier collects navigation from registered web extensions and renders it as part of the normal dashboard navigation.
 
-Navigation data is serializable. Icons are identified by name rather than by passing React components through the contribution definition.
+## Serializable navigation
+
+Navigation crosses a server/client boundary, so navigation contribution data must remain serializable.
+
+Icons are identified by a supported icon name:
+
+```ts
+icon: "FileText"
+```
+
+Do not pass a Lucide React component such as `FileText` itself through the extension contribution.
+
+Kurrier resolves the icon name in the client UI. Use the current `IconName` type as the source of truth for supported names.
 
 ## Owner-only navigation
 

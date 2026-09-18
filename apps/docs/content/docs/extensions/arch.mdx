@@ -7,35 +7,38 @@ You do not need to understand this page to create a feature. If you just want to
 
 ## The short version
 
-Feature packages expose separate server and web extension lists. The active distribution selects those lists, and each Kurrier runtime registers only what it needs.
+Feature packages expose runtime-specific extension lists. The active distribution selects those lists, and each Kurrier runtime registers only what it needs.
 
 ```text
 Feature implementation
     ↓
-server.ts / web.ts
+server.ts / worker.ts / web.ts
     ↓
-package server/web extension lists
+package runtime extension lists
     ↓
 active distribution adapters
     ↓
-server/web registration
+runtime registration
     ↓
-kurrierServer / kurrierWeb
+kurrierServer / kurrierWeb / Nitro worker
     ↓
-hooks, pages and navigation
+hooks, workers, schedulers, pages and navigation
 ```
 
-## Why server and web are separate
+Core owns infrastructure and lifecycle. Extensions contribute feature behavior.
 
-Kurrier's Next.js application and Nitro worker are separate Node runtimes with separate in-memory registries.
+## Why runtime entry points are separate
 
-A worker must not load React dashboard components just because a feature also has server hooks. Likewise, web contribution registration should not require importing unrelated worker behavior.
+Kurrier's Next.js application and Nitro worker are separate Node runtimes with separate in-memory registries and different dependency requirements.
 
-For that reason, extension packages expose separate entry points:
+A worker must not load React dashboard components just because a feature also has web UI. Likewise, web registration should not unnecessarily load worker-only handlers or background infrastructure.
+
+For that reason, extension packages can expose separate entry points:
 
 ```text
 extension/
 ├── server.ts
+├── worker.ts
 └── web.ts
 ```
 
@@ -52,6 +55,10 @@ export const serverExtensions = [
     singleWorkspaceServerExtension,
 ];
 
+export const workerExtensions = [
+    someWorkerExtension,
+];
+
 export const webExtensions = [
     someWebExtension,
 ];
@@ -63,16 +70,15 @@ For Kurrier's OSS features, these live under:
 packages/oss/src/extensions/
 ```
 
-
 ## Distribution adapters
 
 The distribution layer decides which extension lists belong to a product.
 
-The OSS distribution adapter exposes the server and web extensions shipped with Kurrier.
+The OSS distribution adapter exposes the server, worker, and web extensions shipped with Kurrier.
 
 The generic registration layer then selects the active distribution.
 
-Server-side distribution selection uses explicit static imports and a distribution switch. This keeps the runtime composition obvious and ensures bundlers can see every supported implementation.
+Distribution selection uses explicit static imports and a distribution switch. This keeps runtime composition obvious and ensures bundlers can see every supported implementation.
 
 Conceptually:
 
@@ -84,7 +90,9 @@ switch (distribution) {
 }
 ```
 
-The same idea is used for the web registration boundary.
+The same principle applies at the server, worker, and web registration boundaries.
+
+Feature code should not import another distribution's implementation.
 
 ## Registration is runtime-local
 
@@ -92,7 +100,9 @@ Web and worker processes do not share an extension registry.
 
 Each runtime registers the appropriate extension collection for itself.
 
-`kurrierServer` ensures server extensions are registered before running hooks:
+`kurrierServer` exposes stable server-side extension facilities such as hooks and background contribution discovery.
+
+Application code can run hooks through:
 
 ```ts
 await kurrierServer.hooks.run("workspace.beforeCreate", {
@@ -108,7 +118,70 @@ kurrierWeb.pages.auth();
 kurrierWeb.navigation.dashboard();
 ```
 
+The Nitro worker consumes registered worker and scheduler contributions and owns the BullMQ runtime objects that execute them.
+
 Application code consumes these extension points rather than importing individual distribution features.
+
+## Worker ownership
+
+Worker extensions are intentionally declarative.
+
+An extension describes a worker with values such as:
+
+```ts
+type ExtensionWorker = {
+    queue: string;
+    concurrency?: number;
+    handler: (job: Job) => Promise<unknown>;
+};
+```
+
+A scheduler is described with values such as:
+
+```ts
+type ExtensionScheduler = {
+    queue: string;
+    id: string;
+    jobName: string;
+    every: number;
+    data?: unknown;
+};
+```
+
+The exact current types in `packages/extensions/src/` are authoritative.
+
+The extension does not instantiate BullMQ infrastructure.
+
+Kurrier's Nitro worker owns:
+
+- `Worker` creation
+- scheduler creation/upsert
+- Redis-backed runtime lifecycle
+- concurrency wiring
+- startup
+- graceful shutdown
+
+This keeps queue infrastructure in core while allowing an extension to provide the actual feature handler and schedule.
+
+## Queue producers
+
+Producing a job and processing a job are separate concerns.
+
+Kurrier provides shared queue infrastructure in `@common`. Feature code can enqueue work without owning a BullMQ worker:
+
+```text
+web action / hook / server code
+            ↓
+        shared queue
+            ↓
+       Nitro worker
+            ↓
+ registered extension worker
+            ↓
+       feature handler
+```
+
+This allows the same feature logic to participate cleanly in both the web and worker runtimes.
 
 ## The extension registry
 
@@ -117,6 +190,8 @@ Application code consumes these extension points rather than importing individua
 For server extensions, registration attaches declared handlers to the hook registry.
 
 For web extensions, registration makes page and navigation contributions available to `kurrierWeb`.
+
+For worker extensions, registration makes worker and scheduler contributions available to the worker runtime.
 
 Feature implementations should not call `registerExtension()` themselves. The active distribution owns composition and registration.
 
@@ -189,13 +264,15 @@ Runtime entitlement:
 DISTRIBUTION_ACCESS.workspace(workspaceId)
 ```
 
-Application-specific helper functions may wrap the access contract so normal actions do not need to know how a distribution computes policy.
+Background execution is similarly discovered through the server extension facade and executed by the Nitro worker rather than by importing a distribution feature directly.
+
+Application-specific helper functions may wrap these contracts so normal actions do not need to know how a distribution computes policy or composes extensions.
 
 ## Trusted extensions
 
 The current extension system is designed for trusted in-process code.
 
-Trusted extensions can use the same application packages and server capabilities as Kurrier itself. Depending on the feature, this can include database access, environment variables, server actions, and other internal resources.
+Trusted extensions can use the same application packages and server capabilities as Kurrier itself. Depending on the feature, this can include database access, environment variables, server actions, queues, and other internal resources.
 
 This model is appropriate for:
 
@@ -220,7 +297,7 @@ A useful rule:
 
 **An extension is an application feature.**
 
-Use it for authenticated pages, navigation, and lifecycle behavior.
+Use it for authenticated pages, navigation, lifecycle behavior, background workers, and recurring jobs.
 
 **A distribution defines the product.**
 
@@ -236,6 +313,7 @@ Use the current source tree as the final authority for the API:
 packages/extensions/src/
 packages/oss/src/extensions/
 packages/distribution/src/
+apps/worker/server/plugins/
 ```
 
 These docs describe the architecture as shipped in the Kurrier OSS repository.
