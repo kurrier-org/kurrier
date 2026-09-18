@@ -1,4 +1,4 @@
-import {db, identities, mailboxes, mailboxSync} from "@db";
+import {db, identities, IdentityEntity, mailboxes, mailboxSync} from "@db";
 import { eq, inArray, sql } from "drizzle-orm";
 import { ImapFlow } from "imapflow";
 import slugify from "@sindresorhus/slugify";
@@ -174,5 +174,5 @@ export const discoverMailboxes = async (
 			);
 	}
 
-	await ensureTrashFolder(client, identity);
+	await ensureTrashFolder(client, identity as IdentityEntity);
 };

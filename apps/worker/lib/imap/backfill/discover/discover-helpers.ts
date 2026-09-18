@@ -62,6 +62,7 @@ export async function ensureParentChain(opts: {
 			parentId: grandId,
 			name: parentName,
 			slug: slugify(parentPath),
+			workspaceId: identity.workspaceId,
 			kind: "custom",
 			isDefault: false,
 			metaData: {

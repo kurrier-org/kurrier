@@ -61,6 +61,7 @@ export async function ensureTrashFolder(
 				.values({
 					ownerId: identity.ownerId,
 					identityId: identity.id,
+					workspaceId: identity.workspaceId,
 					name,
 					slug: slugify(name),
 					kind: "trash",
@@ -108,6 +109,7 @@ export async function ensureTrashFolder(
 		await db.insert(mailboxes).values({
 			ownerId: identity.ownerId,
 			identityId: identity.id,
+			workspaceId: identity.workspaceId,
 			name: "Trash",
 			slug: "trash",
 			kind: "trash",
