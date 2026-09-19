@@ -1,0 +1,28 @@
+{
+  "common": {
+    "whatsNew": "Co nowego",
+    "release": "Wydanie",
+    "seeWhatsNew": "Zobacz, co nowego w najnowszym wydaniu Kurrier.",
+    "dismiss": "Zamknij informacje o nowościach"
+  },
+  "releases": {
+    "v4_1_0": {
+      "title": "Jeszcze lepszy Kurrier",
+      "description": "To wydanie wprowadza ulepszenia niezawodności poczty, edytora wiadomości, responsywnych układów oraz zarządzania przestrzenią roboczą.",
+      "features": {
+        "mailReliability": {
+          "title": "Bardziej niezawodna synchronizacja poczty",
+          "description": "Ulepszono odzyskiwanie połączeń IMAP oraz synchronizację skrzynek pocztowych podczas długotrwałych połączeń."
+        },
+        "composer": {
+          "title": "Ulepszony edytor wiadomości",
+          "description": "Bardziej dopracowane tworzenie wiadomości na komputerach i urządzeniach mobilnych."
+        },
+        "responsiveUi": {
+          "title": "Lepsza obsługa różnych rozmiarów ekranu",
+          "description": "Widoki poczty i przestrzeni roboczej lepiej dostosowują się teraz do mniejszych ekranów."
+        }
+      }
+    }
+  }
+}

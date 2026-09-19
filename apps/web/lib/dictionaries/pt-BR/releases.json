@@ -1,0 +1,28 @@
+{
+  "common": {
+    "whatsNew": "Novidades",
+    "release": "Versão",
+    "seeWhatsNew": "Veja as novidades da versão mais recente do Kurrier.",
+    "dismiss": "Fechar novidades"
+  },
+  "releases": {
+    "v4_1_0": {
+      "title": "Um Kurrier ainda melhor",
+      "description": "Esta versão traz melhorias na confiabilidade do e-mail, no editor de mensagens, nos layouts responsivos e no gerenciamento do workspace.",
+      "features": {
+        "mailReliability": {
+          "title": "Sincronização de e-mail mais confiável",
+          "description": "Melhorias na recuperação de conexões IMAP e na sincronização de caixas de correio em conexões de longa duração."
+        },
+        "composer": {
+          "title": "Editor de mensagens aprimorado",
+          "description": "Uma experiência de composição mais refinada em computadores e dispositivos móveis."
+        },
+        "responsiveUi": {
+          "title": "Melhor experiência responsiva",
+          "description": "As telas de e-mail e do workspace agora se adaptam de forma mais natural a telas menores."
+        }
+      }
+    }
+  }
+}

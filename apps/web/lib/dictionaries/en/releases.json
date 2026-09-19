@@ -1,0 +1,28 @@
+{
+  "common": {
+    "whatsNew": "What's new",
+    "release": "Release",
+    "seeWhatsNew": "See what's new in the latest Kurrier release.",
+    "dismiss": "Dismiss what's new"
+  },
+  "releases": {
+    "v4_1_0": {
+      "title": "A better Kurrier",
+      "description": "This release brings improvements across mail reliability, the composer, responsive layouts and workspace management.",
+      "features": {
+        "mailReliability": {
+          "title": "More reliable mail sync",
+          "description": "Improved IMAP recovery and mailbox synchronization across long-running connections."
+        },
+        "composer": {
+          "title": "Improved mail composer",
+          "description": "A more polished composing experience across desktop and mobile."
+        },
+        "responsiveUi": {
+          "title": "Better responsive experience",
+          "description": "Mail views and workspace screens now adapt more naturally to smaller displays."
+        }
+      }
+    }
+  }
+}

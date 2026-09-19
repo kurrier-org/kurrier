@@ -1,0 +1,28 @@
+{
+  "common": {
+    "whatsNew": "새로운 기능",
+    "release": "릴리스",
+    "seeWhatsNew": "최신 Kurrier 릴리스의 새로운 기능을 확인하세요.",
+    "dismiss": "새로운 기능 닫기"
+  },
+  "releases": {
+    "v4_1_0": {
+      "title": "더 나아진 Kurrier",
+      "description": "이번 릴리스에서는 메일 안정성, 메시지 작성기, 반응형 레이아웃 및 워크스페이스 관리가 개선되었습니다.",
+      "features": {
+        "mailReliability": {
+          "title": "더 안정적인 메일 동기화",
+          "description": "장시간 유지되는 연결에서 IMAP 연결 복구 및 메일함 동기화가 개선되었습니다."
+        },
+        "composer": {
+          "title": "개선된 메일 작성기",
+          "description": "데스크톱과 모바일에서 더욱 세련된 메시지 작성 환경을 제공합니다."
+        },
+        "responsiveUi": {
+          "title": "향상된 반응형 환경",
+          "description": "메일 화면과 워크스페이스 화면이 이제 작은 디스플레이에서도 더욱 자연스럽게 표시됩니다."
+        }
+      }
+    }
+  }
+}
