@@ -46,7 +46,7 @@ provider, and run the application on infrastructure you control.
 
 Kurrier uses established protocols wherever possible:
 
-`IMAP` · `SMTP` · `CalDAV` · `CardDAV` · `WebDAV` · `OIDC`
+`IMAP` · `SMTP` · `CalDAV` · `CardDAV` · `WebDAV` · `OIDC` · `JMAP`
 
 This keeps Kurrier interoperable with existing servers, providers,
 desktop clients and mobile applications without locking your data into a
@@ -84,7 +84,6 @@ Kurrier is independently developed and maintained.
 **[Support Kurrier
 development](https://buy.stripe.com/dRmfZje75d4OaGG8ux3Nm00)**
 
-------------------------------------------------------------------------
 
 ---
 
