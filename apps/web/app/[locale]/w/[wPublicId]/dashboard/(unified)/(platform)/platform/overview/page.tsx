@@ -24,6 +24,9 @@ import { getDashboardStats } from "@/lib/actions/dashboard";
 import { fetchWorkspace } from "@/lib/actions/workspace";
 import { getDictionary } from "@/lib/dictionaries";
 import { DISTRIBUTION_CONFIG } from "@distribution/config";
+import WhatsNew from "@/components/dashboard/platform/whats-new";
+import {latestRelease} from "@/lib/releases";
+
 
 export default async function Page({
 	params,
@@ -272,6 +275,8 @@ export default async function Page({
 								) : null}
 							</div>
 						</div>
+
+						<WhatsNew translations={dict.releases} latestRelease={latestRelease} />
 
 						<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 							{statCards.map((card) => (
