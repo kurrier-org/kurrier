@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 4.1.1
+
+### Patch Changes
+
+- [`f93791e`](https://github.com/kurrier-org/kurrier/commit/f93791ee733f3cfa81404a5882212daea32bb9e7) Thanks [@krokhale](https://github.com/krokhale)! - Add distribution workers and schedulers, dynamic navigation icons, IMAP mailbox fixes, OIDC improvements, and localized release updates.
+
 ## 4.1.0
 
 ### Minor Changes
