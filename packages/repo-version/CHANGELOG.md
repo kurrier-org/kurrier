@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 4.2.0
+
+### Minor Changes
+
+- [`842ce4e`](https://github.com/kurrier-org/kurrier/commit/842ce4ea3a0eb56aebd6f1fb93ad79420ecd2fd4) Thanks [@krokhale](https://github.com/krokhale)! - Add a reusable block-based email editor, identity-specific email signatures, and signature selection in the mail composer.
+
 ## 4.1.1
 
 ### Patch Changes
