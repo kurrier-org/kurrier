@@ -6,6 +6,24 @@
     "dismiss": "Dismiss what's new"
   },
   "releases": {
+    "v4_2_0": {
+      "title": "Email signatures",
+      "description": "Create polished signatures for each identity and use them directly from the Kurrier composer.",
+      "features": {
+        "emailSignatures": {
+          "title": "Signatures for every identity",
+          "description": "Create multiple signatures and choose separate defaults for new messages, replies and forwards."
+        },
+        "composer": {
+          "title": "Composer integration",
+          "description": "Preview your signature while composing and quickly switch signatures or remove them before sending."
+        },
+        "responsiveUi": {
+          "title": "Responsive signature editor",
+          "description": "Create and manage signatures with a streamlined editor that works across desktop and smaller displays."
+        }
+      }
+    },
     "v4_1_0": {
       "title": "A better Kurrier",
       "description": "This release brings improvements across mail reliability, the composer, responsive layouts and workspace management.",

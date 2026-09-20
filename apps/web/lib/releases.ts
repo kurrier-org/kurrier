@@ -33,6 +33,22 @@ export type ReleaseTranslations = {
 
 export const releases: KurrierRelease[] = [
     {
+        id: "v4_2_0",
+        version: "4.2.0",
+        date: "2026-09-20",
+        features: [
+            {
+                id: "emailSignatures",
+            },
+            {
+                id: "composer",
+            },
+            {
+                id: "responsiveUi",
+            },
+        ],
+    },
+    {
         id: "v4_1_0",
         version: "4.1.0",
         date: "2026-09-19",

@@ -6,13 +6,31 @@
     "dismiss": "Fechar novidades"
   },
   "releases": {
+    "v4_2_0": {
+      "title": "Assinaturas de e-mail",
+      "description": "Crie assinaturas profissionais para cada identidade e use-as diretamente no editor de mensagens do Kurrier.",
+      "features": {
+        "emailSignatures": {
+          "title": "Assinaturas para cada identidade",
+          "description": "Crie várias assinaturas e escolha padrões diferentes para novas mensagens, respostas e encaminhamentos."
+        },
+        "composer": {
+          "title": "Integração com o editor",
+          "description": "Visualize sua assinatura enquanto escreve e altere ou remova a assinatura rapidamente antes de enviar."
+        },
+        "responsiveUi": {
+          "title": "Editor de assinaturas responsivo",
+          "description": "Crie e gerencie assinaturas com um editor simplificado que funciona em computadores e telas menores."
+        }
+      }
+    },
     "v4_1_0": {
       "title": "Um Kurrier ainda melhor",
-      "description": "Esta versão traz melhorias na confiabilidade do e-mail, no editor de mensagens, nos layouts responsivos e no gerenciamento do workspace.",
+      "description": "Esta versão traz melhorias na confiabilidade do e-mail, no editor de mensagens, nos layouts responsivos e no gerenciamento do espaço de trabalho.",
       "features": {
         "mailReliability": {
           "title": "Sincronização de e-mail mais confiável",
-          "description": "Melhorias na recuperação de conexões IMAP e na sincronização de caixas de correio em conexões de longa duração."
+          "description": "Recuperação de conexões IMAP e sincronização de caixas de correio aprimoradas em conexões de longa duração."
         },
         "composer": {
           "title": "Editor de mensagens aprimorado",
@@ -20,7 +38,7 @@
         },
         "responsiveUi": {
           "title": "Melhor experiência responsiva",
-          "description": "As telas de e-mail e do workspace agora se adaptam de forma mais natural a telas menores."
+          "description": "As visualizações de e-mail e as telas do espaço de trabalho agora se adaptam melhor a telas menores."
         }
       }
     }

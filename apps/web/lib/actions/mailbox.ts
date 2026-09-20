@@ -5,7 +5,7 @@ import {getWorkspaceId, rlsClient} from "@/lib/actions/clients";
 import {
 	db,
 	DraftMessageInsertSchema,
-	draftMessages,
+	draftMessages, emailSignatures,
 	identities,
 	mailboxes,
 	mailboxSync, MailboxThreadEntity,
@@ -52,6 +52,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { s3 } from "@/lib/create-s3-client";
 import { isGmailIdentity } from "@common";
 import {access} from "@/lib/actions/shared";
+import {EmailDocument, renderEmailFragment, renderEmailText} from "@email-editor";
 
 let typeSenseClient: Client | null = null;
 function getTypeSenseClient(): Client {
@@ -307,123 +308,329 @@ export const revalidateMailbox = async (path: string) => {
 	revalidatePath(path);
 };
 
+const isSignaturePublicId = (
+	value: string,
+) =>
+	/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+		value,
+	);
+
+
+
+
 export async function sendMail(
 	_prev: FormState,
 	formData: FormData,
 ): Promise<FormState> {
-	const decodedForm = decode(formData) as any;
+	const decodedForm =
+		decode(formData) as any;
 
 	const rls = await rlsClient();
-	const identity = await rls(async (tx) => {
-		const [identity] = await tx
-			.select()
-			.from(identities)
-			.where(eq(identities.publicId, decodedForm.identityPublicId));
-		return identity
-	});
+
+	const identity = await rls(
+		async (tx) => {
+			const [identity] = await tx
+				.select()
+				.from(identities)
+				.where(
+					eq(
+						identities.publicId,
+						decodedForm.identityPublicId,
+					),
+				)
+				.limit(1);
+
+			return identity;
+		},
+	);
+
 	if (!identity) {
 		return {
 			success: false,
 			error: "Identity not found.",
-		}
-	}
-	const boxes = await rls(async (tx) => {
-		const resultRows = await tx
-			.select()
-			.from(mailboxes)
-			.where(eq(mailboxes.identityId, identity.id));
-		return resultRows;
-	});
-
-	const sentMailbox = boxes.find((b) => b.kind === "sent");
-	const inboxMailbox = boxes.find((b) => b.kind === "inbox");
-
-
-	if (!sentMailbox || !inboxMailbox) {
-		return {
-			success: false,
-			error: "Required mailboxes (inbox and sent) not found for the identity.",
-		}
-	}
-
-	decodedForm.sentMailboxId = sentMailbox.id;
-	decodedForm.mailboxId = inboxMailbox.id;
-	decodedForm.identityId = identity.id;
-
-	if (toArray(decodedForm.to as any).length === 0) {
-		return {
-			success: false,
-			error: "Please provide at least one recipient in the To field.",
 		};
 	}
 
-	const scheduledAtRaw = decodedForm.scheduledAt
-		? String(decodedForm.scheduledAt)
-		: "";
-	if (scheduledAtRaw) {
-		const d = dayjs(scheduledAtRaw);
-		if (!d.isValid()) {
-			return { success: false, error: "Invalid scheduled time." };
+	const boxes = await rls(
+		async (tx) =>
+			tx
+				.select()
+				.from(mailboxes)
+				.where(
+					eq(
+						mailboxes.identityId,
+						identity.id,
+					),
+				),
+	);
+
+	const sentMailbox = boxes.find(
+		(box) => box.kind === "sent",
+	);
+
+	const inboxMailbox = boxes.find(
+		(box) => box.kind === "inbox",
+	);
+
+	if (
+		!sentMailbox ||
+		!inboxMailbox
+	) {
+		return {
+			success: false,
+			error:
+				"Required mailboxes (inbox and sent) not found for the identity.",
+		};
+	}
+
+	decodedForm.sentMailboxId =
+		sentMailbox.id;
+	decodedForm.mailboxId =
+		inboxMailbox.id;
+	decodedForm.identityId =
+		identity.id;
+
+	if (
+		toArray(
+			decodedForm.to as any,
+		).length === 0
+	) {
+		return {
+			success: false,
+			error:
+				"Please provide at least one recipient in the To field.",
+		};
+	}
+
+	const signaturePublicId =
+		typeof decodedForm.signaturePublicId ===
+		"string"
+			? decodedForm.signaturePublicId.trim()
+			: "";
+
+	if (signaturePublicId) {
+		if (
+			!isSignaturePublicId(
+				signaturePublicId,
+			)
+		) {
+			return {
+				success: false,
+				error:
+					"Invalid email signature.",
+			};
 		}
 
-		const identityId = await rls(async (tx) => {
-			const [identity] = await tx
-				.select({
-					identityId: mailboxes.identityId,
-				})
-				.from(mailboxes)
-				.where(eq(mailboxes.id, decodedForm.mailboxId));
-			return identity?.identityId;
-		});
+		const signature = await rls(
+			async (tx) => {
+				const [result] = await tx
+					.select({
+						document:
+						emailSignatures.document,
+					})
+					.from(emailSignatures)
+					.where(
+						and(
+							eq(
+								emailSignatures.publicId,
+								signaturePublicId,
+							),
+							eq(
+								emailSignatures.identityId,
+								identity.id,
+							),
+						),
+					)
+					.limit(1);
 
-		const parsed = DraftMessageInsertSchema.safeParse({
-			identityId,
-			mailboxId: decodedForm.mailboxId,
-			payload: decodedForm,
-			status: "scheduled",
-			scheduledAt: d.toDate(),
-		});
+				return result;
+			},
+		);
+
+		if (!signature) {
+			return {
+				success: false,
+				error:
+					"Email signature not found for this identity.",
+			};
+		}
+
+		const signatureDocument =
+			signature.document as unknown as EmailDocument;
+
+		const signatureHtml =
+			renderEmailFragment(
+				signatureDocument,
+			).trim();
+
+		const signatureText =
+			renderEmailText(
+				signatureDocument,
+			).trim();
+
+		const messageHtml =
+			typeof decodedForm.html ===
+			"string"
+				? decodedForm.html
+				: "";
+
+		const messageText =
+			typeof decodedForm.text ===
+			"string"
+				? decodedForm.text
+				: "";
+
+		if (signatureHtml) {
+			decodedForm.html = [
+				messageHtml,
+				messageHtml.trim()
+					? "<br>"
+					: "",
+				`<div data-kurrier-signature="true">${signatureHtml}</div>`,
+			].join("");
+		}
+
+		if (signatureText) {
+			decodedForm.text = [
+				messageText.trimEnd(),
+				signatureText,
+			]
+				.filter(Boolean)
+				.join("\n\n");
+		}
+	}
+
+	/*
+     * The payload now contains the rendered
+     * signature. Scheduled mail therefore
+     * preserves the signature as it appeared
+     * when the message was scheduled.
+     */
+	const scheduledAtRaw =
+		decodedForm.scheduledAt
+			? String(
+				decodedForm.scheduledAt,
+			)
+			: "";
+
+	if (scheduledAtRaw) {
+		const scheduledAt = dayjs(
+			scheduledAtRaw,
+		);
+
+		if (!scheduledAt.isValid()) {
+			return {
+				success: false,
+				error:
+					"Invalid scheduled time.",
+			};
+		}
+
+		const parsed =
+			DraftMessageInsertSchema.safeParse(
+				{
+					identityId:
+					identity.id,
+					mailboxId:
+					decodedForm.mailboxId,
+					payload:
+					decodedForm,
+					status: "scheduled",
+					scheduledAt:
+						scheduledAt.toDate(),
+				},
+			);
 
 		if (!parsed.success) {
 			return {
 				success: false,
-				error: "There was an error trying to schedule your mail.",
+				error:
+					"There was an error trying to schedule your mail.",
 			};
 		}
 
-		const row = await rls(async (tx) => {
-			const [created] = await tx
-				.insert(draftMessages)
-				.values(parsed.data)
-				.returning({
-					id: draftMessages.id,
-					scheduledAt: draftMessages.scheduledAt,
-				});
-			return created ?? null;
-		});
+		const row = await rls(
+			async (tx) => {
+				const [created] =
+					await tx
+						.insert(
+							draftMessages,
+						)
+						.values(
+							parsed.data,
+						)
+						.returning({
+							id: draftMessages.id,
+							scheduledAt:
+							draftMessages.scheduledAt,
+						});
 
-		if (!row?.id || !row.scheduledAt) {
-			return { success: false, error: "Failed to schedule your mail." };
+				return created ?? null;
+			},
+		);
+
+		if (
+			!row?.id ||
+			!row.scheduledAt
+		) {
+			return {
+				success: false,
+				error:
+					"Failed to schedule your mail.",
+			};
 		}
 
-		const { sendMailQueue } = await getRedis();
+		const {
+			sendMailQueue,
+		} = await getRedis();
+
 		const delay = Math.max(
 			0,
-			Number(new Date(row.scheduledAt)) - Number(new Date()),
+			Number(
+				new Date(
+					row.scheduledAt,
+				),
+			) -
+			Number(new Date()),
 		);
 
 		await sendMailQueue.add(
 			"send-scheduled-draft",
-			{ draftMessageId: row.id },
-			{ jobId: row.id, delay },
+			{
+				draftMessageId: row.id,
+			},
+			{
+				jobId: row.id,
+				delay,
+			},
 		);
-		revalidatePath("/dashboard/mail");
-		return { success: true, data: { draftMessageId: row.id } };
+
+		revalidatePath(
+			"/dashboard/mail",
+		);
+
+		return {
+			success: true,
+			data: {
+				draftMessageId: row.id,
+			},
+		};
 	}
 
-	const { sendMailQueue, sendMailEvents } = await getRedis();
-	const job = await sendMailQueue.add("send-and-reconcile", decodedForm);
-	return await job.waitUntilFinished(sendMailEvents);
+	const {
+		sendMailQueue,
+		sendMailEvents,
+	} = await getRedis();
+
+	const job =
+		await sendMailQueue.add(
+			"send-and-reconcile",
+			decodedForm,
+		);
+
+	return await job.waitUntilFinished(
+		sendMailEvents,
+	);
 }
 
 export const deltaFetch = async ({

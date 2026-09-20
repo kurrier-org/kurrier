@@ -12,6 +12,8 @@ function formatActionLabel(a: string) {
 
 export default function MailRulesList({ rules }: { rules: FetchMailRulesResult }) {
     const dict = useOptionalDictionary();
+    const pathname = usePathname()
+
     if (!rules.length) {
         return (
             <div className="mt-6 rounded-xl border border-dashed border-neutral-200 dark:border-neutral-800 p-6 text-sm text-neutral-600 dark:text-neutral-400 mb-8">
@@ -20,7 +22,7 @@ export default function MailRulesList({ rules }: { rules: FetchMailRulesResult }
         );
     }
 
-    const pathname = usePathname()
+
 
     return (
         <div className="mt-6 space-y-3">

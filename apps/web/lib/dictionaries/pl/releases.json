@@ -6,21 +6,39 @@
     "dismiss": "Zamknij informacje o nowościach"
   },
   "releases": {
+    "v4_2_0": {
+      "title": "Podpisy e-mail",
+      "description": "Twórz profesjonalne podpisy dla każdej tożsamości i używaj ich bezpośrednio w edytorze wiadomości Kurrier.",
+      "features": {
+        "emailSignatures": {
+          "title": "Podpisy dla każdej tożsamości",
+          "description": "Twórz wiele podpisów i wybieraj osobne domyślne podpisy dla nowych wiadomości, odpowiedzi i wiadomości przekazywanych dalej."
+        },
+        "composer": {
+          "title": "Integracja z edytorem wiadomości",
+          "description": "Wyświetlaj podgląd podpisu podczas pisania oraz szybko zmieniaj lub usuwaj podpis przed wysłaniem wiadomości."
+        },
+        "responsiveUi": {
+          "title": "Responsywny edytor podpisów",
+          "description": "Twórz podpisy i zarządzaj nimi za pomocą uproszczonego edytora działającego na komputerach i mniejszych ekranach."
+        }
+      }
+    },
     "v4_1_0": {
-      "title": "Jeszcze lepszy Kurrier",
-      "description": "To wydanie wprowadza ulepszenia niezawodności poczty, edytora wiadomości, responsywnych układów oraz zarządzania przestrzenią roboczą.",
+      "title": "Lepszy Kurrier",
+      "description": "To wydanie wprowadza ulepszenia niezawodności poczty, edytora wiadomości, responsywnych układów i zarządzania obszarem roboczym.",
       "features": {
         "mailReliability": {
           "title": "Bardziej niezawodna synchronizacja poczty",
-          "description": "Ulepszono odzyskiwanie połączeń IMAP oraz synchronizację skrzynek pocztowych podczas długotrwałych połączeń."
+          "description": "Ulepszono odzyskiwanie połączeń IMAP i synchronizację skrzynek pocztowych podczas długotrwałych połączeń."
         },
         "composer": {
           "title": "Ulepszony edytor wiadomości",
           "description": "Bardziej dopracowane tworzenie wiadomości na komputerach i urządzeniach mobilnych."
         },
         "responsiveUi": {
-          "title": "Lepsza obsługa różnych rozmiarów ekranu",
-          "description": "Widoki poczty i przestrzeni roboczej lepiej dostosowują się teraz do mniejszych ekranów."
+          "title": "Lepsza obsługa mniejszych ekranów",
+          "description": "Widoki poczty i ekrany obszaru roboczego lepiej dostosowują się do mniejszych wyświetlaczy."
         }
       }
     }

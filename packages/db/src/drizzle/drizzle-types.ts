@@ -18,7 +18,7 @@ import {
     calendarEventAttendees,
     driveVolumes,
     driveEntries,
-    draftMessages, mailSubscriptions, users, workspaces,
+    draftMessages, mailSubscriptions, users, workspaces, emailAssets,
 } from "./schema";
 import { z } from "zod";
 import {
@@ -119,3 +119,6 @@ export type UserEntity = typeof users.$inferSelect;
 export const WorkspaceRolesList = ["owner", "admin", "member"] as const;
 export type WorkspaceRolesListType = z.infer<typeof WorkspaceRolesList>;
 export type WorkspaceEntity = typeof workspaces.$inferSelect;
+
+export type EmailAssetEntity = typeof emailAssets.$inferSelect;
+export type EmailAssetInsert = typeof emailAssets.$inferInsert;

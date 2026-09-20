@@ -34,7 +34,9 @@
 			"@extensions/*": ["../../packages/extensions/src/*"],
 			"@distribution": ["../../packages/distribution/src/index.ts"],
 			"@distribution/*": ["../../packages/distribution/src/*"],
-			"@distribution/kurrier-server": ["../../packages/distribution/src/kurrier-server.ts"]
+			"@distribution/kurrier-server": ["../../packages/distribution/src/kurrier-server.ts"],
+			"@email-editor": ["../../packages/email-editor/src/index.ts"],
+			"@email-editor/*": ["../../packages/email-editor/src/*"]
 		}
 	},
 	"include": [
