@@ -2025,3 +2025,257 @@ export const jmapAccounts = pgTable(
 		...workspaceMutationPolicies(t, "jmap_accounts"),
 	],
 ).enableRLS();
+
+export const emailAssets = pgTable(
+	"email_assets",
+	{
+		id: uuid("id")
+			.defaultRandom()
+			.primaryKey(),
+
+		publicId: uuid("public_id")
+			.defaultRandom()
+			.notNull(),
+
+		workspaceId: uuid("workspace_id")
+			.references(() => workspaces.id, {
+				onDelete: "cascade",
+			})
+			.notNull()
+			.default(authWorkspaceId),
+
+		ownerId: uuid("owner_id")
+			.references(() => users.id, {
+				onDelete: "set null",
+			})
+			.default(authUid),
+
+		bucketId: text("bucket_id")
+			.notNull(),
+
+		path: text("path")
+			.notNull(),
+
+		filenameOriginal: text(
+			"filename_original",
+		).default(sql`null`),
+
+		contentType: text("content_type")
+			.notNull(),
+
+		sizeBytes: integer("size_bytes")
+			.notNull(),
+
+		revokedAt: timestamp("revoked_at", {
+			withTimezone: true,
+		}).default(sql`null`),
+
+		metaData: jsonb("meta")
+			.$type<Record<string, any> | null>()
+			.default(sql`null`),
+
+		createdAt: timestamp("created_at", {
+			withTimezone: true,
+		})
+			.defaultNow()
+			.notNull(),
+
+		updatedAt: timestamp("updated_at", {
+			withTimezone: true,
+		})
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		uniqueIndex("ux_email_assets_public_id").on(
+			t.publicId,
+		),
+
+		uniqueIndex("ux_email_assets_bucket_path").on(
+			t.bucketId,
+			t.path,
+		),
+
+		index("ix_email_assets_workspace").on(
+			t.workspaceId,
+		),
+
+		index("ix_email_assets_owner").on(
+			t.ownerId,
+		),
+
+		...workspaceCrudPolicies(t, "email_assets"),
+	],
+).enableRLS();
+
+
+export const emailTemplates = pgTable(
+	"email_templates",
+	{
+		id: uuid("id")
+			.defaultRandom()
+			.primaryKey(),
+
+		publicId: uuid("public_id")
+			.defaultRandom()
+			.notNull(),
+
+		workspaceId: uuid("workspace_id")
+			.references(() => workspaces.id, {
+				onDelete: "cascade",
+			})
+			.notNull()
+			.default(authWorkspaceId),
+
+		ownerId: uuid("owner_id")
+			.references(() => users.id, {
+				onDelete: "set null",
+			})
+			.default(authUid),
+
+		name: text("name").notNull(),
+
+		subject: text("subject")
+			.notNull()
+			.default(""),
+
+		previewText: text("preview_text")
+			.notNull()
+			.default(""),
+
+		document: jsonb("document")
+			.$type<Record<string, unknown>>()
+			.notNull(),
+
+		metaData: jsonb("meta")
+			.$type<Record<string, unknown> | null>()
+			.default(sql`null`),
+
+		createdAt: timestamp("created_at", {
+			withTimezone: true,
+		})
+			.defaultNow()
+			.notNull(),
+
+		updatedAt: timestamp("updated_at", {
+			withTimezone: true,
+		})
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		uniqueIndex("ux_email_templates_public_id").on(
+			t.publicId,
+		),
+
+		index("ix_email_templates_workspace").on(
+			t.workspaceId,
+		),
+
+		index("ix_email_templates_owner").on(
+			t.ownerId,
+		),
+
+		index("ix_email_templates_workspace_updated").on(
+			t.workspaceId,
+			t.updatedAt,
+		),
+
+		...workspaceCrudPolicies(
+			t,
+			"email_templates",
+		),
+	],
+).enableRLS();
+
+
+export const emailSignatures = pgTable(
+	"email_signatures",
+	{
+		id: uuid("id")
+			.defaultRandom()
+			.primaryKey(),
+
+		publicId: uuid("public_id")
+			.defaultRandom()
+			.notNull(),
+
+		workspaceId: uuid("workspace_id")
+			.references(() => workspaces.id, {
+				onDelete: "cascade",
+			})
+			.notNull()
+			.default(authWorkspaceId),
+
+		ownerId: uuid("owner_id")
+			.references(() => users.id, {
+				onDelete: "set null",
+			})
+			.default(authUid),
+
+		identityId: uuid("identity_id")
+			.references(() => identities.id, {
+				onDelete: "cascade",
+			})
+			.notNull(),
+
+		name: text("name")
+			.notNull(),
+
+		document: jsonb("document")
+			.$type<Record<string, unknown>>()
+			.notNull(),
+
+		isDefaultForNew: boolean(
+			"is_default_for_new",
+		)
+			.notNull()
+			.default(false),
+
+		isDefaultForReplyForward: boolean(
+			"is_default_for_reply_forward",
+		)
+			.notNull()
+			.default(false),
+
+		metaData: jsonb("meta")
+			.$type<Record<string, unknown> | null>()
+			.default(sql`null`),
+
+		createdAt: timestamp("created_at", {
+			withTimezone: true,
+		})
+			.defaultNow()
+			.notNull(),
+
+		updatedAt: timestamp("updated_at", {
+			withTimezone: true,
+		})
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		uniqueIndex(
+			"ux_email_signatures_public_id",
+		).on(t.publicId),
+
+		uniqueIndex("ux_email_signatures_identity_name",).on(t.identityId, t.name,),
+		uniqueIndex("ux_email_signatures_default_new",).on(t.identityId).where(
+				sql`${t.isDefaultForNew} = true`,
+			),
+		uniqueIndex("ux_email_signatures_default_reply_forward",).on(t.identityId).where(
+				sql`${t.isDefaultForReplyForward} = true`,
+			),
+		index("ix_email_signatures_workspace",).on(t.workspaceId),
+		index("ix_email_signatures_owner",).on(t.ownerId),
+		index("ix_email_signatures_identity",).on(t.identityId),
+		index("ix_email_signatures_identity_updated",).on(
+			t.identityId,
+			t.updatedAt,
+		),
+		...workspaceCrudPolicies(
+			t,
+			"email_signatures",
+		),
+	],
+).enableRLS();
