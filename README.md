@@ -16,6 +16,8 @@ contacts and storage**.
 Connect the providers and infrastructure you already use while Kurrier
 gives you a unified web interface built around open standards.
 
+> If Kurrier is useful to you, please consider ⭐ starring the repository and sharing it with others who care about open, self-hosted infrastructure. Word of mouth and GitHub stars help the project grow, attract contributors, and accelerate development.
+
 **[Documentation](https://www.kurrier.org/docs)** ·
 **[Contributing](https://www.kurrier.org/docs/contributing)** ·
 **[Website](https://www.kurrier.org)**
