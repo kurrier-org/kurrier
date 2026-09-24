@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 4.3.0
+
+### Minor Changes
+
+- [`8825e17`](https://github.com/kurrier-org/kurrier/commit/8825e17dc78720683bf8e3e3df73cb481f5af3cc) Thanks [@krokhale](https://github.com/krokhale)! - Added Drive search, sorting, grid/list views, drag-and-drop uploads, file previews, expiring share links, and updated documentation.
+
 ## 4.2.0
 
 ### Minor Changes
