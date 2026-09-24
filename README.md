@@ -22,6 +22,8 @@ gives you a unified web interface built around open standards.
 **[Contributing](https://www.kurrier.org/docs/contributing)** ·
 **[Website](https://www.kurrier.org)**
 
+**Prefer a hosted version?** Explore [Kurrier.io](https://www.kurrier.io) for email infrastructure and team workflows, or [Kurrier Mail](https://www.kurriermail.com) for a hosted email workspace.
+
 ------------------------------------------------------------------------
 
 ## What is Kurrier?

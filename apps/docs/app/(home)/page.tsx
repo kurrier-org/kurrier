@@ -42,24 +42,57 @@ export default function HomePage() {
 				</div>
 			</div>
 
-			<div className={"flex justify-center my-12"}>
-				<Button asChild={true} size={"lg"}>
-					<Link href={"/docs"}>Read the docs</Link>
-				</Button>
-			</div>
 
-			<div className={"flex justify-center -mt-10"}>
-				<Button
-					variant={"link"}
-					className={"underline"}
-					asChild={true}
-					size={"sm"}
-				>
-					<Link href={"https://buy.stripe.com/dRmfZje75d4OaGG8ux3Nm00"}>
+			<div className="my-12 flex flex-col items-center gap-6 px-4 text-center">
+				<Button asChild size="lg">
+					<Link href="/docs">Read the docs</Link>
+				</Button>
+
+				<div className="text-sm text-neutral-600">
+					<span>Prefer a hosted version?</span>
+					<span className="mx-2">·</span>
+					<Link
+						href="https://www.kurrier.io"
+						className="font-medium text-foreground underline underline-offset-4"
+					>
+						Kurrier.io
+					</Link>
+					<span className="mx-2">·</span>
+					<Link
+						href="https://www.kurriermail.com"
+						className="font-medium text-foreground underline underline-offset-4"
+					>
+						Kurrier Mail
+					</Link>
+				</div>
+
+				<Button variant="link" className="underline" asChild size="sm">
+					<Link href="https://buy.stripe.com/dRmfZje75d4OaGG8ux3Nm00">
 						💙 Support Kurrier
 					</Link>
 				</Button>
 			</div>
+
+			{/*<div className={"flex justify-center my-12"}>*/}
+			{/*	<Button asChild={true} size={"lg"}>*/}
+			{/*		<Link href={"/docs"}>Read the docs</Link>*/}
+			{/*	</Button>*/}
+			{/*</div>*/}
+
+
+
+			{/*<div className={"flex justify-center -mt-10"}>*/}
+			{/*	<Button*/}
+			{/*		variant={"link"}*/}
+			{/*		className={"underline"}*/}
+			{/*		asChild={true}*/}
+			{/*		size={"sm"}*/}
+			{/*	>*/}
+			{/*		<Link href={"https://buy.stripe.com/dRmfZje75d4OaGG8ux3Nm00"}>*/}
+			{/*			💙 Support Kurrier*/}
+			{/*		</Link>*/}
+			{/*	</Button>*/}
+			{/*</div>*/}
 
 			<FeatureExample />
 		</>
