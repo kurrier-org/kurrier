@@ -10,7 +10,7 @@ function SidebarItem({ icon, label, href }: {
     label: string;
     href: string;
 }) {
-    const active = usePathname() === href;
+    const active = usePathname().match(href);
     return (
         <Link
             type="button"

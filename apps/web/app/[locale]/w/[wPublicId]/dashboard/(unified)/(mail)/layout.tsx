@@ -10,6 +10,7 @@ import IdentityMailboxesListWrapper from "@/components/dashboard/workspaces/iden
 import NavUserWrapper from "@/components/ui/dashboards/workspace/nav-user-wrapper";
 import { fetchIdentityMailboxList } from "@/lib/actions/mailbox";
 import MailComposerLauncher from "@/components/mailbox/default/composer/mail-composer-launcher";
+import WorkspaceLogo from "@/components/common/workspace-logo";
 
 async function MailSidebar() {
 	await connection();
@@ -26,22 +27,27 @@ async function MailSidebar() {
 		<AppSidebar
 			workspacePublicId={workspacePublicId}
 			sidebarTopContent={
-				<div className="-mt-1" key="mail-sidebar-compose">
-					{sendableIdentityMailboxes.length > 0 && (
-						<MailComposerLauncher
-							publicConfig={publicConfig}
-							identityMailboxes={sendableIdentityMailboxes}
-						/>
-					)}
-				</div>
+				<>
+					<Suspense fallback={<div className="h-9" />} key={workspacePublicId}>
+						<WorkspaceLogo />
+					</Suspense>
+					<div className="-mt-1" key="mail-sidebar-compose">
+						{sendableIdentityMailboxes.length > 0 && (
+							<MailComposerLauncher
+								publicConfig={publicConfig}
+								identityMailboxes={sendableIdentityMailboxes}
+							/>
+						)}
+					</div>
+				</>
 			}
 			navUserContent={
-				<Suspense fallback={<Loading />}>
+				<Suspense key={workspacePublicId} fallback={<Loading />}>
 					<NavUserWrapper />
 				</Suspense>
 			}
 			sidebarSectionContent={
-				<Suspense fallback={<Loading />}>
+				<Suspense key={workspacePublicId} fallback={<Loading />}>
 					<IdentityMailboxesListWrapper />
 				</Suspense>
 			}

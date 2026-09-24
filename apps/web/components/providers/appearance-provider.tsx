@@ -2,10 +2,10 @@
 
 import React, {
 	createContext,
+	useCallback,
 	useContext,
 	useEffect,
 	useMemo,
-	useRef,
 	useState,
 	useTransition,
 } from "react";
@@ -21,19 +21,27 @@ import { Toaster } from "@/components/ui/sonner";
 type AppearanceCtx = {
 	theme: ThemeName;
 	mode: ThemeMode;
-	setTheme: (t: ThemeName) => void;
-	setMode: (m: ThemeMode) => void;
+	setTheme: (theme: ThemeName) => void;
+	setWorkspaceTheme: (theme: ThemeName | null) => void;
+	setMode: (mode: ThemeMode) => void;
 	pending: boolean;
-	applyColorScheme: (mode: "light" | "dark" | "system") => void;
 };
 
 const Ctx = createContext<AppearanceCtx | null>(null);
 
+function applyMode(isDark: boolean) {
+	const el = document.documentElement;
+
+	el.classList.toggle("dark", isDark);
+	el.style.setProperty("color-scheme", isDark ? "dark" : "light");
+	el.setAttribute("data-mantine-color-scheme", isDark ? "dark" : "light");
+}
+
 export function AppearanceProvider({
-	children,
-	initialTheme,
-	initialMode,
-}: {
+									   children,
+									   initialTheme,
+									   initialMode,
+								   }: {
 	children: React.ReactNode;
 	initialTheme: ThemeName;
 	initialMode: ThemeMode;
@@ -41,125 +49,96 @@ export function AppearanceProvider({
 	const router = useRouter();
 	const [pending, start] = useTransition();
 	const [theme, setThemeState] = useState<ThemeName>(initialTheme);
+	const [workspaceTheme, setWorkspaceTheme] = useState<ThemeName | null>(null);
 	const [mode, setModeState] = useState<ThemeMode>(initialMode);
 
-	const mmRef = useRef<MediaQueryList | null>(null);
-	const listenerRef = useRef<((e: MediaQueryListEvent) => void) | null>(null);
+	const activeTheme = workspaceTheme ?? theme;
 
-	// Keep DOM synced with theme
 	useEffect(() => {
-		document.documentElement.setAttribute("data-theme", theme);
-	}, [theme]);
+		setThemeState(initialTheme);
+	}, [initialTheme]);
 
-	// Keep DOM + cookies synced with mode
 	useEffect(() => {
-		const el = document.documentElement;
+		document.documentElement.setAttribute("data-theme", activeTheme);
+	}, [activeTheme]);
 
-		// cleanup previous listener
-		if (mmRef.current && listenerRef.current) {
-			mmRef.current.removeEventListener?.("change", listenerRef.current);
-			mmRef.current.removeListener?.(listenerRef.current);
-			mmRef.current = null;
-			listenerRef.current = null;
-		}
-
+	useEffect(() => {
 		if (mode === "dark") {
-			el.classList.add("dark");
+			applyMode(true);
 			return;
 		}
+
 		if (mode === "light") {
-			el.classList.remove("dark");
+			applyMode(false);
 			return;
 		}
 
-		// mode === "system"
-		const mm = window.matchMedia("(prefers-color-scheme: dark)");
-		const applyNow = async () => {
-			el.classList.toggle("dark", mm.matches);
-			await setResolvedServer(mm.matches ? "dark" : "light");
-		};
-		applyNow();
+		const media = window.matchMedia("(prefers-color-scheme: dark)");
 
-		const onChange = async (e: MediaQueryListEvent) => {
-			el.classList.toggle("dark", e.matches);
-			await setResolvedServer(e.matches ? "dark" : "light");
+		const syncSystemMode = (isDark: boolean) => {
+			applyMode(isDark);
+			void setResolvedServer(isDark ? "dark" : "light");
 		};
 
-		mm.addEventListener?.("change", onChange);
-		mm.addListener?.(onChange);
+		syncSystemMode(media.matches);
 
-		mmRef.current = mm;
-		listenerRef.current = onChange;
+		const onChange = (event: MediaQueryListEvent) => {
+			syncSystemMode(event.matches);
+		};
+
+		media.addEventListener("change", onChange);
 
 		return () => {
-			mmRef.current?.removeEventListener?.(
-				"change",
-				listenerRef.current as EventListener,
-			);
-			mmRef.current?.removeListener?.(listenerRef.current);
-			mmRef.current = null;
-			listenerRef.current = null;
+			media.removeEventListener("change", onChange);
 		};
 	}, [mode]);
 
-	const setTheme = (t: ThemeName) => {
-		setThemeState(t);
-		document.documentElement.setAttribute("data-theme", t);
-		start(async () => {
-			await setThemeServer(t);
-			router.refresh();
-		});
-	};
+	const setTheme = useCallback(
+		(nextTheme: ThemeName) => {
+			setThemeState(nextTheme);
 
-	const setMode = (m: ThemeMode) => {
-		setModeState(m);
-		const el = document.documentElement;
-		if (m === "dark") el.classList.add("dark");
-		else if (m === "light") el.classList.remove("dark");
-		else {
-			const prefers = window.matchMedia("(prefers-color-scheme: dark)").matches;
-			el.classList.toggle("dark", prefers);
-			start(() => setResolvedServer(prefers ? "dark" : "light"));
-		}
-		start(async () => {
-			await setModeServer(m);
-			router.refresh();
-		});
-	};
+			if (workspaceTheme === null) {
+				document.documentElement.setAttribute("data-theme", nextTheme);
+			}
 
-	function applyColorScheme(mode: "light" | "dark" | "system") {
-		const el = document.documentElement;
-		const prefersDark = window.matchMedia(
-			"(prefers-color-scheme: dark)",
-		).matches;
-		const isDark = mode === "dark" || (mode === "system" && prefersDark);
-
-		// Tailwind + your CSS variables
-		el.classList.toggle("dark", isDark);
-
-		// Browser controls/scrollbars
-		el.style.setProperty("color-scheme", isDark ? "dark" : "light");
-
-		// Mantine components (and many libs) pick this up
-		el.setAttribute("data-mantine-color-scheme", isDark ? "dark" : "light");
-	}
-
-	const value = useMemo(
-		() => ({ theme, mode, setTheme, setMode, pending, applyColorScheme }),
-		[theme, mode, pending, applyColorScheme],
+			start(async () => {
+				await setThemeServer(nextTheme);
+				router.refresh();
+			});
+		},
+		[workspaceTheme, router, start],
 	);
 
-	useEffect(() => {
-		applyColorScheme(mode);
+	const setMode = useCallback(
+		(nextMode: ThemeMode) => {
+			setModeState(nextMode);
 
-		// keep it reactive for "system"
-		if (mode === "system") {
-			const mq = window.matchMedia("(prefers-color-scheme: dark)");
-			const onChange = () => applyColorScheme("system");
-			mq.addEventListener?.("change", onChange);
-			return () => mq.removeEventListener?.("change", onChange);
-		}
-	}, [mode]);
+			const isDark =
+				nextMode === "dark" ||
+				(nextMode === "system" &&
+					window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+			applyMode(isDark);
+
+			start(async () => {
+				await setModeServer(nextMode);
+				router.refresh();
+			});
+		},
+		[router, start],
+	);
+
+	const value = useMemo(
+		() => ({
+			theme: activeTheme,
+			mode,
+			setTheme,
+			setWorkspaceTheme,
+			setMode,
+			pending,
+		}),
+		[activeTheme, mode, setTheme, setMode, pending],
+	);
 
 	return (
 		<Ctx.Provider value={value}>
@@ -171,7 +150,10 @@ export function AppearanceProvider({
 
 export function useAppearance() {
 	const ctx = useContext(Ctx);
-	if (!ctx)
+
+	if (!ctx) {
 		throw new Error("useAppearance must be used within <AppearanceProvider>");
+	}
+
 	return ctx;
 }

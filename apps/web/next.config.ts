@@ -4,6 +4,11 @@ const assetPrefix = process.env.NEXT_PUBLIC_ASSET_PREFIX || "/";
 const nextConfig: NextConfig = {
 	assetPrefix,
 	devIndicators: { position: "top-right" },
+	experimental: {
+		serverActions: {
+			bodySizeLimit: "20mb",
+		},
+	},
 	output: "standalone",
 	cacheComponents: true,
 	partialPrefetching: true,

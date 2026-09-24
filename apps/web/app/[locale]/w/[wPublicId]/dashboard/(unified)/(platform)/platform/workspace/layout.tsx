@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { getWorkspacePublicId } from "@/lib/actions/clients";
 import { getDictionary } from "@/lib/dictionaries";
+import {fetchWorkspace} from "@/lib/actions/shared";
 
 type LayoutProps = {
 	children: ReactNode;
@@ -14,9 +15,10 @@ type LayoutProps = {
 
 export default async function Layout({ children, params }: LayoutProps) {
 	const { locale } = await params;
-	const [workspacePublicId, dict] = await Promise.all([
+	const [workspacePublicId, dict, workspace] = await Promise.all([
 		getWorkspacePublicId(),
 		getDictionary(locale),
+		fetchWorkspace(),
 	]);
 
 	return (
@@ -50,8 +52,16 @@ export default async function Layout({ children, params }: LayoutProps) {
 						<div className="rounded-2xl border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900">
 							<div className="px-3 pb-3 pt-2">
 								<div className="flex items-center gap-3">
-									<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10 dark:bg-brand/50 text-brand dark:text-brand-foreground">
-										<Blocks size={18} />
+									<div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-brand/10 text-brand dark:bg-brand/50 dark:text-brand-foreground">
+										{workspace.logoKey ? (
+											<img
+												src={`/api/workspaces/${encodeURIComponent(workspacePublicId)}/logo?v=${encodeURIComponent(workspace.logoKey.split("/").at(-1) ?? "")}`}
+												alt={`${workspace.name} logo`}
+												className="h-full w-full object-contain"
+											/>
+										) : (
+											<Blocks size={18} />
+										)}
 									</div>
 									<div className="min-w-0">
 										<div className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-50">

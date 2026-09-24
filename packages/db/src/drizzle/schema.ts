@@ -154,6 +154,10 @@ export const workspaces = pgTable(
 			.notNull()
 			.default(false),
 
+		theme: text("theme").notNull().default("indigo"),
+		customColor: text("custom_color"),
+		logoKey: text("logo_key"),
+
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),

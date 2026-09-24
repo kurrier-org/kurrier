@@ -383,6 +383,18 @@
 	"customProviderMailboxIdentityHelp": "Kurrier will create the email identity and start syncing its mailboxes automatically.",
 	"customProviderDisplayNamePlaceholder": "Your name",
 	"customProviderDisplayNameHelp": "Shown to recipients when you send email.",
-  "noDomainsYet": "No domains yet — add your first one to get started.",
-  "noEmailAddressesYet": "No email addresses yet — add your first one to get started."
+  	"noDomainsYet": "No domains yet — add your first one to get started.",
+  	"noEmailAddressesYet": "No email addresses yet — add your first one to get started.",
+
+	"workspaceColor": "Workspace color",
+	"neutral": "Neutral",
+	"indigo": "Indigo",
+	"violet": "Violet",
+	"teal": "Teal",
+	"workspaceLogo": "Workspace logo",
+	"workspaceLogoFormats": "PNG, JPEG or WebP. Maximum 512 KB.",
+	"uploadLogo": "Upload logo",
+	"removeLogo": "Remove logo",
+	"workspaceLogoRemoved": "Workspace logo removed.",
+	"workspaceLogoRemoveError": "Could not remove the workspace logo."
 }

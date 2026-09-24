@@ -1,35 +1,17 @@
-import {
-	Suspense,
-	type ReactNode,
-} from "react";
-import {
-	identities,
-} from "@db";
-import {
-	eq,
-} from "drizzle-orm";
-import {
-	Mail,
-} from "lucide-react";
+import { Suspense, type ReactNode } from "react";
+import { identities } from "@db";
+import { eq } from "drizzle-orm";
+import { Mail } from "lucide-react";
 
-import {
-	Container,
-} from "@/components/common/containers";
+import { Container } from "@/components/common/containers";
 import MailboxSearchHeader from "@/components/mailbox/mailbox-search-header";
 import SettingsTabs from "@/components/mailbox/settings/settings-tabs";
-import {
-	getWorkspacePublicId,
-	rlsClient,
-} from "@/lib/actions/clients";
-import {
-	getDictionary,
-} from "@/lib/dictionaries";
+import { getWorkspacePublicId, rlsClient } from "@/lib/actions/clients";
+import { getDictionary } from "@/lib/dictionaries";
 
 type LayoutProps = {
 	children: ReactNode;
-	params: Promise<
-		Record<string, string>
-	>;
+	params: Promise<Record<string, string>>;
 };
 
 function MailboxHeaderLoading() {
@@ -44,10 +26,7 @@ function MailboxHeaderLoading() {
 
 function SettingsLayoutLoading() {
 	return (
-		<Container
-			variant="wide"
-			className="my-10 animate-pulse"
-		>
+		<Container variant="wide" className="my-10 animate-pulse">
 			<div className="mb-6">
 				<div className="h-6 w-28 rounded bg-neutral-200 dark:bg-neutral-800" />
 
@@ -84,57 +63,34 @@ function SettingsLayoutLoading() {
 	);
 }
 
-async function SettingsLayoutContent({
-										 children,
-										 params,
-									 }: LayoutProps) {
-	const paramsResolved =
-		await params;
+async function SettingsLayoutContent({ children, params }: LayoutProps) {
+	const paramsResolved = await params;
 
-	const [
-		rls,
-		workspacePublicId,
-		dict,
-	] = await Promise.all([
+	const [rls, workspacePublicId, dict] = await Promise.all([
 		rlsClient(),
 		getWorkspacePublicId(),
-		getDictionary(
-			paramsResolved.locale,
-		),
+		getDictionary(paramsResolved.locale),
 	]);
 
-	const [identity] = await rls(
-		(tx) =>
-			tx
-				.select()
-				.from(identities)
-				.where(
-					eq(
-						identities.publicId,
-						paramsResolved.identityPublicId,
-					),
-				)
-				.limit(1),
+	const [identity] = await rls((tx) =>
+		tx
+			.select()
+			.from(identities)
+			.where(eq(identities.publicId, paramsResolved.identityPublicId))
+			.limit(1)
 	);
 
-	const identityLabel =
-		identity?.value;
+	const identityLabel = identity?.value;
 
 	return (
-		<Container
-			variant="wide"
-			className="my-10"
-		>
+		<Container variant="wide" className="my-10">
 			<div className="mb-6">
 				<h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
 					{dict.platform.settings}
 				</h1>
 
 				<p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-					{
-						dict.mailbox
-							.identitySettingsDescription
-					}
+					{dict.mailbox.identitySettingsDescription}
 				</p>
 			</div>
 
@@ -152,53 +108,30 @@ async function SettingsLayoutContent({
 								</div>
 
 								<div className="truncate text-xs text-neutral-600 dark:text-neutral-400">
-									{
-										dict.mailbox
-											.identity
-									}
+									{dict.mailbox.identity}
 								</div>
 							</div>
 						</div>
 					</div>
 
-					<SettingsTabs
-						workspacePublicId={
-							workspacePublicId
-						}
-					/>
+					<SettingsTabs workspacePublicId={workspacePublicId} />
 				</div>
 
-				<div className="space-y-6">
-					{children}
-				</div>
+				<div className="space-y-6">{children}</div>
 			</div>
 		</Container>
 	);
 }
 
-export default function Layout(
-	props: LayoutProps,
-) {
+export default function Layout(props: LayoutProps) {
 	return (
 		<>
-			<Suspense
-				fallback={
-					<MailboxHeaderLoading />
-				}
-			>
-				<MailboxSearchHeader
-					params={props.params}
-				/>
+			<Suspense fallback={<MailboxHeaderLoading />}>
+				<MailboxSearchHeader params={props.params} />
 			</Suspense>
 
-			<Suspense
-				fallback={
-					<SettingsLayoutLoading />
-				}
-			>
-				<SettingsLayoutContent
-					{...props}
-				/>
+			<Suspense fallback={<SettingsLayoutLoading />}>
+				<SettingsLayoutContent {...props} />
 			</Suspense>
 		</>
 	);

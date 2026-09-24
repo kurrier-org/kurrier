@@ -14,6 +14,7 @@ import { isSignedIn } from "@/lib/actions/auth";
 import { getWorkspacePublicId } from "@/lib/actions/clients";
 import { fetchVolumes } from "@/lib/actions/drive";
 import { DISTRIBUTION_CONFIG } from "@distribution/config";
+import WorkspaceLogo from "@/components/common/workspace-logo";
 
 async function DriveDashboard({ children }: { children: React.ReactNode }) {
 	await connection();
@@ -46,9 +47,14 @@ async function DriveDashboard({ children }: { children: React.ReactNode }) {
 					</Suspense>
 				}
 				sidebarTopContent={
+				<>
+					<Suspense fallback={<div className="h-9" />} key={workspacePublicId}>
+						<WorkspaceLogo />
+					</Suspense>
 					<div className="-mt-1">
 						<NewUploadButton className="hidden md:inline-flex" />
 					</div>
+				</>
 				}
 			/>
 

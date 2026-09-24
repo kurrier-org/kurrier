@@ -379,6 +379,18 @@
 	"customProviderMailboxIdentityHelp": "Kurrier utworzy tożsamość e-mail i automatycznie rozpocznie synchronizację jej skrzynek pocztowych.",
 	"customProviderDisplayNamePlaceholder": "Twoje imię i nazwisko",
 	"customProviderDisplayNameHelp": "Wyświetlane odbiorcom podczas wysyłania e-maili.",
-  "noDomainsYet": "Brak domen — dodaj pierwszą, aby rozpocząć.",
-  "noEmailAddressesYet": "Brak adresów e-mail — dodaj pierwszy, aby rozpocząć."
+  	"noDomainsYet": "Brak domen — dodaj pierwszą, aby rozpocząć.",
+  	"noEmailAddressesYet": "Brak adresów e-mail — dodaj pierwszy, aby rozpocząć.",
+
+	"workspaceColor": "Kolor przestrzeni roboczej",
+	"neutral": "Neutralny",
+	"indigo": "Indygo",
+	"violet": "Fioletowy",
+	"teal": "Morski",
+	"workspaceLogo": "Logo przestrzeni roboczej",
+	"workspaceLogoFormats": "PNG, JPEG lub WebP. Maksymalnie 512 KB.",
+	"uploadLogo": "Prześlij logo",
+	"removeLogo": "Usuń logo",
+	"workspaceLogoRemoved": "Logo przestrzeni roboczej zostało usunięte.",
+	"workspaceLogoRemoveError": "Nie udało się usunąć logo przestrzeni roboczej."
 }
