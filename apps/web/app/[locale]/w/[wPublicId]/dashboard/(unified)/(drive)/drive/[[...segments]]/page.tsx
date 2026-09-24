@@ -1,7 +1,7 @@
 import { ArrowRight, FolderOpen, HardDrive, Settings2 } from "lucide-react";
 import Link from "next/link";
 import ContentPlaceholder from "@/components/common/content-placeholder";
-import DriveEntry from "@/components/dashboard/drive/drive-entry";
+import DriveEntriesGrid from "@/components/dashboard/drive/drive-entries-grid";
 import NewUploadButton from "@/components/dashboard/drive/new-upload-button";
 import { Button } from "@/components/ui/button";
 import { getWorkspacePublicId } from "@/lib/actions/clients";
@@ -13,8 +13,8 @@ import {
 import { getDictionary, type Locale } from "@/lib/dictionaries";
 
 export default async function Page({
-	params,
-}: {
+									   params,
+								   }: {
 	params: Promise<{ locale: Locale; segments?: string[] }>;
 }) {
 	const { locale, segments } = await params;
@@ -144,22 +144,5 @@ export default async function Page({
 		);
 	}
 
-	return (
-		<div className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">
-			<div className="mb-4 flex items-center justify-between gap-3">
-				<p className="text-sm font-medium text-muted-foreground">
-					{(dict.drive.itemsCount ?? "{count} items").replace(
-						"{count}",
-						String(entries.length),
-					)}
-				</p>
-				<NewUploadButton className="hidden sm:inline-flex md:hidden" />
-			</div>
-			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-				{entries.map((e) => (
-					<DriveEntry key={e.id} entry={e} />
-				))}
-			</div>
-		</div>
-	);
+	return <DriveEntriesGrid entries={entries} />;
 }

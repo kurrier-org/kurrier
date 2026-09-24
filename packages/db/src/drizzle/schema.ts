@@ -2283,3 +2283,46 @@ export const emailSignatures = pgTable(
 		),
 	],
 ).enableRLS();
+
+export const driveShareLinks = pgTable(
+	"drive_share_links",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+
+		ownerId: uuid("owner_id")
+			.references(() => users.id)
+			.notNull()
+			.default(authUid),
+
+		workspaceId: uuid("workspace_id")
+			.references(() => workspaces.id)
+			.notNull()
+			.default(authWorkspaceId),
+
+		entryId: uuid("entry_id")
+			.references(() => driveEntries.id, { onDelete: "cascade" })
+			.notNull(),
+
+		tokenHash: text("token_hash").notNull(),
+
+		expiresAt: timestamp("expires_at", {
+			withTimezone: true,
+		}).notNull(),
+
+		revokedAt: timestamp("revoked_at", {
+			withTimezone: true,
+		}),
+
+		createdAt: timestamp("created_at", {
+			withTimezone: true,
+		})
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		uniqueIndex("ux_drive_share_links_token_hash").on(t.tokenHash),
+		index("ix_drive_share_links_entry").on(t.entryId),
+		index("ix_drive_share_links_expires").on(t.expiresAt),
+		...workspaceCrudPolicies(t, "drive_share_links"),
+	],
+).enableRLS();
