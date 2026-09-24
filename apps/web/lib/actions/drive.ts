@@ -14,14 +14,16 @@ import {and, eq, sql} from "drizzle-orm";
 import {
 	DeleteObjectCommand,
 	DeleteObjectsCommand,
-	GetObjectCommand,
+	GetObjectCommand, HeadObjectCommand,
 	ListObjectsV2Command,
 	PutObjectCommand
 } from "@aws-sdk/client-s3";
 import {s3} from "@/lib/create-s3-client";
 import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
 import { DISTRIBUTION_CONFIG } from "@distribution/config";
-
+import { createHash, randomBytes } from "node:crypto";
+import { driveShareLinks } from "@db";
+import { gt, isNull } from "drizzle-orm";
 
 const trimSlashes = (s: string) => s.replace(/^\/+|\/+$/g, "");
 
@@ -257,19 +259,44 @@ export async function fetchCloudListPath(ctx: DriveRouteContext) {
 
 	const s3Prefix = `${volumePrefix}${withinPrefix}`;
 
-	const res = await s3.send(
-		new ListObjectsV2Command({
-			Bucket: bucket,
-			Prefix: s3Prefix,
-			Delimiter: "/",
-			MaxKeys: 200,
-		}),
-	);
+	const prefixes: { Prefix?: string }[] = [];
+	const contents: {
+		Key?: string;
+		Size?: number;
+		ETag?: string;
+		LastModified?: Date;
+	}[] = [];
+
+	let continuationToken: string | undefined;
+
+	do {
+		const res = await s3.send(
+			new ListObjectsV2Command({
+				Bucket: bucket,
+				Prefix: s3Prefix,
+				Delimiter: "/",
+				MaxKeys: 200,
+				ContinuationToken: continuationToken,
+			}),
+		);
+
+		prefixes.push(...(res.CommonPrefixes ?? []));
+		contents.push(...(res.Contents ?? []));
+
+		if (res.IsTruncated && !res.NextContinuationToken) {
+			throw new Error("Drive listing ended without a continuation token");
+		}
+
+		continuationToken = res.IsTruncated
+			? res.NextContinuationToken
+			: undefined;
+	} while (continuationToken);
 
 	const now = new Date();
 
 	const rows = [
-		...(res.CommonPrefixes ?? []).map((p) => {
+		// ...(res.CommonPrefixes ?? []).map((p) => {
+		...prefixes.map((p) => {
 			const key = String(p.Prefix || "").replace(/\/$/, "");
 			const relativeKey = key.replace(volumePrefix, "");
 			const name = relativeKey.split("/").filter(Boolean).pop() || relativeKey;
@@ -289,7 +316,8 @@ export async function fetchCloudListPath(ctx: DriveRouteContext) {
 			};
 		}),
 
-		...(res.Contents ?? [])
+		// ...(res.Contents ?? [])
+		...contents
 			.filter((o) => o.Key && o.Key !== s3Prefix && !String(o.Key).endsWith("/"))
 			.map((o) => {
 				const key = String(o.Key);
@@ -359,31 +387,66 @@ export async function getCloudUploadUrl(
 		filename: string;
 		sizeBytes?: number;
 		contentType?: string | null;
-	},
+	}
 ) {
 	assertDriveEnabled();
-	const volume = ctx.driveVolume;
-	if (!volume) throw new Error("Missing driveVolume");
 
 	const user = await isSignedIn();
-	const ownerId = String(user?.id || "");
-	if (!ownerId) throw new Error("Not signed in");
+	if (!user?.id) throw new Error("Not signed in");
 
-	const bucket = String(volume.metaData?.bucket || "");
-	if (!bucket) throw new Error("Missing bucket in volume metaData");
-
-	const withinPath = String(ctx.withinPath || "/");
-	const filename = String(input.filename || "").trim();
-	if (!filename) throw new Error("Missing filename");
-
-	const volumePrefix = getVolumePrefix(volume);
-	const fullPath = joinPaths(withinPath, filename);
-	const relativeKey = fullPath.replace(/^\/+/, "");
-	const key = `${volumePrefix}${relativeKey}`;
-
-	const uploadToken = crypto.randomUUID();
+	const publicId = ctx.driveVolume?.publicId;
+	if (!publicId) throw new Error("Missing drive volume");
 
 	const rls = await rlsClient();
+
+	const [volume] = await rls((tx) =>
+		tx
+			.select()
+			.from(driveVolumes)
+			.where(eq(driveVolumes.publicId, publicId))
+			.limit(1)
+	);
+
+	if (!volume || volume.ownerId !== String(user.id)) {
+		throw new Error("Drive volume not found");
+	}
+
+	if (volume.kind !== "cloud") {
+		throw new Error("Invalid volume type");
+	}
+
+	const bucket = String(volume.metaData?.bucket || "").trim();
+	if (!bucket) throw new Error("Missing bucket in volume metadata");
+
+	const filename = String(input.filename || "").trim();
+
+	if (
+		!filename ||
+		filename === "." ||
+		filename === ".." ||
+		/[/\\\u0000-\u001f]/.test(filename)
+	) {
+		throw new Error("Invalid filename");
+	}
+
+	const withinSegments = String(ctx.withinPath || "/")
+		.split("/")
+		.filter(Boolean);
+
+	if (
+		withinSegments.some(
+			(segment) =>
+				segment === "." || segment === ".." || /[\\\u0000-\u001f]/.test(segment)
+		)
+	) {
+		throw new Error("Invalid folder path");
+	}
+
+	const withinPath = `/${withinSegments.join("/")}`;
+	const fullPath = joinPaths(withinPath, filename);
+	const relativeKey = fullPath.replace(/^\/+/, "");
+	const key = `${getVolumePrefix(volume)}${relativeKey}`;
+	const uploadToken = crypto.randomUUID();
 
 	await rls((tx) =>
 		tx.insert(driveUploadIntents).values({
@@ -392,21 +455,23 @@ export async function getCloudUploadUrl(
 			targetPath: fullPath,
 			singleUse: true,
 			expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-		}),
+		})
 	);
+
+	const contentType = input.contentType || "application/octet-stream";
 
 	const url = await getSignedUrl(
 		s3,
 		new PutObjectCommand({
 			Bucket: bucket,
 			Key: key,
-			ContentType: input.contentType || "application/octet-stream",
+			ContentType: contentType,
 			Metadata: {
-				ownerId,
+				ownerId: String(user.id),
 				volumeId: String(volume.id),
 			},
 		}),
-		{ expiresIn: 60 * 5 },
+		{ expiresIn: 60 * 5 }
 	);
 
 	return {
@@ -419,10 +484,11 @@ export async function getCloudUploadUrl(
 		url,
 		uploadToken,
 		headers: {
-			"Content-Type": input.contentType || "application/octet-stream",
+			"Content-Type": contentType,
 		},
 	};
 }
+
 
 
 export async function getDriveDownloadUrl(entryId: string) {
@@ -549,5 +615,222 @@ export async function deleteDriveEntry(entryId: string) {
 			success: true,
 			message: "drive.deletedFile",
 		};
+	});
+}
+
+
+export async function getDrivePreviewUrl(entryId: string) {
+	assertDriveEnabled();
+
+	const rls = await rlsClient();
+
+	const [entry] = await rls((tx) =>
+		tx.select().from(driveEntries).where(eq(driveEntries.id, entryId)).limit(1)
+	);
+
+	if (!entry || entry.type !== "file") {
+		throw new Error("File not found");
+	}
+
+	const [volume] = await rls((tx) =>
+		tx
+			.select()
+			.from(driveVolumes)
+			.where(eq(driveVolumes.id, entry.volumeId))
+			.limit(1)
+	);
+
+	if (!volume) {
+		throw new Error("Volume not found");
+	}
+
+	const bucket = String(volume.metaData?.bucket || "");
+	const key = `${getVolumePrefix(volume)}${trimSlashes(entry.path)}`;
+
+	if (!bucket) {
+		throw new Error("Missing bucket");
+	}
+
+	const object = await s3.send(
+		new HeadObjectCommand({
+			Bucket: bucket,
+			Key: key,
+		})
+	);
+
+	const mimeType = object.ContentType?.split(";")[0]?.trim().toLowerCase();
+
+	if (
+		!mimeType ||
+		![
+			"image/jpeg",
+			"image/png",
+			"image/webp",
+			"image/gif",
+			"application/pdf",
+		].includes(mimeType)
+	) {
+		return null;
+	}
+
+	const url = await getSignedUrl(
+		s3,
+		new GetObjectCommand({
+			Bucket: bucket,
+			Key: key,
+			ResponseContentType: mimeType,
+			ResponseContentDisposition: "inline",
+		}),
+		{ expiresIn: 60 * 5 }
+	);
+
+	return { url, mimeType };
+}
+
+
+const shareDurations = {
+	"1h": 60 * 60 * 1000,
+	"1d": 24 * 60 * 60 * 1000,
+	"7d": 7 * 24 * 60 * 60 * 1000,
+} as const;
+
+export type DriveShareDuration = keyof typeof shareDurations;
+
+export async function createDriveShareLink(
+	entryId: string,
+	duration: DriveShareDuration,
+) {
+	assertDriveEnabled();
+
+	const durationMs = shareDurations[duration];
+
+	// Server actions can be called with arbitrary input.
+	if (!durationMs) {
+		throw new Error("Invalid share-link duration");
+	}
+
+	const token = randomBytes(32).toString("base64url");
+	const tokenHash = createHash("sha256").update(token).digest("hex");
+	const expiresAt = new Date(Date.now() + durationMs);
+	const rls = await rlsClient();
+
+	const link = await rls(async (tx) => {
+		const [entry] = await tx
+			.select({
+				id: driveEntries.id,
+				type: driveEntries.type,
+				workspaceId: driveEntries.workspaceId,
+			})
+			.from(driveEntries)
+			.where(eq(driveEntries.id, entryId))
+			.limit(1);
+
+		if (!entry || entry.type !== "file") {
+			throw new Error("File not found");
+		}
+
+		const [created] = await tx
+			.insert(driveShareLinks)
+			.values({
+				entryId: entry.id,
+				workspaceId: entry.workspaceId,
+				tokenHash,
+				expiresAt,
+			})
+			.returning({
+				id: driveShareLinks.id,
+				expiresAt: driveShareLinks.expiresAt,
+			});
+
+		return created;
+	});
+
+	if (!link) {
+		throw new Error("Could not create share link");
+	}
+
+	return {
+		id: link.id,
+		token,
+		expiresAt: link.expiresAt.toISOString(),
+	};
+}
+
+export async function listDriveShareLinks(entryId: string) {
+	assertDriveEnabled();
+
+	const rls = await rlsClient();
+
+	return rls(async (tx) => {
+		const [entry] = await tx
+			.select({ id: driveEntries.id })
+			.from(driveEntries)
+			.where(eq(driveEntries.id, entryId))
+			.limit(1);
+
+		if (!entry) {
+			throw new Error("File not found");
+		}
+
+		const links = await tx
+			.select({
+				id: driveShareLinks.id,
+				createdAt: driveShareLinks.createdAt,
+				expiresAt: driveShareLinks.expiresAt,
+			})
+			.from(driveShareLinks)
+			.where(
+				and(
+					eq(driveShareLinks.entryId, entry.id),
+					isNull(driveShareLinks.revokedAt),
+					gt(driveShareLinks.expiresAt, new Date()),
+				),
+			)
+			.orderBy(driveShareLinks.createdAt);
+
+		return links.map((link) => ({
+			id: link.id,
+			createdAt: link.createdAt.toISOString(),
+			expiresAt: link.expiresAt.toISOString(),
+		}));
+	});
+}
+
+export async function revokeDriveShareLink(
+	entryId: string,
+	linkId: string,
+) {
+	assertDriveEnabled();
+
+	const rls = await rlsClient();
+
+	return rls(async (tx) => {
+		const [entry] = await tx
+			.select({ id: driveEntries.id })
+			.from(driveEntries)
+			.where(eq(driveEntries.id, entryId))
+			.limit(1);
+
+		if (!entry) {
+			throw new Error("File not found");
+		}
+
+		const [revoked] = await tx
+			.update(driveShareLinks)
+			.set({ revokedAt: new Date() })
+			.where(
+				and(
+					eq(driveShareLinks.id, linkId),
+					eq(driveShareLinks.entryId, entry.id),
+					isNull(driveShareLinks.revokedAt),
+				),
+			)
+			.returning({ id: driveShareLinks.id });
+
+		if (!revoked) {
+			throw new Error("Active share link not found");
+		}
+
+		return { id: revoked.id };
 	});
 }
