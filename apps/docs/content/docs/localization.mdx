@@ -1,0 +1,37 @@
+---
+title: Languages and Localization
+description: Change the language of your self-hosted Kurrier workspace and contribute translations.
+---
+
+# Languages and Localization
+
+Kurrier can display its interface in multiple languages. The language you select affects navigation, buttons, form labels, and other translated interface text. It does not translate your email messages, contacts, filenames, or workspace name.
+
+## Change your language
+
+1. Sign in to Kurrier and open the language selector in the application.
+2. Choose the language you want to use.
+3. Continue working in the new language. If a page still shows the old language, reload it.
+
+[//]: # (![Language selector in Kurrier]&#40;/docs-localization-language-selector.png&#41;)
+
+Kurrier includes English and translations such as Korean, Polish, Brazilian Portuguese, and Russian. Available choices depend on the version of Kurrier you run.
+
+Some technical names, provider brands, and content supplied by other people may remain in their original language.
+
+## Help translate Kurrier
+
+The open-source translations live in the [Kurrier GitHub repository](https://github.com/kurrier-org/kurrier). If you find an awkward translation or want to add another language, you can [open a pull request](https://github.com/kurrier-org/kurrier/pulls).
+
+When contributing:
+
+1. Find the matching dictionary file in the repository's `apps/web/lib/dictionaries` directory.
+2. Preserve existing JSON keys and placeholders such as `{count}` and `{name}`.
+3. Translate the displayed values, keeping product names and technical terms consistent.
+4. Include the screen or workflow where you saw the text in your pull request.
+
+See [Contributing to Kurrier](/docs/contributing) for the development workflow. If the dictionary files move in a later release, search the repository for the existing English key before editing.
+
+## Troubleshooting
+
+If your selection does not appear to stick, reload the page and check whether your browser permits Kurrier to save its language preference. If one label is still in English, that string may not have a translation yet; please report it with a screenshot or propose a fix on GitHub.
