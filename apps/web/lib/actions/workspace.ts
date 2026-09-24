@@ -22,6 +22,7 @@ import {
     fetchWorkspaceMembers as fetchWorkspaceMembersShared,
     refreshView as refreshViewShared
 } from "./shared";
+import {DISTRIBUTION_CONFIG} from "@distribution";
 
 export type {
     FetchWorkspaceMembersResult,
@@ -70,6 +71,170 @@ export const workspaceIdentityAssignments = async () => {
 export type FetchAdminWorkspaceIdentitiesResult = Awaited<
     ReturnType<typeof workspaceIdentityAssignments>
 >;
+
+
+export type UpdateIdentityAccessResult =
+    | { success: true }
+    | { success: false; error: string };
+
+export async function updateIdentityAccess(input: {
+    identityId: string;
+    sharedWithWorkspace: boolean;
+    memberIds: string[];
+}): Promise<UpdateIdentityAccessResult> {
+    if (!DISTRIBUTION_CONFIG.features.identityAccessManagement) {
+        return {
+            success: false,
+            error: "Identity access management is disabled.",
+        };
+    }
+
+    const user = await isSignedIn();
+
+    if (!user) {
+        return {
+            success: false,
+            error: "Not authenticated.",
+        };
+    }
+
+    const workspaceId = await getWorkspaceId();
+
+    const [membership] = await db
+        .select({
+            role: workspaceMembers.role,
+        })
+        .from(workspaceMembers)
+        .where(
+            and(
+                eq(workspaceMembers.workspaceId, workspaceId),
+                eq(workspaceMembers.userId, user.id)
+            )
+        )
+        .limit(1);
+
+    if (!membership || !["owner", "admin"].includes(membership.role)) {
+        return {
+            success: false,
+            error: "You do not have permission to manage identity access.",
+        };
+    }
+
+    const [[identity], [workspace], members] = await Promise.all([
+        db
+            .select({
+                id: identities.id,
+            })
+            .from(identities)
+            .where(
+                and(
+                    eq(identities.id, input.identityId),
+                    eq(identities.workspaceId, workspaceId)
+                )
+            )
+            .limit(1),
+
+        db
+            .select({
+                defaultIdentityId: workspaces.defaultIdentityId,
+            })
+            .from(workspaces)
+            .where(eq(workspaces.id, workspaceId))
+            .limit(1),
+
+        db
+            .select({
+                userId: workspaceMembers.userId,
+            })
+            .from(workspaceMembers)
+            .where(eq(workspaceMembers.workspaceId, workspaceId)),
+    ]);
+
+    if (!identity || !workspace) {
+        return {
+            success: false,
+            error: "Identity not found.",
+        };
+    }
+
+    if (
+        workspace.defaultIdentityId === identity.id &&
+        !input.sharedWithWorkspace
+    ) {
+        return {
+            success: false,
+            error: "The default identity must remain available to the workspace.",
+        };
+    }
+
+    const workspaceMemberIds = new Set(
+        members.map((member) => String(member.userId))
+    );
+
+    const requestedMemberIds = [...new Set(input.memberIds.map(String))];
+
+    if (
+        requestedMemberIds.some((memberId) => !workspaceMemberIds.has(memberId))
+    ) {
+        return {
+            success: false,
+            error: "One or more selected members are invalid.",
+        };
+    }
+
+    if (!input.sharedWithWorkspace && requestedMemberIds.length === 0) {
+        return {
+            success: false,
+            error: "Select at least one workspace member.",
+        };
+    }
+
+    const assignedMemberIds = input.sharedWithWorkspace
+        ? [...workspaceMemberIds]
+        : requestedMemberIds;
+
+    await db.transaction(async (tx) => {
+        await tx
+            .update(identities)
+            .set({
+                sharedWithWorkspace: input.sharedWithWorkspace,
+            })
+            .where(
+                and(
+                    eq(identities.id, identity.id),
+                    eq(identities.workspaceId, workspaceId)
+                )
+            );
+
+        await tx
+            .delete(workspaceIdentityMembers)
+            .where(
+                and(
+                    eq(workspaceIdentityMembers.workspaceId, workspaceId),
+                    eq(workspaceIdentityMembers.identityId, identity.id)
+                )
+            );
+
+        if (assignedMemberIds.length) {
+            await tx.insert(workspaceIdentityMembers).values(
+                assignedMemberIds.map((userId) => ({
+                    workspaceId,
+                    identityId: identity.id,
+                    userId,
+                }))
+            );
+        }
+    });
+
+    revalidatePath(
+        "/[locale]/w/[wPublicId]/dashboard/platform/identities",
+        "page"
+    );
+
+    return { success: true };
+}
+
+
 
 export const fetchWorkspaces = async () => {
     const user = await isSignedIn();

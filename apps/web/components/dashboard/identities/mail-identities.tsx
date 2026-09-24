@@ -47,6 +47,7 @@ import {
 } from "@/lib/actions/workspace";
 import AddVirtualEmailIdentityForm from "@/components/dashboard/identities/add-virtual-email-identity-form";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import ManageIdentityAccess from "@/components/dashboard/identities/manage-identity-access";
 
 type Dict = ReturnType<typeof useOptionalDictionary>;
 
@@ -109,7 +110,8 @@ export default function MailIdentities({
 	providerOptions,
 	workspace,
 	workspaceMembers,
-	workspaceUserIdentities
+	workspaceUserIdentities,
+	canManageIdentityAccess
 }: {
 	userIdentities: FetchUserIdentitiesResult;
 	smtpAccounts: FetchDecryptedSecretsResult;
@@ -119,6 +121,7 @@ export default function MailIdentities({
 	workspace: WorkspaceEntity;
 	workspaceMembers: FetchWorkspaceMembersResult;
 	workspaceUserIdentities: FetchAdminWorkspaceIdentitiesResult;
+	canManageIdentityAccess: boolean;
 }) {
 	const dict = useOptionalDictionary();
 	const userEmailIdentities = useMemo(
@@ -851,6 +854,16 @@ export default function MailIdentities({
 											>
 												{dict?.platform?.sendTestEmail ?? "Send Test Email"}
 											</Button>
+
+											<ManageIdentityAccess
+												identity={userIdentity.identities}
+												workspace={workspace}
+												workspaceMembers={workspaceMembers}
+												workspaceUserIdentities={
+													workspaceUserIdentities
+												}
+												canManage={canManageIdentityAccess}
+											/>
 
 											<ActionIcon
 												color="red"

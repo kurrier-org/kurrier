@@ -17,6 +17,7 @@ import {
 } from "@/lib/actions/workspace";
 import { getDictionary } from "@/lib/dictionaries";
 import { parseSecret } from "@/lib/utils";
+import {getWorkspaceRole} from "@/lib/actions/clients";
 
 async function Page({ params }: { params: Promise<{ locale: string }> }) {
 	const { locale } = await params;
@@ -91,8 +92,15 @@ async function Page({ params }: { params: Promise<{ locale: string }> }) {
 	}
 
 	const workspace = await fetchWorkspace();
-	const workspaceMembers = await fetchWorkspaceMembers(workspace?.id);
-	const workspaceUserIdentities = await workspaceIdentityAssignments();
+	const [workspaceMembers, workspaceUserIdentities, workspaceRole] =
+		await Promise.all([
+			fetchWorkspaceMembers(workspace.id),
+			workspaceIdentityAssignments(),
+			getWorkspaceRole(),
+		]);
+	const canManageIdentityAccess =
+		workspaceRole === "owner" || workspaceRole === "admin";
+
 
 	return (
 		<>
@@ -115,6 +123,7 @@ async function Page({ params }: { params: Promise<{ locale: string }> }) {
 					workspaceMembers={workspaceMembers}
 					workspaceUserIdentities={workspaceUserIdentities}
 					googleAccounts={googleAccounts}
+					canManageIdentityAccess={canManageIdentityAccess}
 				/>
 			</div>
 		</>

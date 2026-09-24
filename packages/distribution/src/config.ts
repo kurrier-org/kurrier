@@ -9,6 +9,7 @@ export type DistributionConfig<
         localLogin: boolean;
         jmap: boolean;
         gmail: boolean;
+        identityAccessManagement: boolean;
     };
 } & Extra;
 const configs = import.meta.glob("./*/config.ts", {
