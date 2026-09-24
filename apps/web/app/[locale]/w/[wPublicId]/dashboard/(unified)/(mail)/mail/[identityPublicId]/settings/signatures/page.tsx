@@ -1,24 +1,11 @@
-import React, {
-	Suspense,
-} from "react";
-import {
-	identities,
-} from "@db";
-import {
-	eq,
-} from "drizzle-orm";
+import React, { Suspense } from "react";
+import { identities } from "@db";
+import { eq } from "drizzle-orm";
 
 import SectionCard from "@/components/mailbox/settings/settings-section-card";
-import {
-	rlsClient,
-} from "@/lib/actions/clients";
-import {
-	listEmailSignatures,
-} from "@/lib/actions/email-signatures";
-import {
-	getDictionary,
-	type Locale,
-} from "@/lib/dictionaries";
+import { rlsClient } from "@/lib/actions/clients";
+import { listEmailSignatures } from "@/lib/actions/email-signatures";
+import { getDictionary, type Locale } from "@/lib/dictionaries";
 import EmailSignaturesManager from "@/components/mailbox/signatures/email-signatures-manager";
 
 type PageProps = {
@@ -57,103 +44,65 @@ function SignaturesFallback() {
 	);
 }
 
-async function SignaturesContent({
-									 params,
-								 }: PageProps) {
+async function SignaturesContent({ params }: PageProps) {
 	const resolvedParams = await params;
 
-	const [dict, rls] =
-		await Promise.all([
-			getDictionary(
-				resolvedParams.locale,
-			),
-			rlsClient(),
-		]);
+	const [dict, rls] = await Promise.all([
+		getDictionary(resolvedParams.locale),
+		rlsClient(),
+	]);
 
-	const mailboxDictionary =
-		dict.mailbox as typeof dict.mailbox &
-			SignatureDictionary;
+	const mailboxDictionary = dict.mailbox as typeof dict.mailbox & SignatureDictionary;
 
-	const [identity] = await rls(
-		(tx) =>
-			tx
-				.select({
-					id: identities.id,
-					publicId:
-					identities.publicId,
-				})
-				.from(identities)
-				.where(
-					eq(
-						identities.publicId,
-						resolvedParams.identityPublicId,
-					),
-				)
-				.limit(1),
+	const [identity] = await rls((tx) =>
+		tx
+			.select({
+				id: identities.id,
+				publicId: identities.publicId,
+			})
+			.from(identities)
+			.where(eq(identities.publicId, resolvedParams.identityPublicId))
+			.limit(1)
 	);
 
 	if (!identity) {
 		return (
 			<SectionCard
-				title={
-					mailboxDictionary.signatures ??
-					"Signatures"
-				}
+				title={mailboxDictionary.signatures ?? "Signatures"}
 				description={
 					mailboxDictionary.signaturesDescription ??
 					"Manage signatures for this identity."
 				}
 			>
 				<div className="text-sm text-neutral-600 dark:text-neutral-400">
-					{
-						dict.mailbox
-							.identityNotFound
-					}
+					{dict.mailbox.identityNotFound}
 				</div>
 			</SectionCard>
 		);
 	}
 
-	const signatures =
-		await listEmailSignatures(
-			identity.publicId,
-		);
+	const signatures = await listEmailSignatures(identity.publicId);
 
 	return (
 		<SectionCard
-			title={
-				mailboxDictionary.signatures ??
-				"Signatures"
-			}
+			title={mailboxDictionary.signatures ?? "Signatures"}
 			description={
 				mailboxDictionary.signaturesDescription ??
 				"Create signatures and choose which ones are used for new messages, replies and forwards."
 			}
 		>
 			<EmailSignaturesManager
-				identityPublicId={
-					identity.publicId
-				}
-				initialSignatures={
-					signatures
-				}
+				identityPublicId={identity.publicId}
+				initialSignatures={signatures}
 			/>
 		</SectionCard>
 	);
 }
 
-export default function Page(
-	props: PageProps,
-) {
+export default function Page(props: PageProps) {
 	return (
-		<Suspense
-			fallback={
-				<SignaturesFallback />
-			}
-		>
-			<SignaturesContent
-				{...props}
-			/>
+		<Suspense fallback={<SignaturesFallback />}>
+			<SignaturesContent {...props} />
 		</Suspense>
 	);
 }

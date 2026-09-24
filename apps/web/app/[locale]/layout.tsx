@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { cookies } from "next/headers";
 import "../globals.css";
-import { getPublicEnv } from "@schema";
+import {getPublicEnv, WORKSPACE_THEME_COOKIE} from "@schema";
 import {
 	MODE_COOKIE,
 	RESOLVED_COOKIE,
@@ -28,6 +28,7 @@ import { getDictionary, hasLocale } from "@/lib/dictionaries";
 import { DAYJS_LOCALES } from "@/lib/locale";
 import { createMantineTheme } from "@/lib/mantine-theme";
 import {DISTRIBUTION_CONFIG} from "@distribution/config";
+import {WorkspaceMantineProvider} from "@/components/providers/workspace-mantine-provider";
 
 const jakartaSans = Plus_Jakarta_Sans({
 	variable: "--font-sans",
@@ -57,6 +58,7 @@ export default async function RootLayout({
 	const lang = hasLocale(urlLocale) ? urlLocale : "en";
 	const jar = await cookies();
 	const theme: ThemeName = ThemeNameSchema.catch("indigo").parse(
+		jar.get(WORKSPACE_THEME_COOKIE)?.value ??
 		jar.get(THEME_COOKIE)?.value,
 	);
 	const mode: ThemeMode = ThemeModeSchema.catch("system").parse(
@@ -95,7 +97,9 @@ export default async function RootLayout({
 							>
 								<DatesProvider settings={{ locale: DAYJS_LOCALES[lang] }}>
 									<DictionaryProvider dict={dict}>
-										<ModalsProvider>{children}</ModalsProvider>
+										<WorkspaceMantineProvider>
+											<ModalsProvider>{children}</ModalsProvider>
+										</WorkspaceMantineProvider>
 									</DictionaryProvider>
 								</DatesProvider>
 							</MantineProvider>

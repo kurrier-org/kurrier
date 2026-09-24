@@ -1,11 +1,7 @@
 "use client";
 
-import {
-    useState,
-} from "react";
-import type {
-    Editor,
-} from "@tiptap/react";
+import { useState } from "react";
+import type { Editor } from "@tiptap/react";
 import {
     closestCenter,
     DndContext,
@@ -20,6 +16,21 @@ import {
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import {
+    ArrowDown,
+    ArrowUp,
+    Copy,
+    Heading1,
+    ImagePlus,
+    Minus,
+    MousePointerClick,
+    Redo2,
+    Settings2,
+    Space,
+    Trash2,
+    Type,
+    Undo2,
+} from "lucide-react";
 
 import {
     addBlock,
@@ -42,68 +53,47 @@ import type {
     EmailEditorVariable,
     EmailImageUploadHandler,
 } from "../types";
-import {
-    BlockInspector,
-} from "./block-inspector";
-import {
-    ButtonBlockEditor,
-} from "./button-block";
-import {
-    DividerBlockEditor,
-} from "./divider-block";
-import {
-    DocumentInspector,
-} from "./document-inspector";
-import {
-    ImageBlockEditor,
-} from "./image-block";
-import {
-    SortableBlock,
-} from "./sortable-block";
-import {
-    SpacerBlockEditor,
-} from "./spacer-block";
-import {
-    RichTextBlockEditor,
-    RichTextToolbar,
-} from "./text-block";
-import {
-    useEditorHistory,
-} from "./use-editor-history";
-import {
-    VariablePicker,
-} from "./variable-picker";
+import { BlockInspector } from "./block-inspector";
+import { ButtonBlockEditor } from "./button-block";
+import { DividerBlockEditor } from "./divider-block";
+import { DocumentInspector } from "./document-inspector";
+import { ImageBlockEditor } from "./image-block";
+import { SortableBlock } from "./sortable-block";
+import { SpacerBlockEditor } from "./spacer-block";
+import { RichTextBlockEditor, RichTextToolbar } from "./text-block";
+import { useEditorHistory } from "./use-editor-history";
+import { VariablePicker } from "./variable-picker";
 
-export type EmailEditorPreset =
-    | "email"
-    | "signature";
+export type EmailEditorPreset = "email" | "signature";
+
+type EmailEditorDictionary = Partial<
+    Record<
+        | "editorText"
+        | "editorHeading"
+        | "editorButton"
+        | "editorImage"
+        | "editorDivider"
+        | "editorSpacer"
+        | "editorUndo"
+        | "editorRedo"
+        | "editorEmailSettings"
+        | "editorMoveUp"
+        | "editorMoveDown"
+        | "editorDuplicate"
+        | "editorAddFirstBlock"
+        | "delete",
+        string
+    >
+>;
 
 type EmailEditorProps = {
     value: EmailDocument;
-    onChange: (
-        document: EmailDocument,
-    ) => void;
+    onChange: (document: EmailDocument) => void;
     onImageUpload?: EmailImageUploadHandler;
     variables?: EmailEditorVariable[];
     preset?: EmailEditorPreset;
+    dictionary?: EmailEditorDictionary;
 };
-
-import {
-    ArrowDown,
-    ArrowUp,
-    Copy,
-    Heading1,
-    ImagePlus,
-    Minus,
-    MousePointerClick,
-    Redo2,
-    Settings2,
-    Space,
-    Trash2,
-    Type,
-    Undo2,
-} from "lucide-react";
-
 
 const toolbarGroupClass =
     "flex items-center gap-1 rounded-lg border border-neutral-200 bg-white p-1 shadow-sm dark:border-neutral-800 dark:bg-neutral-950";
@@ -148,19 +138,11 @@ function ToolbarButton({
                 showLabel ? "" : "w-9 px-0",
             ].join(" ")}
         >
-            <span className="shrink-0">
-                {icon}
-            </span>
-
-            {showLabel && (
-                <span className="whitespace-nowrap">
-                    {label}
-                </span>
-            )}
+            <span className="shrink-0">{icon}</span>
+            {showLabel && <span className="whitespace-nowrap">{label}</span>}
         </button>
     );
 }
-
 
 export function EmailEditor({
                                 value,
@@ -168,238 +150,136 @@ export function EmailEditor({
                                 onImageUpload,
                                 variables = [],
                                 preset = "email",
+                                dictionary,
                             }: EmailEditorProps) {
-    const isSignature =
-        preset === "signature";
+    const isSignature = preset === "signature";
 
-    const [
-        selectedBlockId,
-        setSelectedBlockId,
-    ] = useState<string | null>(
-        value.blocks[0]?.id ?? null,
+    const [selectedBlockId, setSelectedBlockId] = useState<string | null>(
+        value.blocks[0]?.id ?? null
     );
 
-    const [
-        activeTextEditor,
-        setActiveTextEditor,
-    ] = useState<{
+    const [activeTextEditor, setActiveTextEditor] = useState<{
         blockId: string;
         editor: Editor;
     } | null>(null);
 
-    const {
-        commit,
-        undo,
-        redo,
-        canUndo,
-        canRedo,
-    } = useEditorHistory(
+    const { commit, undo, redo, canUndo, canRedo } = useEditorHistory(
         value,
-        onChange,
+        onChange
     );
 
-    const selectedIndex =
-        value.blocks.findIndex(
-            (block) =>
-                block.id === selectedBlockId,
-        );
+    const selectedIndex = value.blocks.findIndex(
+        (block) => block.id === selectedBlockId
+    );
 
     const selectedBlock =
-        selectedIndex === -1
-            ? null
-            : value.blocks[selectedIndex];
+        selectedIndex === -1 ? null : value.blocks[selectedIndex];
 
     const addText = () => {
         const block = createTextBlock();
-
         commit(addBlock(value, block));
         setSelectedBlockId(block.id);
     };
 
     const addHeading = () => {
-        const block =
-            createHeadingBlock();
-
+        const block = createHeadingBlock();
         commit(addBlock(value, block));
         setSelectedBlockId(block.id);
     };
 
     const addButton = () => {
-        const block =
-            createButtonBlock();
-
+        const block = createButtonBlock();
         commit(addBlock(value, block));
         setSelectedBlockId(block.id);
     };
 
     const addImage = () => {
         const block = createImageBlock();
-
         commit(addBlock(value, block));
         setSelectedBlockId(block.id);
     };
 
     const addDivider = () => {
-        const block =
-            createDividerBlock();
-
+        const block = createDividerBlock();
         commit(addBlock(value, block));
         setSelectedBlockId(block.id);
     };
 
     const addSpacer = () => {
-        const block =
-            createSpacerBlock();
-
+        const block = createSpacerBlock();
         commit(addBlock(value, block));
         setSelectedBlockId(block.id);
     };
 
     const duplicateSelected = () => {
-        if (
-            !selectedBlockId ||
-            selectedIndex === -1
-        ) {
-            return;
-        }
+        if (!selectedBlockId || selectedIndex === -1) return;
 
-        const nextDocument =
-            duplicateBlock(
-                value,
-                selectedBlockId,
-            );
-
+        const nextDocument = duplicateBlock(value, selectedBlockId);
         commit(nextDocument);
 
         setSelectedBlockId(
-            nextDocument.blocks[
-            selectedIndex + 1
-                ]?.id ?? selectedBlockId,
+            nextDocument.blocks[selectedIndex + 1]?.id ?? selectedBlockId
         );
     };
 
     const deleteSelected = () => {
-        if (
-            !selectedBlockId ||
-            selectedIndex === -1
-        ) {
-            return;
-        }
+        if (!selectedBlockId || selectedIndex === -1) return;
 
-        const nextDocument =
-            removeBlock(
-                value,
-                selectedBlockId,
-            );
-
+        const nextDocument = removeBlock(value, selectedBlockId);
         commit(nextDocument);
 
         setSelectedBlockId(
             nextDocument.blocks[
-                Math.min(
-                    selectedIndex,
-                    nextDocument.blocks
-                        .length - 1,
-                )
-                ]?.id ?? null,
+                Math.min(selectedIndex, nextDocument.blocks.length - 1)
+                ]?.id ?? null
         );
     };
 
-    const moveSelected = (
-        offset: number,
-    ) => {
-        if (
-            !selectedBlockId ||
-            selectedIndex === -1
-        ) {
-            return;
-        }
-
-        commit(
-            moveBlock(
-                value,
-                selectedBlockId,
-                selectedIndex + offset,
-            ),
-        );
+    const moveSelected = (offset: number) => {
+        if (!selectedBlockId || selectedIndex === -1) return;
+        commit(moveBlock(value, selectedBlockId, selectedIndex + offset));
     };
 
-    const changeSelectedBlock = (
-        block: EmailBlock,
-    ) => {
+    const changeSelectedBlock = (block: EmailBlock) => {
         commit(
-            updateBlock(
-                value,
-                block.id,
-                () => block,
-            ),
-            `settings:${block.id}`,
+            updateBlock(value, block.id, () => block),
+            `settings:${block.id}`
         );
     };
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: 6,
-            },
+            activationConstraint: { distance: 6 },
         }),
         useSensor(KeyboardSensor, {
-            coordinateGetter:
-            sortableKeyboardCoordinates,
-        }),
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
     );
 
-    const handleDragEnd = ({
-                               active,
-                               over,
-                           }: DragEndEvent) => {
-        if (
-            !over ||
-            active.id === over.id
-        ) {
-            return;
-        }
+    const handleDragEnd = ({ active, over }: DragEndEvent) => {
+        if (!over || active.id === over.id) return;
 
-        const targetIndex =
-            value.blocks.findIndex(
-                (block) =>
-                    block.id === over.id,
-            );
-
-        if (targetIndex === -1) {
-            return;
-        }
-
-        const activeId = String(
-            active.id,
+        const targetIndex = value.blocks.findIndex(
+            (block) => block.id === over.id
         );
 
+        if (targetIndex === -1) return;
+
+        const activeId = String(active.id);
         setSelectedBlockId(activeId);
-
-        commit(
-            moveBlock(
-                value,
-                activeId,
-                targetIndex,
-            ),
-            `reorder:${activeId}`,
-        );
+        commit(moveBlock(value, activeId, targetIndex), `reorder:${activeId}`);
     };
 
     return (
         <div
             className={[
                 "flex h-full flex-col overflow-hidden rounded-lg border bg-background",
-                isSignature
-                    ? "min-h-[520px]"
-                    : "min-h-[700px]",
+                isSignature ? "min-h-[520px]" : "min-h-[700px]",
             ].join(" ")}
             onKeyDown={(event) => {
                 if (
-                    (event.metaKey ||
-                        event.ctrlKey) &&
-                    event.key.toLowerCase() ===
-                    "z"
+                    (event.metaKey || event.ctrlKey) &&
+                    event.key.toLowerCase() === "z"
                 ) {
                     event.preventDefault();
 
@@ -411,11 +291,10 @@ export function EmailEditor({
                 }
             }}
         >
-
             <div className="flex flex-wrap items-center gap-2 border-b bg-neutral-50/60 p-2 dark:bg-neutral-900/40">
                 <div className={toolbarGroupClass}>
                     <ToolbarButton
-                        label="Text"
+                        label={dictionary?.editorText ?? "Text"}
                         icon={<Type size={16} />}
                         onClick={addText}
                         showLabel
@@ -424,19 +303,14 @@ export function EmailEditor({
                     {!isSignature && (
                         <>
                             <ToolbarButton
-                                label="Heading"
+                                label={dictionary?.editorHeading ?? "Heading"}
                                 icon={<Heading1 size={16} />}
                                 onClick={addHeading}
                                 showLabel
                             />
-
                             <ToolbarButton
-                                label="Button"
-                                icon={
-                                    <MousePointerClick
-                                        size={16}
-                                    />
-                                }
+                                label={dictionary?.editorButton ?? "Button"}
+                                icon={<MousePointerClick size={16} />}
                                 onClick={addButton}
                                 showLabel
                             />
@@ -444,14 +318,14 @@ export function EmailEditor({
                     )}
 
                     <ToolbarButton
-                        label="Image"
+                        label={dictionary?.editorImage ?? "Image"}
                         icon={<ImagePlus size={16} />}
                         onClick={addImage}
                         showLabel
                     />
 
                     <ToolbarButton
-                        label="Divider"
+                        label={dictionary?.editorDivider ?? "Divider"}
                         icon={<Minus size={16} />}
                         onClick={addDivider}
                         showLabel
@@ -459,7 +333,7 @@ export function EmailEditor({
 
                     {!isSignature && (
                         <ToolbarButton
-                            label="Spacer"
+                            label={dictionary?.editorSpacer ?? "Spacer"}
                             icon={<Space size={16} />}
                             onClick={addSpacer}
                             showLabel
@@ -469,14 +343,13 @@ export function EmailEditor({
 
                 <div className={toolbarGroupClass}>
                     <ToolbarButton
-                        label="Undo"
+                        label={dictionary?.editorUndo ?? "Undo"}
                         icon={<Undo2 size={16} />}
                         disabled={!canUndo}
                         onClick={undo}
                     />
-
                     <ToolbarButton
-                        label="Redo"
+                        label={dictionary?.editorRedo ?? "Redo"}
                         icon={<Redo2 size={16} />}
                         disabled={!canRedo}
                         onClick={redo}
@@ -486,44 +359,41 @@ export function EmailEditor({
                 {!isSignature && (
                     <div className={toolbarGroupClass}>
                         <ToolbarButton
-                            label="Email settings"
+                            label={
+                                dictionary?.editorEmailSettings ??
+                                "Email settings"
+                            }
                             icon={<Settings2 size={16} />}
                             active={selectedBlockId === null}
-                            onClick={() =>
-                                setSelectedBlockId(null)
-                            }
+                            onClick={() => setSelectedBlockId(null)}
                         />
                     </div>
                 )}
 
                 <div className={toolbarGroupClass}>
                     <ToolbarButton
-                        label="Move up"
+                        label={dictionary?.editorMoveUp ?? "Move up"}
                         icon={<ArrowUp size={16} />}
                         disabled={selectedIndex <= 0}
                         onClick={() => moveSelected(-1)}
                     />
-
                     <ToolbarButton
-                        label="Move down"
+                        label={dictionary?.editorMoveDown ?? "Move down"}
                         icon={<ArrowDown size={16} />}
                         disabled={
                             selectedIndex === -1 ||
-                            selectedIndex ===
-                            value.blocks.length - 1
+                            selectedIndex === value.blocks.length - 1
                         }
                         onClick={() => moveSelected(1)}
                     />
-
                     <ToolbarButton
-                        label="Duplicate"
+                        label={dictionary?.editorDuplicate ?? "Duplicate"}
                         icon={<Copy size={16} />}
                         disabled={selectedIndex === -1}
                         onClick={duplicateSelected}
                     />
-
                     <ToolbarButton
-                        label="Delete"
+                        label={dictionary?.delete ?? "Delete"}
                         icon={<Trash2 size={16} />}
                         disabled={selectedIndex === -1}
                         destructive
@@ -533,44 +403,34 @@ export function EmailEditor({
             </div>
 
             {selectedBlock &&
-                (selectedBlock.type ===
-                    "text" ||
-                    selectedBlock.type ===
-                    "heading") && (
+                (selectedBlock.type === "text" ||
+                    selectedBlock.type === "heading") && (
                     <div className="flex flex-wrap items-center gap-3 border-b bg-muted/30 px-3 py-2">
                         <div className="min-w-0 overflow-x-auto">
                             <RichTextToolbar
                                 editor={
-                                    activeTextEditor
-                                        ?.blockId ===
+                                    activeTextEditor?.blockId ===
                                     selectedBlock.id
                                         ? activeTextEditor.editor
                                         : null
                                 }
-                                showLists={
-                                    selectedBlock.type ===
-                                    "text"
-                                }
+                                showLists={selectedBlock.type === "text"}
                             />
                         </div>
 
-                        {variables.length >
-                            0 && (
-                                <div className="sm:ml-auto">
-                                    <VariablePicker
-                                        editor={
-                                            activeTextEditor
-                                                ?.blockId ===
-                                            selectedBlock.id
-                                                ? activeTextEditor.editor
-                                                : null
-                                        }
-                                        variables={
-                                            variables
-                                        }
-                                    />
-                                </div>
-                            )}
+                        {variables.length > 0 && (
+                            <div className="sm:ml-auto">
+                                <VariablePicker
+                                    editor={
+                                        activeTextEditor?.blockId ===
+                                        selectedBlock.id
+                                            ? activeTextEditor.editor
+                                            : null
+                                    }
+                                    variables={variables}
+                                />
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -585,214 +445,133 @@ export function EmailEditor({
                 <div
                     className="min-h-[320px] overflow-auto p-3 sm:p-5 lg:p-8"
                     style={{
-                        backgroundColor:
-                        value.settings
-                            .backgroundColor,
+                        backgroundColor: value.settings.backgroundColor,
                     }}
                 >
                     <div
                         className="mx-auto min-h-40 shadow-sm"
                         style={{
-                            maxWidth:
-                            value.settings
-                                .contentWidth,
+                            maxWidth: value.settings.contentWidth,
                             backgroundColor:
-                            value.settings
-                                .contentBackgroundColor,
-                            fontFamily:
-                            value.settings
-                                .fontFamily,
-                            color: value.settings
-                                .textColor,
+                            value.settings.contentBackgroundColor,
+                            fontFamily: value.settings.fontFamily,
+                            color: value.settings.textColor,
                         }}
                     >
                         <DndContext
                             sensors={sensors}
-                            collisionDetection={
-                                closestCenter
-                            }
-                            onDragEnd={
-                                handleDragEnd
-                            }
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
                         >
                             <SortableContext
-                                items={value.blocks.map(
-                                    (block) =>
-                                        block.id,
-                                )}
-                                strategy={
-                                    verticalListSortingStrategy
-                                }
+                                items={value.blocks.map((block) => block.id)}
+                                strategy={verticalListSortingStrategy}
                             >
-                                {value.blocks.map(
-                                    (block) => (
-                                        <SortableBlock
-                                            key={
-                                                block.id
-                                            }
-                                            id={
-                                                block.id
-                                            }
-                                        >
-                                            {block.type ===
-                                            "image" ? (
-                                                <ImageBlockEditor
-                                                    block={
-                                                        block
-                                                    }
-                                                    selected={
-                                                        block.id ===
-                                                        selectedBlockId
-                                                    }
-                                                    onSelect={() =>
-                                                        setSelectedBlockId(
-                                                            block.id,
-                                                        )
-                                                    }
-                                                />
-                                            ) : block.type ===
-                                            "button" ? (
-                                                <ButtonBlockEditor
-                                                    block={
-                                                        block
-                                                    }
-                                                    selected={
-                                                        block.id ===
-                                                        selectedBlockId
-                                                    }
-                                                    onSelect={() =>
-                                                        setSelectedBlockId(
-                                                            block.id,
-                                                        )
-                                                    }
-                                                />
-                                            ) : block.type ===
-                                            "divider" ? (
-                                                <DividerBlockEditor
-                                                    block={
-                                                        block
-                                                    }
-                                                    selected={
-                                                        block.id ===
-                                                        selectedBlockId
-                                                    }
-                                                    onSelect={() =>
-                                                        setSelectedBlockId(
-                                                            block.id,
-                                                        )
-                                                    }
-                                                />
-                                            ) : block.type ===
-                                            "spacer" ? (
-                                                <SpacerBlockEditor
-                                                    block={
-                                                        block
-                                                    }
-                                                    selected={
-                                                        block.id ===
-                                                        selectedBlockId
-                                                    }
-                                                    onSelect={() =>
-                                                        setSelectedBlockId(
-                                                            block.id,
-                                                        )
-                                                    }
-                                                />
-                                            ) : (
-                                                <RichTextBlockEditor
-                                                    block={
-                                                        block
-                                                    }
-                                                    selected={
-                                                        block.id ===
-                                                        selectedBlockId
-                                                    }
-                                                    onSelect={() =>
-                                                        setSelectedBlockId(
-                                                            block.id,
-                                                        )
-                                                    }
-                                                    onEditorReady={(
+                                {value.blocks.map((block) => (
+                                    <SortableBlock key={block.id} id={block.id}>
+                                        {block.type === "image" ? (
+                                            <ImageBlockEditor
+                                                block={block}
+                                                selected={
+                                                    block.id === selectedBlockId
+                                                }
+                                                onSelect={() =>
+                                                    setSelectedBlockId(block.id)
+                                                }
+                                            />
+                                        ) : block.type === "button" ? (
+                                            <ButtonBlockEditor
+                                                block={block}
+                                                selected={
+                                                    block.id === selectedBlockId
+                                                }
+                                                onSelect={() =>
+                                                    setSelectedBlockId(block.id)
+                                                }
+                                            />
+                                        ) : block.type === "divider" ? (
+                                            <DividerBlockEditor
+                                                block={block}
+                                                selected={
+                                                    block.id === selectedBlockId
+                                                }
+                                                onSelect={() =>
+                                                    setSelectedBlockId(block.id)
+                                                }
+                                            />
+                                        ) : block.type === "spacer" ? (
+                                            <SpacerBlockEditor
+                                                block={block}
+                                                selected={
+                                                    block.id === selectedBlockId
+                                                }
+                                                onSelect={() =>
+                                                    setSelectedBlockId(block.id)
+                                                }
+                                            />
+                                        ) : (
+                                            <RichTextBlockEditor
+                                                block={block}
+                                                selected={
+                                                    block.id === selectedBlockId
+                                                }
+                                                onSelect={() =>
+                                                    setSelectedBlockId(block.id)
+                                                }
+                                                onEditorReady={(editor) =>
+                                                    setActiveTextEditor({
+                                                        blockId: block.id,
                                                         editor,
-                                                    ) =>
-                                                        setActiveTextEditor(
-                                                            {
-                                                                blockId:
-                                                                block.id,
-                                                                editor,
-                                                            },
-                                                        )
-                                                    }
-                                                    onChange={(
-                                                        content,
-                                                    ) =>
-                                                        commit(
-                                                            updateBlock(
-                                                                value,
-                                                                block.id,
-                                                                (
-                                                                    current,
-                                                                ) => ({
-                                                                    ...current,
-                                                                    content,
-                                                                }),
-                                                            ),
-                                                            `content:${block.id}`,
-                                                        )
-                                                    }
-                                                />
-                                            )}
-                                        </SortableBlock>
-                                    ),
-                                )}
+                                                    })
+                                                }
+                                                onChange={(content) =>
+                                                    commit(
+                                                        updateBlock(
+                                                            value,
+                                                            block.id,
+                                                            (current) => ({
+                                                                ...current,
+                                                                content,
+                                                            })
+                                                        ),
+                                                        `content:${block.id}`
+                                                    )
+                                                }
+                                            />
+                                        )}
+                                    </SortableBlock>
+                                ))}
                             </SortableContext>
                         </DndContext>
 
-                        {value.blocks.length ===
-                            0 && (
-                                <button
-                                    type="button"
-                                    className="w-full p-12 text-sm text-muted-foreground"
-                                    onClick={
-                                        addText
-                                    }
-                                >
-                                    Add your first
-                                    block
-                                </button>
-                            )}
+                        {value.blocks.length === 0 && (
+                            <button
+                                type="button"
+                                className="w-full p-12 text-sm text-muted-foreground"
+                                onClick={addText}
+                            >
+                                {dictionary?.editorAddFirstBlock ??
+                                    "Add your first block"}
+                            </button>
+                        )}
                     </div>
                 </div>
 
-                {!isSignature &&
-                selectedBlockId === null ? (
+                {!isSignature && selectedBlockId === null ? (
                     <DocumentInspector
-                        settings={
-                            value.settings
-                        }
-                        onChange={(
-                            settings,
-                        ) =>
+                        settings={value.settings}
+                        onChange={(settings) =>
                             commit(
-                                {
-                                    ...value,
-                                    settings,
-                                },
-                                "document-settings",
+                                { ...value, settings },
+                                "document-settings"
                             )
                         }
                     />
                 ) : (
                     <BlockInspector
-                        block={
-                            selectedBlock
-                        }
-                        onChange={
-                            changeSelectedBlock
-                        }
-                        onImageUpload={
-                            onImageUpload
-                        }
+                        block={selectedBlock}
+                        onChange={changeSelectedBlock}
+                        onImageUpload={onImageUpload}
                     />
                 )}
             </div>

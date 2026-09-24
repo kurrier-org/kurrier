@@ -12,6 +12,7 @@ import { connection } from "next/server";
 import Loading from "@/app/loading";
 import NavUserWrapper from "@/components/ui/dashboards/workspace/nav-user-wrapper";
 import RenderContactsLabelHomeSidebar from "@/components/dashboard/labels/render-contacts-label-home-sidebar";
+import WorkspaceLogo from "@/components/common/workspace-logo";
 
 async function ContactsSidebar() {
 	await connection();
@@ -25,6 +26,10 @@ async function ContactsSidebar() {
 		<AppSidebar
 			workspacePublicId={workspacePublicId}
 			sidebarTopContent={
+			<>
+				<Suspense fallback={<div className="h-9" />} key={workspacePublicId}>
+					<WorkspaceLogo />
+				</Suspense>
 				<Suspense fallback={<Loading />}>
 					<div className="-mt-1">
 						<NewContactButton
@@ -33,6 +38,7 @@ async function ContactsSidebar() {
 						/>
 					</div>
 				</Suspense>
+			</>
 			}
 			navUserContent={
 				<Suspense fallback={<Loading />}>

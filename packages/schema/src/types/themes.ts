@@ -17,3 +17,4 @@ export const AppearanceSchema = z.object({
 export const THEME_COOKIE = "kurrier.theme"; // "indigo" | "violet" | "teal"
 export const MODE_COOKIE = "kurrier.mode"; // "light" | "dark" | "system"
 export const RESOLVED_COOKIE = "kurrier.resolved"; // "light" | "dark"
+export const WORKSPACE_THEME_COOKIE = "kurrier.workspace.theme";

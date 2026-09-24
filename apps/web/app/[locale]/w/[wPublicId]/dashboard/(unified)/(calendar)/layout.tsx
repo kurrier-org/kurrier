@@ -18,6 +18,7 @@ import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
 import { fetchDefaultCalendar, fetchOrganizers } from "@/lib/actions/calendar";
 import { getWorkspacePublicId } from "@/lib/actions/clients";
 import { getDictionary } from "@/lib/dictionaries";
+import WorkspaceLogo from "@/components/common/workspace-logo";
 
 async function CalendarDashboard({
 	children,
@@ -85,6 +86,10 @@ async function CalendarDashboard({
 					</Suspense>
 				}
 				sidebarTopContent={
+				<>
+					<Suspense fallback={<div className="h-9" />} key={workspacePublicId}>
+						<WorkspaceLogo />
+					</Suspense>
 					<Suspense fallback={<Loading />}>
 						{defaultCalendar && (
 							<div className="-mt-1">
@@ -95,6 +100,7 @@ async function CalendarDashboard({
 							</div>
 						)}
 					</Suspense>
+				</>
 				}
 			/>
 

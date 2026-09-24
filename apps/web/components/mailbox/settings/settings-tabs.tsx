@@ -126,7 +126,7 @@ export default function SettingsTabs({
         },
         {
             key: "signatures",
-            label: "Signatures",
+            label: dict?.mailbox?.signatures ?? "Signatures",
             icon: <Signature size={16} />,
             href: `${settingsBase}/signatures`,
         },

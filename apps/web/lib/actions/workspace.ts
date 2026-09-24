@@ -6,13 +6,13 @@ import {
     db,
     identities,
     UserEntity,
-    workspaceIdentityMembers, workspaceMembers, WorkspaceRolesListType, workspaces,
+    workspaceIdentityMembers, workspaceMembers, workspaces,
 } from "@db";
-import {FormState, handleAction} from "@schema";
+import {FormState, getServerEnv, handleAction, ThemeNameSchema, WORKSPACE_THEME_COOKIE} from "@schema";
 import {decode} from "decode-formdata";
 import {revalidatePath} from "next/cache";
 import {users} from "@db";
-import { createHash } from "node:crypto";
+import {createHash, randomUUID} from "node:crypto";
 import {isSignedIn} from "@/lib/actions/auth";
 import {cookies} from "next/headers";
 import {redirect} from "next/navigation";
@@ -23,6 +23,8 @@ import {
     refreshView as refreshViewShared
 } from "./shared";
 import {DISTRIBUTION_CONFIG} from "@distribution";
+import {s3} from "@common";
+import {DeleteObjectCommand, PutObjectCommand} from "@aws-sdk/client-s3";
 
 export type {
     FetchWorkspaceMembersResult,
@@ -300,20 +302,48 @@ export async function toggleDefaultIdentity(
 }
 
 
+
 export async function updateWorkspace(
     _prev: FormState,
-    formData: FormData,
+    formData: FormData
 ): Promise<FormState> {
     return handleAction(async () => {
         const decodedForm = decode(formData) as Record<string, unknown>;
-        const rls = await rlsClient()
-        await rls((tx) =>
-            tx.update(workspaces).set({name: String(decodedForm.name)})
+        const name = String(decodedForm.name ?? "").trim();
+        const theme = ThemeNameSchema.parse(decodedForm.theme);
+
+        if (!name) {
+            return { success: false, error: "Workspace name is required." };
+        }
+
+        const workspaceId = await getWorkspaceId();
+        const rls = await rlsClient();
+
+        const [updated] = await rls((tx) =>
+            tx
+                .update(workspaces)
+                .set({ name, theme })
+                .where(eq(workspaces.id, workspaceId))
+                .returning({ theme: workspaces.theme }),
         );
+
+        if (!updated) {
+            return { success: false, error: "Could not update workspace." };
+        }
+
+        (await cookies()).set(WORKSPACE_THEME_COOKIE, updated.theme, {
+            path: "/",
+            httpOnly: true,
+            sameSite: "lax",
+            maxAge: 60 * 60 * 24 * 365,
+        });
+
         revalidatePath("/w/[wPublicId]/dashboard/platform/workspace", "page");
+
         return { success: true, message: "workspace.updated" };
     });
 }
+
 
 function sha256Hex(input: string) {
     return createHash("sha256").update(input).digest("hex");
@@ -325,37 +355,281 @@ export const switchWorkSpace = async (workspacePublicId: string, id: string) => 
 };
 
 
-export const updateWorkSpaceContext = async (workspacePublicId: string, id: string, user?: UserEntity) => {
-    const cookieStore = await cookies()
-    if (!user) {
-        user = await isSignedIn() as UserEntity;
+export const updateWorkSpaceContext = async (
+    workspacePublicId: string,
+    id: string,
+    user?: UserEntity
+) => {
+    const currentUser = user ?? (await isSignedIn());
+
+    if (!currentUser?.id) {
+        throw new Error("Not authenticated.");
     }
-    let role: WorkspaceRolesListType = "member"
-    const [member] = await db.select().from(workspaceMembers).where(and(
-        eq(workspaceMembers.workspaceId, id),
-        eq(workspaceMembers.userId, String(user?.id))
-    )).limit(1)
-    if (member){
-        role = member.role as WorkspaceRolesListType
+
+    const [[member], [workspace]] = await Promise.all([
+        db
+            .select({ role: workspaceMembers.role })
+            .from(workspaceMembers)
+            .where(
+                and(
+                    eq(workspaceMembers.workspaceId, id),
+                    eq(workspaceMembers.userId, currentUser.id)
+                )
+            )
+            .limit(1),
+        db
+            .select({ theme: workspaces.theme })
+            .from(workspaces)
+            .where(
+                and(eq(workspaces.id, id), eq(workspaces.publicId, workspacePublicId))
+            )
+            .limit(1),
+    ]);
+
+    if (!member || !workspace) {
+        throw new Error("Workspace not found.");
     }
+
+    const cookieStore = await cookies();
+
     cookieStore.set({
-        name: 'workspaceId',
+        name: "workspaceId",
         value: id,
         httpOnly: true,
-        path: '/',
-    })
+        path: "/",
+    });
+
     cookieStore.set({
-        name: 'workspacePublicId',
+        name: "workspacePublicId",
         value: workspacePublicId,
         httpOnly: true,
-        path: '/',
-    })
-    if (role){
-        cookieStore.set({
-            name: 'workspaceRole',
-            value: String(role),
-            httpOnly: true,
-            path: '/',
-        })
-    }
+        path: "/",
+    });
+
+    cookieStore.set({
+        name: "workspaceRole",
+        value: member.role,
+        httpOnly: true,
+        path: "/",
+    });
+
+    cookieStore.set({
+        name: WORKSPACE_THEME_COOKIE,
+        value: ThemeNameSchema.catch("indigo").parse(workspace.theme),
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 365,
+    });
 };
+
+export async function updateWorkspaceLogo(
+    _prev: FormState,
+    formData: FormData
+): Promise<FormState> {
+    return handleAction(async () => {
+        const user = await isSignedIn();
+        const file = formData.get("logo");
+
+        if (!user) {
+            return { success: false, error: "Not authenticated." };
+        }
+
+        if (!(file instanceof File) || file.size === 0) {
+            return { success: false, error: "Select a logo." };
+        }
+
+        // if (file.size > 512 * 1024) {
+        //     return { success: false, error: "Logo must be smaller than 512 KB." };
+        // }
+
+        const workspaceId = await getWorkspaceId();
+
+        const [[member], [workspace]] = await Promise.all([
+            db
+                .select({ role: workspaceMembers.role })
+                .from(workspaceMembers)
+                .where(
+                    and(
+                        eq(workspaceMembers.workspaceId, workspaceId),
+                        eq(workspaceMembers.userId, user.id)
+                    )
+                )
+                .limit(1),
+            db
+                .select({ logoKey: workspaces.logoKey })
+                .from(workspaces)
+                .where(eq(workspaces.id, workspaceId))
+                .limit(1),
+        ]);
+
+        if (!member || !["owner", "admin"].includes(member.role) || !workspace) {
+            return { success: false, error: "Not allowed to update workspace logo." };
+        }
+
+        const body = Buffer.from(await file.arrayBuffer());
+
+        const contentType = body
+            .subarray(0, 8)
+            .equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+            ? "image/png"
+            : body.length >= 3 &&
+            body[0] === 0xff &&
+            body[1] === 0xd8 &&
+            body[2] === 0xff
+                ? "image/jpeg"
+                : body.toString("ascii", 0, 4) === "RIFF" &&
+                body.toString("ascii", 8, 12) === "WEBP"
+                    ? "image/webp"
+                    : null;
+
+        if (!contentType) {
+            return {
+                success: false,
+                error: "Logo must be a PNG, JPEG, or WebP image.",
+            };
+        }
+
+        const { S3_BUCKET } = getServerEnv();
+
+        if (!S3_BUCKET) {
+            return { success: false, error: "S3 bucket is not configured." };
+        }
+
+        const logoKey = `private/workspaces/${workspaceId}/logos/${randomUUID()}`;
+        const rls = await rlsClient();
+
+        await s3.send(
+            new PutObjectCommand({
+                Bucket: S3_BUCKET,
+                Key: logoKey,
+                Body: body,
+                ContentType: contentType,
+            })
+        );
+
+        try {
+            const [updated] = await rls((tx) =>
+                tx
+                    .update(workspaces)
+                    .set({ logoKey })
+                    .where(eq(workspaces.id, workspaceId))
+                    .returning({ id: workspaces.id })
+            );
+
+            if (!updated) {
+                throw new Error("Could not update workspace logo.");
+            }
+        } catch (error) {
+            await s3
+                .send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: logoKey }))
+                .catch(() => undefined);
+            throw error;
+        }
+
+        if (
+            workspace.logoKey?.startsWith(`private/workspaces/${workspaceId}/logos/`)
+        ) {
+            await s3
+                .send(
+                    new DeleteObjectCommand({
+                        Bucket: S3_BUCKET,
+                        Key: workspace.logoKey,
+                    })
+                )
+                .catch(() => undefined);
+        }
+
+        revalidatePath("/w/[wPublicId]/dashboard/platform/workspace", "page");
+
+        return { success: true, message: "Workspace logo updated." };
+    });
+}
+
+
+export async function removeWorkspaceLogo(
+    _prev: FormState,
+    _formData: FormData,
+): Promise<FormState> {
+    return handleAction(async () => {
+        const user = await isSignedIn();
+        if (!user) {
+            return { success: false, error: "Not authenticated." };
+        }
+
+        const workspaceId = await getWorkspaceId();
+
+        const [[member], [workspace]] = await Promise.all([
+            db
+                .select({ role: workspaceMembers.role })
+                .from(workspaceMembers)
+                .where(
+                    and(
+                        eq(workspaceMembers.workspaceId, workspaceId),
+                        eq(workspaceMembers.userId, user.id),
+                    ),
+                )
+                .limit(1),
+            db
+                .select({
+                    id: workspaces.id,
+                    logoKey: workspaces.logoKey,
+                })
+                .from(workspaces)
+                .where(eq(workspaces.id, workspaceId))
+                .limit(1),
+        ]);
+
+        if (!member || !["owner", "admin"].includes(member.role)) {
+            return { success: false, error: "You cannot manage this workspace logo." };
+        }
+
+        if (!workspace?.logoKey) {
+            return { success: false, error: "This workspace has no logo." };
+        }
+
+        const logoKey = workspace.logoKey;
+
+        if (!logoKey.startsWith(`private/workspaces/${workspaceId}/logos/`)) {
+            return { success: false, error: "Invalid workspace logo." };
+        }
+
+        const { S3_BUCKET } = getServerEnv();
+        if (!S3_BUCKET) {
+            return { success: false, error: "S3 bucket is not configured." };
+        }
+
+        const rls = await rlsClient();
+        const [updated] = await rls((tx) =>
+            tx
+                .update(workspaces)
+                .set({ logoKey: null })
+                .where(
+                    and(
+                        eq(workspaces.id, workspaceId),
+                        eq(workspaces.logoKey, logoKey),
+                    ),
+                )
+                .returning({ id: workspaces.id }),
+        );
+
+        if (!updated) {
+            return { success: false, error: "Logo changed. Refresh and try again." };
+        }
+
+        try {
+            await s3.send(
+                new DeleteObjectCommand({
+                    Bucket: S3_BUCKET,
+                    Key: logoKey,
+                }),
+            );
+        } catch (error) {
+            console.error("[workspace-logo] failed to delete old object", error);
+        }
+
+        revalidatePath("/w/[wPublicId]/dashboard/platform/workspace", "page");
+
+        return { success: true, message: "Workspace logo removed." };
+    });
+}

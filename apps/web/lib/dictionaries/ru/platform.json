@@ -379,6 +379,18 @@
 	"customProviderMailboxIdentityHelp": "Kurrier автоматически создаст почтовый адрес и начнёт синхронизацию его ящиков.",
 	"customProviderDisplayNamePlaceholder": "Ваше имя",
 	"customProviderDisplayNameHelp": "Отображается получателям отправленных вами писем.",
-  "noDomainsYet": "Доменов пока нет — добавьте первый, чтобы начать.",
-  "noEmailAddressesYet": "Адресов электронной почты пока нет — добавьте первый, чтобы начать."
+  	"noDomainsYet": "Доменов пока нет — добавьте первый, чтобы начать.",
+  	"noEmailAddressesYet": "Адресов электронной почты пока нет — добавьте первый, чтобы начать.",
+
+	"workspaceColor": "Цвет рабочего пространства",
+	"neutral": "Нейтральный",
+	"indigo": "Индиго",
+	"violet": "Фиолетовый",
+	"teal": "Бирюзовый",
+	"workspaceLogo": "Логотип рабочего пространства",
+	"workspaceLogoFormats": "PNG, JPEG или WebP. Максимум 512 КБ.",
+	"uploadLogo": "Загрузить логотип",
+	"removeLogo": "Удалить логотип",
+	"workspaceLogoRemoved": "Логотип рабочего пространства удалён.",
+	"workspaceLogoRemoveError": "Не удалось удалить логотип рабочего пространства."
 }

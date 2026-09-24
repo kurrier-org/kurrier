@@ -8,7 +8,7 @@ import {
 
 import "../globals.css";
 
-import { getPublicEnv } from "@schema";
+import {getPublicEnv, WORKSPACE_THEME_COOKIE} from "@schema";
 import {
     MODE_COOKIE,
     RESOLVED_COOKIE,
@@ -56,6 +56,7 @@ export default async function DistributionLayout({
     const jar = await cookies();
 
     const theme: ThemeName = ThemeNameSchema.catch("indigo").parse(
+        jar.get(WORKSPACE_THEME_COOKIE)?.value ??
         jar.get(THEME_COOKIE)?.value,
     );
 
