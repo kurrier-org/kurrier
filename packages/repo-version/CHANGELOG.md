@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 4.4.0
+
+### Minor Changes
+
+- [`b1ecc77`](https://github.com/kurrier-org/kurrier/commit/b1ecc7780968db8aaa13beef4bfafe4c42ce664d) Thanks [@krokhale](https://github.com/krokhale)! - Microsoft 365 OAuth integration, improved IMAP synchronization and mailbox management, enhanced Drive functionality, and reliability improvements across email providers.
+
 ## 4.3.0
 
 ### Minor Changes
