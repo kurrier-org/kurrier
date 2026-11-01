@@ -6,6 +6,24 @@
     "dismiss": "새로운 기능 닫기"
   },
   "releases": {
+    "v4_4_0": {
+      "title": "더욱 연결되고 안정적인 Kurrier",
+      "description": "Microsoft 365 계정을 연결하고, 더욱 안정적인 이메일 동기화와 개선된 Drive 기능을 경험해 보세요.",
+      "features": {
+        "microsoft365": {
+          "title": "Microsoft 365 지원",
+          "description": "OAuth를 통해 Microsoft 이메일 계정을 안전하게 연결하고 기존 이메일 제공업체와 함께 관리하세요."
+        },
+        "imapSync": {
+          "title": "더욱 안정적인 이메일 동기화",
+          "description": "실시간 업데이트, 메일함 검색 및 중단된 IMAP 연결의 복구 기능이 개선되었습니다."
+        },
+        "drive": {
+          "title": "더욱 강력해진 Drive",
+          "description": "파일을 드래그 앤 드롭으로 업로드하고, 이미지와 PDF를 미리 보고, 만료되는 다운로드 링크로 파일을 공유하세요."
+        }
+      }
+    },
     "v4_2_0": {
       "title": "이메일 서명",
       "description": "각 이메일 계정의 서명을 만들고 Kurrier 작성기에서 바로 사용하세요.",

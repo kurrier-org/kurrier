@@ -1,8 +1,7 @@
 import { db, identities, mailboxes, messages, mailRules, mailRuleActions, threads, mailboxThreadLabels } from "@db";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { MailRuleMatchV1, mailRulesFieldsList, mailRulesOpsList } from "@schema";
-import { markAsRead } from "./rule-items/mark-read";
-import { toggleStar } from "./rule-items/mark-flag";
+import { setFlags } from "./rule-items/set-flags";
 import { moveToTrash } from "./rule-items/move-to-trash";
 
 type AddressValue = { address?: string | null; name?: string | null };
@@ -250,11 +249,11 @@ export const processRules = async ({ messageId }: { messageId: string }) => {
         for (const act of ruleActions) {
             switch (act.actionType) {
                 case "mark_read": {
-                    await markAsRead(thread.id, mailbox.id, identity.smtpAccountId);
+                    await setFlags(thread.id, mailbox.id, "read");
                     break;
                 }
                 case "flag": {
-                    await toggleStar(thread.id, mailbox.id, true, identity.smtpAccountId);
+                    await setFlags(thread.id, mailbox.id, "flag");
                     break;
                 }
                 case "trash": {

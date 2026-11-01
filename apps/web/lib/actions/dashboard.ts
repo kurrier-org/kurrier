@@ -10,7 +10,7 @@ import {
 	IdentityEntity,
 	IdentityInsertSchema,
 	mailboxes, messageAttachments,
-	messages,
+	messages, microsoftAccounts,
 	providers,
 	providerSecrets,
 	secretsMeta,
@@ -28,7 +28,6 @@ import {
 	handleAction,
 	MailboxKindDisplay,
 	materializeCustomEmailProvider,
-	parseCustomEmailProviders,
 	parseCustomEmailProvidersValue,
 	ProviderAccountFormSchema,
 	Providers,
@@ -36,7 +35,7 @@ import {
 	SYSTEM_MAILBOXES,
 } from "@schema";
 import { currentSession, isSignedIn } from "@/lib/actions/auth";
-import {and, count, eq, sql, gte, desc, sum, countDistinct} from "drizzle-orm";
+import {and, count, eq, sql, gte, desc, sum, countDistinct, isNull} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { decode } from "decode-formdata";
 import { PgColumn, PgTable } from "drizzle-orm/pg-core";
@@ -594,7 +593,11 @@ const initializeEmailIdentity = async (
 	});
 };
 
-export const initializeMailboxes = async (emailIdentity: IdentityEntity, userId: string, workspaceId: string) => {
+export const initializeMailboxes = async (
+	emailIdentity: IdentityEntity,
+	userId: string,
+	workspaceId: string,
+) => {
 	if (emailIdentity.kind !== "email") return;
 
 	if ((emailIdentity.metaData as any)?.provider === "google") {
@@ -605,8 +608,14 @@ export const initializeMailboxes = async (emailIdentity: IdentityEntity, userId:
 		return;
 	}
 
-	if (emailIdentity.smtpAccountId) {
-		await backfillMailboxes(emailIdentity.id, emailIdentity.workspaceId);
+	if (
+		emailIdentity.smtpAccountId ||
+		(emailIdentity.metaData as any)?.provider === "microsoft"
+	) {
+		await backfillMailboxes(
+			emailIdentity.id,
+			emailIdentity.workspaceId,
+		);
 		return;
 	}
 
@@ -668,6 +677,7 @@ export const assignIdentityToAllWorkspaceMembers = async (
 		)
 	);
 };
+
 export async function addNewEmailIdentity(
 	_prev: FormState,
 	formData: FormData,
@@ -675,22 +685,10 @@ export async function addNewEmailIdentity(
 	return handleAction(async () => {
 		const rls = await rlsClient();
 		const data = decode(formData) as Record<string, any>;
-
-		const sharedWithWorkspace = true
-
-		if (!sharedWithWorkspace) {
-			const workspaceMembers = data?.workspaceMembers as string[] | undefined;
-
-			if (!workspaceMembers?.length) {
-				return {
-					success: false,
-					error: "dashboard.mustAssignAtLeastOneMember",
-				};
-			}
-		}
+		const sharedWithWorkspace = true;
 
 		const workspaceId = await getWorkspaceId();
-		const userId = String((await isSignedIn())?.id);
+		const userId = (await isSignedIn())?.id;
 
 		if (!userId) {
 			return {
@@ -699,52 +697,85 @@ export async function addNewEmailIdentity(
 			};
 		}
 
-		if (data.googleAccountId) {
-			console.log("[GOOGLE BRANCH]", {
+		if (data.googleAccountId || data.microsoftAccountId) {
+			const isMicrosoft = Boolean(data.microsoftAccountId);
+			const accountId = String(
+				isMicrosoft ? data.microsoftAccountId : data.googleAccountId,
+			);
 
-				googleAccountId: data.googleAccountId,
-				workspaceId,
-			});
+			const account = isMicrosoft
+				? (
+					await db
+						.select()
+						.from(microsoftAccounts)
+						.where(
+							and(
+								eq(microsoftAccounts.id, accountId),
+								eq(microsoftAccounts.workspaceId, workspaceId),
+							),
+						)
+						.limit(1)
+				)[0]
+				: (
+					await db
+						.select()
+						.from(googleAccounts)
+						.where(
+							and(
+								eq(googleAccounts.id, accountId),
+								eq(googleAccounts.workspaceId, workspaceId),
+							),
+						)
+						.limit(1)
+				)[0];
 
-			const [googleAccount] = await db
-				.select()
-				.from(googleAccounts)
-				.where(
-					and(
-						eq(googleAccounts.id, String(data.googleAccountId)),
-						eq(googleAccounts.workspaceId, workspaceId),
-					),
-				)
-				.limit(1);
-
-			if (!googleAccount) {
+			if (!account) {
 				return {
 					success: false,
-					error: "dashboard.googleAccountNotFound",
+					error: isMicrosoft
+						? "dashboard.microsoftAccountNotFound"
+						: "dashboard.googleAccountNotFound",
 				};
 			}
 
-			if (googleAccount.status !== "connected") {
+			if (account.status !== "connected" || account.lastError) {
 				return {
 					success: false,
-					error: "dashboard.googleAccountNotConnected",
+					error: isMicrosoft
+						? "dashboard.microsoftAccountNotConnected"
+						: "dashboard.googleAccountNotConnected",
+				};
+			}
+
+			if (account.identityId) {
+				return {
+					success: false,
+					error: "dashboard.identityAlreadyExists",
 				};
 			}
 
 			const identityData = IdentityInsertSchema.parse({
 				workspaceId,
-				ownerId: userId,
-				value: googleAccount.email,
-				displayName: data.displayName || googleAccount.name || googleAccount.email,
+				ownerId: String(userId),
+				value: account.email,
+				displayName: data.displayName || account.name || account.email,
 				kind: "email",
 				sharedWithWorkspace,
 				metaData: {
-					provider: "google",
+					provider: isMicrosoft ? "microsoft" : "google",
 					dailyQuota: Number(data.dailyQuota) || defaultImapQuota,
 					sharedWithWorkspace,
-					gmail: {
-						googleAccountId: googleAccount.id,
-					},
+					...(isMicrosoft
+						? {
+							microsoft: {
+								microsoftAccountId: account.id,
+							},
+						}
+						: {
+							gmail: {
+								googleAccountId: account.id,
+							},
+						}),
 				},
 			});
 
@@ -753,15 +784,23 @@ export async function addNewEmailIdentity(
 				.values(identityData as IdentityCreate)
 				.returning();
 
-			console.log("[GOOGLE IDENTITY INSERTED]", identity.id);
-
-			await db
-				.update(googleAccounts)
-				.set({
-					identityId: identity.id,
-					updatedAt: new Date(),
-				})
-				.where(eq(googleAccounts.id, googleAccount.id));
+			if (isMicrosoft) {
+				await db
+					.update(microsoftAccounts)
+					.set({
+						identityId: identity.id,
+						updatedAt: new Date(),
+					})
+					.where(eq(microsoftAccounts.id, account.id));
+			} else {
+				await db
+					.update(googleAccounts)
+					.set({
+						identityId: identity.id,
+						updatedAt: new Date(),
+					})
+					.where(eq(googleAccounts.id, account.id));
+			}
 
 			await checkDefaultWorkspaceIdentity();
 
@@ -774,18 +813,22 @@ export async function addNewEmailIdentity(
 				);
 			}
 
-			console.log("[GOOGLE BEFORE INIT MAILBOXES]", identity.id);
 			try {
-				await initializeMailboxes(identity, userId, workspaceId);
+				await initializeMailboxes(identity, String(userId), workspaceId);
 			} catch (err) {
-				console.error("[GOOGLE MAILBOX INIT FAILED]", err);
+				console.error(
+					`[${isMicrosoft ? "MICROSOFT" : "GOOGLE"} MAILBOX INIT FAILED]`,
+					err,
+				);
 			}
 
 			revalidatePath(DASHBOARD_PATH);
 
 			return {
 				success: true,
-				message: "dashboard.addedGoogleEmailIdentity",
+				message: isMicrosoft
+					? "dashboard.addedNewIdentity"
+					: "dashboard.addedGoogleEmailIdentity",
 			};
 		}
 
@@ -798,6 +841,7 @@ export async function addNewEmailIdentity(
 				smtpAccountId: String(data.smtpAccountId),
 				dailyQuota: Number(data.dailyQuota) || defaultImapQuota,
 			});
+
 			if (!result.success) {
 				return result;
 			}
@@ -826,7 +870,7 @@ export async function addNewEmailIdentity(
 
 			const identityData = IdentityInsertSchema.parse({
 				workspaceId,
-				ownerId: userId,
+				ownerId: String(userId),
 				...data,
 			});
 
@@ -852,7 +896,7 @@ export async function addNewEmailIdentity(
 			parsedVaultValues.receiveVerified = domainIdentity.incomingDomain;
 
 			if (domainIdentity.incomingDomain) {
-				await initializeMailboxes(emailIdentity, userId, workspaceId);
+				await initializeMailboxes(emailIdentity, String(userId), workspaceId);
 			}
 
 			await updateSecret(session, workspaceId, secret.metaId, {
@@ -973,12 +1017,6 @@ export const deleteDomainIdentity = async (
 	});
 };
 
-const cleanupIdentity = async (identityId: string, workspaceId: string) => {
-	const { davQueue, davEvents } = await getRedis();
-	const job = await davQueue.add("dav:delete:identity", { identityId , workspaceId }, { jobId: `identity-dav-cleanup-${identityId}` });
-	await job.waitUntilFinished(davEvents);
-};
-
 const enqueueIdentityCleanup = async (identityId: string, workspaceId: string) => {
 	const { davQueue } = await getRedis();
 
@@ -1004,6 +1042,7 @@ export const deleteEmailIdentity = async (
 	return handleAction(async () => {
 		const identity = userIdentity.identities;
 		const isGoogle = identity?.metaData?.provider === "google";
+		const isMicrosoft = identity?.metaData?.provider === "microsoft";
 
 		if (isGoogle) {
 			const mailer = createMailer("google" as Providers, {
@@ -1021,6 +1060,16 @@ export const deleteEmailIdentity = async (
 					updatedAt: new Date(),
 				})
 				.where(eq(googleAccounts.identityId, identity.id));
+		} else if (isMicrosoft) {
+
+			await clearImapClients(identity.id);
+			await db
+				.update(microsoftAccounts)
+				.set({
+					identityId: null,
+					updatedAt: new Date(),
+				})
+				.where(eq(microsoftAccounts.identityId, identity.id));
 		} else if (!userIdentity.smtp_accounts) {
 			const [secret] = await fetchDecryptedSecrets({
 				linkTable: providerSecrets,
@@ -1047,6 +1096,16 @@ export const deleteEmailIdentity = async (
 		await db
 			.delete(identities)
 			.where(eq(identities.id, identity.id));
+
+		try {
+			await db
+				.delete(identities)
+				.where(eq(identities.id, identity.id));
+		} catch (error: any) {
+			console.error("Identity deletion failed:", error);
+			console.error("Postgres cause:", error?.cause);
+			throw error;
+		}
 
 		revalidatePath(DASHBOARD_PATH);
 
@@ -2488,6 +2547,88 @@ export async function deleteCustomEmailProvider(
 		return {
 			success: true,
 			message: "Email provider removed.",
+		};
+	});
+}
+
+export async function fetchMicrosoftAccounts() {
+	const rls = await rlsClient();
+
+	return rls((tx) =>
+		tx
+			.select()
+			.from(microsoftAccounts)
+			.orderBy(desc(microsoftAccounts.createdAt)),
+	);
+}
+
+export type FetchMicrosoftAccountsResult = Awaited<
+	ReturnType<typeof fetchMicrosoftAccounts>
+>;
+
+export type FetchMicrosoftAccountsResultRow =
+	FetchMicrosoftAccountsResult[number];
+
+
+export async function disconnectMicrosoftAccount(
+	accountId: string,
+): Promise<FormState> {
+	return handleAction(async () => {
+		const workspaceId = await getWorkspaceId();
+		const rls = await rlsClient();
+
+		const [account] = await rls((tx) =>
+			tx
+				.select()
+				.from(microsoftAccounts)
+				.where(
+					and(
+						eq(microsoftAccounts.id, accountId),
+						eq(microsoftAccounts.workspaceId, workspaceId),
+					),
+				)
+				.limit(1),
+		);
+
+		if (!account) {
+			return {
+				success: false,
+				error: "Microsoft account not found.",
+			};
+		}
+
+		if (account.identityId) {
+			return {
+				success: false,
+				error: "Remove the linked email identity before disconnecting this Microsoft account.",
+			};
+		}
+
+		await rls((tx) =>
+			tx
+				.delete(microsoftAccounts)
+				.where(
+					and(
+						eq(microsoftAccounts.id, accountId),
+						eq(microsoftAccounts.workspaceId, workspaceId),
+						isNull(microsoftAccounts.identityId),
+					),
+				),
+		);
+
+		for (const secretId of new Set(
+			[account.accessTokenSecretId, account.refreshTokenSecretId].filter(
+				(id): id is string => Boolean(id),
+			),
+		)) {
+			await deleteSecretAdmin(secretId);
+		}
+
+		revalidatePath(DASHBOARD_PATH);
+
+		return {
+			success: true,
+			message: "Microsoft account disconnected.",
 		};
 	});
 }

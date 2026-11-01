@@ -11,12 +11,13 @@ import JmapCard from "@/components/dashboard/providers/jmap-card";
 import MailtrapCardShell from "@/components/dashboard/providers/mailtrap-card-shell";
 import ProviderCardShell from "@/components/dashboard/providers/provider-card-shell";
 import SMTPCard from "@/components/dashboard/providers/smtp-card";
+import MicrosoftCard from "@/components/dashboard/providers/microsoft-card";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
 	fetchCustomEmailProviders,
 	fetchDecryptedSecrets,
-	fetchGoogleAccounts,
+	fetchGoogleAccounts, fetchMicrosoftAccounts,
 	fetchProviderIdentities,
 	hasGoogleOAuthConfig,
 	syncProviders,
@@ -36,6 +37,7 @@ export default async function ProvidersPage({
 		userProviders,
 		smtpSecrets,
 		googleAccounts,
+		microsoftAccounts,
 		inboundIdentities,
 		jmapAccounts,
 		mailtrapIdentities,
@@ -51,6 +53,7 @@ export default async function ProvidersPage({
 		DISTRIBUTION_CONFIG.features.gmail
 			? fetchGoogleAccounts()
 			: Promise.resolve([]),
+		fetchMicrosoftAccounts(),
 		fetchProviderIdentities("inbound"),
 		DISTRIBUTION_CONFIG.features.jmap
 			? fetchJmapAccounts()
@@ -150,6 +153,8 @@ export default async function ProvidersPage({
 								googleOAuthConfigured={googleOAuthConfigured}
 							/>
 						)}
+
+						<MicrosoftCard microsoftAccounts={microsoftAccounts} />
 
 						<InboundCard inboundIdentities={inboundIdentities} />
 

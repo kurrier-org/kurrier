@@ -41,6 +41,12 @@ export type ExtensionContributions<TComponent = unknown> = {
     };
     workers?: ExtensionWorker[];
     schedulers?: ExtensionScheduler[];
+    services?: ExtensionService[];
+};
+
+export type ExtensionService = {
+    id: string;
+    start: () => void | Promise<void> | (() => void | Promise<void>) | Promise<() => void | Promise<void>>;
 };
 
 

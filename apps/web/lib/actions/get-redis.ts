@@ -14,6 +14,9 @@ export const getRedis = async () => {
 	const smtpQueue = new Queue("smtp-worker", redisConnection);
 	const smtpEvents = new QueueEvents("smtp-worker", redisConnection);
 
+	const mailInteractiveQueue = new Queue("mail-interactive", redisConnection);
+	const mailInteractiveEvents = new QueueEvents("mail-interactive", redisConnection);
+
 	const gmailQueue = new Queue("gmail-worker", redisConnection);
 	const gmailEvents = new QueueEvents("gmail-worker", redisConnection);
 
@@ -38,6 +41,13 @@ export const getRedis = async () => {
 	const jmapQueue = new Queue("jmap-worker", redisConnection);
 	const jmapEvents = new QueueEvents("jmap-worker", redisConnection);
 
+
+	const imapDiscoveryQueue = new Queue("imap-discovery", redisConnection);
+	const imapDiscoveryEvents = new QueueEvents("imap-discovery", redisConnection);
+
+	const imapBackfillQueue = new Queue("imap-backfill", redisConnection);
+	const imapBackfillEvents = new QueueEvents("imap-backfill", redisConnection);
+
 	await Promise.all([
 		smtpEvents.waitUntilReady(),
 		sendMailEvents.waitUntilReady(),
@@ -47,7 +57,10 @@ export const getRedis = async () => {
 		commonWorkerEvents.waitUntilReady(),
 		gmailEvents.waitUntilReady(),
 		jmapEvents.waitUntilReady(),
-		jmapQueue.waitUntilReady()
+		jmapQueue.waitUntilReady(),
+		mailInteractiveEvents.waitUntilReady(),
+		imapDiscoveryEvents.waitUntilReady(),
+		imapBackfillEvents.waitUntilReady(),
 	])
 
 	return {
@@ -66,6 +79,12 @@ export const getRedis = async () => {
 		gmailQueue,
 		gmailEvents,
 		jmapQueue,
-		jmapEvents
+		jmapEvents,
+		mailInteractiveQueue,
+		mailInteractiveEvents,
+		imapDiscoveryQueue,
+		imapDiscoveryEvents,
+		imapBackfillQueue,
+		imapBackfillEvents,
 	};
 };

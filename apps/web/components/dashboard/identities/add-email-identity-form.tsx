@@ -8,46 +8,54 @@ import {
 	addNewEmailIdentity,
 	type FetchDecryptedSecretsResult,
 	type FetchGoogleAccountsResult,
+	type FetchMicrosoftAccountsResult,
 	type FetchUserIdentitiesResult,
 } from "@/lib/actions/dashboard";
 import type { FetchWorkspaceMembersResult } from "@/lib/actions/workspace";
 import { parseSecret } from "@/lib/utils";
 
 function AddEmailIdentityForm({
-	onCompleted,
-	providerOptions,
-	smtpAccounts,
-	providerAccounts,
-	googleAccounts,
-	userDomainIdentities,
-	userEmailIdentities,
-}: {
+								  onCompleted,
+								  providerOptions,
+								  smtpAccounts,
+								  providerAccounts,
+								  googleAccounts,
+								  microsoftAccounts,
+								  userDomainIdentities,
+								  userEmailIdentities,
+							  }: {
 	onCompleted?: () => void;
 	providerOptions: { label: string; value: string }[];
 	smtpAccounts: FetchDecryptedSecretsResult;
 	providerAccounts: FetchDecryptedSecretsResult;
 	googleAccounts: FetchGoogleAccountsResult;
+	microsoftAccounts: FetchMicrosoftAccountsResult;
 	workspaceMembers: FetchWorkspaceMembersResult;
 	userDomainIdentities: FetchUserIdentitiesResult;
 	userEmailIdentities: FetchUserIdentitiesResult;
 }) {
 	const dict = useOptionalDictionary();
+
 	const [provider, setProvider] = React.useState<
 		FetchDecryptedSecretsResult[number] | null
 	>(null);
+
 	const [smtpAccount, setSmtpAccount] = React.useState<
 		FetchDecryptedSecretsResult[number] | null
 	>(null);
-	const [activeId, setActiveId] = React.useState<string | null>(null);
 
 	const [googleAccount, setGoogleAccount] = React.useState<
 		FetchGoogleAccountsResult[number] | null
 	>(null);
 
+	const [microsoftAccount, setMicrosoftAccount] = React.useState<
+		FetchMicrosoftAccountsResult[number] | null
+	>(null);
+
+	const [activeId, setActiveId] = React.useState<string | null>(null);
 	const [rawProvider, setRawProvider] = React.useState<string | null>(null);
 
 	const [localPart, setLocalPart] = React.useState("");
-	const [subdomain, setSubdomain] = React.useState("");
 	const [domainId, setDomainId] = React.useState<string | null>(null);
 
 	const chosenDomain = userDomainIdentities.find(
@@ -56,13 +64,14 @@ function AddEmailIdentityForm({
 
 	const composedEmail = React.useMemo(() => {
 		if (!localPart || !chosenDomain) return "";
-		const domain = chosenDomain.identities.value;
-		return `${localPart}@${domain}`;
+		return `${localPart}@${chosenDomain.identities.value}`;
 	}, [localPart, chosenDomain]);
 
 	const mustBeShared = userEmailIdentities.length === 0;
+
 	const [sharedWithWorkspace, setSharedWithWorkspace] =
 		React.useState<boolean>(mustBeShared);
+
 	useEffect(() => {
 		setSharedWithWorkspace(mustBeShared);
 	}, [mustBeShared]);
@@ -78,15 +87,24 @@ function AddEmailIdentityForm({
 			userEmailIdentities
 				.map((identity) => {
 					const metaData = identity.identities.metaData as
-						| {
-						gmail?: {
-							googleAccountId?: string;
-						};
-					}
+						| { gmail?: { googleAccountId?: string } }
 						| null
 						| undefined;
 
 					return metaData?.gmail?.googleAccountId;
+				})
+				.filter((id): id is string => Boolean(id)),
+		);
+
+		const usedMicrosoftAccountIds = new Set(
+			userEmailIdentities
+				.map((identity) => {
+					const metaData = identity.identities.metaData as
+						| { microsoft?: { microsoftAccountId?: string } }
+						| null
+						| undefined;
+
+					return metaData?.microsoft?.microsoftAccountId;
 				})
 				.filter((id): id is string => Boolean(id)),
 		);
@@ -98,28 +116,18 @@ function AddEmailIdentityForm({
 			const optionId = option.value.replace(/^[a-z]+-/, "");
 
 			if (option.value.startsWith("smtp-")) {
-				const smtpAccount = smtpAccounts.find(
-					(account) => String(account.linkRow.id) === optionId,
+				const account = smtpAccounts.find(
+					(item) => String(item.linkRow.id) === optionId,
 				);
 
-				if (!smtpAccount) {
-					return false;
-				}
+				if (!account) return false;
 
-				const secret = parseSecret(smtpAccount);
+				const secret = parseSecret(account);
 				const email = String(secret.SMTP_USERNAME ?? "")
 					.trim()
 					.toLowerCase();
 
-				if (!email) {
-					return false;
-				}
-
-				if (existingEmails.has(email)) {
-					return false;
-				}
-
-				if (seenSmtpEmails.has(email)) {
+				if (!email || existingEmails.has(email) || seenSmtpEmails.has(email)) {
 					return false;
 				}
 
@@ -131,21 +139,20 @@ function AddEmailIdentityForm({
 				return !usedGoogleAccountIds.has(optionId);
 			}
 
-			if (seenOptions.has(option.value)) {
-				return false;
+			if (option.value.startsWith("microsoft-")) {
+				return !usedMicrosoftAccountIds.has(optionId);
 			}
+
+			if (seenOptions.has(option.value)) return false;
 
 			seenOptions.add(option.value);
 			return true;
 		});
-	}, [
-		providerOptions,
-		smtpAccounts,
-		userEmailIdentities,
-	]);
+	}, [providerOptions, smtpAccounts, userEmailIdentities]);
 
 	function getSmtpFields() {
 		const parsedVaultValues = parseSecret(smtpAccount);
+
 		return [
 			{
 				name: "value",
@@ -165,7 +172,7 @@ function AddEmailIdentityForm({
 				required: true,
 				wrapperClasses: "col-span-12",
 				bottomStartPrefix: (
-					<span className={"text-xs"}>
+					<span className="text-xs">
 						{dict?.platform?.displayNameHelp ??
 							"This name will appear as the organizer when you create calendar events or send invitations."}
 					</span>
@@ -181,15 +188,14 @@ function AddEmailIdentityForm({
 					dict?.platform?.dailyImapQuota ??
 					"Daily IMAP quota (Used for backfilling older mails)",
 				labelSuffix:
-					dict?.platform?.dailyImapQuotaSuffix ?? "(Default: 500 MB per day)",
+					dict?.platform?.dailyImapQuotaSuffix ??
+					"(Default: 500 MB per day)",
 				kind: "select" as const,
 				defaultValue: "500",
-				options: imapQuotaList.map((quota) => {
-					return {
-						label: quota.label,
-						value: String(quota.value),
-					};
-				}),
+				options: imapQuotaList.map((quota) => ({
+					label: quota.label,
+					value: String(quota.value),
+				})),
 				wrapperClasses: "col-span-12",
 				props: {
 					className: "w-full",
@@ -198,12 +204,18 @@ function AddEmailIdentityForm({
 			{
 				name: "smtpAccountId",
 				wrapperClasses: "hidden",
-				props: { hidden: true, defaultValue: smtpAccount?.linkRow.accountId },
+				props: {
+					hidden: true,
+					defaultValue: smtpAccount?.linkRow.accountId,
+				},
 			},
 			{
 				name: "kind",
 				wrapperClasses: "hidden",
-				props: { hidden: true, defaultValue: "email" },
+				props: {
+					hidden: true,
+					defaultValue: "email",
+				},
 			},
 		];
 	}
@@ -213,28 +225,29 @@ function AddEmailIdentityForm({
 			{
 				name: "domain",
 				label:
-					dict?.platform?.chooseAVerifiedDomain ?? "Choose a verified domain",
+					dict?.platform?.chooseAVerifiedDomain ??
+					"Choose a verified domain",
 				kind: "select" as const,
 				options: userDomainIdentities
-					?.filter((userDomainIdentity) => {
-						return (
-							userDomainIdentity?.providers?.id === provider?.linkRow.providerId
-						);
-					})
-					.map((d) => ({
-						label: d.identities.value,
-						value: String(d.identities.id),
+					.filter(
+						(identity) =>
+							identity.providers?.id === provider?.linkRow.providerId,
+					)
+					.map((identity) => ({
+						label: identity.identities.value,
+						value: String(identity.identities.id),
 					})),
 				wrapperClasses: "col-span-12",
 				props: {
 					required: true,
 					className: "w-full",
 					onChange: (val: unknown) => {
-						const v =
+						const value =
 							typeof val === "string"
 								? val
 								: ((val as any)?.target?.value ?? "");
-						setDomainId(v);
+
+						setDomainId(value);
 					},
 				},
 			},
@@ -244,7 +257,7 @@ function AddEmailIdentityForm({
 				required: true,
 				wrapperClasses: "col-span-12",
 				bottomStartPrefix: (
-					<span className={"text-xs"}>
+					<span className="text-xs">
 						{dict?.platform?.displayNameHelp ??
 							"This name will appear as the organizer when you create calendar events or send invitations."}
 					</span>
@@ -261,9 +274,11 @@ function AddEmailIdentityForm({
 				props: {
 					defaultValue: localPart,
 					autoComplete: "off",
-					placeholder: dict?.platform?.localPartPlaceholder ?? "e.g. support",
+					placeholder:
+						dict?.platform?.localPartPlaceholder ?? "e.g. support",
 					required: true,
-					onInput: (e: any) => setLocalPart(e.target.value),
+					onInput: (e: React.FormEvent<HTMLInputElement>) =>
+						setLocalPart(e.currentTarget.value),
 				},
 				bottomStartPrefix: (
 					<p className="text-xs text-muted-foreground">
@@ -274,26 +289,37 @@ function AddEmailIdentityForm({
 					</p>
 				),
 			},
-
 			{
 				name: "value",
 				wrapperClasses: "hidden",
-				props: { hidden: true, value: composedEmail, readOnly: true },
+				props: {
+					hidden: true,
+					value: composedEmail,
+					readOnly: true,
+				},
 			},
 			{
 				name: "providerId",
 				wrapperClasses: "hidden",
-				props: { hidden: true, defaultValue: provider?.linkRow.providerId },
+				props: {
+					hidden: true,
+					defaultValue: provider?.linkRow.providerId,
+				},
 			},
 			{
 				name: "kind",
 				wrapperClasses: "hidden",
-				props: { hidden: true, defaultValue: "email" },
+				props: {
+					hidden: true,
+					defaultValue: "email",
+				},
 			},
 		] as const;
 	}
 
-	function getGoogleFields() {
+	function getOAuthFields() {
+		const account = googleAccount ?? microsoftAccount;
+
 		return [
 			{
 				name: "value",
@@ -304,7 +330,7 @@ function AddEmailIdentityForm({
 					autoComplete: "off",
 					required: true,
 					readOnly: true,
-					defaultValue: googleAccount?.email || "",
+					defaultValue: account?.email || "",
 				},
 			},
 			{
@@ -315,15 +341,15 @@ function AddEmailIdentityForm({
 				props: {
 					autoComplete: "off",
 					required: true,
-					defaultValue: googleAccount?.name || "",
+					defaultValue: account?.name || "",
 				},
 			},
 			{
-				name: "googleAccountId",
+				name: googleAccount ? "googleAccountId" : "microsoftAccountId",
 				wrapperClasses: "hidden",
 				props: {
 					hidden: true,
-					defaultValue: googleAccount?.id,
+					defaultValue: account?.id,
 				},
 			},
 			{
@@ -332,15 +358,14 @@ function AddEmailIdentityForm({
 					dict?.platform?.dailyImapQuota ??
 					"Daily IMAP quota (Used for backfilling older mails)",
 				labelSuffix:
-					dict?.platform?.dailyImapQuotaSuffix ?? "(Default: 500 MB per day)",
+					dict?.platform?.dailyImapQuotaSuffix ??
+					"(Default: 500 MB per day)",
 				kind: "select" as const,
 				defaultValue: "500",
-				options: imapQuotaList.map((quota) => {
-					return {
-						label: quota.label,
-						value: String(quota.value),
-					};
-				}),
+				options: imapQuotaList.map((quota) => ({
+					label: quota.label,
+					value: String(quota.value),
+				})),
 				wrapperClasses: "col-span-12",
 				props: {
 					className: "w-full",
@@ -360,28 +385,36 @@ function AddEmailIdentityForm({
 	const extraFields = React.useMemo(() => {
 		if (smtpAccount?.linkRow.accountId === activeId) {
 			return getSmtpFields();
-		} else if (googleAccount?.id === activeId) {
-			return getGoogleFields();
-		} else if (provider?.linkRow.providerId === activeId) {
-			return getNonSmtpFields();
-		} else {
-			return [];
 		}
+
+		if (
+			googleAccount?.id === activeId ||
+			microsoftAccount?.id === activeId
+		) {
+			return getOAuthFields();
+		}
+
+		if (provider?.linkRow.providerId === activeId) {
+			return getNonSmtpFields();
+		}
+
+		return [];
 	}, [
 		provider,
 		smtpAccount,
+		googleAccount,
+		microsoftAccount,
 		activeId,
 		localPart,
-		subdomain,
 		domainId,
-		googleAccount,
 	]);
 
 	const fields = [
 		{
 			name: "provider",
 			label:
-				dict?.platform?.chooseAVerifiedProvider ?? "Choose a verified provider",
+				dict?.platform?.chooseAVerifiedProvider ??
+				"Choose a verified provider",
 			kind: "select" as const,
 			options: availableProviderOptions,
 			wrapperClasses: "col-span-12",
@@ -390,36 +423,69 @@ function AddEmailIdentityForm({
 				className: "w-full",
 				required: true,
 				onChange: (val: unknown) => {
-					setRawProvider(String(val));
-					const v =
-						typeof val === "string" ? val : ((val as any)?.target?.value ?? "");
-					const id = v?.replace(/^[a-z]+-/, "") || null;
-					const foundGoogleAccount =
-						googleAccounts.find((g) => String(g.id) === id) ?? null;
+					const value =
+						typeof val === "string"
+							? val
+							: ((val as any)?.target?.value ?? "");
 
-					if (foundGoogleAccount) {
-						setGoogleAccount(foundGoogleAccount);
-						setProvider(null);
-						setSmtpAccount(null);
-						setActiveId(String(foundGoogleAccount.id));
+					setRawProvider(value);
+
+					const id = value.replace(/^[a-z]+-/, "");
+
+					setProvider(null);
+					setSmtpAccount(null);
+					setGoogleAccount(null);
+					setMicrosoftAccount(null);
+					setActiveId(null);
+
+					if (value.startsWith("google-")) {
+						const account = googleAccounts.find(
+							(item) => String(item.id) === id,
+						);
+
+						if (account) {
+							setGoogleAccount(account);
+							setActiveId(String(account.id));
+						}
+
 						return;
 					}
-					const foundProvider =
-						providerAccounts.find((s) => String(s.linkRow.id) === id) ?? null;
-					const foundSmtpAccount =
-						smtpAccounts.find((s) => String(s.linkRow.id) === id) ?? null;
-					if (foundProvider) {
-						setProvider(foundProvider);
-						setSmtpAccount(null);
-						setGoogleAccount(null);
-						setActiveId(String(foundProvider.linkRow.providerId));
+
+					if (value.startsWith("microsoft-")) {
+						const account = microsoftAccounts.find(
+							(item) => String(item.id) === id,
+						);
+
+						if (account) {
+							setMicrosoftAccount(account);
+							setActiveId(String(account.id));
+						}
+
 						return;
-					} else if (foundSmtpAccount) {
-						setSmtpAccount(foundSmtpAccount);
-						setProvider(null);
-						setGoogleAccount(null);
-						setActiveId(String(foundSmtpAccount.linkRow.accountId));
+					}
+
+					if (value.startsWith("provider-")) {
+						const account = providerAccounts.find(
+							(item) => String(item.linkRow.id) === id,
+						);
+
+						if (account) {
+							setProvider(account);
+							setActiveId(String(account.linkRow.providerId));
+						}
+
 						return;
+					}
+
+					if (value.startsWith("smtp-")) {
+						const account = smtpAccounts.find(
+							(item) => String(item.linkRow.id) === id,
+						);
+
+						if (account) {
+							setSmtpAccount(account);
+							setActiveId(String(account.linkRow.accountId));
+						}
 					}
 				},
 			},
@@ -428,28 +494,25 @@ function AddEmailIdentityForm({
 		{
 			el: (
 				<>
-					{composedEmail && provider?.linkRow.providerId === activeId && (
-						<div className="mt-3 p-3 border rounded-md bg-muted text-sm text-muted-foreground text-center">
-							{dict?.platform?.previewColon ?? "Preview:"}
-							<span className="mx-2 font-medium text-foreground">
-								{composedEmail}{" "}
-							</span>
-						</div>
-					)}
+					{composedEmail &&
+						provider?.linkRow.providerId === activeId && (
+							<div className="mt-3 rounded-md border bg-muted p-3 text-center text-sm text-muted-foreground">
+								{dict?.platform?.previewColon ?? "Preview:"}
+								<span className="mx-2 font-medium text-foreground">
+									{composedEmail}
+								</span>
+							</div>
+						)}
 				</>
 			),
 		},
 	];
 
-	const finalizeEmail = async () => {
-		if (onCompleted) onCompleted();
-	};
-
 	return (
 		<div>
 			<ReusableForm
 				action={addNewEmailIdentity}
-				onSuccess={finalizeEmail}
+				onSuccess={() => onCompleted?.()}
 				fields={fields}
 				formKey={String(activeId)}
 			/>

@@ -1,12 +1,26 @@
-import { db, identities, mailboxes, mailboxThreads, messages } from "@db";
-import { and, eq, isNotNull, sql } from "drizzle-orm";
-import { initSmtpClient } from "./imap-client";
+import {db, identities, mailboxes, messages} from "@db";
+import {and, eq, isNotNull, or, sql} from "drizzle-orm";
+import {
+	initSmtpClient,
+	canAttemptImapConnection,
+	resetImapConnectionFailures,
+} from "./imap-client";
 import type { FlagsEvent, ImapFlow } from "imapflow";
 import { deltaFetch } from "../../lib/imap/imap-delta-fetch";
 import { canSyncIdentity } from "../access";
+import { kurrierServer } from "@distribution/kurrier-server";
+import { MailboxStore } from "@providers";
+import {getRedis} from "../../lib/get-redis";
 
 const MAX_RECONNECT_ATTEMPTS = 5;
 const RECONNECT_BACKOFFS_MS = [5000, 10000, 20000, 40000, 80000];
+
+const MAX_HOURLY_RECONNECTS = 10;
+const RECONNECT_WINDOW_MS = 60 * 60_000;
+const RECONNECT_COOLDOWN_MS = 60 * 60_000;
+
+const reconnectHistory = new Map<string, number[]>();
+const reconnectCooldowns = new Map<string, number>();
 
 const reconnectAttempts = new Map<string, number>();
 const reconnectTimers = new Map<string, NodeJS.Timeout>();
@@ -26,190 +40,81 @@ async function handleFlagsUpdate(
 		`[realtime:${identityId}] handleFlagsUpdate uid=${uid} mailboxPath=${mailboxPath} flagged=${isFlagged} seen=${isSeen}`,
 	);
 
-	await db.transaction(async (tx) => {
-		const [mailbox] = await tx
-			.select()
-			.from(mailboxes)
-			.where(
-				and(
-					eq(mailboxes.identityId, identityId),
-					sql`${mailboxes.metaData} -> 'imap' ->> 'path' = ${mailboxPath}`,
-				),
-			);
+	const [mailbox] = await db
+		.select({ id: mailboxes.id })
+		.from(mailboxes)
+		.where(
+			and(
+				eq(mailboxes.identityId, identityId),
+				sql`${mailboxes.metaData} -> 'imap' ->> 'path' = ${mailboxPath}`,
+			),
+		)
+		.limit(1);
 
-		if (!mailbox) {
-			console.warn(
-				`[realtime:${identityId}] could not find mailbox for path=${mailboxPath}`,
-			);
-			return;
-		}
+	if (!mailbox) {
+		console.warn(
+			`[realtime:${identityId}] could not find mailbox for path=${mailboxPath}`,
+		);
+		return;
+	}
 
-		const [message] = await tx
-			.select()
-			.from(messages)
-			.where(
-				and(
-					eq(messages.mailboxId, mailbox.id),
-					sql`(${messages.metaData} -> 'imap' ->> 'uid')::bigint = ${uid}`,
-				),
-			);
+	const [message] = await db
+		.select({
+			id: messages.id,
+			threadId: messages.threadId,
+			flagged: messages.flagged,
+			seen: messages.seen,
+			answered: messages.answered,
+		})
+		.from(messages)
+		.where(
+			and(
+				eq(messages.mailboxId, mailbox.id),
+				sql`(${messages.metaData} -> 'imap' ->> 'uid')::bigint = ${uid}`,
+			),
+		)
+		.limit(1);
 
-		if (!message) {
-			console.warn(
-				`[realtime:${identityId}] could not find message for uid=${uid} in mailboxId=${mailbox.id}`,
-			);
-			return;
-		}
+	if (!message) {
+		console.warn(
+			`[realtime:${identityId}] could not find message for uid=${uid} in mailboxId=${mailbox.id}`,
+		);
+		return;
+	}
 
-		if (
-			message.flagged === isFlagged &&
-			message.seen === isSeen &&
-			message.answered === isAnswered
-		) {
-			return;
-		}
+	if (
+		message.flagged === isFlagged &&
+		message.seen === isSeen &&
+		message.answered === isAnswered
+	) {
+		return;
+	}
 
-		const now = new Date();
-
-		await tx
-			.update(messages)
-			.set({
-				flagged: isFlagged,
-				seen: isSeen,
-				answered: isAnswered,
-				updatedAt: now,
-			})
-			.where(eq(messages.id, message.id));
-
-		const [agg] = await tx
-			.select({
-				unreadCount: sql<number>`
-					count(*) filter (where ${messages.seen} = false)
-				`,
-				anyFlagged: sql<boolean>`
-					bool_or(${messages.flagged})
-				`,
-			})
-			.from(messages)
-			.where(
-				and(
-					eq(messages.threadId, message.threadId),
-					eq(messages.mailboxId, mailbox.id),
-				),
-			);
-
-		await tx
-			.update(mailboxThreads)
-			.set({
-				unreadCount: Number(agg?.unreadCount ?? 0),
-				starred: Boolean(agg?.anyFlagged ?? false),
-				updatedAt: now,
-			})
-			.where(
-				and(
-					eq(mailboxThreads.threadId, message.threadId),
-					eq(mailboxThreads.mailboxId, mailbox.id),
-				),
-			);
+	await MailboxStore.setFlags({
+		messageId: message.id,
+		mailboxId: mailbox.id,
+		flags: {
+			flagged: isFlagged,
+			seen: isSeen,
+			answered: isAnswered,
+		},
 	});
-}
 
-async function handleExpunge(
-	identityId: string,
-	mailboxPath: string,
-	uid: number,
-) {
-	console.log(
-		`[realtime:${identityId}] handleExpunge mailboxPath=${mailboxPath} uid=${uid}`,
+	const { searchIngestQueue } = await getRedis();
+
+	await searchIngestQueue.add(
+		"refresh-thread",
+		{ threadId: message.threadId },
+		{
+			removeOnComplete: true,
+			removeOnFail: false,
+			attempts: 3,
+			backoff: { type: "exponential", delay: 1500 },
+		},
 	);
-
-	await db.transaction(async (tx) => {
-		const [mailbox] = await tx
-			.select()
-			.from(mailboxes)
-			.where(
-				and(
-					eq(mailboxes.identityId, identityId),
-					sql`${mailboxes.metaData} -> 'imap' ->> 'path' = ${mailboxPath}`,
-				),
-			);
-
-		if (!mailbox) {
-			console.warn(
-				`[realtime:${identityId}] expunge: no mailbox for path=${mailboxPath}`,
-			);
-			return;
-		}
-
-		const [message] = await tx
-			.select()
-			.from(messages)
-			.where(
-				and(
-					eq(messages.mailboxId, mailbox.id),
-					sql`(${messages.metaData} -> 'imap' ->> 'uid')::bigint = ${uid}`,
-				),
-			);
-
-		if (!message) {
-			console.warn(
-				`[realtime:${identityId}] expunge: no message for uid=${uid} in mailbox=${mailbox.id}`,
-			);
-			return;
-		}
-
-		await tx
-			.delete(messages)
-			.where(eq(messages.id, message.id));
-
-		const [agg] = await tx
-			.select({
-				unreadCount: sql<number>`
-					count(*) filter (where ${messages.seen} = false)
-				`,
-				anyFlagged: sql<boolean>`
-					bool_or(${messages.flagged})
-				`,
-				messageCount: sql<number>`
-					count(*)
-				`,
-			})
-			.from(messages)
-			.where(
-				and(
-					eq(messages.threadId, message.threadId),
-					eq(messages.mailboxId, mailbox.id),
-				),
-			);
-
-		const remainingCount = Number(agg?.messageCount ?? 0);
-
-		if (remainingCount === 0) {
-			await tx
-				.delete(mailboxThreads)
-				.where(
-					and(
-						eq(mailboxThreads.threadId, message.threadId),
-						eq(mailboxThreads.mailboxId, mailbox.id),
-					),
-				);
-		} else {
-			await tx
-				.update(mailboxThreads)
-				.set({
-					unreadCount: Number(agg?.unreadCount ?? 0),
-					starred: Boolean(agg?.anyFlagged ?? false),
-					updatedAt: new Date(),
-				})
-				.where(
-					and(
-						eq(mailboxThreads.threadId, message.threadId),
-						eq(mailboxThreads.mailboxId, mailbox.id),
-					),
-				);
-		}
-	});
 }
+
+
 
 function attachRealtimeEventHandlers(
 	identityId: string,
@@ -217,6 +122,8 @@ function attachRealtimeEventHandlers(
 	imapInstances: Map<string, ImapFlow>,
 ) {
 	client.on("exists", () => {
+		console.log(`[realtime:${identityId}] EXISTS received`);
+
 		if (realtimeShuttingDown || stoppedIdentities.has(identityId)) {
 			return;
 		}
@@ -274,38 +181,25 @@ function attachRealtimeEventHandlers(
 		})();
 	});
 
+
 	client.on("expunge", (ev) => {
 		if (realtimeShuttingDown || stoppedIdentities.has(identityId)) {
 			return;
 		}
 
-		void (async () => {
-			try {
-				const uid = (ev as any).uid as number | undefined;
+		console.log(
+			`[realtime:${identityId}] expunge detected path=${ev.path} seq=${ev.seq}`,
+		);
 
-				if (!uid) {
-					console.warn(
-						`[realtime:${identityId}] expunge: missing uid for seq=${ev.seq}`,
-					);
-					return;
-				}
-
-				await handleExpunge(
-					identityId,
-					ev.path,
-					uid,
-				);
-			} catch (err) {
-				if (!realtimeShuttingDown) {
-					console.error(
-						`[realtime:${identityId}] expunge handler failed`,
-						err,
-					);
-				}
-			}
-		})();
+		void deltaFetch(identityId, imapInstances).catch((err) => {
+			console.error(
+				`[realtime:${identityId}] delta fetch after EXPUNGE failed`,
+				err,
+			);
+		});
 	});
 }
+
 
 function clearReconnectTimer(identityId: string) {
 	const timer = reconnectTimers.get(identityId);
@@ -314,6 +208,56 @@ function clearReconnectTimer(identityId: string) {
 		clearTimeout(timer);
 		reconnectTimers.delete(identityId);
 	}
+}
+
+
+function isReconnectCoolingDown(identityId: string): boolean {
+	const until = reconnectCooldowns.get(identityId);
+
+	if (!until) {
+		return false;
+	}
+
+	if (Date.now() >= until) {
+		reconnectCooldowns.delete(identityId);
+		reconnectHistory.delete(identityId);
+		reconnectAttempts.delete(identityId);
+		return false;
+	}
+
+	return true;
+}
+
+function recordRealtimeReconnect(identityId: string): boolean {
+	if (isReconnectCoolingDown(identityId)) {
+		return false;
+	}
+
+	const now = Date.now();
+
+	const history = (reconnectHistory.get(identityId) ?? []).filter(
+		(timestamp) => now - timestamp < RECONNECT_WINDOW_MS,
+	);
+
+	history.push(now);
+	reconnectHistory.set(identityId, history);
+
+	if (history.length > MAX_HOURLY_RECONNECTS) {
+		reconnectCooldowns.set(
+			identityId,
+			now + RECONNECT_COOLDOWN_MS,
+		);
+
+		clearReconnectTimer(identityId);
+
+		console.warn(
+			`[realtime:${identityId}] exceeded ${MAX_HOURLY_RECONNECTS} reconnects/hour; suspending realtime for 1 hour`,
+		);
+
+		return false;
+	}
+
+	return true;
 }
 
 function scheduleReconnect(
@@ -330,6 +274,18 @@ function scheduleReconnect(
 	}
 
 	if (reconnectTimers.has(identityId)) {
+		return;
+	}
+
+	if (isReconnectCoolingDown(identityId)) {
+		return;
+	}
+
+	if (!canAttemptImapConnection(identityId)) {
+		return;
+	}
+
+	if (!recordRealtimeReconnect(identityId)) {
 		return;
 	}
 
@@ -362,7 +318,8 @@ function scheduleReconnect(
 
 		if (
 			realtimeShuttingDown ||
-			stoppedIdentities.has(identityId)
+			stoppedIdentities.has(identityId) ||
+			isReconnectCoolingDown(identityId)
 		) {
 			return;
 		}
@@ -441,7 +398,10 @@ async function startRealtimeSyncForIdentity(
 	client: ImapFlow,
 	idleImapInstances: Map<string, ImapFlow>,
 	imapInstances: Map<string, ImapFlow>,
+	isReconnect: boolean,
 ) {
+	// let discoveryTimer: NodeJS.Timeout | undefined;
+
 	let lock: Awaited<
 		ReturnType<ImapFlow["getMailboxLock"]>
 	> | null = null;
@@ -461,6 +421,29 @@ async function startRealtimeSyncForIdentity(
 			client,
 			imapInstances,
 		);
+
+		// const [identity] = await db
+		// 	.select({ workspaceId: identities.workspaceId })
+		// 	.from(identities)
+		// 	.where(eq(identities.id, identityId))
+		// 	.limit(1);
+
+
+		// if (isReconnect && identity) {
+		// 	const { smtpQueue } = await getRedis();
+		//
+		// 	await smtpQueue.add(
+		// 		"imap:backfill-discover",
+		// 		{
+		// 			identityId,
+		// 			workspaceId: identity.workspaceId,
+		// 			renames: [],
+		// 		},
+		// 		{
+		// 			removeOnComplete: true,
+		// 		},
+		// 	);
+		// }
 
 		/*
 		 * A connection which successfully entered realtime is healthy.
@@ -482,6 +465,9 @@ async function startRealtimeSyncForIdentity(
 			);
 		}
 	} finally {
+		// if (discoveryTimer) {
+		// 	clearTimeout(discoveryTimer);
+		// }
 		if (lock) {
 			try {
 				lock.release();
@@ -528,12 +514,17 @@ export async function startRealtimeForIdentity(
 	 * A reconnect does not alter stop/start state.
 	 */
 	if (!isReconnect) {
+		resetImapConnectionFailures(identityId);
 		stoppedIdentities.delete(identityId);
 		reconnectAttempts.set(identityId, 0);
 		clearReconnectTimer(identityId);
 	}
 
 	if (stoppedIdentities.has(identityId)) {
+		return;
+	}
+
+	if (isReconnectCoolingDown(identityId)) {
 		return;
 	}
 
@@ -623,6 +614,7 @@ export async function startRealtimeForIdentity(
 		client,
 		idleImapInstances,
 		imapInstances,
+		isReconnect
 	).catch((err) => {
 		if (!realtimeShuttingDown) {
 			console.error(
@@ -645,6 +637,9 @@ export async function stopRealtimeForIdentity(
 
 	clearReconnectTimer(identityId);
 	reconnectAttempts.delete(identityId);
+
+	reconnectHistory.delete(identityId);
+	reconnectCooldowns.delete(identityId);
 
 	const idleClient = idleImapInstances.get(identityId);
 	const cmdClient = imapInstances.get(identityId);
@@ -693,10 +688,14 @@ export function beginRealtimeShutdown() {
 	reconnectTimers.clear();
 	reconnectAttempts.clear();
 
+	reconnectHistory.clear();
+	reconnectCooldowns.clear();
+
 	console.log(
 		"[realtime] shutdown started; reconnects disabled",
 	);
 }
+
 
 export const imapIdleSync = async (
 	idleImapInstances: Map<string, ImapFlow>,
@@ -709,17 +708,31 @@ export const imapIdleSync = async (
 	const identityRows = await db
 		.select()
 		.from(identities)
-		.where(isNotNull(identities.smtpAccountId));
+		.where(
+			or(
+				isNotNull(identities.smtpAccountId),
+				sql`${identities.metaData}->>'provider' = 'microsoft'`,
+			),
+		);
 
-	for (const identity of identityRows) {
+	const hostedIdentityIds =
+		await kurrierServer.hooks.run("imap.listIdentities", {}) ?? [];
+
+	const identityIds = new Set([
+		...identityRows.map((identity) => identity.id),
+		...hostedIdentityIds,
+	]);
+
+	for (const identityId of identityIds) {
 		if (realtimeShuttingDown) {
 			break;
 		}
 
 		await startRealtimeForIdentity(
-			identity.id,
+			identityId,
 			idleImapInstances,
 			imapInstances,
+			true
 		);
 	}
 };
@@ -735,19 +748,31 @@ export const recoverOfflineRealtime = async (
 	const identityRows = await db
 		.select()
 		.from(identities)
-		.where(isNotNull(identities.smtpAccountId));
+		.where(
+			or(
+				isNotNull(identities.smtpAccountId),
+				sql`${identities.metaData}->>'provider' = 'microsoft'`,
+			),
+		);
+
+	const hostedIdentityIds =
+		await kurrierServer.hooks.run("imap.listIdentities", {}) ?? [];
+
+	const identityIds = new Set([
+		...identityRows.map((identity) => identity.id),
+		...hostedIdentityIds,
+	]);
 
 	console.info(
-		`[realtime-recovery] checking ${identityRows.length} identities`,
+		`[realtime-recovery] checking ${identityIds.size} identities`,
 	);
 
-	for (const identity of identityRows) {
-
+	for (const identityId of identityIds) {
 		if (realtimeShuttingDown) {
 			break;
 		}
 
-		const existing = idleImapInstances.get(identity.id);
+		const existing = idleImapInstances.get(identityId);
 
 		if (
 			existing?.authenticated &&
@@ -757,12 +782,16 @@ export const recoverOfflineRealtime = async (
 			continue;
 		}
 
+		if (!canAttemptImapConnection(identityId)) {
+			continue;
+		}
+
 		console.info(
-			`[realtime-recovery] attempting identity=${identity.id}`,
+			`[realtime-recovery] attempting identity=${identityId}`,
 		);
 
 		await startRealtimeForIdentity(
-			identity.id,
+			identityId,
 			idleImapInstances,
 			imapInstances,
 			true,

@@ -25,6 +25,7 @@
 		"imapflow": "^1.0.198",
 		"mailgun.js": "^12.1.0",
 		"nodemailer": "^7.0.6",
+		"openid-client": "^6.8.4",
 		"postmark": "^4.0.5"
 	},
 	"devDependencies": {

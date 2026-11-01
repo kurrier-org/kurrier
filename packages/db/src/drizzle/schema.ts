@@ -2284,6 +2284,35 @@ export const emailSignatures = pgTable(
 	],
 ).enableRLS();
 
+export const storageDeletions = pgTable(
+	"storage_deletions",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+
+		bucketId: text("bucket_id"),
+		path: text("path").notNull(),
+
+		attempts: integer("attempts").notNull().default(0),
+		lastError: text("last_error"),
+
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+
+		processedAt: timestamp("processed_at", { withTimezone: true }),
+	},
+	(t) => [
+		uniqueIndex("uniq_storage_deletions_bucket_path")
+			.on(t.bucketId, t.path)
+			.where(sql`${t.bucketId} IS NOT NULL`),
+
+		uniqueIndex("uniq_storage_deletions_null_bucket_path")
+			.on(t.path)
+			.where(sql`${t.bucketId} IS NULL`),
+		index("idx_storage_deletions_pending").on(t.processedAt),
+	],
+);
+
 export const driveShareLinks = pgTable(
 	"drive_share_links",
 	{
@@ -2324,5 +2353,97 @@ export const driveShareLinks = pgTable(
 		index("ix_drive_share_links_entry").on(t.entryId),
 		index("ix_drive_share_links_expires").on(t.expiresAt),
 		...workspaceCrudPolicies(t, "drive_share_links"),
+	],
+).enableRLS();
+
+export const microsoftAccountStatusEnum = pgEnum("microsoft_account_status", [
+	"connected",
+	"revoked",
+	"error",
+]);
+
+
+export const microsoftAccounts = pgTable(
+	"microsoft_accounts",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+
+		workspaceId: uuid("workspace_id")
+			.references(() => workspaces.id, { onDelete: "cascade" })
+			.notNull()
+			.default(authWorkspaceId),
+
+		ownerId: uuid("owner_id")
+			.references(() => users.id, { onDelete: "cascade" })
+			.notNull()
+			.default(authUid),
+
+		identityId: uuid("identity_id")
+			.references(() => identities.id, { onDelete: "set null" })
+			.default(sql`null`),
+
+		microsoftUserId: text("microsoft_user_id").notNull(),
+
+		tenantId: text("tenant_id").notNull(),
+
+		email: text("email").notNull(),
+
+		name: text("name").default(sql`null`),
+
+		accessTokenSecretId: uuid("access_token_secret_id")
+			.references(() => secretsMeta.id, { onDelete: "set null" })
+			.default(sql`null`),
+
+		refreshTokenSecretId: uuid("refresh_token_secret_id")
+			.references(() => secretsMeta.id, { onDelete: "set null" })
+			.default(sql`null`),
+
+		scopes: text("scopes")
+			.array()
+			.notNull()
+			.default(sql`'{}'::text[]`),
+
+		expiresAt: timestamp("expires_at", { withTimezone: true })
+			.default(sql`null`),
+
+		status: microsoftAccountStatusEnum("status")
+			.notNull()
+			.default("connected"),
+
+		lastSyncedAt: timestamp("last_synced_at", { withTimezone: true })
+			.default(sql`null`),
+
+		lastError: text("last_error").default(sql`null`),
+
+		metaData: jsonb("meta")
+			.$type<Record<string, any> | null>()
+			.default(sql`null`),
+
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(t) => [
+		uniqueIndex("ux_microsoft_accounts_workspace_tenant_user").on(
+			t.workspaceId,
+			t.tenantId,
+			t.microsoftUserId,
+		),
+
+		uniqueIndex("ux_microsoft_accounts_workspace_email").on(
+			t.workspaceId,
+			t.email,
+		),
+
+		index("ix_microsoft_accounts_workspace").on(t.workspaceId),
+		index("ix_microsoft_accounts_owner").on(t.ownerId),
+		index("ix_microsoft_accounts_identity").on(t.identityId),
+		index("ix_microsoft_accounts_status").on(t.workspaceId, t.status),
+
+		...workspaceCrudPolicies(t, "microsoft_accounts"),
 	],
 ).enableRLS();

@@ -1,22 +1,24 @@
+"use client";
+
 import React from "react";
-import { IconFolderSymlink } from "@tabler/icons-react";
-import { Modal, Button, Select } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
-import { useMailboxOptions } from "@/hooks/use-mailbox-options";
-import { useParams } from "next/navigation";
-import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import type { MailboxEntity } from "@db";
+import { Button, Modal, Select } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
+import { IconFolderSymlink } from "@tabler/icons-react";
+import { useParams } from "next/navigation";
+import { ReusableFormButton } from "@/components/common/reusable-form-button";
+import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useDynamicContext } from "@/hooks/use-dynamic-context";
+import { useMailboxOptions } from "@/hooks/use-mailbox-options";
 import {
-	FetchIdentityMailboxListResult,
+	type FetchIdentityMailboxListResult,
 	moveToFolder,
 } from "@/lib/actions/mailbox";
-import { toast } from "sonner";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function MoveToFolder({
-	identityMailboxes,
-	activeMailbox,
-}: {
+						  identityMailboxes,
+						  activeMailbox,
+					  }: {
 	identityMailboxes: FetchIdentityMailboxListResult;
 	activeMailbox: MailboxEntity;
 }) {
@@ -30,9 +32,11 @@ function MoveToFolder({
 		) ?? null;
 
 	const mailboxes = entry?.mailboxes ?? [];
+
 	const { options: mailboxOptions } = useMailboxOptions({
 		mailboxes,
-		identityLabel: entry?.identity?.value ?? (dict?.mailbox?.folders ?? "Folders"),
+		identityLabel:
+			entry?.identity?.value ?? (dict?.mailbox?.folders ?? "Folders"),
 	});
 
 	const { state } = useDynamicContext<{
@@ -42,54 +46,78 @@ function MoveToFolder({
 	}>();
 
 	const [destId, setDestId] = React.useState<string | null>(null);
-	const [submitting, setSubmitting] = React.useState(false);
 
-	const onConfirm = async () => {
-		const active = activeMailbox;
-		const ids = Array.from(state?.selectedThreadIds ?? []);
-		if (!active?.id || !ids.length || !destId || destId === "none") return;
-		if (destId === active.id) {
-			toast.info(dict?.mailbox?.alreadyInFolder ?? "Already in this folder");
-			return;
-		}
+	const selectedThreadIds = Array.from(state?.selectedThreadIds ?? []);
 
-		try {
-			setSubmitting(true);
-			await moveToFolder(ids, active.id, destId, !!active.metaData?.imap, true);
-			toast.success(dict?.mailbox?.movedToFolder ?? "Moved to folder");
-			close();
-			setDestId(null);
-		} catch (e: any) {
-			toast.error(e?.message ?? (dict?.mailbox?.moveFailed ?? "Move failed"));
-		} finally {
-			setSubmitting(false);
-		}
+	const canMove =
+		selectedThreadIds.length > 0 &&
+		!!destId &&
+		destId !== "none" &&
+		destId !== activeMailbox.id;
+
+	const onClose = () => {
+		close();
+		setDestId(null);
 	};
 
 	return (
 		<>
-			<Modal opened={opened} onClose={close} title={dict?.mailbox?.moveTo ?? "Move to"}>
+			<Modal
+				opened={opened}
+				onClose={onClose}
+				title={dict?.mailbox?.moveTo ?? "Move to"}
+			>
 				<div className="space-y-4">
 					<Select
 						data={mailboxOptions[0]?.items ?? []}
 						label={dict?.mailbox?.chooseFolder ?? "Choose folder"}
 						placeholder={dict?.mailbox?.selectEllipsis ?? "Select…"}
 						value={destId}
-						onChange={(v) => setDestId(v)}
+						onChange={setDestId}
 						searchable
-						nothingFoundMessage={dict?.mailbox?.noFolders ?? "No folders"}
+						nothingFoundMessage={
+							dict?.mailbox?.noFolders ?? "No folders"
+						}
 					/>
-					<div className="flex gap-2 justify-end">
-						<Button variant="default" onClick={close} disabled={submitting}>
+
+					<div className="flex justify-end gap-2">
+						<Button variant="default" onClick={onClose}>
 							{dict?.common?.cancel ?? "Cancel"}
 						</Button>
-						<Button
-							onClick={onConfirm}
-							loading={submitting}
-							disabled={!destId || destId === "none"}
+
+						<ReusableFormButton
+							action={moveToFolder}
+							label={dict?.mailbox?.move ?? "Move"}
+							buttonProps={{
+								disabled: !canMove,
+							}}
+							onSuccess={onClose}
+							notify={{
+								kind: "toast",
+								successMessage:
+									dict?.mailbox?.movedToFolder ?? "Moved to folder",
+								toastProps: { position: "bottom-left" },
+							}}
 						>
-							{dict?.mailbox?.move ?? "Move"}
-						</Button>
+							{selectedThreadIds.map((threadId) => (
+								<input
+									key={threadId}
+									type="hidden"
+									name="threadId"
+									value={threadId}
+								/>
+							))}
+							<input
+								type="hidden"
+								name="fromMailboxId"
+								value={activeMailbox.id}
+							/>
+							<input
+								type="hidden"
+								name="toMailboxId"
+								value={destId ?? ""}
+							/>
+						</ReusableFormButton>
 					</div>
 				</div>
 			</Modal>

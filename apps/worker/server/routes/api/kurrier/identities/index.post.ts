@@ -65,23 +65,32 @@ async function checkDefaultIdentity(ownerId: string, workspaceId: string) {
 // Same queue choreography as the dashboard flow (backfillMailboxes /
 // backfillAccount): discover mailboxes first, then backfill and start IDLE.
 async function startImapBackfill(identityId: string, workspaceId: string) {
-	const { smtpQueue, smtpEvents } = await getRedis();
+	// const { smtpQueue, smtpEvents } = await getRedis();
 
-	const discoverJob = await smtpQueue.add(
+	const {
+		smtpQueue,
+		imapDiscoveryQueue,
+		imapDiscoveryEvents,
+		imapBackfillQueue,
+	} = await getRedis();
+
+	const discoverJob = await imapDiscoveryQueue.add(
 		"imap:backfill-discover",
 		{ identityId, workspaceId },
 		{
 			jobId: `imap-backfill-discover-${identityId}`,
 			attempts: 3,
+			removeOnComplete: true,
+			removeOnFail: true,
 			backoff: {
 				type: "exponential",
 				delay: 1000,
 			},
 		},
 	);
-	await discoverJob.waitUntilFinished(smtpEvents, BACKFILL_DISCOVER_TIMEOUT_MS);
+	await discoverJob.waitUntilFinished(imapDiscoveryEvents, BACKFILL_DISCOVER_TIMEOUT_MS);
 
-	await smtpQueue.add(
+	await imapBackfillQueue.add(
 		"imap:backfill-account",
 		{ identityId },
 		{

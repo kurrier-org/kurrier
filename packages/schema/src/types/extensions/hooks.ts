@@ -1,3 +1,11 @@
+export type ImapCredentials = {
+    IMAP_HOST: string;
+    IMAP_PORT: number;
+    IMAP_SECURE: boolean;
+    IMAP_USERNAME: string;
+    IMAP_PASSWORD: string;
+};
+
 export type MailSendInput = {
     to: string[];
     opts: {
@@ -39,12 +47,24 @@ export type HookMap = {
         identityId: string;
         input: MailSendInput;
     };
+
+    "imap.resolveCredentials": {
+        identityId: string;
+    };
+
+    "imap.listIdentities": {};
 };
 
 export type HookName = keyof HookMap;
 
 type HookReturn<K extends HookName> =
-    K extends "mail.beforeSend" ? MailSendResult | void : void;
+    K extends "mail.beforeSend"
+        ? MailSendResult | void
+        : K extends "imap.resolveCredentials"
+            ? ImapCredentials | void
+            : K extends "imap.listIdentities"
+                ? string[] | void
+                : void;
 
 export type HookHandler<K extends HookName> = (
     context: HookMap[K],

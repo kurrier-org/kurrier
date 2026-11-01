@@ -6,6 +6,24 @@
     "dismiss": "Zamknij informacje o nowościach"
   },
   "releases": {
+    "v4_4_0": {
+      "title": "Lepsza integracja i większa niezawodność",
+      "description": "Połącz konta Microsoft 365, korzystaj z bardziej niezawodnej synchronizacji poczty i wygodniej zarządzaj plikami w Drive.",
+      "features": {
+        "microsoft365": {
+          "title": "Obsługa Microsoft 365",
+          "description": "Bezpiecznie połącz konta pocztowe Microsoft przez OAuth i zarządzaj nimi razem z pozostałymi dostawcami."
+        },
+        "imapSync": {
+          "title": "Niezawodniejsza synchronizacja poczty",
+          "description": "Ulepszono aktualizacje w czasie rzeczywistym, wykrywanie folderów i przywracanie przerwanych połączeń IMAP."
+        },
+        "drive": {
+          "title": "Więcej możliwości Drive",
+          "description": "Przesyłaj pliki metodą przeciągnij i upuść, przeglądaj obrazy i pliki PDF oraz udostępniaj pliki za pomocą wygasających linków."
+        }
+      }
+    },
     "v4_2_0": {
       "title": "Podpisy e-mail",
       "description": "Twórz profesjonalne podpisy dla każdej tożsamości i używaj ich bezpośrednio w edytorze wiadomości Kurrier.",

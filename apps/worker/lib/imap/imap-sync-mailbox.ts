@@ -1,9 +1,197 @@
 import { FetchMessageObject, ImapFlow } from "imapflow";
-import { db, mailboxSync } from "@db";
-import { and, eq } from "drizzle-orm";
+import { db, mailboxSync, messages } from "@db";
+import { and, eq, sql } from "drizzle-orm";
+import { MailboxStore } from "@providers";
+import { getRedis } from "../../lib/get-redis";
 
 export const sleep = (ms: number) =>
-	new Promise((r) => setTimeout(r, ms));
+	new Promise((resolve) => setTimeout(resolve, ms));
+
+const FLAG_SYNC_LIMIT = 500;
+
+async function refreshThreads(threadIds: Set<string>) {
+	if (!threadIds.size) return;
+
+	const { searchIngestQueue } = await getRedis();
+
+	await Promise.all(
+		[...threadIds].map((threadId) =>
+			searchIngestQueue.add(
+				"refresh-thread",
+				{ threadId },
+				{
+					removeOnComplete: true,
+					removeOnFail: false,
+					attempts: 3,
+					backoff: {
+						type: "exponential",
+						delay: 1500,
+					},
+				},
+			),
+		),
+	);
+}
+
+async function syncMailboxFlags(
+	client: ImapFlow,
+	mailboxId: string,
+	limit?: number,
+) {
+	const mailbox = client.mailbox;
+
+	if (!mailbox || !mailbox.exists) return;
+
+	const total = mailbox.exists;
+	const start = limit ? Math.max(1, total - limit + 1) : 1;
+
+	const localMessages = await db
+		.select({
+			id: messages.id,
+			threadId: messages.threadId,
+			uid: sql<string>`${messages.metaData} -> 'imap' ->> 'uid'`,
+			seen: messages.seen,
+			flagged: messages.flagged,
+			answered: messages.answered,
+		})
+		.from(messages)
+		.where(eq(messages.mailboxId, mailboxId));
+
+	const localByUid = new Map(
+		localMessages
+			.filter((message) => {
+				const uid = Number(message.uid);
+				return Number.isSafeInteger(uid) && uid > 0;
+			})
+			.map((message) => [Number(message.uid), message]),
+	);
+
+	const affectedThreads = new Set<string>();
+
+	for await (const msg of client.fetch(`${start}:*`, {
+		uid: true,
+		flags: true,
+	})) {
+		const local = localByUid.get(msg.uid);
+
+		if (!local || !msg.flags) continue;
+
+		const seen = msg.flags.has("\\Seen");
+		const flagged = msg.flags.has("\\Flagged");
+		const answered = msg.flags.has("\\Answered");
+
+		if (
+			local.seen === seen &&
+			local.flagged === flagged &&
+			local.answered === answered
+		) {
+			continue;
+		}
+
+		await MailboxStore.setFlags({
+			messageId: local.id,
+			mailboxId,
+			flags: {
+				seen,
+				flagged,
+				answered,
+			},
+		});
+
+		affectedThreads.add(local.threadId);
+	}
+
+	await refreshThreads(affectedThreads);
+}
+
+async function reconcileMailboxUids(
+	client: ImapFlow,
+	mailboxId: string,
+	onMissingMessage: (msg: FetchMessageObject) => Promise<void>,
+) {
+	const uids = await client.search(
+		{ all: true },
+		{ uid: true },
+	);
+
+	if (uids === false) {
+		throw new Error(
+			"IMAP UID search failed; skipping reconciliation",
+		);
+	}
+
+	const serverUids = new Set<number>(uids);
+
+	const localMessages = await db
+		.select({
+			id: messages.id,
+			uid: sql<string>`${messages.metaData} -> 'imap' ->> 'uid'`,
+		})
+		.from(messages)
+		.where(eq(messages.mailboxId, mailboxId));
+
+	const localUids = new Set(
+		localMessages
+			.map((message) => Number(message.uid))
+			.filter(
+				(uid) =>
+					Number.isSafeInteger(uid) &&
+					uid > 0,
+			),
+	);
+
+	const missingUids = [...serverUids]
+		.filter((uid) => !localUids.has(uid))
+		.sort((a, b) => b - a)
+		.slice(0, 50);
+
+	if (missingUids.length) {
+		console.log("[imap:reconcile] Recovering missing UIDs", {
+			mailboxId,
+			uids: missingUids,
+		});
+
+		for await (const msg of client.fetch(
+			{ uid: missingUids.join(",") },
+			{
+				uid: true,
+				envelope: true,
+				flags: true,
+				internalDate: true,
+				size: true,
+				source: true,
+			},
+		)) {
+			await onMissingMessage(msg);
+		}
+	}
+
+	const affectedThreads = new Set<string>();
+
+	for (const message of localMessages) {
+		const uid = Number(message.uid);
+
+		if (!Number.isSafeInteger(uid) || uid <= 0) {
+			continue;
+		}
+
+		if (serverUids.has(uid)) continue;
+
+		const threadId = await MailboxStore.deleteMessage(
+			message.id,
+		);
+
+		console.log(
+			`[imap:reconcile] Deleted missing UID ${uid} from mailbox ${mailboxId}, thread ${threadId}`,
+		);
+
+		if (threadId) {
+			affectedThreads.add(threadId);
+		}
+	}
+
+	await refreshThreads(affectedThreads);
+}
 
 export async function syncMailbox(opts: {
 	client: ImapFlow;
@@ -13,6 +201,7 @@ export async function syncMailbox(opts: {
 	path: string;
 	window?: number;
 	politeWaitMs?: number;
+	reconcile?: boolean;
 	onMessage: (
 		msg: FetchMessageObject,
 		path: string,
@@ -30,13 +219,8 @@ export async function syncMailbox(opts: {
 		window = 500,
 		politeWaitMs = 20,
 		onMessage,
+		reconcile = false,
 	} = opts;
-
-	console.log("[syncMailbox] start", {
-		identityId,
-		mailboxId,
-		path,
-	});
 
 	const lock = await client.getMailboxLock(path);
 
@@ -59,39 +243,27 @@ export async function syncMailbox(opts: {
 
 		let lastSeen = Number(sync.lastSeenUid || 0);
 
-		console.log("[syncMailbox] local cursor", {
-			identityId,
-			mailboxId,
-			path,
-			lastSeenUid: lastSeen,
-			phase: sync.phase,
-			backfillCursorUid: sync.backfillCursorUid,
-			uidValidity: sync.uidValidity,
-		});
-
 		const box = await client.mailboxOpen(path, {
 			readOnly: true,
 		});
 
-		/*
-		 * UIDVALIDITY is part of the IMAP UID namespace.
-		 *
-		 * If it changes, every UID we previously stored for this mailbox
-		 * must be considered stale. Reset the live cursor and replay the
-		 * mailbox using the new UID namespace.
-		 *
-		 * parseAndStoreEmail() is now replay-safe, so existing messages
-		 * will have their IMAP metadata/flags refreshed rather than being
-		 * duplicated.
-		 */
 		const serverUidValidity = box.uidValidity;
 		const storedUidValidity = sync.uidValidity;
 
-		if (
-			serverUidValidity &&
-			storedUidValidity &&
-			serverUidValidity !== storedUidValidity
-		) {
+		const uidValidityChanged =
+			!!serverUidValidity &&
+			!!storedUidValidity &&
+			serverUidValidity !== storedUidValidity;
+
+		const canReconcile =
+			!uidValidityChanged &&
+			sync.phase === "IDLE" &&
+			Number(sync.backfillCursorUid ?? 0) === 0 &&
+			!!serverUidValidity &&
+			!!storedUidValidity &&
+			serverUidValidity === storedUidValidity;
+
+		if (uidValidityChanged) {
 			console.warn("[syncMailbox] UIDVALIDITY changed", {
 				identityId,
 				mailboxId,
@@ -107,6 +279,12 @@ export async function syncMailbox(opts: {
 				.set({
 					uidValidity: serverUidValidity,
 					lastSeenUid: 0,
+					backfillCursorUid: Math.max(
+						0,
+						(box.uidNext ?? 1) - 1,
+					),
+					highestModseq: null,
+					phase: "BACKFILL",
 					error: null,
 					updatedAt: new Date(),
 				})
@@ -118,26 +296,74 @@ export async function syncMailbox(opts: {
 			(box.uidNext ?? 1) - 1,
 		);
 
-		console.log("[syncMailbox] server state", {
-			identityId,
-			mailboxId,
-			path,
-			uidValidity: box.uidValidity,
-			uidNext: box.uidNext,
-			currentTop,
-			lastSeen,
-			diff: currentTop - lastSeen,
-		});
+		const serverModseq = box.highestModseq;
+		const storedModseq = uidValidityChanged
+			? null
+			: sync.highestModseq;
+
+		const modseqChanged =
+			serverModseq == null ||
+			storedModseq == null ||
+			BigInt(serverModseq) !== BigInt(storedModseq);
+
+		const syncFlagsAndReconcile = async () => {
+			if (!canReconcile) return;
+
+			if (reconcile || modseqChanged) {
+				console.info("[imap:flags] syncing", {
+
+					path,
+					reconcile,
+					serverModseq: serverModseq?.toString(),
+					storedModseq,
+				});
+
+				await syncMailboxFlags(
+					client,
+					mailboxId,
+					serverModseq == null
+						? reconcile
+							? undefined
+							: FLAG_SYNC_LIMIT
+						: undefined,
+				);
+			} else {
+
+				console.info("[imap:flags] skipped (MODSEQ unchanged)", {
+					path,
+					modseq: serverModseq?.toString(),
+				});
+
+			}
+
+			if (reconcile) {
+				await reconcileMailboxUids(
+					client,
+					mailboxId,
+					(msg) =>
+						onMessage(
+							msg,
+							path,
+							identityId,
+							workspaceId,
+							mailboxId,
+						),
+				);
+			}
+
+			if (serverModseq != null) {
+				await db
+					.update(mailboxSync)
+					.set({
+						highestModseq: String(serverModseq),
+						updatedAt: new Date(),
+					})
+					.where(eq(mailboxSync.id, sync.id));
+			}
+		};
 
 		if (currentTop <= lastSeen) {
-			console.log("[syncMailbox] nothing new", {
-				identityId,
-				mailboxId,
-				path,
-				currentTop,
-				lastSeen,
-			});
-
+			await syncFlagsAndReconcile();
 			return;
 		}
 
@@ -206,11 +432,6 @@ export async function syncMailbox(opts: {
 				lastSeen,
 			});
 
-			/*
-			 * Advance to the end of the requested UID range even when the
-			 * server returned no messages. UID ranges can contain holes
-			 * because messages may have been expunged.
-			 */
 			lastSeen = end;
 
 			await db
@@ -232,12 +453,13 @@ export async function syncMailbox(opts: {
 		await db
 			.update(mailboxSync)
 			.set({
-				phase: "IDLE",
 				syncedAt: new Date(),
 				error: null,
 				updatedAt: new Date(),
 			})
 			.where(eq(mailboxSync.id, sync.id));
+
+		await syncFlagsAndReconcile();
 
 		console.log("[syncMailbox] complete", {
 			identityId,

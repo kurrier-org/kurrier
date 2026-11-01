@@ -9,11 +9,8 @@ import type {
 	FetchMailboxThreadLabelsResult,
 } from "@/lib/actions/labels";
 import {
-	type FetchMailboxThreadsResult,
-	markAsRead,
-	markAsUnread,
-	moveToTrash,
-	toggleStar,
+	type FetchMailboxThreadsResult, setReadStatus,
+	toggleStar, trashThreads,
 } from "@/lib/actions/mailbox";
 
 type Props = {
@@ -27,22 +24,21 @@ type Props = {
 };
 
 import { Temporal } from "@js-temporal/polyfill";
-import { toast } from "sonner";
 import LabelRowTag from "@/components/dashboard/labels/label-row-tag";
 import ThreadLabelHoverButtons from "@/components/dashboard/labels/thread-label-hover-buttons";
 import SnoozeMail from "@/components/mailbox/default/snooze-mail";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
+import {ReusableFormButton} from "@/components/common/reusable-form-button";
 
 export default function WebmailListItem({
-	mailboxThreadItem,
-	activeMailbox,
-	identityPublicId,
-	mailboxSync,
-	globalLabels,
-	labelsByThreadId,
-	workspacePublicId,
-}: Props) {
+											mailboxThreadItem,
+											activeMailbox,
+											identityPublicId,
+											globalLabels,
+											labelsByThreadId,
+											workspacePublicId,
+										}: Props) {
 	const dict = useOptionalDictionary();
 
 	function formatDateLabel(input?: string | number | Date) {
@@ -229,25 +225,30 @@ export default function WebmailListItem({
 					/>
 				)}
 
-				<button
-					type="button"
-					aria-label={dict?.mailbox?.star ?? "Star"}
-					className="text-muted-foreground hover:text-foreground"
-					onClick={() =>
-						toggleStar(
-							mailboxThreadItem.threadId,
-							activeMailbox.id,
-							mailboxThreadItem.starred,
-							!!mailboxSync,
-						)
-					}
+
+				<ReusableFormButton
+					action={toggleStar}
+					actionIcon
+					actionIconProps={{
+						variant: "subtle",
+						color: "gray",
+						size: "compact-xs",
+						"aria-label": mailboxThreadItem.starred ? "Unstar" : "Star",
+						children: mailboxThreadItem.starred ? (
+							<IconStarFilled className="text-yellow-400" size={12} />
+						) : (
+							<IconStar size={12} />
+						),
+					}}
 				>
-					{mailboxThreadItem.starred ? (
-						<IconStarFilled className={"text-yellow-400"} size={12} />
-					) : (
-						<IconStar className="size-3" />
-					)}
-				</button>
+					<input type="hidden" name="threadId" value={mailboxThreadItem.threadId} />
+					<input type="hidden" name="mailboxId" value={activeMailbox.id} />
+					<input
+						type="hidden"
+						name="starred"
+						value={String(mailboxThreadItem.starred)}
+					/>
+				</ReusableFormButton>
 			</div>
 
 			<div className="pointer-events-none min-w-0 truncate pr-2">
@@ -308,37 +309,39 @@ export default function WebmailListItem({
 				/>
 
 				{canMarkAsUnread && (
-					<button
-						type="button"
-						onClick={async () => {
-							return await markAsUnread(
-								mailboxThreadItem.threadId,
-								activeMailbox.id,
-								!!mailboxSync,
-								true,
-							);
+					<ReusableFormButton
+						action={setReadStatus}
+						actionIcon
+						actionIconProps={{
+							variant: "subtle",
+							color: "gray",
+							size: "compact-sm",
+							title: dict?.mailbox?.markAsUnread ?? "Mark as unread",
+							children: <Mail size={16} />,
 						}}
-						className="rounded p-1 hover:bg-muted"
-						title={dict?.mailbox?.markAsUnread ?? "Mark as unread"}
 					>
-						<Mail className="size-4" />
-					</button>
+						<input type="hidden" name="threadId" value={mailboxThreadItem.threadId} />
+						<input type="hidden" name="mailboxId" value={activeMailbox.id} />
+						<input type="hidden" name="op" value="unread" />
+					</ReusableFormButton>
 				)}
+
 				{canMarkAsRead && (
-					<button
-						type="button"
-						onClick={() =>
-							markAsRead(
-								mailboxThreadItem.threadId,
-								activeMailbox.id,
-								!!mailboxSync,
-							)
-						}
-						className="rounded p-1 hover:bg-muted"
-						title={dict?.mailbox?.markAsRead ?? "Mark as read"}
+					<ReusableFormButton
+						action={setReadStatus}
+						actionIcon
+						actionIconProps={{
+							variant: "subtle",
+							color: "gray",
+							size: "compact-sm",
+							title: dict?.mailbox?.markAsRead ?? "Mark as read",
+							children: <MailOpen size={16} />,
+						}}
 					>
-						<MailOpen className="size-4" />
-					</button>
+						<input type="hidden" name="threadId" value={mailboxThreadItem.threadId} />
+						<input type="hidden" name="mailboxId" value={activeMailbox.id} />
+						<input type="hidden" name="op" value="read" />
+					</ReusableFormButton>
 				)}
 
 				<SnoozeMail
@@ -346,27 +349,26 @@ export default function WebmailListItem({
 					activeMailboxId={activeMailbox.id}
 				/>
 
-				<button
-					type="button"
-					onClick={async () => {
-						await moveToTrash(
-							mailboxThreadItem.threadId,
-							activeMailbox.id,
-							!!mailboxSync,
-							true,
-						);
-						toast.success(
-							dict?.mailbox?.movedToTrash ?? "Messages moved to Trash",
-							{
-								position: "bottom-left",
-							},
-						);
+				<ReusableFormButton
+					action={trashThreads}
+					actionIcon
+					actionIconProps={{
+						variant: "subtle",
+						color: "gray",
+						size: "compact-sm",
+						title: dict?.mailbox?.delete ?? "Delete",
+						"aria-label": dict?.mailbox?.delete ?? "Delete",
+						children: <Trash2 size={16} />,
 					}}
-					className="rounded p-1 hover:bg-muted"
-					title={dict?.mailbox?.delete ?? "Delete"}
+					notify={{
+						kind: "toast",
+						successMessage: dict?.mailbox?.movedToTrash ?? "Messages moved to Trash",
+						toastProps: { position: "bottom-left" },
+					}}
 				>
-					<Trash2 className="size-4" />
-				</button>
+					<input type="hidden" name="threadId" value={mailboxThreadItem.threadId} />
+					<input type="hidden" name="mailboxId" value={activeMailbox.id} />
+				</ReusableFormButton>
 			</div>
 		</li>
 	);

@@ -1,12 +1,14 @@
 "use client";
+
 import type { MailboxEntity, MailboxSyncEntity } from "@db";
 import { ActionIcon, Button, Tooltip } from "@mantine/core";
 import type { PublicConfig } from "@schema";
 import { clsx } from "clsx";
-import { MailOpen, RotateCw, Trash2 } from "lucide-react";
+import { Mail, MailOpen, RotateCw, Trash2 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
+import { ReusableFormButton } from "@/components/common/reusable-form-button";
 import ComposeMail from "@/components/mailbox/default/compose-mail";
 import MoveToFolder from "@/components/mailbox/default/move-to-folder";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
@@ -27,18 +29,19 @@ import {
 	deltaFetch,
 	type FetchIdentityMailboxListResult,
 	type FetchMailboxThreadsResult,
-	markAsRead,
-	moveToTrash,
+	permanentlyDeleteThreads,
 	revalidateMailbox,
+	setReadStatus,
+	trashThreads,
 } from "@/lib/actions/mailbox";
 
 function MailListHeader({
-	mailboxThreads,
-	mailboxSync,
-	publicConfig,
-	identityMailboxes,
-	activeMailbox,
-}: {
+							mailboxThreads,
+							mailboxSync,
+							publicConfig,
+							identityMailboxes,
+							activeMailbox,
+						}: {
 	mailboxThreads: FetchMailboxThreadsResult;
 	publicConfig: PublicConfig;
 	identityMailboxes: FetchIdentityMailboxListResult;
@@ -50,94 +53,59 @@ function MailListHeader({
 		activeMailbox?: MailboxEntity | null;
 		identityPublicId: string;
 	}>();
+
 	const dict = useOptionalDictionary();
-
-	const identityIdRef = useRef<string | undefined>(activeMailbox?.identityId);
-	const mailboxIdRef = useRef<string | undefined>(activeMailbox?.id);
-	const mailboxKind = useRef<string | undefined>(activeMailbox?.kind);
-	useEffect(() => {
-		if (activeMailbox?.identityId)
-			identityIdRef.current = activeMailbox.identityId;
-		if (activeMailbox?.id) mailboxIdRef.current = activeMailbox.id;
-	}, [activeMailbox?.identityId, activeMailbox?.id]);
-
-	const selectedSize = state?.selectedThreadIds?.size ?? 0;
-	const hasSelected = selectedSize > 0;
-	const isChecked =
-		selectedSize === mailboxThreads.length && mailboxThreads.length > 0;
-
+	const pathName = usePathname();
 	const [reloading, setReloading] = useState(false);
+
+	const selectedThreadIds = Array.from(state?.selectedThreadIds ?? []);
+	const hasSelected = selectedThreadIds.length > 0;
+	const isTrash = activeMailbox.kind === "trash";
+
+	const isChecked =
+		selectedThreadIds.length === mailboxThreads.length &&
+		mailboxThreads.length > 0;
+
+	const hasUnread = mailboxThreads.some(
+		(thread) =>
+			state?.selectedThreadIds?.has(thread.threadId) &&
+			thread.unreadCount > 0,
+	);
+
+	const readOperation = hasUnread ? "read" : "unread";
+	const isOnSnoozedPage = pathName.split("/").includes("snoozed");
+
 	const reload = async () => {
-		if (mailboxSync) {
-			const identityId = identityIdRef.current;
-			if (!identityId) return;
-			try {
-				setReloading(true);
-				await deltaFetch({ identityId });
-				await revalidateMailbox("/mail");
-			} finally {
-				setReloading(false);
+		try {
+			setReloading(true);
+
+			if (mailboxSync) {
+				await deltaFetch({ identityId: activeMailbox.identityId });
 			}
-		} else {
-			revalidateMailbox("/mail");
+
+			await revalidateMailbox("/mail");
+		} finally {
+			setReloading(false);
 		}
-	};
-
-	const markRead = async () => {
-		await markAsRead(
-			Array.from(state?.selectedThreadIds ?? []),
-			String(mailboxIdRef.current),
-			!!mailboxSync,
-			true,
-		);
-	};
-
-	const deleteThreads = async () => {
-		if (mailboxKind.current === "trash") {
-			await removeTrash();
-			return;
-		}
-		await moveToTrash(
-			Array.from(state?.selectedThreadIds ?? []),
-			String(mailboxIdRef.current),
-			!!mailboxSync,
-			true,
-		);
-		toast.success(dict?.mailbox?.movedToTrash ?? "Messages moved to Trash", {
-			position: "bottom-left",
-		});
-	};
-
-	const removeTrash = async () => {
-		await deleteForever(
-			Array.from(state?.selectedThreadIds ?? []),
-			String(mailboxIdRef.current),
-			!!mailboxSync,
-			true,
-		);
-		toast.success(
-			dict?.mailbox?.threadDeletedForever ?? "Thread deleted forever",
-			{ position: "bottom-left" },
-		);
 	};
 
 	const emptyTrash = async () => {
-		await deleteForever(
-			null,
-			String(mailboxIdRef.current),
-			!!mailboxSync,
-			true,
-			{
+		try {
+			await deleteForever(null, activeMailbox.id, true, {
 				emptyAll: true,
-			},
-		);
-		toast.success(dict?.mailbox?.trashRemoved ?? "Trash removed successfully", {
-			position: "bottom-left",
-		});
-	};
+			});
 
-	const pathName = usePathname();
-	const isOnSnoozedPage = pathName.split("/").includes("snoozed");
+			toast.success(
+				dict?.mailbox?.trashRemoved ?? "Trash removed successfully",
+				{ position: "bottom-left" },
+			);
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : "Failed to empty Trash",
+				{ position: "bottom-left" },
+			);
+		}
+	};
 
 	return (
 		<>
@@ -145,17 +113,17 @@ function MailListHeader({
 				{!isOnSnoozedPage && (
 					<input
 						type="checkbox"
-						onChange={(e) => {
+						onChange={(event) => {
 							const newSet = new Set(state?.selectedThreadIds ?? []);
-							if (e.target.checked) {
-								mailboxThreads.forEach((t) => {
-									newSet.add(t.threadId);
-								});
-							} else {
-								mailboxThreads.forEach((t) => {
-									newSet.delete(t.threadId);
-								});
+
+							for (const thread of mailboxThreads) {
+								if (event.target.checked) {
+									newSet.add(thread.threadId);
+								} else {
+									newSet.delete(thread.threadId);
+								}
 							}
+
 							setState((prev) => ({
 								...(prev ?? {}),
 								selectedThreadIds: newSet,
@@ -174,10 +142,11 @@ function MailListHeader({
 						<ActionIcon
 							variant="subtle"
 							onClick={reload}
+							loading={reloading}
 							title={dict?.mailbox?.sync ?? "Sync"}
 							className="h-8 w-8"
 						>
-							<RotateCw className={reloading ? "animate-spin" : ""} size={16} />
+							<RotateCw size={16} />
 						</ActionIcon>
 					</Tooltip>
 
@@ -186,29 +155,89 @@ function MailListHeader({
 							"inset-0 flex items-center gap-1 transition-opacity",
 							hasSelected
 								? "opacity-100"
-								: "opacity-0 hidden pointer-events-none",
+								: "hidden pointer-events-none opacity-0",
 						)}
 					>
 						<MoveToFolder
 							identityMailboxes={identityMailboxes}
 							activeMailbox={activeMailbox}
 						/>
-						<button
-							type="button"
-							onClick={deleteThreads}
-							className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs hover:bg-muted"
-							title={dict?.mailbox?.delete ?? "Delete"}
+
+						<ReusableFormButton
+							action={isTrash ? permanentlyDeleteThreads : trashThreads}
+							actionIcon
+							actionIconProps={{
+								variant: "subtle",
+								color: "gray",
+								size: "compact-sm",
+								title: dict?.mailbox?.delete ?? "Delete",
+								"aria-label": dict?.mailbox?.delete ?? "Delete",
+								children: <Trash2 size={16} />,
+							}}
+							notify={{
+								kind: "toast",
+								successMessage: isTrash
+									? dict?.mailbox?.threadDeletedForever ??
+									"Thread deleted forever"
+									: dict?.mailbox?.movedToTrash ??
+									"Messages moved to Trash",
+								toastProps: { position: "bottom-left" },
+							}}
 						>
-							<Trash2 className="h-4 w-4" />
-						</button>
-						<button
-							type="button"
-							onClick={markRead}
-							className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs hover:bg-muted"
-							title={dict?.mailbox?.markRead ?? "Mark read"}
+							{selectedThreadIds.map((threadId) => (
+								<input
+									key={threadId}
+									type="hidden"
+									name="threadId"
+									value={threadId}
+								/>
+							))}
+							<input
+								type="hidden"
+								name="mailboxId"
+								value={activeMailbox.id}
+							/>
+						</ReusableFormButton>
+
+						<ReusableFormButton
+							action={setReadStatus}
+							actionIcon
+							actionIconProps={{
+								variant: "subtle",
+								color: "gray",
+								size: "compact-sm",
+								title: hasUnread
+									? dict?.mailbox?.markRead ?? "Mark as read"
+									: dict?.mailbox?.markAsUnread ?? "Mark as unread",
+								"aria-label": hasUnread
+									? dict?.mailbox?.markRead ?? "Mark as read"
+									: dict?.mailbox?.markAsUnread ?? "Mark as unread",
+								children: hasUnread ? (
+									<MailOpen size={16} />
+								) : (
+									<Mail size={16} />
+								),
+							}}
 						>
-							<MailOpen className="h-4 w-4" />
-						</button>
+							{selectedThreadIds.map((threadId) => (
+								<input
+									key={threadId}
+									type="hidden"
+									name="threadId"
+									value={threadId}
+								/>
+							))}
+							<input
+								type="hidden"
+								name="mailboxId"
+								value={activeMailbox.id}
+							/>
+							<input
+								type="hidden"
+								name="op"
+								value={readOperation}
+							/>
+						</ReusableFormButton>
 					</div>
 
 					<div className="md:hidden">
@@ -221,37 +250,38 @@ function MailListHeader({
 				</div>
 			</div>
 
-			{mailboxKind.current === "trash" && (
-				<div
-					className={
-						"flex p-2 text-sm text-muted-foreground justify-center mb-3  mx-2 rounded items-center"
-					}
-				>
+			{isTrash && (
+				<div className="mb-3 mx-2 flex items-center justify-center rounded p-2 text-sm text-muted-foreground">
 					<span>
 						{dict?.mailbox?.trashRetentionNotice ??
 							"Messages that have been in the Trash for more than 30 days will be deleted automatically."}
 					</span>
+
 					<AlertDialog>
-						<AlertDialogTrigger asChild={true} className={"-mx-2"}>
-							<Button variant={"transparent"}>
+						<AlertDialogTrigger asChild className="-mx-2">
+							<Button variant="transparent">
 								{dict?.mailbox?.emptyBinNow ?? "Empty Bin Now"}
 							</Button>
 						</AlertDialogTrigger>
+
 						<AlertDialogContent>
 							<AlertDialogHeader>
 								<AlertDialogTitle>
 									{dict?.mailbox?.emptyBinConfirmTitle ??
 										"Are you absolutely sure?"}
 								</AlertDialogTitle>
+
 								<AlertDialogDescription>
 									{dict?.mailbox?.emptyBinConfirmDescription ??
-										"This action cannot be undone. This will permanently delete your account and remove your data from our servers."}
+										"This action cannot be undone. All messages in Trash will be permanently deleted."}
 								</AlertDialogDescription>
 							</AlertDialogHeader>
+
 							<AlertDialogFooter>
 								<AlertDialogCancel>
 									{dict?.common?.cancel ?? "Cancel"}
 								</AlertDialogCancel>
+
 								<AlertDialogAction onClick={emptyTrash}>
 									{dict?.mailbox?.continue ?? "Continue"}
 								</AlertDialogAction>

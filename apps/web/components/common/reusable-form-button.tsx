@@ -30,17 +30,17 @@ type ReusableFormButtonProps = {
 };
 
 export function ReusableFormButton({
-	action,
-	children,
-	buttonProps = {},
-	actionIconProps = {},
-	formWrapperClasses = "",
-	actionIcon = false,
-	label = "Submit",
-	formKey,
-	onSuccess,
-	notify = { kind: "alert" },
-}: ReusableFormButtonProps) {
+									   action,
+									   children,
+									   buttonProps = {},
+									   actionIconProps = {},
+									   formWrapperClasses = "",
+									   actionIcon = false,
+									   label = "Submit",
+									   formKey,
+									   onSuccess,
+									   notify = { kind: "alert" },
+								   }: ReusableFormButtonProps) {
 	const [formState, formAction, isPending] = useActionState<
 		FormState,
 		FormData
@@ -113,9 +113,9 @@ export function ReusableFormButton({
 				<MantineButton
 					type="submit"
 					loading={isPending}
+					{...buttonProps}
 					disabled={isPending}
 					aria-busy={isPending}
-					{...buttonProps}
 				>
 					{label}
 				</MantineButton>

@@ -15,8 +15,8 @@ import {
 import {navigation} from "next/cache";
 
 async function Page({
-	params,
-}: {
+						params,
+					}: {
 	params: Promise<{
 		identityPublicId: string;
 		mailboxSlug: string;
@@ -25,7 +25,7 @@ async function Page({
 }) {
 	await navigation();
 	const { threadId, identityPublicId, mailboxSlug } = await params;
-	const [{ activeMailbox, mailboxSync }, activeThread, workspacePublicId] =
+	const [{ activeMailbox }, activeThread, workspacePublicId] =
 		await Promise.all([
 			fetchMailbox(identityPublicId, mailboxSlug),
 			fetchWebMailThreadDetail(threadId),
@@ -61,7 +61,6 @@ async function Page({
 							numberOfMessages={activeThread.messages.length}
 							threadId={threadId}
 							activeMailboxId={activeMailbox.id}
-							markSmtp={!!mailboxSync}
 							identityPublicId={identityPublicId}
 							mailSubscription={byMessageId.get(message.id) ?? null}
 							allLabels={allLabels}

@@ -1,0 +1,455 @@
+---
+title: Microsoft 365
+description: Connecting Microsoft 365, Exchange Online, and Outlook accounts to Kurrier
+---
+
+# Microsoft 365
+
+Kurrier can connect to **Microsoft 365**, **Exchange Online**, and supported **Outlook.com** accounts using Microsoft OAuth 2.0 through Microsoft Entra ID.
+
+Unlike traditional SMTP/IMAP authentication, users do not need to enter their email passwords or configure server credentials manually.
+
+Kurrier uses **IMAP and SMTP with OAuth authentication** to send and synchronize email.
+
+---
+
+## 1. Overview
+
+When you connect a Microsoft account, Kurrier can:
+
+- Send emails through Microsoft SMTP
+- Synchronize your inbox and mail folders using IMAP
+- Track read/unread and flagged messages
+- Receive new emails through IMAP synchronization
+- Keep your mailbox synchronized automatically
+- Manage multiple Microsoft accounts within a workspace
+
+Your Microsoft password is **never stored** by Kurrier. Authentication is handled through Microsoft OAuth.
+
+Kurrier securely stores OAuth credentials and refresh tokens in its Vault.
+
+---
+
+## 2. Configure Microsoft OAuth
+
+Before connecting Microsoft accounts, Kurrier needs OAuth credentials from an application registered with Microsoft Entra ID.
+
+### Configure using environment variables
+
+For self-hosted installations, configure:
+
+```
+MICROSOFT_CLIENT_ID=your_microsoft_client_id
+MICROSOFT_CLIENT_SECRET=your_microsoft_client_secret
+```
+
+Restart your Kurrier services after updating the environment variables.
+
+These credentials belong to your Microsoft Entra application, not to an individual user's email account.
+
+Once configured, users can connect Microsoft accounts through the Kurrier dashboard.
+
+---
+
+## 3. Create a Microsoft Entra Application
+
+If you do not already have an application registered with Microsoft, create one using the Microsoft Entra admin center.
+
+### Open Microsoft Entra
+
+1. Visit [Microsoft Entra admin center](https://entra.microsoft.com/).
+2. Sign in using a Microsoft account with permission to register applications.
+3. Navigate to **Identity → Applications → App registrations**.
+4. Click **New registration**.
+
+### Register your application
+
+Enter an application name, for example:
+
+**Kurrier Mail**
+
+Under **Supported account types**, select:
+
+**Accounts in any organizational directory and personal Microsoft accounts**
+
+This option supports organizational Microsoft 365 accounts and personal Microsoft accounts, subject to the availability of the required mail protocols and permissions.
+
+If your installation only needs accounts from one organization, you can choose a single-tenant application instead.
+
+### Configure the redirect URI
+
+Under **Redirect URI**, select:
+
+**Web**
+
+Enter your Kurrier callback URL:
+
+```text
+https://your-kurrier-domain/api/oauth/microsoft/callback
+```
+
+For example:
+
+```text
+https://mail.example.com/api/oauth/microsoft/callback
+```
+
+Replace `mail.example.com` with the domain of your Kurrier installation.
+
+The redirect URI must match the URL used by Kurrier exactly.
+
+Click **Register**.
+
+---
+
+## 4. Get the Client ID and Client Secret
+
+After registering your application, Microsoft displays the application overview.
+
+### Copy the Client ID
+
+On the **Overview** page, locate:
+
+**Application (client) ID**
+
+Copy this value.
+
+Configure it in Kurrier as:
+
+```
+MICROSOFT_CLIENT_ID=your_application_client_id
+```
+
+The **Directory (tenant) ID** is a separate identifier and should not be used as the Client ID.
+
+### Create a Client Secret
+
+1. Open **Certificates & secrets**.
+2. Select **Client secrets**.
+3. Click **New client secret**.
+4. Enter a description, such as `Kurrier`.
+5. Choose an expiration period.
+6. Click **Add**.
+
+Microsoft displays the newly generated secret.
+
+Copy the **Value**, not the Secret ID.
+
+Configure:
+
+```
+MICROSOFT_CLIENT_SECRET=your_client_secret_value
+```
+
+Microsoft only displays the complete secret value when it is created.
+
+Store it securely.
+
+Client secrets expire, so remember to renew the secret before its expiration date.
+
+---
+
+## 5. Configure API Permissions
+
+Kurrier uses OAuth to authenticate with Microsoft's IMAP and SMTP services.
+
+It does not require Microsoft Graph for normal mailbox synchronization.
+
+### Required permissions
+
+In your Microsoft Entra application:
+
+1. Open **API permissions**.
+2. Click **Add a permission**.
+3. Select **APIs my organization uses**.
+4. Find **Office 365 Exchange Online**.
+5. Select **Delegated permissions**.
+
+Configure the following Exchange Online permissions:
+
+| Permission | Purpose |
+| --- | --- |
+| `IMAP.AccessAsUser.All` | Read and synchronize email using IMAP |
+| `SMTP.Send` | Send email using SMTP |
+
+The corresponding OAuth resource scopes are:
+
+```text
+https://outlook.office.com/IMAP.AccessAsUser.All
+https://outlook.office.com/SMTP.Send
+```
+
+Kurrier also needs standard OAuth and identity scopes for authentication and token renewal:
+
+| Scope | Purpose |
+| --- | --- |
+| `openid` | Authenticate the Microsoft account |
+| `profile` | Access basic account information |
+| `email` | Access the account's email identity when available |
+| `offline_access` | Obtain refresh tokens for continued access |
+
+Depending on your organization's Microsoft Entra policies, administrator consent may be required.
+
+If the **Grant admin consent** option is available and your organization requires it, an administrator can approve the permissions.
+
+### Important
+
+Microsoft 365 administrators may restrict IMAP or SMTP AUTH at the organization or mailbox level.
+
+Even when OAuth authorization succeeds, the mailbox must allow the protocols used by Kurrier.
+
+For SMTP, authenticated client SMTP submission must be permitted by the organization's Exchange Online configuration and applicable security policies.
+
+---
+
+## 6. Connecting a Microsoft Account
+
+Once Microsoft OAuth is configured, open Kurrier and navigate to:
+
+**Dashboard → Providers → Microsoft 365**
+
+Click:
+
+**Add Microsoft Account**
+
+You will be redirected to Microsoft's authorization page.
+
+1. Select the Microsoft account you want to connect.
+2. Sign in if necessary.
+3. Review the requested permissions.
+4. Grant consent when prompted.
+5. Wait for Microsoft to redirect you back to Kurrier.
+
+After authorization, Kurrier stores the connection and displays the Microsoft account in your workspace.
+
+You can connect multiple Microsoft accounts using the same OAuth application configuration.
+
+Each connected account has its own authorization and tokens.
+
+---
+
+## 7. How Email Synchronization Works
+
+Kurrier uses Microsoft's standard mail protocols with OAuth authentication.
+
+### Receiving email
+
+Kurrier connects to the Microsoft IMAP server:
+
+```text
+outlook.office365.com:993
+```
+
+The connection uses TLS and OAuth authentication.
+
+Kurrier synchronizes messages, folders, and mailbox state through its existing IMAP synchronization infrastructure.
+
+This includes:
+
+- Initial mailbox discovery
+- Message synchronization
+- Read/unread and flagged state
+- Mailbox updates
+- Recovery from interrupted connections
+
+### Sending email
+
+Kurrier sends email through Microsoft's SMTP submission service:
+
+```text
+smtp.office365.com:587
+```
+
+The connection uses STARTTLS and OAuth authentication.
+
+Unlike traditional SMTP accounts, Kurrier does not need the user's Microsoft account password.
+
+### Microsoft Graph
+
+Kurrier's Microsoft mail integration uses **IMAP and SMTP with OAuth**, rather than Microsoft Graph for message synchronization and sending.
+
+This allows Microsoft accounts to use Kurrier's existing mail synchronization infrastructure.
+
+---
+
+## 8. Verification
+
+After connecting a Microsoft account, Kurrier displays it under:
+
+**Dashboard → Providers → Microsoft 365**
+
+The account card shows the connected email address and connection status.
+
+A successfully authorized account appears as:
+
+**Connected**
+
+This indicates that the OAuth connection was established.
+
+To verify end-to-end mail functionality, open the connected identity in Kurrier and confirm that messages synchronize successfully.
+
+You can also send a test email to verify SMTP access.
+
+OAuth authorization alone does not guarantee that IMAP and SMTP are enabled for the mailbox.
+
+---
+
+## 9. Token Refresh and Reconnection
+
+Microsoft OAuth access tokens have limited lifetimes.
+
+Kurrier stores the authorization information required to obtain new access tokens without repeatedly asking the user to sign in.
+
+Refresh tokens are stored securely in the Kurrier Vault.
+
+If a token expires normally, Kurrier can refresh the access token when required.
+
+However, reconnection may be necessary when:
+
+- The user revokes the application's access
+- The refresh token becomes invalid
+- An administrator changes access policies
+- The Microsoft account is disabled
+- Required permissions are removed
+
+If the account requires authorization again, reconnect it through the Microsoft 365 provider in Kurrier.
+
+Complete the Microsoft authorization flow to restore access.
+
+---
+
+## 10. Disconnecting an Account
+
+You can disconnect a Microsoft account by removing the associated account or identity from Kurrier.
+
+If you also want to revoke the application's authorization from Microsoft, review the applications authorized for your Microsoft account.
+
+For organizational accounts, administrators can manage application permissions through:
+
+[Microsoft Entra admin center](https://entra.microsoft.com/)
+
+For personal Microsoft accounts, review:
+
+[Microsoft account privacy and application permissions](https://account.microsoft.com/privacy)
+
+Removing the account from Kurrier does not automatically guarantee that Microsoft-side application consent has been revoked.
+
+---
+
+## 11. Troubleshooting
+
+### Microsoft OAuth is not configured
+
+Ensure that the following environment variables are configured:
+
+```
+MICROSOFT_CLIENT_ID=...
+MICROSOFT_CLIENT_SECRET=...
+```
+
+Restart Kurrier after updating the configuration.
+
+Confirm that the Client ID and Client Secret belong to the same Microsoft Entra application.
+
+### Redirect URI mismatch
+
+Microsoft may reject authorization if the redirect URI does not match the application registration.
+
+Open:
+
+**Microsoft Entra → App registrations → Your application → Authentication**
+
+Verify that the Web redirect URI exactly matches:
+
+```text
+https://your-kurrier-domain/api/oauth/microsoft/callback
+```
+
+Check the protocol, hostname, path, and any reverse proxy configuration.
+
+### Invalid client secret
+
+If Microsoft reports an invalid client secret, confirm that you copied the secret's **Value**, not its Secret ID.
+
+Also verify that the secret has not expired.
+
+If necessary, create a new client secret and update:
+
+```
+MICROSOFT_CLIENT_SECRET=...
+```
+
+### Administrator approval required
+
+Some Microsoft 365 organizations restrict user consent for third-party applications.
+
+If Microsoft displays an administrator approval message, ask your Microsoft 365 administrator to review the application permissions and grant the required consent.
+
+### Authentication succeeded but IMAP fails
+
+Successful OAuth authorization does not necessarily mean IMAP access is enabled.
+
+Verify that:
+
+- The mailbox is provisioned and accessible
+- IMAP is enabled for the mailbox
+- The application has the required delegated IMAP permission
+- The access token contains the appropriate authorization
+- The organization allows the relevant protocol access
+
+The Microsoft IMAP endpoint is:
+
+```text
+outlook.office365.com:993
+```
+
+### Sending email fails
+
+If receiving email works but sending fails, check SMTP AUTH availability.
+
+The SMTP endpoint is:
+
+```text
+smtp.office365.com:587
+```
+
+Ensure that:
+
+- SMTP AUTH is permitted for the mailbox
+- The application has the `SMTP.Send` delegated permission
+- Microsoft has granted the necessary consent
+- The connection uses STARTTLS and OAuth authentication
+
+Some organizations disable authenticated SMTP submission through their security policies.
+
+An administrator may need to review those settings.
+
+### Personal Outlook account cannot connect
+
+Check that your Microsoft Entra application supports personal Microsoft accounts.
+
+Under **Supported account types**, use an option that includes personal Microsoft accounts.
+
+Also confirm that the account supports the mail protocols and OAuth permissions required by Kurrier.
+
+### Account becomes disconnected
+
+If Microsoft revokes or invalidates the refresh token, Kurrier may no longer be able to obtain new access tokens.
+
+Reconnect the account and complete the Microsoft authorization flow again.
+
+---
+
+## 12. Why Use Microsoft OAuth Instead of Generic SMTP/IMAP?
+
+Connecting Microsoft accounts through the **Microsoft 365** provider offers several advantages:
+
+- No email passwords or app passwords to manage
+- Secure Microsoft OAuth authentication
+- Automatic access token renewal
+- Integration with Microsoft Entra identity policies
+- Dedicated Microsoft account connection management
+- Support for Kurrier's existing IMAP synchronization infrastructure
+- SMTP sending without storing the user's mailbox password
+
+For supported Microsoft 365, Exchange Online, and Outlook accounts, connecting through the **Microsoft 365** provider is the recommended option.

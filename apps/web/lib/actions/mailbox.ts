@@ -1,7 +1,7 @@
 "use server";
 
 import { cache } from "react";
-import {getWorkspaceId, rlsClient} from "@/lib/actions/clients";
+import { rlsClient } from "@/lib/actions/clients";
 import {
 	db,
 	DraftMessageInsertSchema,
@@ -40,12 +40,10 @@ import { toArray } from "@/lib/utils";
 
 import Typesense, { Client } from "typesense";
 import { isSignedIn } from "@/lib/actions/auth";
-import slugify from "@sindresorhus/slugify";
 import { redirect } from "next/navigation";
 import { PAGE_SIZE } from "@common/mail-client";
 import { getRedis } from "@/lib/actions/get-redis";
 import dayjs from "dayjs";
-import {fetchWorkspace} from "@/lib/actions/workspace";
 
 import {GetObjectCommand} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -390,6 +388,10 @@ export async function sendMail(
 	decodedForm.identityId =
 		identity.id;
 
+	decodedForm.appendToSent =
+		identity.metaData?.provider === "kurrier-mail" ||
+		(!!identity.smtpAccountId && !identity.providerId);
+
 	if (
 		toArray(
 			decodedForm.to as any,
@@ -605,9 +607,8 @@ export async function sendMail(
 			},
 		);
 
-		revalidatePath(
-			"/dashboard/mail",
-		);
+		revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
+
 
 		return {
 			success: true,
@@ -665,7 +666,14 @@ export const deltaFetch = async ({
 
 	const isGmail = await isGmailIdentity(identityId);
 
-	const isSmtp = Boolean(identity?.smtpAccountId);
+	// const isImap =
+	// 	Boolean(identity.smtpAccountId) ||
+	// 	identity.metaData?.provider === "kurrier-mail";
+
+	const isImap =
+		Boolean(identity.smtpAccountId) ||
+		identity.metaData?.provider === "kurrier-mail" ||
+		identity.metaData?.provider === "microsoft";
 
 	if (isGmail) {
 		const { gmailQueue, gmailEvents } = await getRedis();
@@ -687,7 +695,7 @@ export const deltaFetch = async ({
 		return;
 	}
 
-	if (isSmtp){
+	if (isImap){
 		const { smtpQueue, smtpEvents } = await getRedis();
 		const job = await smtpQueue.add(
 			"delta-fetch",
@@ -786,12 +794,15 @@ export const backfillMailboxes = async (identityId: string, workspaceId: string)
 		return;
 	}
 
-	const { smtpQueue, smtpEvents } = await getRedis();
-	const job = await smtpQueue.add(
+	// const { smtpQueue, smtpEvents } = await getRedis();
+	const { imapDiscoveryQueue, imapDiscoveryEvents } = await getRedis();
+	const job = await imapDiscoveryQueue.add(
 		"imap:backfill-discover",
 		{ identityId, workspaceId },
 		{
 			jobId: `imap-backfill-discover-${identityId}`,
+			removeOnComplete: true,
+			removeOnFail: true,
 			attempts: 3,
 			backoff: {
 				type: "exponential",
@@ -799,7 +810,7 @@ export const backfillMailboxes = async (identityId: string, workspaceId: string)
 			},
 		},
 	);
-	await job.waitUntilFinished(smtpEvents);
+	await job.waitUntilFinished(imapDiscoveryEvents);
 	await backfillAccount(identityId, workspaceId);
 };
 
@@ -846,16 +857,7 @@ export const backfillGoogleMailboxes = async (
 
 
 export const backfillAccount = async (identityId: string, workspaceId: string) => {
-	const { smtpQueue } = await getRedis();
-	await smtpQueue.add(
-		"imap:backfill-account",
-		{identityId},
-		{
-			removeOnComplete: true,
-			removeOnFail: true,
-			jobId: `imap-backfill-account-${identityId}`,
-		},
-	);
+	const { smtpQueue, imapBackfillQueue } = await getRedis();
 	await smtpQueue.add(
 		"imap:start-idle",
 		{ identityId },
@@ -864,6 +866,15 @@ export const backfillAccount = async (identityId: string, workspaceId: string) =
 			removeOnFail: false,
 			attempts: 3,
 			backoff: { type: "exponential", delay: 1500 },
+		},
+	);
+	await imapBackfillQueue.add(
+		"imap:backfill-account",
+		{identityId},
+		{
+			removeOnComplete: true,
+			removeOnFail: true,
+			jobId: `imap-backfill-account-${identityId}`,
 		},
 	);
 };
@@ -895,10 +906,57 @@ export const fetchWebMailThreadDetail = cache(async (threadId: string) => {
 	return result;
 });
 
-export const markAsRead = async (
+
+
+
+export async function setReadStatus(
+	_prev: FormState,
+	formData: FormData,
+): Promise<FormState> {
+	return handleAction(async () => {
+		const threadIds = formData.getAll("threadId").map(String).filter(Boolean);
+		const mailboxId = String(formData.get("mailboxId") ?? "");
+		const op = String(formData.get("op") ?? "");
+
+		if (!threadIds.length || !mailboxId) {
+			throw new Error("Missing thread or mailbox");
+		}
+
+		if (op !== "read" && op !== "unread") {
+			throw new Error("Invalid read operation");
+		}
+
+		const { mailInteractiveQueue, mailInteractiveEvents } = await getRedis();
+
+		await Promise.all(
+			threadIds.map(async (threadId) => {
+				const job = await mailInteractiveQueue.add(
+					"mail:set-flags",
+					{ threadId, mailboxId, op },
+					{
+						attempts: 3,
+						backoff: { type: "exponential", delay: 1500 },
+						removeOnComplete: true,
+						removeOnFail: false,
+					},
+				);
+
+				await job.waitUntilFinished(mailInteractiveEvents);
+			}),
+		);
+
+		revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
+
+		return { success: true };
+	});
+}
+
+
+
+
+export const moveToTrash = async (
 	threadIds: string | string[],
 	mailboxId: string,
-	markSmtp: boolean,
 	refresh = true,
 ) => {
 	const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
@@ -907,325 +965,110 @@ export const markAsRead = async (
 
 	if (!ids.length || !mailboxId) return;
 
-	const [mailbox] = await db
-		.select({ identityId: mailboxes.identityId })
-		.from(mailboxes)
-		.where(eq(mailboxes.id, mailboxId))
-		.limit(1);
-
-	if (!mailbox) return;
-
-	const isGmail = await isGmailIdentity(mailbox.identityId);
-
-	if (markSmtp || isGmail) {
-		const { smtpQueue, smtpEvents } = await getRedis();
-
-		await Promise.all(
-			ids.map(async (threadId) => {
-				const job = await smtpQueue.add(
-					"mail:set-flags",
-					{ threadId, mailboxId, op: "read" },
-					{
-						attempts: 3,
-						backoff: { type: "exponential", delay: 1500 },
-						removeOnComplete: true,
-						removeOnFail: false,
-					},
-				);
-
-				await job.waitUntilFinished(smtpEvents);
-			}),
-		);
-
-		if (refresh) revalidatePath("/");
-		return;
-	}
-
-	const now = new Date();
-	const rls = await rlsClient();
-
-	await rls(async (tx) => {
-		await tx
-			.update(messages)
-			.set({ seen: true, updatedAt: now })
-			.where(
-				and(
-					inArray(messages.threadId, ids),
-					eq(messages.mailboxId, mailboxId),
-				),
-			);
-
-		await tx
-			.update(mailboxThreads)
-			.set({ unreadCount: 0, updatedAt: now })
-			.where(
-				and(
-					inArray(mailboxThreads.threadId, ids),
-					eq(mailboxThreads.mailboxId, mailboxId),
-				),
-			);
-	});
-
-	if (refresh) revalidatePath("/");
-};
-
-export const markAsUnread = async (
-	threadIds: string | string[],
-	mailboxId: string,
-	markSmtp: boolean,
-	refresh: boolean,
-) => {
-	const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
-		.map(String)
-		.filter(Boolean);
-
-	if (!ids.length || !mailboxId) return;
-
-	const [mailbox] = await db
-		.select({ identityId: mailboxes.identityId })
-		.from(mailboxes)
-		.where(eq(mailboxes.id, mailboxId))
-		.limit(1);
-
-	if (!mailbox) return;
-
-	const isGmail = await isGmailIdentity(mailbox.identityId);
-
-	if (markSmtp || isGmail) {
-		const { smtpQueue, smtpEvents } = await getRedis();
-
-		await Promise.all(
-			ids.map(async (threadId) => {
-				const job = await smtpQueue.add(
-					"mail:set-flags",
-					{ threadId, mailboxId, op: "unread" },
-					{
-						attempts: 3,
-						backoff: { type: "exponential", delay: 1500 },
-						removeOnComplete: true,
-						removeOnFail: false,
-					},
-				);
-
-				await job.waitUntilFinished(smtpEvents);
-			}),
-		);
-
-		if (refresh) revalidatePath("/");
-		return;
-	}
-
-	const now = new Date();
-	const rls = await rlsClient();
-
-	await rls(async (tx) => {
-		await tx
-			.update(messages)
-			.set({ seen: false, updatedAt: now })
-			.where(
-				and(
-					inArray(messages.threadId, ids),
-					eq(messages.mailboxId, mailboxId),
-				),
-			);
-
-		const grouped = await tx
-			.select({
-				threadId: messages.threadId,
-				count: sql<number>`count(*)`,
-			})
-			.from(messages)
-			.where(
-				and(
-					inArray(messages.threadId, ids),
-					eq(messages.mailboxId, mailboxId),
-					eq(messages.seen, false),
-				),
-			)
-			.groupBy(messages.threadId);
-
-		const countMap = new Map<string, number>();
-		for (const g of grouped) countMap.set(String(g.threadId), Number(g.count));
-
-		for (const tid of ids) {
-			await tx
-				.update(mailboxThreads)
-				.set({
-					unreadCount: countMap.get(tid) ?? 1,
-					updatedAt: now,
-				})
-				.where(
-					and(
-						eq(mailboxThreads.threadId, tid),
-						eq(mailboxThreads.mailboxId, mailboxId),
-					),
-				);
-		}
-	});
-
-	if (refresh) revalidatePath("/");
-};
-
-export const moveToTrash = async (
-	threadIds: string | string[],
-	mailboxId: string,
-	moveImap: boolean,
-	refresh: boolean,
-	messageId?: string,
-) => {
-	const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
-		.map(String)
-		.filter(Boolean);
-
-	if (!ids.length || !mailboxId) return;
-
-	const { smtpQueue, searchIngestQueue } = await getRedis();
+	const { mailInteractiveQueue, mailInteractiveEvents } = await getRedis();
 
 	await Promise.all(
-		ids.map((threadId) =>
-			smtpQueue.add(
+		ids.map(async (threadId) => {
+			const job = await mailInteractiveQueue.add(
 				"mail:move",
-				{ threadId, mailboxId, op: "trash", messageId, moveImap },
+				{
+					threadId,
+					mailboxId,
+					op: "trash",
+				},
 				{
 					attempts: 3,
 					backoff: { type: "exponential", delay: 1500 },
 					removeOnComplete: true,
 					removeOnFail: false,
 				},
-			),
-		),
+			);
+
+			await job.waitUntilFinished(mailInteractiveEvents);
+		}),
 	);
 
-	await Promise.all(
-		ids.map((threadId) =>
-			searchIngestQueue.add(
-				"refresh-thread",
-				{ threadId },
-				{
-					jobId: `refresh-${threadId}`,
-					removeOnComplete: true,
-					removeOnFail: false,
-					attempts: 3,
-					backoff: { type: "exponential", delay: 1500 },
-				},
-			),
-		),
-	);
-
-	if (refresh) {
-		revalidatePath("/mail");
-	}
+	if (refresh) revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
 };
 
-export const toggleStar = async (
-	threadId: string,
-	mailboxId: string,
-	starred: boolean,
-	starImap: boolean,
-) => {
-	if (!threadId || !mailboxId) return;
 
-	const [mailbox] = await db
-		.select({
-			identityId: mailboxes.identityId,
-		})
-		.from(mailboxes)
-		.where(eq(mailboxes.id, mailboxId))
-		.limit(1);
+export async function trashThreads(
+	_prev: FormState,
+	formData: FormData,
+): Promise<FormState> {
+	return handleAction(async () => {
+		const threadIds = formData.getAll("threadId").map(String).filter(Boolean);
+		const mailboxId = String(formData.get("mailboxId") ?? "");
 
-	if (!mailbox) return;
+		if (!threadIds.length || !mailboxId) {
+			throw new Error("Missing thread or mailbox");
+		}
 
-	const isGmail = await isGmailIdentity(mailbox.identityId);
-	const op = starred ? "unflag" : "flag";
+		await moveToTrash(threadIds, mailboxId, true);
 
-	if (starImap || isGmail) {
-		const { smtpQueue, smtpEvents } = await getRedis();
+		return { success: true };
+	});
+}
 
-		const job = await smtpQueue.add(
+
+
+export async function toggleStar(
+	_prev: FormState,
+	formData: FormData,
+): Promise<FormState> {
+	return handleAction(async () => {
+		const { threadId, mailboxId, starred } = decode(formData) as {
+			threadId: string;
+			mailboxId: string;
+			starred: string;
+		};
+
+		if (!threadId || !mailboxId) {
+			throw new Error("Missing thread or mailbox");
+		}
+
+		const { mailInteractiveQueue, mailInteractiveEvents } = await getRedis();
+
+		const job = await mailInteractiveQueue.add(
 			"mail:set-flags",
 			{
 				threadId,
 				mailboxId,
-				op,
+				op: starred === "true" ? "unflag" : "flag",
 			},
 			{
 				attempts: 3,
 				backoff: { type: "exponential", delay: 1500 },
 				removeOnComplete: true,
-				removeOnFail: true,
+				removeOnFail: false,
 			},
 		);
 
-		await job.waitUntilFinished(smtpEvents);
-		revalidatePath("/");
-		return;
-	}
+		await job.waitUntilFinished(mailInteractiveEvents);
+		revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
 
-	const { searchIngestQueue } = await getRedis();
-	const rls = await rlsClient();
-
-	await rls(async (tx) => {
-		const update: Record<string, any> = { updatedAt: new Date() };
-
-		if (op === "flag") update.flagged = true;
-		if (op === "unflag") update.flagged = false;
-
-		await tx
-			.update(messages)
-			.set(update)
-			.where(
-				and(
-					eq(messages.threadId, threadId),
-					eq(messages.mailboxId, mailboxId),
-				),
-			);
-
-		const [agg] = await tx
-			.select({
-				unreadCount: sql<number>`
-					count(*) filter (where ${messages.seen} = false)
-				`,
-				anyFlagged: sql<boolean>`
-					bool_or(${messages.flagged})
-				`,
-			})
-			.from(messages)
-			.where(
-				and(
-					eq(messages.threadId, threadId),
-					eq(messages.mailboxId, mailboxId),
-				),
-			);
-
-		await tx
-			.update(mailboxThreads)
-			.set({
-				unreadCount: agg.unreadCount ?? 0,
-				starred: agg.anyFlagged ?? false,
-				updatedAt: new Date(),
-			})
-			.where(
-				and(
-					eq(mailboxThreads.threadId, threadId),
-					eq(mailboxThreads.mailboxId, mailboxId),
-				),
-			);
+		return { success: true };
 	});
+}
 
-	await searchIngestQueue.add(
-		"refresh-thread",
-		{ threadId },
-		{
-			jobId: `refresh-${threadId}`,
-			removeOnComplete: true,
-			removeOnFail: false,
-			attempts: 3,
-			backoff: { type: "exponential", delay: 1500 },
-		},
-	);
 
-	revalidatePath("/");
-};
+export async function permanentlyDeleteThreads(
+	_prev: FormState,
+	formData: FormData,
+): Promise<FormState> {
+	return handleAction(async () => {
+		const threadIds = formData.getAll("threadId").map(String).filter(Boolean);
+		const mailboxId = String(formData.get("mailboxId") ?? "");
+
+		if (!threadIds.length || !mailboxId) {
+			throw new Error("Missing thread or mailbox");
+		}
+
+		await deleteForever(threadIds, mailboxId);
+
+		return { success: true };
+	});
+}
 
 export const fetchMailboxThreads = async (
 	identityPublicId: string,
@@ -1310,7 +1153,6 @@ export async function fetchMailboxThreadsList(
 export async function deleteForever(
 	threadIds: string | string[] | null,
 	mailboxId: string,
-	imapDelete: boolean,
 	refresh = true,
 	opts?: { emptyAll?: boolean },
 ) {
@@ -1327,12 +1169,12 @@ export async function deleteForever(
 	const rls = await rlsClient();
 	const { emptyAll = false } = opts ?? {};
 
-	// Verify that this mailbox is accessible to the current user/workspace.
 	const [allowedMailbox] = await rls((tx) =>
 		tx
 			.select({
 				id: mailboxes.id,
 				identityId: mailboxes.identityId,
+				kind: mailboxes.kind,
 			})
 			.from(mailboxes)
 			.innerJoin(
@@ -1347,45 +1189,50 @@ export async function deleteForever(
 		throw new Error("Mailbox not found or access denied");
 	}
 
-	const { smtpQueue, searchIngestQueue } = await getRedis();
+	const { mailInteractiveQueue, mailInteractiveEvents } = await getRedis();
+
+	const jobOptions = {
+		attempts: 3,
+		backoff: {
+			type: "exponential" as const,
+			delay: 1500,
+		},
+		removeOnComplete: true,
+		removeOnFail: false,
+	};
 
 	if (emptyAll) {
-		await smtpQueue.add(
+		if (allowedMailbox.kind !== "trash") {
+			throw new Error("Only Trash can be emptied");
+		}
+
+		const job = await mailInteractiveQueue.add(
 			"mail:delete-permanent",
 			{
 				mailboxId: allowedMailbox.id,
 				emptyAll: true,
-				imapDelete,
 			},
-			{
-				attempts: 3,
-				backoff: {
-					type: "exponential",
-					delay: 1500,
-				},
-				removeOnComplete: true,
-				removeOnFail: true,
-			},
+			jobOptions,
 		);
 
+		await job.waitUntilFinished(mailInteractiveEvents);
+
 		if (refresh) {
-			revalidatePath("/mail");
+			revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
 		}
 
 		return;
 	}
 
-	const requestedIds = (
-		Array.isArray(threadIds)
-			? threadIds
-			: [threadIds]
-	)
-		.filter(Boolean)
-		.map(String);
+	const requestedIds = [
+		...new Set(
+			(Array.isArray(threadIds) ? threadIds : [threadIds])
+				.filter((id): id is string => Boolean(id))
+				.map(String),
+		),
+	];
 
-	if (!requestedIds.length) {
-		return;
-	}
+	if (!requestedIds.length) return;
 
 	const allowedThreads = await rls((tx) =>
 		tx
@@ -1407,174 +1254,62 @@ export async function deleteForever(
 		throw new Error("One or more threads were not found or access was denied");
 	}
 
-	await Promise.all(
-		allowedIds.map(async (threadId) => {
-			await smtpQueue.add(
+	const jobs = await Promise.all(
+		allowedIds.map((threadId) =>
+			mailInteractiveQueue.add(
 				"mail:delete-permanent",
 				{
 					threadId,
 					mailboxId: allowedMailbox.id,
-					imapDelete,
 				},
-				{
-					attempts: 3,
-					backoff: {
-						type: "exponential",
-						delay: 1500,
-					},
-					removeOnComplete: true,
-					removeOnFail: true,
-				},
-			);
+				jobOptions,
+			),
+		),
+	);
 
-			await searchIngestQueue.add(
-				"refresh-thread",
-				{ threadId },
-				{
-					jobId: `refresh-${threadId}`,
-					removeOnComplete: true,
-					removeOnFail: false,
-					attempts: 3,
-					backoff: {
-						type: "exponential",
-						delay: 1500,
-					},
-				},
-			);
-		}),
+	await Promise.all(
+		jobs.map((job) => job.waitUntilFinished(mailInteractiveEvents)),
 	);
 
 	if (refresh) {
-		revalidatePath("/mail");
+		revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
 	}
 }
+
 
 export async function addNewMailboxFolder(
 	_prev: FormState,
 	formData: FormData,
 ): Promise<FormState> {
 	const decodedForm = decode(formData);
-	const isImapOp = String(decodedForm.imapOp).trim().length > 0;
-	const user = await isSignedIn();
-	if (isImapOp) {
-		const { smtpQueue, smtpEvents } = await getRedis();
-		const job = await smtpQueue.add(
-			"mailbox:add-new",
-			{
-				name: decodedForm.name,
-				parentId: decodedForm.parentId,
-				identityId: decodedForm.identityId,
-				ownerId: user?.id,
-				kind: "custom",
-				slug: slugify(String(decodedForm.name)),
-			},
-			{
-				attempts: 3,
-				backoff: { type: "exponential", delay: 1500 },
-				removeOnComplete: true,
-				removeOnFail: true,
-			},
-		);
-
-		await job.waitUntilFinished(smtpEvents);
-		revalidatePath("/dashboard/mail");
-	} else {
-		const name = String(decodedForm.name ?? "").trim();
-		if (!name)
-			return { success: false, error: "mailbox.folderNameRequired" } as any;
-
-		const ownerId = String(user?.id ?? "");
-		const identityId = String(decodedForm.identityId);
-		const parentId =
-			decodedForm.parentId && decodedForm.parentId !== "none"
-				? String(decodedForm.parentId)
-				: null;
-
-		if (parentId) {
-			const [parent] = await db
-				.select({ id: mailboxes.id, identityId: mailboxes.identityId })
-				.from(mailboxes)
-				.where(eq(mailboxes.id, parentId))
-				.limit(1);
-
-			if (!parent || parent.identityId !== identityId) {
-				return { success: false, error: "mailbox.invalidParentFolder" } as any;
-			}
-		}
-
-		const workspaceId = await getWorkspaceId();
-		await db
-			.insert(mailboxes)
-			.values({
-				ownerId,
-				workspaceId,
-				identityId,
-				parentId,
-				kind: "custom",
-				name,
-				slug: slugify(name.toLowerCase()),
-				isDefault: false,
-				metaData: {},
-			})
-			.returning();
-
-		revalidatePath("/dashboard/mail");
-	}
-
-	return {
-		success: true,
-	};
-}
-
-export async function deleteMailboxFolder({
-											  imapOp,
-											  identityId,
-											  mailboxId,
-										  }: {
-	imapOp: boolean;
-	identityId: string;
-	mailboxId: string;
-}): Promise<FormState> {
 	const user = await isSignedIn();
 
-	if (!imapOp) {
-		const [mailbox] = await db
-			.select()
-			.from(mailboxes)
-			.where(eq(mailboxes.id, mailboxId))
-			.limit(1);
-
-		if (!mailbox) return { success: false, error: "Folder not found" } as any;
-		if (mailbox.isDefault)
-			return { success: false, error: "Cannot delete a default folder" } as any;
-
-		// Delete any subfolders first
-		await db.delete(mailboxes).where(eq(mailboxes.parentId, mailboxId));
-
-		// Delete this mailbox and any sync info
-		await db.delete(mailboxSync).where(eq(mailboxSync.mailboxId, mailboxId));
-		await db.delete(mailboxes).where(eq(mailboxes.id, mailboxId));
-
-		revalidatePath("/dashboard/mail");
-		return { success: true };
+	if (!user?.id) {
+		return { success: false, error: "Unauthorized" };
 	}
 
-	const [ident] = await db
-		.select({ id: identities.id })
-		.from(identities)
-		.where(eq(identities.publicId, identityId))
-		.limit(1);
+	const name = String(decodedForm.name ?? "").trim();
+	const identityId = String(decodedForm.identityId ?? "");
+	const parentId =
+		decodedForm.parentId && decodedForm.parentId !== "none"
+			? String(decodedForm.parentId)
+			: null;
 
-	if (!ident) throw new Error("Identity not found");
+	if (!name) {
+		return {
+			success: false,
+			error: "mailbox.folderNameRequired",
+		};
+	}
 
-	const { smtpQueue, smtpEvents } = await getRedis();
+	const { mailInteractiveQueue, mailInteractiveEvents } = await getRedis();
 
-	const job = await smtpQueue.add(
-		"mailbox:delete-folder",
+	const job = await mailInteractiveQueue.add(
+		"mailbox:add-new",
 		{
-			mailboxId,
-			identityId: ident.id,
-			ownerId: user?.id,
+			name,
+			parentId,
+			identityId,
 		},
 		{
 			attempts: 3,
@@ -1584,74 +1319,118 @@ export async function deleteMailboxFolder({
 		},
 	);
 
-	await job.waitUntilFinished(smtpEvents);
-	redirect(`/dashboard/mail/${identityId}/inbox`);
+	await job.waitUntilFinished(mailInteractiveEvents);
+
+	revalidatePath(
+		"/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]",
+		"page",
+	);
+
 	return { success: true };
 }
 
-export const moveToFolder = async (
-	threadIds: string | string[],
-	fromMailboxId: string, // current mailbox
-	toMailboxId: string, // destination mailbox (UUID)
-	moveImap: boolean, // perform IMAP move when true
-	refresh: boolean,
-	messageId?: string,
-) => {
-	const ids = (Array.isArray(threadIds) ? threadIds : [threadIds])
-		.map(String)
-		.filter(Boolean);
 
-	if (
-		!ids.length ||
-		!fromMailboxId ||
-		!toMailboxId ||
-		fromMailboxId === toMailboxId
-	)
-		return;
+export async function deleteMailboxFolder({ identityId, mailboxId }: {
+	identityId: string;
+	mailboxId: string;
+}): Promise<FormState> {
+	const user = await isSignedIn();
 
-	const { smtpQueue, searchIngestQueue } = await getRedis();
+	if (!user?.id) {
+		return { success: false, error: "Unauthorized" };
+	}
 
-	await Promise.all(
-		ids.map((threadId) =>
-			smtpQueue.add(
-				"mail:move",
-				{
+	const [identity] = await db
+		.select({ id: identities.id })
+		.from(identities)
+		.where(eq(identities.publicId, identityId))
+		.limit(1);
+
+	if (!identity) {
+		return { success: false, error: "Identity not found" };
+	}
+
+	const [mailbox] = await db
+		.select({
+			id: mailboxes.id,
+			identityId: mailboxes.identityId,
+		})
+		.from(mailboxes)
+		.where(
+			and(
+				eq(mailboxes.id, mailboxId),
+				eq(mailboxes.identityId, identity.id),
+			),
+		)
+		.limit(1);
+
+	if (!mailbox) {
+		return { success: false, error: "Folder not found" };
+	}
+
+	const { mailInteractiveQueue, mailInteractiveEvents } = await getRedis();
+
+	const job = await mailInteractiveQueue.add(
+		"mailbox:delete-folder",
+		{
+			mailboxId,
+			identityId: identity.id,
+		},
+		{
+			attempts: 3,
+			backoff: { type: "exponential", delay: 1500 },
+			removeOnComplete: true,
+			removeOnFail: true,
+		},
+	);
+
+	await job.waitUntilFinished(mailInteractiveEvents);
+
+	revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
+	return { success: true };
+}
+
+
+export async function moveToFolder(
+	_prev: FormState,
+	formData: FormData,
+): Promise<FormState> {
+	return handleAction(async () => {
+		const threadIds = formData.getAll("threadId").map(String).filter(Boolean);
+		const fromMailboxId = String(formData.get("fromMailboxId") ?? "");
+		const toMailboxId = String(formData.get("toMailboxId") ?? "");
+
+		if (!threadIds.length || !fromMailboxId || !toMailboxId) {
+			throw new Error("Missing thread or mailbox");
+		}
+
+		if (fromMailboxId === toMailboxId) {
+			throw new Error("Source and destination mailboxes are the same");
+		}
+
+		const { mailInteractiveQueue, mailInteractiveEvents } = await getRedis();
+
+		const jobs = await Promise.all(
+			threadIds.map((threadId) =>
+				mailInteractiveQueue.add("mail:move", {
 					threadId,
 					mailboxId: fromMailboxId,
 					op: "move",
 					toMailboxId,
-					messageId,
-					moveImap,
-				},
-				{
-					jobId: `move:${threadId}:${fromMailboxId}->${toMailboxId}`,
-					attempts: 3,
-					backoff: { type: "exponential", delay: 1500 },
-					removeOnComplete: true,
-					removeOnFail: false,
-				},
+				}),
 			),
-		),
-	);
+		);
 
-	await Promise.all(
-		ids.map((threadId) =>
-			searchIngestQueue.add(
-				"refresh-thread",
-				{ threadId },
-				{
-					jobId: `refresh-${threadId}`,
-					removeOnComplete: true,
-					removeOnFail: false,
-					attempts: 3,
-					backoff: { type: "exponential", delay: 1500 },
-				},
-			),
-		),
-	);
+		await Promise.all(
+			jobs.map((job) => job.waitUntilFinished(mailInteractiveEvents)),
+		);
 
-	if (refresh) revalidatePath("/mail");
-};
+		revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
+
+		return { success: true };
+	});
+}
+
 
 export const clearImapClients = async (identityId: string) => {
 	const { smtpQueue } = await getRedis();
@@ -1719,7 +1498,7 @@ export async function deleteScheduledDraft(
 				.where(eq(draftMessages.id, String(decodedForm.draftId)));
 		});
 
-		revalidatePath("/dashboard/mail");
+		revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
 		return { success: true };
 	});
 }
@@ -1750,7 +1529,7 @@ export async function snoozeThread(input: {
 				.returning();
 		});
 
-		revalidatePath("/dashboard/mail");
+		revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
 		return { success: true };
 	});
 }
@@ -1898,5 +1677,3 @@ export async function oneClickUnsubscribe(
 
 
 }
-
-

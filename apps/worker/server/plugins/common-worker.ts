@@ -11,6 +11,7 @@ import { processRules } from "../../lib/rules/rules-processor";
 import {GetObjectCommand, PutBucketCorsCommand} from "@aws-sdk/client-s3";
 import { s3 } from "../../lib/create-s3-client";
 import { getServerEnv } from "@schema";
+import {processStorageDeletions} from "../../lib/storage/cleanup";
 
 export default defineNitroPlugin(async (nitroApp) => {
 	const connection = redisConnection.connection
@@ -67,6 +68,10 @@ export default defineNitroPlugin(async (nitroApp) => {
 		"common-worker",
 		async (job) => {
 			switch (job.name) {
+				case "storage:cleanup": {
+					await processStorageDeletions();
+					return { success: true };
+				}
 				case "sync-providers": {
 					const { userId, workspaceId } = job.data as { userId: string, workspaceId: string };
 					console.log("[COMMON WORKER] syncing providers for user, workspace", userId, workspaceId);
@@ -158,6 +163,19 @@ export default defineNitroPlugin(async (nitroApp) => {
 		"snooze-tick-scheduler",
 		{ every: 60000 },
 		"mail:snooze-tick",
+		{},
+		{
+			removeOnComplete: true,
+			removeOnFail: false,
+			attempts: 1,
+		},
+		{ override: true },
+	);
+
+	await scheduler.upsertJobScheduler(
+		"storage-cleanup-scheduler",
+		{ every: 30000 },
+		"storage:cleanup",
 		{},
 		{
 			removeOnComplete: true,

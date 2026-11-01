@@ -2,6 +2,7 @@ import type {HookHandler, HookMap, HookName} from "@schema";
 import {
     ExtensionScheduler,
     type ExtensionWorker,
+    type ExtensionService,
     getRegisteredExtensions,
     hooks,
 } from "@extensions";
@@ -10,6 +11,7 @@ import { enqueueJob } from "@common";
 import { registerServerExtensions } from "./register/server";
 import { registerWorkerExtensions } from "./register/worker";
 import { KURRIER_VERSION } from "./version";
+import {Job} from "bullmq";
 
 export type KurrierServer = {
     version: string;
@@ -26,7 +28,7 @@ export type KurrierServer = {
             queue: string;
             name: string;
             data: T;
-        }): Promise<unknown>;
+        }): Promise<Job | undefined>;
     };
 
     workers: {
@@ -34,6 +36,9 @@ export type KurrierServer = {
     };
     schedulers: {
         get(): ExtensionScheduler[];
+    };
+    services: {
+        get(): ExtensionService[];
     };
 };
 
@@ -78,6 +83,15 @@ export const kurrierServer: KurrierServer = {
             return getRegisteredExtensions().flatMap(
                 (extension) =>
                     extension.contributions?.schedulers ?? [],
+            );
+        },
+    },
+    services: {
+        get() {
+            registerWorkerExtensions();
+            return getRegisteredExtensions().flatMap(
+                (extension) =>
+                    extension.contributions?.services ?? [],
             );
         },
     },

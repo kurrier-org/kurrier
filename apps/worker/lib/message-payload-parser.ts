@@ -18,6 +18,7 @@ import { getRedis } from "../lib/get-redis";
 import {s3} from "../lib/create-s3-client";
 import {PutObjectCommand} from "@aws-sdk/client-s3";
 import {upsertWorkspaceSharedContactFromMessage} from "../lib/message-parser-contacts";
+import {createHash} from "node:crypto";
 
 const SEARCH_BATCH_SIZE = 100;
 const WEBHOOK_BATCH_SIZE = 100;
@@ -163,6 +164,32 @@ export async function createOrInitializeThread(
 	return db.transaction(async (tx) => {
 		let existingThread = null;
 
+		const messageId = parsed.messageId?.trim();
+
+		if (messageId) {
+			const [existingMessage] = await tx
+				.select({ threadId: messages.threadId })
+				.from(messages)
+				.where(
+					and(
+						eq(messages.ownerId, ownerId),
+						eq(messages.workspaceId, workspaceId),
+						eq(messages.messageId, messageId),
+					),
+				)
+				.limit(1);
+
+			if (existingMessage?.threadId) {
+				const [thread] = await tx
+					.select()
+					.from(threads)
+					.where(eq(threads.id, existingMessage.threadId))
+					.limit(1);
+
+				if (thread) return thread;
+			}
+		}
+
 		if (candidates.length > 0) {
 			const parentMsgs = await tx
 				.select({
@@ -258,15 +285,16 @@ export async function parseAndStoreEmail(
 	const parsed = await simpleParser(rawEmail);
 	const headers = parsed.headers as Map<string, any>;
 
-	const messageId =
-		parsed.messageId || String(headers.get("message-id") || "").trim();
+	const originalMessageId =
+		parsed.messageId?.trim() ||
+		String(headers.get("message-id") || "").trim();
 
-	if (!messageId) {
-		console.warn(
-			`[parseAndStoreEmail] Skipping message with no Message-ID (mailboxId=${mailboxId}, storageKey=${rawStorageKey})`,
-		);
-		return null;
-	}
+	const messageId = originalMessageId ||
+		`<kurrier-${createHash("sha256")
+			.update(rawEmail)
+			.digest("hex")}@internal.kurrier>`;
+
+	parsed.messageId = messageId;
 
 	/**
 	 * Important for IMAP replay / UIDVALIDITY recovery:
@@ -303,25 +331,42 @@ export async function parseAndStoreEmail(
 			},
 		};
 
+
+		const seen = opts.seen ?? existingMessage.seen;
+		const flagged = opts.flagged ?? existingMessage.flagged;
+		const answered = opts.answered ?? existingMessage.answered;
+
 		await db
 			.update(messages)
 			.set({
 				metaData: nextMeta,
-				seen:
-					typeof opts.seen === "boolean"
-						? opts.seen
-						: existingMessage.seen,
-				answered:
-					typeof opts.answered === "boolean"
-						? opts.answered
-						: existingMessage.answered,
-				flagged:
-					typeof opts.flagged === "boolean"
-						? opts.flagged
-						: existingMessage.flagged,
+				seen,
+				flagged,
+				answered,
 				updatedAt: new Date(),
 			})
 			.where(eq(messages.id, existingMessage.id));
+
+		if (
+			seen !== existingMessage.seen ||
+			flagged !== existingMessage.flagged ||
+			answered !== existingMessage.answered
+		) {
+			await upsertMailboxThreadItem(existingMessage.id);
+
+			const { searchIngestQueue } = await getRedis();
+
+			await searchIngestQueue.add(
+				"refresh-thread",
+				{ threadId: existingMessage.threadId },
+				{
+					removeOnComplete: true,
+					removeOnFail: false,
+					attempts: 3,
+					backoff: { type: "exponential", delay: 1500 },
+				},
+			);
+		}
 
 		return existingMessage;
 	}
@@ -461,7 +506,7 @@ export async function parseAndStoreEmail(
 	const seenIcsChecksums = new Set<string>();
 
 	for (const attachment of parsed.attachments ?? []) {
-		const bucket = "attachments";
+		const bucket = process.env.S3_BUCKET!;
 		const fileName = generateFileName(attachment);
 		const objectPath = `private/${ownerId}/${message.id}/${fileName}`;
 

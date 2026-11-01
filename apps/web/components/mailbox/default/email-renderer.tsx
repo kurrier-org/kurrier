@@ -26,7 +26,7 @@ import type {
 import {
 	type FetchIdentityMailboxListResult,
 	type FetchThreadMailSubsResult,
-	markAsRead,
+	setReadStatus
 } from "@/lib/actions/mailbox";
 import { getRawMessageDownloadUrl } from "@/lib/actions/uploads-actions";
 
@@ -85,9 +85,9 @@ export function scrollToEditor(
 
 	const containerRect = isWindow
 		? ({
-				top: 10,
-				height: window.innerHeight,
-			} as DOMRect)
+			top: 10,
+			height: window.innerHeight,
+		} as DOMRect)
 		: container.getBoundingClientRect();
 
 	const editorRect = el.getBoundingClientRect();
@@ -139,27 +139,25 @@ export function scrollToEditor(
 }
 
 function EmailRenderer({
-	threadIndex,
-	numberOfMessages,
-	message,
-	attachments,
-	publicConfig,
-	threadId,
-	markSmtp,
-	activeMailboxId,
-	mailSubscription,
-	identityMailboxes,
-	allLabels,
-	labelsByThreadId,
-	children,
-}: {
+						   threadIndex,
+						   numberOfMessages,
+						   message,
+						   attachments,
+						   publicConfig,
+						   threadId,
+						   activeMailboxId,
+						   mailSubscription,
+						   identityMailboxes,
+						   allLabels,
+						   labelsByThreadId,
+						   children,
+					   }: {
 	threadIndex: number;
 	numberOfMessages: number;
 	message: MessageEntity;
 	attachments: MessageAttachmentWithUrl[];
 	publicConfig: PublicConfig;
 	threadId: string;
-	markSmtp: boolean;
 	activeMailboxId: string;
 	mailSubscription: FetchThreadMailSubsResult["byMessageId"] | null;
 	identityMailboxes: FetchIdentityMailboxListResult;
@@ -187,10 +185,15 @@ function EmailRenderer({
 	const [showEditorMode, setShowEditorMode] = useState<ComposerMode>("reply");
 
 	useEffect(() => {
-		if (activeMailboxId) {
-			markAsRead(threadId, activeMailboxId, markSmtp, true);
-		}
-	}, [activeMailboxId, threadId, markSmtp]);
+		if (!activeMailboxId || threadIndex !== 0) return;
+
+		const formData = new FormData();
+		formData.set("threadId", threadId);
+		formData.set("mailboxId", activeMailboxId);
+		formData.set("op", "read");
+
+		void setReadStatus({}, formData);
+	}, [activeMailboxId, threadId, threadIndex]);
 
 	useEffect(() => {
 		if (!showEditor) return;

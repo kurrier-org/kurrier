@@ -15,28 +15,25 @@ import type {
 import {
 	type FetchThreadMailSubsResult,
 	fetchIdentityMailboxList,
-	fetchMessageAttachments,
 	getSignedUrlsForMessage,
 } from "@/lib/actions/mailbox";
 
 export default async function ThreadItem({
-	message,
-	threadIndex,
-	numberOfMessages,
-	threadId,
-	activeMailboxId,
-	markSmtp,
-	identityPublicId,
-	mailSubscription,
-	allLabels,
-	labelsByThreadId,
-}: {
+											 message,
+											 threadIndex,
+											 numberOfMessages,
+											 threadId,
+											 activeMailboxId,
+											 identityPublicId,
+											 mailSubscription,
+											 allLabels,
+											 labelsByThreadId,
+										 }: {
 	message: MessageEntity;
 	threadIndex: number;
 	numberOfMessages: number;
 	threadId: string;
 	activeMailboxId: string;
-	markSmtp: boolean;
 	identityPublicId: string;
 	mailSubscription: FetchThreadMailSubsResult["byMessageId"] | null;
 	allLabels: FetchLabelsResult;
@@ -79,7 +76,6 @@ export default async function ThreadItem({
 							attachments={attachments}
 							publicConfig={publicConfig}
 							threadId={threadId}
-							markSmtp={markSmtp}
 							activeMailboxId={activeMailboxId}
 							mailSubscription={mailSubscription}
 							identityMailboxes={identityMailboxes}
