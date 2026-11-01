@@ -22,7 +22,7 @@ function getKey() {
 	return out;
 }
 
-function encrypt(plaintext: string) {
+export function encrypt(plaintext: string) {
 	const key = getKey();
 	const iv = randomBytes(12);
 	const cipher = createCipheriv("aes-256-gcm", key, iv);
@@ -36,7 +36,7 @@ function encrypt(plaintext: string) {
 	};
 }
 
-function decrypt(payload: { encryptedValue: string; iv: string; authTag: string }) {
+export function decrypt(payload: { encryptedValue: string; iv: string; authTag: string }) {
 	const key = getKey();
 	const iv = Buffer.from(payload.iv, "base64");
 	const authTag = Buffer.from(payload.authTag, "base64");

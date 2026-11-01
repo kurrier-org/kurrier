@@ -1,6 +1,5 @@
 import type { MessageEntity } from "@db";
 import { Divider } from "@mantine/core";
-import { connection } from "next/server";
 import { Suspense } from "react";
 import Loading from "@/app/loading";
 import ThreadBackLink from "@/components/mailbox/default/thread-back-link";
@@ -18,20 +17,19 @@ import {
 import { navigation } from "next/cache";
 
 async function ThreadContent({
-	params,
-}: {
+								 params,
+							 }: {
 	params: Promise<{
 		identityPublicId: string;
 		mailboxSlug: string;
 		threadId: string;
 	}>;
 }) {
-	// await connection();
 	await navigation();
 
 	const { threadId, identityPublicId, mailboxSlug } = await params;
 
-	const [{ activeMailbox, mailboxSync }, activeThread, workspacePublicId] =
+	const [{ activeMailbox }, activeThread, workspacePublicId] =
 		await Promise.all([
 			fetchMailbox(identityPublicId, mailboxSlug),
 			fetchWebMailThreadDetail(threadId),
@@ -67,7 +65,6 @@ async function ThreadContent({
 						numberOfMessages={activeThread.messages.length}
 						threadId={threadId}
 						activeMailboxId={activeMailbox.id}
-						markSmtp={!!mailboxSync}
 						identityPublicId={identityPublicId}
 						mailSubscription={byMessageId.get(message.id) ?? null}
 						allLabels={allLabels}
@@ -81,8 +78,8 @@ async function ThreadContent({
 }
 
 function Page({
-	params,
-}: {
+				  params,
+			  }: {
 	params: Promise<{
 		identityPublicId: string;
 		mailboxSlug: string;

@@ -24,7 +24,7 @@ import AddEmailIdentityForm from "@/components/dashboard/identities/add-email-id
 import {
 	deleteDomainIdentity,
 	deleteEmailIdentity,
-	FetchDecryptedSecretsResult, FetchGoogleAccountsResult,
+	FetchDecryptedSecretsResult, FetchGoogleAccountsResult, FetchMicrosoftAccountsResult,
 	FetchUserIdentitiesResult,
 	testSendingEmail,
 	verifyDomainIdentity,
@@ -72,11 +72,11 @@ function getIdentityStatusMeta(status: IdentityStatus, dict: Dict) {
 }
 
 function SectionHeader({
-	title,
-	count,
-	action,
-	subtitle,
-}: {
+						   title,
+						   count,
+						   action,
+						   subtitle,
+					   }: {
 	title: string;
 	count?: number;
 	subtitle?: string;
@@ -103,20 +103,22 @@ function SectionHeader({
 }
 
 export default function MailIdentities({
-	userIdentities,
-	smtpAccounts,
-	providerAccounts,
-	googleAccounts,
-	providerOptions,
-	workspace,
-	workspaceMembers,
-	workspaceUserIdentities,
-	canManageIdentityAccess
-}: {
+										   userIdentities,
+										   smtpAccounts,
+										   providerAccounts,
+										   googleAccounts,
+										   microsoftAccounts,
+										   providerOptions,
+										   workspace,
+										   workspaceMembers,
+										   workspaceUserIdentities,
+										   canManageIdentityAccess
+									   }: {
 	userIdentities: FetchUserIdentitiesResult;
 	smtpAccounts: FetchDecryptedSecretsResult;
 	providerAccounts: FetchDecryptedSecretsResult;
 	googleAccounts: FetchGoogleAccountsResult;
+	microsoftAccounts: FetchMicrosoftAccountsResult;
 	providerOptions: { label: string; value: string }[];
 	workspace: WorkspaceEntity;
 	workspaceMembers: FetchWorkspaceMembersResult;
@@ -172,6 +174,7 @@ export default function MailIdentities({
 						providerOptions={providerOptions}
 						providerAccounts={providerAccounts}
 						googleAccounts={googleAccounts}
+						microsoftAccounts={microsoftAccounts}
 						userDomainIdentities={userDomainIdentities}
 						workspaceMembers={workspaceMembers}
 						userEmailIdentities={userEmailIdentities}
@@ -886,9 +889,9 @@ export default function MailIdentities({
 }
 
 function EmptyState({
-	kind,
-	query,
-}: {
+						kind,
+						query,
+					}: {
 	kind: "domain" | "email";
 	query: string;
 }) {

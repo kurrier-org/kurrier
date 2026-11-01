@@ -17,6 +17,7 @@ export type IdentityQuota = {
 };
 
 const identityQuotaMap = new Map<string, IdentityQuota>();
+
 export function getOrInitQuota(
 	identityId: string,
 	dailyLimitBytes: number,
@@ -67,7 +68,7 @@ type BackfillMailboxOpts = {
 	quota: IdentityQuota;
 };
 
-const DEFAULT_WINDOW = 300;
+const DEFAULT_WINDOW = 100;
 
 async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 	const {
@@ -106,9 +107,23 @@ async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 		return;
 	}
 
+	const serverUidValidity = box.uidValidity;
+	const storedUidValidity = sync.uidValidity;
+
+	if (
+		serverUidValidity &&
+		storedUidValidity &&
+		serverUidValidity !== storedUidValidity
+	) {
+		throw new Error(
+			`UIDVALIDITY changed during backfill: ${path}. ` +
+			`Stored=${storedUidValidity}, Server=${serverUidValidity}`,
+		);
+	}
+
 	if (!sync.lastSeenUid || Number(sync.lastSeenUid) === 0) {
 		const TAIL_WINDOW = 200;
-		const bootLastSeen = Math.max(0, top - TAIL_WINDOW + 1);
+		const bootLastSeen = Math.max(0, top - TAIL_WINDOW);
 
 		await db
 			.update(mailboxSync)
@@ -127,7 +142,6 @@ async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 		return;
 	}
 
-	// Nothing left to backfill for this mailbox
 	if (cursor <= 0) {
 		if (top <= 0) {
 			await db
@@ -161,7 +175,12 @@ async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 	const end = cursor;
 	const start = Math.max(1, end - window + 1);
 	const range = `${start}:${end}`;
-	console.info("[imap:backfill-full] batch range", { identityId, path, range });
+
+	console.info("[imap:backfill-full] batch range", {
+		identityId,
+		path,
+		range,
+	});
 
 	let batchBytes = 0;
 	let processedCount = 0;
@@ -177,9 +196,9 @@ async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 			source: true,
 		},
 	)) {
-
 		const m = msg as FetchMessageObject;
 		const raw = m.source ? m.source.toString() : "";
+
 		if (!raw) {
 			throw new Error(
 				`IMAP backfill returned empty source identity=${identityId} mailbox=${path} uid=${m.uid}`,
@@ -187,7 +206,6 @@ async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 		}
 
 		const size = m.size ?? Buffer.byteLength(raw, "utf8");
-
 
 		batchBytes += size;
 		processedCount += 1;
@@ -327,13 +345,11 @@ export const startFullBackfillForIdentity = async (
 			}
 		}
 	} catch (err) {
-
 		console.error("[imap:backfill-full] error", {
 			identityId,
 			err,
 		});
 		throw err;
-
 	}
 };
 
@@ -341,40 +357,45 @@ export async function startBackfillForIdentity(
 	identityId: string,
 	imapInstances: Map<string, ImapFlow>,
 ) {
-
 	const [identity] = await db
-
 		.select()
 		.from(identities)
 		.where(eq(identities.id, identityId));
+
 	if (!identity) return false;
+
 	const quota = getOrInitQuota(
 		identity.id,
 		getDailyQuota(identity as IdentityEntity),
 	);
+
 	if (quota.limit <= 0) {
 		console.info("[imap:backfill-full] quota exhausted", {
 			identityId,
 		});
 		return false;
 	}
+
 	const client = await initSmtpClient(
 		identity.id,
 		imapInstances,
 	);
+
 	if (!client?.authenticated || !client?.usable) {
 		return false;
 	}
+
 	await davCreateCalendarForIdentity({
 		identityId: identity.id,
 		userId: identity.ownerId,
 		workspaceId: identity.workspaceId,
 	});
+
 	await startFullBackfillForIdentity(
 		client,
 		identity.id,
 		quota,
 	);
-	return quota.limit > 0;
 
+	return quota.limit > 0;
 }

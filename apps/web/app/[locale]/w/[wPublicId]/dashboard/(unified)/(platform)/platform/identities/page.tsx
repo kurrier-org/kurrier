@@ -7,6 +7,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
 	fetchDecryptedSecrets,
 	fetchGoogleAccounts,
+	fetchMicrosoftAccounts,
 	fetchUserIdentities,
 	getProviderById,
 } from "@/lib/actions/dashboard";
@@ -17,11 +18,12 @@ import {
 } from "@/lib/actions/workspace";
 import { getDictionary } from "@/lib/dictionaries";
 import { parseSecret } from "@/lib/utils";
-import {getWorkspaceRole} from "@/lib/actions/clients";
+import { getWorkspaceRole } from "@/lib/actions/clients";
 
 async function Page({ params }: { params: Promise<{ locale: string }> }) {
 	const { locale } = await params;
 	const dict = await getDictionary(locale);
+
 	const [userSmtpAccounts, userProviderAccounts] = await Promise.all([
 		fetchDecryptedSecrets({
 			linkTable: smtpAccountSecrets,
@@ -34,10 +36,15 @@ async function Page({ params }: { params: Promise<{ locale: string }> }) {
 			secretIdCol: providerSecrets.secretId,
 		}),
 	]);
+
 	const userIdentities = (await fetchUserIdentities()).filter(
 		(row) => row.identities.metaData?.provider !== "kurrier-mail",
 	);
-	const googleAccounts = await fetchGoogleAccounts();
+
+	const [googleAccounts, microsoftAccounts] = await Promise.all([
+		fetchGoogleAccounts(),
+		fetchMicrosoftAccounts(),
+	]);
 
 	const options = [];
 	const emailProviderTypes = ["ses", "mailgun", "postmark"];
@@ -66,8 +73,10 @@ async function Page({ params }: { params: Promise<{ locale: string }> }) {
 			});
 		}
 	}
+
 	for (const smtpAccount of userSmtpAccounts) {
 		const secret = parseSecret(smtpAccount);
+
 		if (secret.sendVerified || secret.receiveVerified) {
 			options.push({
 				label: `${dict.platform.smtpAccountLabelPrefix}${secret.label})`,
@@ -75,6 +84,7 @@ async function Page({ params }: { params: Promise<{ locale: string }> }) {
 			});
 		}
 	}
+
 	for (const googleAccount of googleAccounts) {
 		const canSend = googleAccount.scopes?.includes(
 			"https://www.googleapis.com/auth/gmail.send",
@@ -93,16 +103,41 @@ async function Page({ params }: { params: Promise<{ locale: string }> }) {
 		}
 	}
 
+	for (const account of microsoftAccounts) {
+		const canSend = account.scopes?.includes(
+			"https://outlook.office.com/SMTP.Send",
+		);
+
+		const canReceive = account.scopes?.includes(
+			"https://outlook.office.com/IMAP.AccessAsUser.All",
+		);
+
+		const verified =
+			account.status === "connected" &&
+			canSend &&
+			canReceive &&
+			!account.lastError &&
+			!account.identityId;
+
+		if (verified) {
+			options.push({
+				label: `Microsoft 365 (${account.email})`,
+				value: `microsoft-${account.id}`,
+			});
+		}
+	}
+
 	const workspace = await fetchWorkspace();
+
 	const [workspaceMembers, workspaceUserIdentities, workspaceRole] =
 		await Promise.all([
 			fetchWorkspaceMembers(workspace.id),
 			workspaceIdentityAssignments(),
 			getWorkspaceRole(),
 		]);
+
 	const canManageIdentityAccess =
 		workspaceRole === "owner" || workspaceRole === "admin";
-
 
 	return (
 		<>
@@ -115,6 +150,7 @@ async function Page({ params }: { params: Promise<{ locale: string }> }) {
 					/>
 				</div>
 			</header>
+
 			<div className="flex flex-1 flex-col gap-4 p-4 pt-0">
 				<MailIdentities
 					userIdentities={userIdentities}
@@ -125,6 +161,7 @@ async function Page({ params }: { params: Promise<{ locale: string }> }) {
 					workspaceMembers={workspaceMembers}
 					workspaceUserIdentities={workspaceUserIdentities}
 					googleAccounts={googleAccounts}
+					microsoftAccounts={microsoftAccounts}
 					canManageIdentityAccess={canManageIdentityAccess}
 				/>
 			</div>

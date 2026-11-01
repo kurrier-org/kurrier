@@ -45,4 +45,8 @@ export function createStore(
 
 export * from "./core";
 export * from "./mail/google-client";
+export * from "./mail/microsoft-client";
+export * from "./mailbox/resolve";
+export { MailboxService } from "./mailbox/service";
+export { MailboxStore } from "./mailbox/store";
 export { SesMailer } from "./mail/ses";

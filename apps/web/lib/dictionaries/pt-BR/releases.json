@@ -6,6 +6,24 @@
     "dismiss": "Fechar novidades"
   },
   "releases": {
+    "v4_4_0": {
+      "title": "Mais conectado, mais confiável",
+      "description": "Conecte contas do Microsoft 365, aproveite uma sincronização de e-mails mais confiável e gerencie seus arquivos com mais facilidade no Drive.",
+      "features": {
+        "microsoft365": {
+          "title": "Suporte ao Microsoft 365",
+          "description": "Conecte contas de e-mail da Microsoft com segurança via OAuth e gerencie-as junto aos seus outros provedores."
+        },
+        "imapSync": {
+          "title": "Sincronização de e-mails mais confiável",
+          "description": "Melhorias nas atualizações em tempo real, na descoberta de pastas e na recuperação de conexões IMAP interrompidas."
+        },
+        "drive": {
+          "title": "Um Drive ainda mais completo",
+          "description": "Envie arquivos arrastando e soltando, visualize imagens e PDFs e compartilhe arquivos com links de download que expiram."
+        }
+      }
+    },
     "v4_2_0": {
       "title": "Assinaturas de e-mail",
       "description": "Crie assinaturas profissionais para cada identidade e use-as diretamente no editor de mensagens do Kurrier.",

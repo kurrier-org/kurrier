@@ -6,6 +6,7 @@ import { kurrierServer } from "@distribution/kurrier-server";
 export default defineNitroPlugin(async (nitroApp) => {
     const extensions = kurrierServer.workers.get();
     const schedulerExtensions = kurrierServer.schedulers.get();
+    const serviceExtensions = kurrierServer.services.get();
 
     const workers = extensions.map((extension) => {
         const worker = new Worker(
@@ -67,8 +68,19 @@ export default defineNitroPlugin(async (nitroApp) => {
         }),
     );
 
+    const services = await Promise.all(
+        serviceExtensions.map(async (extension) => {
+            const cleanup = await extension.start();
+            console.info(`[DISTRIBUTION] service ${extension.id} started`,);
+            return cleanup;
+        }),
+    );
+
     nitroApp.hooks.hookOnce("close", async () => {
         await Promise.allSettled([
+            ...services
+                .filter((cleanup) => typeof cleanup === "function")
+                .map((cleanup) => cleanup()),
             ...workers.map((worker) => worker.close()),
             ...schedulers.map((scheduler) => scheduler.close()),
         ]);

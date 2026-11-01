@@ -193,24 +193,22 @@ export async function upsertMailboxThreadItem(
 		.onConflictDoUpdate({
 			target: [mailboxThreads.threadId, mailboxThreads.mailboxId],
 			set: {
-				// prefer new subject/preview if supplied
-				subject: sql`COALESCE(EXCLUDED.subject, ${mailboxThreads.subject})`,
-				previewText: sql`COALESCE(EXCLUDED.preview_text, ${mailboxThreads.previewText})`,
+				subject: sql`EXCLUDED.subject`,
+				previewText: sql`EXCLUDED.preview_text`,
 
-				// timeline
-				lastActivityAt: sql`GREATEST(EXCLUDED.last_activity_at, ${mailboxThreads.lastActivityAt})`,
-				firstMessageAt: sql`LEAST(COALESCE(EXCLUDED.first_message_at, ${mailboxThreads.firstMessageAt}), ${mailboxThreads.firstMessageAt})`,
+				lastActivityAt: sql`EXCLUDED.last_activity_at`,
+				firstMessageAt: sql`EXCLUDED.first_message_at`,
 
-				// counts from fresh aggregation
 				messageCount: sql`EXCLUDED.message_count`,
 				unreadCount: sql`EXCLUDED.unread_count`,
 
-				// booleans accumulate
-				hasAttachments: sql`${mailboxThreads.hasAttachments} OR EXCLUDED.has_attachments`,
-				starred: sql`${mailboxThreads.starred} OR EXCLUDED.starred`,
+				hasAttachments: sql`EXCLUDED.has_attachments`,
+				starred: sql`EXCLUDED.starred`,
+
+				participants: sql`EXCLUDED.participants`,
 
 				// shallow-merge participants (keeps existing keys, fills new)
-				participants: sql`jsonb_strip_nulls(${mailboxThreads.participants} || EXCLUDED.participants)`,
+				// participants: sql`jsonb_strip_nulls(${mailboxThreads.participants} || EXCLUDED.participants)`,
 
 				// ids/slugs are stable but keep them consistent
 				identityId: sql`EXCLUDED.identity_id`,

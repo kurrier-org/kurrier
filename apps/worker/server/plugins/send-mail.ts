@@ -26,9 +26,9 @@ import {
 	smtpAccountSecrets,
 	threads,
 	getSecretAdmin,
-	jmapAccounts,
+	jmapAccounts, microsoftAccounts,
 } from "@db";
-import { createMailer } from "@providers";
+import {createMailer, getMicrosoftAccessToken} from "@providers";
 import { and, eq } from "drizzle-orm";
 import addressparser from "addressparser";
 import { getRedis } from "../../lib/get-redis";
@@ -214,6 +214,28 @@ export default defineNitroPlugin(async (nitroApp) => {
 			) => {
 				const providerType = mailbox.provider?.type ?? "smtp";
 				let credentials: Record<string, unknown>;
+
+				if (mailbox.identity.metaData?.provider === "microsoft") {
+					const [account] = await tx
+						.select()
+						.from(microsoftAccounts)
+						.where(eq(microsoftAccounts.identityId, mailbox.identity.id))
+						.limit(1);
+
+					if (!account) {
+						throw new Error("Microsoft account not found");
+					}
+
+					const accessToken = await getMicrosoftAccessToken(account.id);
+
+					return createMailer("smtp", {
+						SMTP_HOST: "smtp.office365.com",
+						SMTP_PORT: 587,
+						SMTP_SECURE: "false",
+						SMTP_USERNAME: mailbox.identity.value,
+						SMTP_ACCESS_TOKEN: accessToken,
+					}).sendEmail(input.to, input.opts);
+				}
 
 				if (providerType === "jmap") {
 					const [jmapAccount] = await tx
@@ -436,9 +458,14 @@ export default defineNitroPlugin(async (nitroApp) => {
 				hookResult ?? await sendWithConnectedProvider(input);
 
 			if (mailerResponse.success) {
+				const messageId =
+					(decodedForm.rfc822MessageId as string | undefined) ||
+					String(mailerResponse.MessageId);
+
 				const parsedMessage = MessageInsertSchema.parse({
 					...newMessageBody,
-					messageId: String(mailerResponse.MessageId) || `msg-${Date.now()}`,
+					// messageId: String(mailerResponse.MessageId) || `msg-${Date.now()}`,
+					messageId,
 				});
 
 				const [newMessage] = await tx
@@ -448,7 +475,8 @@ export default defineNitroPlugin(async (nitroApp) => {
 
 
 				const emlBuffer = await buildEmlBuffer({
-					messageId: String(mailerResponse.MessageId) || `msg-${Date.now()}`,
+					// messageId: String(mailerResponse.MessageId) || `msg-${Date.now()}`,
+					messageId,
 					from: mailbox.identity.value,
 					to: data.to || [],
 					cc: data.cc || [],
@@ -500,6 +528,35 @@ export default defineNitroPlugin(async (nitroApp) => {
 			}
 			return { success: true };
 		});
+
+
+		if (
+			result.success &&
+			messageIdToIndex &&
+			decodedForm.appendToSent === true
+		) {
+			try {
+				const { smtpQueue } = await getRedis();
+
+				await smtpQueue.add(
+					"imap:append-sent",
+					{ messageId: messageIdToIndex },
+					{
+						jobId: `append-sent-${messageIdToIndex}`,
+						attempts: 3,
+						backoff: {
+							type: "exponential",
+							delay: 2000,
+						},
+					},
+				);
+			} catch (error) {
+				console.error(
+					"[send-mail] Sent message saved, but IMAP APPEND could not be queued",
+					{ messageId: messageIdToIndex, error },
+				);
+			}
+		}
 
 		if (result.success && messageIdToIndex) {
 			try {

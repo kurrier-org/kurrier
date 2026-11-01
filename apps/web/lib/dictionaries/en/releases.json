@@ -6,6 +6,24 @@
     "dismiss": "Dismiss what's new"
   },
   "releases": {
+    "v4_4_0": {
+      "title": "More connected, more reliable",
+      "description": "Connect Microsoft 365 accounts, enjoy more reliable email synchronization, and work with files more easily in Drive.",
+      "features": {
+        "microsoft365": {
+          "title": "Microsoft 365 support",
+          "description": "Connect Microsoft email accounts securely with OAuth alongside your existing providers."
+        },
+        "imapSync": {
+          "title": "More reliable email sync",
+          "description": "Improved real-time updates, mailbox discovery, and recovery from interrupted IMAP connections."
+        },
+        "drive": {
+          "title": "A more capable Drive",
+          "description": "Drag and drop files, preview images and PDFs, and share files with expiring download links."
+        }
+      }
+    },
     "v4_2_0": {
       "title": "Email signatures",
       "description": "Create polished signatures for each identity and use them directly from the Kurrier composer.",

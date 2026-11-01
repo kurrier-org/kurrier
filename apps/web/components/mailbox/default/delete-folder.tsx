@@ -4,11 +4,9 @@ import { Menu } from "@mantine/core";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function DeleteMailboxFolder({
-	imapOp,
-	identityPublicId,
-	mailboxId,
-}: {
-	imapOp: boolean;
+								 identityPublicId,
+								 mailboxId,
+							 }: {
 	identityPublicId: string;
 	mailboxId: string;
 }) {
@@ -20,7 +18,6 @@ function DeleteMailboxFolder({
 		setLoading(true);
 		setUiDeleted(true);
 		await deleteMailboxFolder({
-			imapOp,
 			identityId: identityPublicId,
 			mailboxId: mailboxId,
 		});

@@ -33,6 +33,16 @@ export type ReleaseTranslations = {
 
 export const releases: KurrierRelease[] = [
     {
+        id: "v4_4_0",
+        version: "4.4.0",
+        date: "2026-11-01",
+        features: [
+            { id: "microsoft365" },
+            { id: "imapSync" },
+            { id: "drive" },
+        ],
+    },
+    {
         id: "v4_2_0",
         version: "4.2.0",
         date: "2026-09-20",
