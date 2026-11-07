@@ -12,10 +12,12 @@ import { getMicrosoftAccessToken } from "@providers";
 
 const MAX_AUTH_FAILURES = 3;
 const MAX_CONNECTION_FAILURES = 5;
+const CONNECTION_COOLDOWN_MS = 60_000;
 
 type ConnectionFailure = {
 	count: number;
 	authentication: boolean;
+	retryAfter?: number;
 };
 
 const connectionFailures = new Map<string, ConnectionFailure>();
@@ -28,14 +30,16 @@ const pendingConnections = new WeakMap<
 export const canAttemptImapConnection = (identityId: string): boolean => {
 	const failure = connectionFailures.get(identityId);
 
-	if (!failure) {
+	if (!failure) return true;
+
+	if (failure.retryAfter) {
+		if (Date.now() < failure.retryAfter) return false;
+
+		connectionFailures.delete(identityId);
 		return true;
 	}
 
-	return (
-		failure.count <
-		(failure.authentication ? MAX_AUTH_FAILURES : MAX_CONNECTION_FAILURES)
-	);
+	return true;
 };
 
 export const resetImapConnectionFailures = (identityId: string): void => {
@@ -55,14 +59,20 @@ const recordImapConnectionFailure = (
 	const count =
 		previous?.authentication === authentication ? previous.count + 1 : 1;
 
+	const limit = authentication ? MAX_AUTH_FAILURES : MAX_CONNECTION_FAILURES;
+
+	const retryAfter =
+		count >= limit ? Date.now() + CONNECTION_COOLDOWN_MS : undefined;
+
 	connectionFailures.set(identityId, {
 		count,
 		authentication,
+		retryAfter,
 	});
 
-	if (!canAttemptImapConnection(identityId)) {
+	if (retryAfter) {
 		console.warn(
-			`[IMAP:${identityId}] retry limit reached (${authentication ? "authentication" : "connection"}, ${count} failures)`,
+			`[IMAP:${identityId}] ${authentication ? "authentication" : "connection"} failures reached ${count}; retrying after cooldown`,
 		);
 	}
 };

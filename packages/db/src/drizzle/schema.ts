@@ -2272,35 +2272,6 @@ export const emailSignatures = pgTable(
 	],
 ).enableRLS();
 
-export const storageDeletions = pgTable(
-	"storage_deletions",
-	{
-		id: uuid("id").defaultRandom().primaryKey(),
-
-		bucketId: text("bucket_id"),
-		path: text("path").notNull(),
-
-		attempts: integer("attempts").notNull().default(0),
-		lastError: text("last_error"),
-
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-
-		processedAt: timestamp("processed_at", { withTimezone: true }),
-	},
-	(t) => [
-		uniqueIndex("uniq_storage_deletions_bucket_path")
-			.on(t.bucketId, t.path)
-			.where(sql`${t.bucketId} IS NOT NULL`),
-
-		uniqueIndex("uniq_storage_deletions_null_bucket_path")
-			.on(t.path)
-			.where(sql`${t.bucketId} IS NULL`),
-		index("idx_storage_deletions_pending").on(t.processedAt),
-	],
-);
-
 export const driveShareLinks = pgTable(
 	"drive_share_links",
 	{
@@ -2343,6 +2314,35 @@ export const driveShareLinks = pgTable(
 		...workspaceCrudPolicies(t, "drive_share_links"),
 	],
 ).enableRLS();
+
+export const storageDeletions = pgTable(
+	"storage_deletions",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+
+		bucketId: text("bucket_id"),
+		path: text("path").notNull(),
+
+		attempts: integer("attempts").notNull().default(0),
+		lastError: text("last_error"),
+
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+
+		processedAt: timestamp("processed_at", { withTimezone: true }),
+	},
+	(t) => [
+		uniqueIndex("uniq_storage_deletions_bucket_path")
+			.on(t.bucketId, t.path)
+			.where(sql`${t.bucketId} IS NOT NULL`),
+
+		uniqueIndex("uniq_storage_deletions_null_bucket_path")
+			.on(t.path)
+			.where(sql`${t.bucketId} IS NULL`),
+		index("idx_storage_deletions_pending").on(t.processedAt),
+	],
+);
 
 export const microsoftAccountStatusEnum = pgEnum("microsoft_account_status", [
 	"connected",

@@ -1,10 +1,6 @@
 import { db, identities, mailboxes, messages } from "@db";
 import { and, eq, isNotNull, or, sql } from "drizzle-orm";
-import {
-	initSmtpClient,
-	canAttemptImapConnection,
-	resetImapConnectionFailures,
-} from "./imap-client";
+import { initSmtpClient, resetImapConnectionFailures } from "./imap-client";
 import type { FlagsEvent, ImapFlow } from "imapflow";
 import { deltaFetch } from "../../lib/imap/imap-delta-fetch";
 import { canSyncIdentity } from "../access";
@@ -12,7 +8,6 @@ import { kurrierServer } from "@distribution/kurrier-server";
 import { MailboxStore } from "@providers";
 import { getRedis } from "../../lib/get-redis";
 
-const MAX_RECONNECT_ATTEMPTS = 5;
 const RECONNECT_BACKOFFS_MS = [5000, 10000, 20000, 40000, 80000];
 
 const MAX_HOURLY_RECONNECTS = 10;
@@ -266,45 +261,21 @@ function scheduleReconnect(
 		return;
 	}
 
-	if (isReconnectCoolingDown(identityId)) {
-		return;
-	}
-
-	if (!canAttemptImapConnection(identityId)) {
-		return;
-	}
-
 	if (!recordRealtimeReconnect(identityId)) {
 		return;
 	}
 
 	const attempts = reconnectAttempts.get(identityId) ?? 0;
 
-	if (attempts >= MAX_RECONNECT_ATTEMPTS) {
-		console.error(
-			`[realtime:${identityId}] reconnect cap reached; stopping automatic reconnect`,
-		);
-		return;
-	}
-
 	const backoffMs =
 		RECONNECT_BACKOFFS_MS[Math.min(attempts, RECONNECT_BACKOFFS_MS.length - 1)];
 
 	reconnectAttempts.set(identityId, attempts + 1);
 
-	console.warn(
-		`[realtime:${identityId}] reconnecting in ${backoffMs / 1000}s ` +
-			`(attempt ${attempts + 1}/${MAX_RECONNECT_ATTEMPTS})`,
-	);
-
 	const timer = setTimeout(() => {
 		reconnectTimers.delete(identityId);
 
-		if (
-			realtimeShuttingDown ||
-			stoppedIdentities.has(identityId) ||
-			isReconnectCoolingDown(identityId)
-		) {
+		if (realtimeShuttingDown || stoppedIdentities.has(identityId)) {
 			return;
 		}
 
@@ -380,28 +351,6 @@ async function startRealtimeSyncForIdentity(
 
 		attachRealtimeEventHandlers(identityId, client, imapInstances);
 
-		// const [identity] = await db
-		// 	.select({ workspaceId: identities.workspaceId })
-		// 	.from(identities)
-		// 	.where(eq(identities.id, identityId))
-		// 	.limit(1);
-
-		// if (isReconnect && identity) {
-		// 	const { smtpQueue } = await getRedis();
-		//
-		// 	await smtpQueue.add(
-		// 		"imap:backfill-discover",
-		// 		{
-		// 			identityId,
-		// 			workspaceId: identity.workspaceId,
-		// 			renames: [],
-		// 		},
-		// 		{
-		// 			removeOnComplete: true,
-		// 		},
-		// 	);
-		// }
-
 		/*
 		 * A connection which successfully entered realtime is healthy.
 		 */
@@ -413,9 +362,6 @@ async function startRealtimeSyncForIdentity(
 			console.error(`[realtime:${identityId}] realtime sync failed`, err);
 		}
 	} finally {
-		// if (discoveryTimer) {
-		// 	clearTimeout(discoveryTimer);
-		// }
 		if (lock) {
 			try {
 				lock.release();
@@ -692,10 +638,6 @@ export const recoverOfflineRealtime = async (
 			existing?.usable &&
 			(existing as any).__kurrierRealtimeStarted
 		) {
-			continue;
-		}
-
-		if (!canAttemptImapConnection(identityId)) {
 			continue;
 		}
 

@@ -7,7 +7,8 @@ COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
 COPY packages ./packages
 COPY apps/worker ./apps/worker
 
-RUN pnpm install
+#RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
 WORKDIR /repo/apps/worker
 ENV NITRO_PRESET=node-server

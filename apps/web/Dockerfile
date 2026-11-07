@@ -1,7 +1,7 @@
 # -----------------------------
 # Build stage
 # -----------------------------
-FROM node:22-alpine AS build
+FROM node:24.20.0-alpine AS build
 WORKDIR /repo
 RUN corepack enable && corepack prepare pnpm@10.18.3 --activate
 
@@ -80,7 +80,7 @@ RUN pnpm run build
 # -----------------------------
 # Runtime stage (standalone)
 # -----------------------------
-FROM node:22-alpine
+FROM node:24.20.0-alpine
 WORKDIR /app
 
 RUN apk add --no-cache postgresql-client bash
