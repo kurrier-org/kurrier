@@ -19,6 +19,7 @@ import {
     driveVolumes,
     driveEntries,
     draftMessages, mailSubscriptions, users, workspaces, emailAssets,
+    WorkspaceRoleEnum,
 } from "./schema";
 import { z } from "zod";
 import {
@@ -116,8 +117,8 @@ export const DraftMessageInsertSchema = createInsertSchema(draftMessages);
 
 export type MailSubscriptionEntity = typeof mailSubscriptions.$inferSelect;
 export type UserEntity = typeof users.$inferSelect;
-export const WorkspaceRolesList = ["owner", "admin", "member"] as const;
-export type WorkspaceRolesListType = z.infer<typeof WorkspaceRolesList>;
+export const WorkspaceRolesList = WorkspaceRoleEnum.enumValues;
+export type WorkspaceRole = (typeof WorkspaceRolesList)[number];
 export type WorkspaceEntity = typeof workspaces.$inferSelect;
 
 export type EmailAssetEntity = typeof emailAssets.$inferSelect;

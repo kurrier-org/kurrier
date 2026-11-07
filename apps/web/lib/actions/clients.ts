@@ -1,5 +1,6 @@
 import {currentSession, isSignedIn} from "@/lib/actions/auth";
-import {createDrizzleClientInstance, workspaceMembers, workspaces} from "@db";
+import {createDrizzleClientInstance, workspaceMembers, workspaces, WorkspaceRolesList} from "@db";
+import type {WorkspaceRole} from "@db";
 import {cookies} from "next/headers";
 import {and, eq, or} from "drizzle-orm";
 
@@ -16,10 +17,10 @@ export const getWorkspacePublicId = async () => {
 	return String(id?.value)
 };
 
-export const getWorkspaceRole = async () => {
+export const getWorkspaceRole = async (): Promise<WorkspaceRole | null> => {
 	const cookieStore = await cookies()
-	const id = cookieStore.get('workspaceRole');
-	return String(id?.value)
+	const role = cookieStore.get('workspaceRole')?.value;
+	return WorkspaceRolesList.find((r) => r === role) ?? null;
 };
 
 

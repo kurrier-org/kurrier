@@ -18,6 +18,7 @@ import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { DashboardNavItem } from "@extensions";
+import type { WorkspaceRole } from "@db";
 import { useDictionary } from "@/components/providers/dictionary-provider";
 import { useSiteFeatures } from "@/components/providers/site-features-provider";
 import {
@@ -51,7 +52,7 @@ export function NavMain({
 							extensionNavItems,
 						}: {
 	workspacePublicId?: string;
-	workspaceRole?: string;
+	workspaceRole?: WorkspaceRole;
 	extensionNavItems: DashboardNavItem[];
 }) {
 	const pathname = usePathname();
