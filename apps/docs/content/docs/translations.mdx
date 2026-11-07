@@ -1,0 +1,131 @@
+---
+title: Translations and localization
+description: Add and maintain Kurrier locales, dictionaries, and date localization.
+---
+
+Kurrier keeps interface copy in locale-specific JSON dictionaries and uses the
+locale in the URL to select the dictionary and date formatting rules. English
+is the source of truth for the dictionary structure.
+
+## Dictionary structure
+
+Dictionaries live in `apps/web/lib/dictionaries/<locale>/`. Each locale mirrors
+the JSON files in `apps/web/lib/dictionaries/en/`:
+
+```text
+actions.json      auth.json       calendar.json
+common.json       contacts.json   dashboard.json
+drive.json        mailbox.json    platform.json
+validation.json   vault.json
+```
+
+The filename is the dictionary namespace. Keys may be flat, as in
+`common.json`, or nested, as in `actions.json`. Keep the same nested key paths
+as English and translate only the values. Do not rename, add, or remove keys in
+one locale without making the corresponding structural change in English and
+the other strict locales.
+
+## Add a new locale
+
+Use the locale's BCP 47 language tag for the directory and URL segment. Preserve
+the conventional casing for regional tags, such as `pt-BR`.
+
+1. Copy the complete file list from `apps/web/lib/dictionaries/en/` to a new
+   `apps/web/lib/dictionaries/<locale>/` directory and translate the values.
+2. Add the locale to `LOCALES` in `apps/web/lib/locale.ts`. This updates the
+   shared `Locale` type and `hasLocale()` validation.
+3. Add a loader in `apps/web/lib/dictionaries.ts`. Import every namespace,
+   return the new locale code, and register the loader in the `dictionaries`
+   map. Follow an existing complete loader such as `loadPl()`.
+4. Add the locale to the `locales` array in `apps/web/proxy.ts`. The proxy uses
+   this list for URL, cookie, and `Accept-Language` negotiation.
+5. Add a native-language label to `LOCALE_LABELS` in
+   `apps/web/components/common/language-switcher.tsx`. The switcher's list is
+   derived from this object, so no separate menu entry is needed.
+6. Configure date localization as described below.
+7. Add terminology conventions for the language to
+   `apps/web/lib/dictionaries/GLOSSARY.md`.
+
+## Day.js and Mantine dates
+
+`apps/web/lib/locale.ts` maps every Kurrier locale to the locale identifier used
+by Day.js in `DAYJS_LOCALES`. Day.js identifiers are lowercase and may not match
+the casing of Kurrier's BCP 47 tags. For example, `pt-BR` maps to `pt-br`.
+
+When the locale needs its own Day.js data:
+
+1. Add the correct entry to `DAYJS_LOCALES`.
+2. Add the matching side-effect import, such as `dayjs/locale/pl`, to
+   `apps/web/components/providers/dictionary-provider.tsx`.
+
+If Day.js does not provide the locale, map it to an intentional fallback such
+as `en` and document that decision in the PR.
+
+No per-locale change is normally needed in `apps/web/app/[locale]/layout.tsx`.
+The layout already passes `DAYJS_LOCALES[lang]` to Mantine's `DatesProvider`,
+while `DictionaryProvider` applies the same mapping to Day.js. Smoke-test a date
+picker or calendar view to confirm month names, weekday names, and date formats.
+
+## Use the glossary
+
+Read `apps/web/lib/dictionaries/GLOSSARY.md` before translating. It records each
+language's tone, typography, action style, and fixed terms for recurring mail,
+calendar, contacts, and workspace concepts.
+
+Add a section when introducing a language. When a new recurring product term is
+added later, update the relevant glossary table in the same PR so translators do
+not have to choose a different term in each namespace.
+
+## Keep keys in sync with English
+
+Run the parity check from the repository root:
+
+```bash
+pnpm check:locales
+```
+
+`scripts/check-locales.ts` compares every leaf key in each English namespace
+with the corresponding keys in every other locale. Missing or extra keys fail
+the command for strict locales. It also parses the JSON, so malformed files fail
+the check.
+
+Locales intentionally being translated in phases may be added temporarily to
+`PARTIAL_LOCALES` in that script. Partial locales report differences as warnings
+instead of failing. Use this only when the PR explicitly introduces an
+incomplete locale; remove the entry when parity is complete.
+
+## When English strings change
+
+When adding or changing interface copy:
+
+1. Put the English key in the most relevant existing namespace. If a new
+   namespace is necessary, add its JSON file to every locale and load and return
+   it from every loader in `apps/web/lib/dictionaries.ts`.
+2. Add the same nested key path to every strict locale. Translate it in the same
+   PR when possible; do not leave strict locales behind.
+3. Update `GLOSSARY.md` if the string introduces a recurring product term or a
+   new language-wide convention.
+4. Run `pnpm check:locales` and resolve every missing or extra strict key.
+
+## Validate before submitting
+
+Use the repository's pinned Node.js and pnpm versions, then run from the
+repository root:
+
+```bash
+pnpm check:locales
+pnpm lint
+pnpm --filter @kurrier/web exec tsc --noEmit
+```
+
+If you change this guide or the documentation navigation, also run:
+
+```bash
+pnpm --dir apps/docs build
+```
+
+Review the diff for accidental English-key changes, malformed JSON, and files
+outside the intended locale. When a local development environment is available,
+also verify the language selector, refresh a localized URL directly, and check
+one representative date or calendar view. Report any repository-wide failure
+that is unrelated to the translation separately instead of claiming it passed.
