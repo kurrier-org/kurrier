@@ -5,8 +5,8 @@ import { fetchUserAPIKeys } from "@/lib/actions/dashboard";
 import { getDictionary, type Locale } from "@/lib/dictionaries";
 
 export default async function Page({
-									   params,
-								   }: {
+	params,
+}: {
 	params: Promise<{ locale: Locale }>;
 }) {
 	const { locale } = await params;

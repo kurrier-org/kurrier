@@ -151,13 +151,25 @@ function RecurrenceRulesFormInput({
 
 	const intervalUnitLabel =
 		freq === "DAILY"
-			? format?.message(interval, dict?.calendar?.intervalDaysCount ?? { other: "days" }) ?? "days"
+			? (format?.message(
+					interval,
+					dict?.calendar?.intervalDaysCount ?? { other: "days" },
+				) ?? "days")
 			: freq === "WEEKLY"
-				? format?.message(interval, dict?.calendar?.intervalWeeksCount ?? { other: "weeks" }) ?? "weeks"
+				? (format?.message(
+						interval,
+						dict?.calendar?.intervalWeeksCount ?? { other: "weeks" },
+					) ?? "weeks")
 				: freq === "MONTHLY"
-					? format?.message(interval, dict?.calendar?.intervalMonthsCount ?? { other: "months" }) ?? "months"
+					? (format?.message(
+							interval,
+							dict?.calendar?.intervalMonthsCount ?? { other: "months" },
+						) ?? "months")
 					: freq === "YEARLY"
-						? format?.message(interval, dict?.calendar?.intervalYearsCount ?? { other: "years" }) ?? "years"
+						? (format?.message(
+								interval,
+								dict?.calendar?.intervalYearsCount ?? { other: "years" },
+							) ?? "years")
 						: "";
 
 	const fields: BaseFormProps["fields"] = [

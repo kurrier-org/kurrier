@@ -64,7 +64,10 @@ export function LabelAssignPopover({
 			radius="md"
 		>
 			<Popover.Target>
-				<Tooltip label={dict?.mailbox?.addOrRemoveLabels ?? "Add or remove labels"} withArrow>
+				<Tooltip
+					label={dict?.mailbox?.addOrRemoveLabels ?? "Add or remove labels"}
+					withArrow
+				>
 					<ActionIcon
 						onClick={(e) => {
 							e.stopPropagation();
@@ -86,7 +89,9 @@ export function LabelAssignPopover({
 					<TextInput
 						size="xs"
 						radius="md"
-						placeholder={dict?.mailbox?.searchLabelsPlaceholder ?? "Search labels…"}
+						placeholder={
+							dict?.mailbox?.searchLabelsPlaceholder ?? "Search labels…"
+						}
 						value={query}
 						onChange={(event) => setQuery(event.currentTarget.value)}
 					/>

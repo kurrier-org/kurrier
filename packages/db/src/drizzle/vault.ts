@@ -1,4 +1,4 @@
-import {and, eq} from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { createDrizzleClientInstance } from "./drizzle-client";
 import { secretsMeta } from "./schema";
 import { createDb } from "./init-db";
@@ -26,7 +26,10 @@ export function encrypt(plaintext: string) {
 	const key = getKey();
 	const iv = randomBytes(12);
 	const cipher = createCipheriv("aes-256-gcm", key, iv);
-	const encrypted = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
+	const encrypted = Buffer.concat([
+		cipher.update(plaintext, "utf8"),
+		cipher.final(),
+	]);
 	const authTag = cipher.getAuthTag();
 	return {
 		encryptedValue: encrypted.toString("base64"),
@@ -36,14 +39,21 @@ export function encrypt(plaintext: string) {
 	};
 }
 
-export function decrypt(payload: { encryptedValue: string; iv: string; authTag: string }) {
+export function decrypt(payload: {
+	encryptedValue: string;
+	iv: string;
+	authTag: string;
+}) {
 	const key = getKey();
 	const iv = Buffer.from(payload.iv, "base64");
 	const authTag = Buffer.from(payload.authTag, "base64");
 	const ciphertext = Buffer.from(payload.encryptedValue, "base64");
 	const decipher = createDecipheriv("aes-256-gcm", key, iv);
 	decipher.setAuthTag(authTag);
-	const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+	const decrypted = Buffer.concat([
+		decipher.update(ciphertext),
+		decipher.final(),
+	]);
 	return decrypted.toString("utf8");
 }
 
@@ -55,7 +65,12 @@ export async function listSecrets(session: string, workspaceId: string) {
 export async function createSecret(
 	session: string,
 	workspaceId: string,
-	input: { name: string; value: string; description?: string | null; managedBy?: "system" | "user";},
+	input: {
+		name: string;
+		value: string;
+		description?: string | null;
+		managedBy?: "system" | "user";
+	},
 ) {
 	const db = await createDrizzleClientInstance(session, { workspaceId });
 	const { rls } = db;
@@ -170,7 +185,7 @@ export async function updateSecret(
 	session: string,
 	workspaceId: string,
 	id: string,
-	input: { value?: string; name?: string, description?: string | null; },
+	input: { value?: string; name?: string; description?: string | null },
 ) {
 	const db = await createDrizzleClientInstance(session, { workspaceId });
 	const { rls } = db;
@@ -285,16 +300,11 @@ export async function listUserManagedSecrets(
 	session: string,
 	workspaceId: string,
 ) {
-
 	const db = await createDrizzleClientInstance(session, { workspaceId });
 	return db.rls((tx) =>
-		tx
-			.select()
-			.from(secretsMeta)
-			.where(eq(secretsMeta.managedBy, "user")),
+		tx.select().from(secretsMeta).where(eq(secretsMeta.managedBy, "user")),
 	);
 }
-
 
 export async function getUserManagedSecretByName(
 	session: string,
@@ -303,19 +313,21 @@ export async function getUserManagedSecretByName(
 ) {
 	const db = await createDrizzleClientInstance(session, { workspaceId });
 
-	const meta = await db.rls((tx) =>
-		tx
-			.select()
-			.from(secretsMeta)
-			.where(
-				and(
-					eq(secretsMeta.workspaceId, workspaceId),
-					eq(secretsMeta.name, name),
-					eq(secretsMeta.managedBy, "user"),
-				),
-			)
-			.limit(1),
-	).then((rows) => rows[0]);
+	const meta = await db
+		.rls((tx) =>
+			tx
+				.select()
+				.from(secretsMeta)
+				.where(
+					and(
+						eq(secretsMeta.workspaceId, workspaceId),
+						eq(secretsMeta.name, name),
+						eq(secretsMeta.managedBy, "user"),
+					),
+				)
+				.limit(1),
+		)
+		.then((rows) => rows[0]);
 
 	if (!meta) {
 		throw new Error(`Secret ${name} not found`);

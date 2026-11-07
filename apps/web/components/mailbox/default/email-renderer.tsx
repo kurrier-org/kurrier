@@ -26,7 +26,7 @@ import type {
 import {
 	type FetchIdentityMailboxListResult,
 	type FetchThreadMailSubsResult,
-	setReadStatus
+	setReadStatus,
 } from "@/lib/actions/mailbox";
 import { getRawMessageDownloadUrl } from "@/lib/actions/uploads-actions";
 
@@ -85,9 +85,9 @@ export function scrollToEditor(
 
 	const containerRect = isWindow
 		? ({
-			top: 10,
-			height: window.innerHeight,
-		} as DOMRect)
+				top: 10,
+				height: window.innerHeight,
+			} as DOMRect)
 		: container.getBoundingClientRect();
 
 	const editorRect = el.getBoundingClientRect();
@@ -139,19 +139,19 @@ export function scrollToEditor(
 }
 
 function EmailRenderer({
-						   threadIndex,
-						   numberOfMessages,
-						   message,
-						   attachments,
-						   publicConfig,
-						   threadId,
-						   activeMailboxId,
-						   mailSubscription,
-						   identityMailboxes,
-						   allLabels,
-						   labelsByThreadId,
-						   children,
-					   }: {
+	threadIndex,
+	numberOfMessages,
+	message,
+	attachments,
+	publicConfig,
+	threadId,
+	activeMailboxId,
+	mailSubscription,
+	identityMailboxes,
+	allLabels,
+	labelsByThreadId,
+	children,
+}: {
 	threadIndex: number;
 	numberOfMessages: number;
 	message: MessageEntity;

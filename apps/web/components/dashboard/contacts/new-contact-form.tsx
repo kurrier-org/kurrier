@@ -16,8 +16,8 @@ import { nanoid } from "nanoid";
 import { extension } from "mime-types";
 import { useRouter } from "next/navigation";
 import { ContactEntity } from "@db";
-import {uploadContactProfileAction} from "@/lib/actions/uploads-actions";
-import {FetchIsSignedInResult} from "@/lib/actions/auth";
+import { uploadContactProfileAction } from "@/lib/actions/uploads-actions";
+import { FetchIsSignedInResult } from "@/lib/actions/auth";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 export default function NewContactForm({
@@ -125,7 +125,6 @@ export default function NewContactForm({
 			if (profileField) profileField.value = mainPath;
 			if (profileXsField) profileXsField.value = thumbPath;
 			if (publicIdField) publicIdField.value = newContactPublicId.current;
-
 		} catch (err) {
 			console.error("Upload failed", err);
 		}
@@ -179,7 +178,11 @@ export default function NewContactForm({
 						ref={fileRef}
 						onChange={handleFileSelect}
 					/>
-					<input type="hidden" name="addressBookId" value={contact?.addressBookId} />
+					<input
+						type="hidden"
+						name="addressBookId"
+						value={contact?.addressBookId}
+					/>
 					<button
 						type="button"
 						onClick={() => fileRef.current?.click()}
@@ -275,7 +278,10 @@ export default function NewContactForm({
 		...emailRows.flatMap<FieldConfig>((id, index) => [
 			{
 				name: `emails.${id}.address`,
-				label: index === 0 ? (dict?.contacts?.email ?? "Email") : `${dict?.contacts?.email ?? "Email"} ${index + 1}`,
+				label:
+					index === 0
+						? (dict?.contacts?.email ?? "Email")
+						: `${dict?.contacts?.email ?? "Email"} ${index + 1}`,
 				wrapperClasses: "col-span-12",
 				props: {
 					type: "email",
@@ -334,7 +340,10 @@ export default function NewContactForm({
 			},
 			{
 				name: `phones.${id}.number`,
-				label: index === 0 ? (dict?.contacts?.phone ?? "Phone") : `${dict?.contacts?.phone ?? "Phone"} ${index + 1}`,
+				label:
+					index === 0
+						? (dict?.contacts?.phone ?? "Phone")
+						: `${dict?.contacts?.phone ?? "Phone"} ${index + 1}`,
 				wrapperClasses: "col-span-8 md:col-span-9",
 				props: {
 					required: index === 0,
@@ -381,7 +390,10 @@ export default function NewContactForm({
 		...addressRows.flatMap<FieldConfig>((id, index) => [
 			{
 				name: `addresses.${id}.country`,
-				label: index === 0 ? (dict?.contacts?.country ?? "Country") : `${dict?.contacts?.country ?? "Country"} (${index + 1})`,
+				label:
+					index === 0
+						? (dict?.contacts?.country ?? "Country")
+						: `${dict?.contacts?.country ?? "Country"} (${index + 1})`,
 				wrapperClasses: "col-span-12",
 				kind: "select",
 				options: countryOptions,
@@ -515,7 +527,9 @@ export default function NewContactForm({
 				fields={fields}
 				action={createContactAction}
 				onSuccess={(newContact) =>
-					router.push(`/w/${workspacePublicId}/dashboard/contacts/${newContact.publicId}`)
+					router.push(
+						`/w/${workspacePublicId}/dashboard/contacts/${newContact.publicId}`,
+					)
 				}
 			/>
 		</Container>

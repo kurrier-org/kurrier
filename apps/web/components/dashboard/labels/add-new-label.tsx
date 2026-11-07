@@ -9,7 +9,7 @@ import { addNewLabel, FetchLabelsResult } from "@/lib/actions/labels";
 import ReusableFormCustomWrapper from "@/components/common/reusable-form-custom-wrapper";
 import { DEFAULT_COLORS_SWATCH } from "@common/mail-client";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
-import {useParams} from "next/navigation";
+import { useParams } from "next/navigation";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function useLabelOptions({ labels }: { labels: any[] }) {
@@ -39,7 +39,9 @@ export default function AddNewLabel({
 			label: dict?.mailbox?.labelName ?? "Label Name",
 			wrapperClasses: "col-span-12",
 			props: {
-				placeholder: dict?.mailbox?.labelNamePlaceholder ?? "e.g., Work, Finance, Travel...",
+				placeholder:
+					dict?.mailbox?.labelNamePlaceholder ??
+					"e.g., Work, Finance, Travel...",
 			},
 		},
 		{
@@ -84,7 +86,12 @@ export default function AddNewLabel({
 
 	return (
 		<>
-			<Modal opened={opened} onClose={close} title={dict?.mailbox?.newLabel ?? "New Label"} size="sm">
+			<Modal
+				opened={opened}
+				onClose={close}
+				title={dict?.mailbox?.newLabel ?? "New Label"}
+				size="sm"
+			>
 				<ReusableForm
 					fields={fields}
 					onSuccess={close}

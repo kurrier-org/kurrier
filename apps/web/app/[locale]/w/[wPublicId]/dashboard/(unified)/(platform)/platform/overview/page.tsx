@@ -25,8 +25,7 @@ import { fetchWorkspace } from "@/lib/actions/workspace";
 import { getDictionary } from "@/lib/dictionaries";
 import { DISTRIBUTION_CONFIG } from "@distribution/config";
 import WhatsNew from "@/components/dashboard/platform/whats-new";
-import {latestRelease} from "@/lib/releases";
-
+import { latestRelease } from "@/lib/releases";
 
 export default async function Page({
 	params,
@@ -276,7 +275,10 @@ export default async function Page({
 							</div>
 						</div>
 
-						<WhatsNew translations={dict.releases} latestRelease={latestRelease} />
+						<WhatsNew
+							translations={dict.releases}
+							latestRelease={latestRelease}
+						/>
 
 						<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 							{statCards.map((card) => (
@@ -301,14 +303,23 @@ export default async function Page({
 									rows={[
 										[
 											p.totalMessages,
-											formatNumber(locale, statsData?.emailsProcessedTotal || 0),
+											formatNumber(
+												locale,
+												statsData?.emailsProcessedTotal || 0,
+											),
 										],
 										[
 											p.last24h,
 											formatNumber(locale, statsData?.emailsProcessed24h || 0),
 										],
-										[p.threads, formatNumber(locale, statsData?.threadCount || 0)],
-										[p.drafts, formatNumber(locale, statsData?.draftCount || 0)],
+										[
+											p.threads,
+											formatNumber(locale, statsData?.threadCount || 0),
+										],
+										[
+											p.drafts,
+											formatNumber(locale, statsData?.draftCount || 0),
+										],
 										[
 											p.scheduledDrafts,
 											formatNumber(locale, statsData?.scheduledDraftCount || 0),
@@ -415,10 +426,19 @@ export default async function Page({
 										: [
 												[
 													p.messages,
-													formatNumber(locale, statsData?.emailsProcessedTotal || 0),
+													formatNumber(
+														locale,
+														statsData?.emailsProcessedTotal || 0,
+													),
 												],
-												[p.threads, formatNumber(locale, statsData?.threadCount || 0)],
-												[p.drafts, formatNumber(locale, statsData?.draftCount || 0)],
+												[
+													p.threads,
+													formatNumber(locale, statsData?.threadCount || 0),
+												],
+												[
+													p.drafts,
+													formatNumber(locale, statsData?.draftCount || 0),
+												],
 											]
 								}
 							/>

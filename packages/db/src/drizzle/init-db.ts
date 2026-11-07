@@ -1,7 +1,4 @@
-import {
-	drizzle,
-	type PostgresJsDatabase,
-} from "drizzle-orm/postgres-js";
+import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { getServerEnv } from "@schema";
 import type * as schema from "./schema";

@@ -6,24 +6,24 @@ import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { LabelEntity } from "@db";
 
 type LabelWithCount = LabelEntity & {
-    contactCount?: number;
+	contactCount?: number;
 };
 
 function RenderContactsLabelHomeSidebar({
-                                            globalLabels,
-                                        }: {
-    globalLabels: LabelWithCount[];
+	globalLabels,
+}: {
+	globalLabels: LabelWithCount[];
 }) {
-    const { setState } = useDynamicContext();
+	const { setState } = useDynamicContext();
 
-    useEffect(() => {
-        setState((prev) => ({
-            ...prev,
-            labels: globalLabels,
-        }));
-    }, [globalLabels, setState]);
+	useEffect(() => {
+		setState((prev) => ({
+			...prev,
+			labels: globalLabels,
+		}));
+	}, [globalLabels, setState]);
 
-    return <LabelHome />;
+	return <LabelHome />;
 }
 
 export default RenderContactsLabelHomeSidebar;

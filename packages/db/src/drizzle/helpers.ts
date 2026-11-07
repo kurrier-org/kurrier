@@ -1,8 +1,14 @@
-import {eq, sql} from "drizzle-orm";
-import {PgTable, PgColumn, pgPolicy} from "drizzle-orm/pg-core";
+import { eq, sql } from "drizzle-orm";
+import { PgTable, PgColumn, pgPolicy } from "drizzle-orm/pg-core";
 
 import { db } from "./init-db";
-import {authUid, authWorkspaceId, providers, secretsMeta, smtpAccounts} from "./schema";
+import {
+	authUid,
+	authWorkspaceId,
+	providers,
+	secretsMeta,
+	smtpAccounts,
+} from "./schema";
 import { getSecretAdmin } from "./vault";
 
 type FetchArgs = {
@@ -58,7 +64,6 @@ export async function decryptAdminSecrets({
 	);
 }
 
-
 export function workspaceTablePolicies(t: any) {
 	return [
 		// SELECT active workspace only
@@ -87,11 +92,10 @@ export function workspaceTablePolicies(t: any) {
 		pgPolicy("workspaces_insert", {
 			for: "insert",
 			to: "kurrier",
-			withCheck: sql`${t.ownerId} = ${authUid}`
+			withCheck: sql`${t.ownerId} = ${authUid}`,
 		}),
 	];
 }
-
 
 export function workspaceCrudPolicies<T extends { workspaceId: any }>(
 	t: T,
@@ -121,7 +125,6 @@ export function workspaceCrudPolicies<T extends { workspaceId: any }>(
 		}),
 	];
 }
-
 
 export function identitySelectConditionForIdentities(t: any) {
 	return sql`
@@ -164,10 +167,7 @@ export function workspaceMutationPolicies<T extends { workspaceId: any }>(
 	];
 }
 
-export function identitySelectCondition(
-	t: any,
-	identityColumn: any
-) {
+export function identitySelectCondition(t: any, identityColumn: any) {
 	return sql`
     ${t.workspaceId} = ${authWorkspaceId}
     AND EXISTS (

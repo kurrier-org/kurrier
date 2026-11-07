@@ -15,7 +15,7 @@ async function loadEn() {
 		validation,
 		actions,
 		vault,
-		releases
+		releases,
 	] = await Promise.all([
 		import("@/lib/dictionaries/en/common.json").then((m) => m.default),
 		import("@/lib/dictionaries/en/auth.json").then((m) => m.default),
@@ -44,7 +44,7 @@ async function loadEn() {
 		validation,
 		actions,
 		vault,
-		releases
+		releases,
 	};
 }
 
@@ -65,7 +65,7 @@ async function loadPtBr(): Promise<Dictionary> {
 		validation,
 		actions,
 		vault,
-		releases
+		releases,
 	] = await Promise.all([
 		import("@/lib/dictionaries/pt-BR/common.json").then((m) => m.default),
 		import("@/lib/dictionaries/pt-BR/auth.json").then((m) => m.default),
@@ -94,7 +94,7 @@ async function loadPtBr(): Promise<Dictionary> {
 		validation,
 		actions,
 		vault,
-		releases
+		releases,
 	} as Dictionary;
 }
 
@@ -111,7 +111,7 @@ async function loadKo(): Promise<Dictionary> {
 		validation,
 		actions,
 		vault,
-		releases
+		releases,
 	] = await Promise.all([
 		import("@/lib/dictionaries/ko/common.json").then((m) => m.default),
 		import("@/lib/dictionaries/ko/auth.json").then((m) => m.default),
@@ -140,7 +140,7 @@ async function loadKo(): Promise<Dictionary> {
 		validation,
 		actions,
 		vault,
-		releases
+		releases,
 	} as Dictionary;
 }
 
@@ -157,7 +157,7 @@ async function loadRu(): Promise<Dictionary> {
 		validation,
 		actions,
 		vault,
-		releases
+		releases,
 	] = await Promise.all([
 		import("@/lib/dictionaries/ru/common.json").then((m) => m.default),
 		import("@/lib/dictionaries/ru/auth.json").then((m) => m.default),
@@ -186,7 +186,7 @@ async function loadRu(): Promise<Dictionary> {
 		validation,
 		actions,
 		vault,
-		releases
+		releases,
 	} as Dictionary;
 }
 
@@ -203,7 +203,7 @@ async function loadPl(): Promise<Dictionary> {
 		validation,
 		actions,
 		vault,
-		releases
+		releases,
 	] = await Promise.all([
 		import("@/lib/dictionaries/pl/common.json").then((m) => m.default),
 		import("@/lib/dictionaries/pl/auth.json").then((m) => m.default),
@@ -232,7 +232,7 @@ async function loadPl(): Promise<Dictionary> {
 		validation,
 		actions,
 		vault,
-		releases
+		releases,
 	} as Dictionary;
 }
 

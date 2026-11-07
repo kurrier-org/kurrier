@@ -12,8 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { FetchInboundIdentitiesResult } from "@/lib/actions/dashboard";
 
 export default function InboundCard({
-										inboundIdentities,
-									}: {
+	inboundIdentities,
+}: {
 	inboundIdentities: FetchInboundIdentitiesResult;
 }) {
 	const dict = useOptionalDictionary();

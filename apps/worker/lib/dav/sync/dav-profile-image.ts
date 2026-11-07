@@ -1,9 +1,8 @@
 import { ContactEntity, AddressBookEntity } from "@db";
 import { ParsedContactFields } from "./dav-vcard";
 import { nanoid } from "nanoid";
-import {PutObjectCommand} from "@aws-sdk/client-s3";
-import {s3} from "../../../lib/create-s3-client";
-
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { s3 } from "../../../lib/create-s3-client";
 
 export async function davParsePhoto(
 	parsed: ParsedContactFields,
@@ -35,18 +34,22 @@ export async function davParsePhoto(
 	const contentType = `image/${ext === "jpg" ? "jpeg" : ext}`;
 
 	await Promise.all([
-		s3.send(new PutObjectCommand({
-			Bucket: process.env.S3_BUCKET!,
-			Key: mainPath,
-			Body: mainFile,
-			ContentType: contentType,
-		})),
-		s3.send(new PutObjectCommand({
-			Bucket: process.env.S3_BUCKET!,
-			Key: thumbPath,
-			Body: mainFile,
-			ContentType: contentType,
-		})),
+		s3.send(
+			new PutObjectCommand({
+				Bucket: process.env.S3_BUCKET!,
+				Key: mainPath,
+				Body: mainFile,
+				ContentType: contentType,
+			}),
+		),
+		s3.send(
+			new PutObjectCommand({
+				Bucket: process.env.S3_BUCKET!,
+				Key: thumbPath,
+				Body: mainFile,
+				ContentType: contentType,
+			}),
+		),
 	]);
 
 	payload.profilePicture = mainPath;

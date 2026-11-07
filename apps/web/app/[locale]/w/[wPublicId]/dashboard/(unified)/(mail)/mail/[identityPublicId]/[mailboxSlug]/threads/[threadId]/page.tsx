@@ -12,11 +12,11 @@ import {
 	fetchThreadMailSubscriptions,
 	fetchWebMailThreadDetail,
 } from "@/lib/actions/mailbox";
-import {navigation} from "next/cache";
+import { navigation } from "next/cache";
 
 async function Page({
-						params,
-					}: {
+	params,
+}: {
 	params: Promise<{
 		identityPublicId: string;
 		mailboxSlug: string;

@@ -4,15 +4,15 @@ import { extensions } from "../extensions/server";
 let registered = false;
 
 export const registerExtensions = (): void => {
-    if (registered) {
-        return;
-    }
+	if (registered) {
+		return;
+	}
 
-    registered = true;
+	registered = true;
 
-    console.info("[distribution] registering server extensions");
+	console.info("[distribution] registering server extensions");
 
-    for (const extension of extensions) {
-        registerExtension(extension);
-    }
+	for (const extension of extensions) {
+		registerExtension(extension);
+	}
 };

@@ -7,43 +7,43 @@ import type { MessageEntity } from "@db";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function TextLoading() {
-    const dict = useOptionalDictionary();
+	const dict = useOptionalDictionary();
 
-    return (
-        <pre className="h-full w-full overflow-auto p-4 font-mono text-xs">
-            {dict?.mailbox?.loadingPlainText ?? "Loading plain text…"}
-        </pre>
-    );
+	return (
+		<pre className="h-full w-full overflow-auto p-4 font-mono text-xs">
+			{dict?.mailbox?.loadingPlainText ?? "Loading plain text…"}
+		</pre>
+	);
 }
 
 const TextSyntaxHighlighter = dynamic(
-    () => import("./text-syntax-highlighter"),
-    {
-        ssr: true,
-        loading: () => <TextLoading />,
-    },
+	() => import("./text-syntax-highlighter"),
+	{
+		ssr: true,
+		loading: () => <TextLoading />,
+	},
 );
 
-export default function TextPane({
-                                     message,
-                                 }: {
-    message?: MessageEntity;
-}) {
-    const dict = useOptionalDictionary();
+export default function TextPane({ message }: { message?: MessageEntity }) {
+	const dict = useOptionalDictionary();
 
-    return (
-        <InspectorPlaceholder
-            title={dict?.mailbox?.tabPlainText ?? "Plain text"}
-            description={dict?.mailbox?.plainTextDescription ?? "The plain-text version of the email."}
-        >
-            <div className="h-full w-full min-h-0 overflow-hidden">
-                <TextSyntaxHighlighter
-                    text={
-                        message?.text ??
-                        (dict?.mailbox?.noPlainTextVersion ?? "No plain-text version available.")
-                    }
-                />
-            </div>
-        </InspectorPlaceholder>
-    );
+	return (
+		<InspectorPlaceholder
+			title={dict?.mailbox?.tabPlainText ?? "Plain text"}
+			description={
+				dict?.mailbox?.plainTextDescription ??
+				"The plain-text version of the email."
+			}
+		>
+			<div className="h-full w-full min-h-0 overflow-hidden">
+				<TextSyntaxHighlighter
+					text={
+						message?.text ??
+						dict?.mailbox?.noPlainTextVersion ??
+						"No plain-text version available."
+					}
+				/>
+			</div>
+		</InspectorPlaceholder>
+	);
 }

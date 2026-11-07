@@ -83,7 +83,8 @@ export default function ManageLabels({
 	const handleDelete = async () => {
 		if (!editLabelId) return;
 		const ok = window.confirm(
-			dict?.mailbox?.deleteLabelConfirm ?? "Delete this label? This action cannot be undone.",
+			dict?.mailbox?.deleteLabelConfirm ??
+				"Delete this label? This action cannot be undone.",
 		);
 		if (!ok) return;
 
@@ -99,13 +100,20 @@ export default function ManageLabels({
 
 	return (
 		<>
-			<Modal opened={opened} onClose={close} title={dict?.mailbox?.manageLabels ?? "Manage labels"} size="sm">
+			<Modal
+				opened={opened}
+				onClose={close}
+				title={dict?.mailbox?.manageLabels ?? "Manage labels"}
+				size="sm"
+			>
 				<div className="flex flex-col gap-6">
 					<section className="space-y-3">
 						<Select
 							size="xs"
 							label={dict?.mailbox?.chooseLabel ?? "Choose label"}
-							placeholder={dict?.mailbox?.selectLabelToEdit ?? "Select a label to edit…"}
+							placeholder={
+								dict?.mailbox?.selectLabelToEdit ?? "Select a label to edit…"
+							}
 							data={labelOptions}
 							value={editLabelId}
 							onChange={(value) => setEditLabelId(value)}
@@ -123,7 +131,10 @@ export default function ManageLabels({
 
 									<Select
 										size="xs"
-										label={dict?.mailbox?.nestUnderOptional ?? "Nest under (optional)"}
+										label={
+											dict?.mailbox?.nestUnderOptional ??
+											"Nest under (optional)"
+										}
 										placeholder={dict?.mailbox?.noParent ?? "No parent"}
 										data={labelOptions.filter((o) => o.value !== editLabelId)}
 										value={editParentId}

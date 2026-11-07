@@ -12,10 +12,10 @@ type LayoutProps = {
 };
 
 export default function DashboardLayout({
-											children,
-											thread,
-											params,
-										}: LayoutProps) {
+	children,
+	thread,
+	params,
+}: LayoutProps) {
 	return (
 		<>
 			<Suspense fallback={<Loading />}>

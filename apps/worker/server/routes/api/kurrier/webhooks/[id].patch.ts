@@ -5,10 +5,9 @@ import {
 	validateApiKey,
 } from "../../../../../lib/api-helpers";
 import { db, WebhookInsertEntity, webhooks, WebhookUpdateSchema } from "@db";
-import {and, eq} from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 export default defineEventHandler(async (event) => {
-
 	const { ownerId } = await validateApiKey(event);
 	const id = getRouterParam(event, "id");
 	if (!id) {
@@ -22,7 +21,12 @@ export default defineEventHandler(async (event) => {
 			message: issue.message,
 			code: issue.code,
 		}));
-		return apiError(400, "INVALID_REQUEST_BODY", "Invalid request body", issues);
+		return apiError(
+			400,
+			"INVALID_REQUEST_BODY",
+			"Invalid request body",
+			issues,
+		);
 	}
 	const [existing] = await db
 		.select()
@@ -38,5 +42,4 @@ export default defineEventHandler(async (event) => {
 		.where(and(eq(webhooks.id, existing.id), eq(webhooks.ownerId, ownerId)))
 		.returning();
 	return apiSuccess(updated);
-
 });

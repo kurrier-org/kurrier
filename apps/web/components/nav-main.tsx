@@ -46,10 +46,10 @@ type NavPlatformItem = {
 };
 
 export function NavMain({
-							workspacePublicId,
-							workspaceRole,
-							extensionNavItems,
-						}: {
+	workspacePublicId,
+	workspaceRole,
+	extensionNavItems,
+}: {
 	workspacePublicId?: string;
 	workspaceRole?: string;
 	extensionNavItems: DashboardNavItem[];
@@ -77,72 +77,68 @@ export function NavMain({
 		},
 		...(workspaceRole === "owner"
 			? [
-				{
-					title: dict.platform.providers,
-					url: `/w/${workspacePublicId}/dashboard/platform/providers`,
-					icon: Plug,
-					items: [],
-				},
-				{
-					title: dict.platform.identities,
-					url: `/w/${workspacePublicId}/dashboard/platform/identities`,
-					icon: Send,
-					items: [],
-				},
-			]
+					{
+						title: dict.platform.providers,
+						url: `/w/${workspacePublicId}/dashboard/platform/providers`,
+						icon: Plug,
+						items: [],
+					},
+					{
+						title: dict.platform.identities,
+						url: `/w/${workspacePublicId}/dashboard/platform/identities`,
+						icon: Send,
+						items: [],
+					},
+				]
 			: []),
 		...(workspaceRole === "owner"
 			? [
-				{
-					title: dict.platform.workspace,
-					url: `/w/${workspacePublicId}/dashboard/platform/workspace`,
-					icon: Blocks,
-					items: [],
-				},
-				...(drive
-					? [
-						{
-							title: dict.platform.storage,
-							url: `/w/${workspacePublicId}/dashboard/platform/storage`,
-							icon: HardDrive,
-							items: [],
-						},
-					]
-					: []),
-				{
-					title: dict.vault.vault,
-					url: `/w/${workspacePublicId}/dashboard/platform/vault`,
-					icon: Vault,
-					items: [],
-				},
-				{
-					title: dict.platform.apiKeys,
-					url: `/w/${workspacePublicId}/dashboard/platform/api-keys`,
-					icon: Key,
-					items: [],
-				},
-				{
-					title: dict.platform.webhooks,
-					url: `/w/${workspacePublicId}/dashboard/platform/webhooks`,
-					icon: Webhook,
-					items: [],
-				},
-				{
-					title: dict.platform.syncServices,
-					url: `/w/${workspacePublicId}/dashboard/platform/sync-services`,
-					icon: FolderSync,
-					items: [],
-				},
-			]
+					{
+						title: dict.platform.workspace,
+						url: `/w/${workspacePublicId}/dashboard/platform/workspace`,
+						icon: Blocks,
+						items: [],
+					},
+					...(drive
+						? [
+								{
+									title: dict.platform.storage,
+									url: `/w/${workspacePublicId}/dashboard/platform/storage`,
+									icon: HardDrive,
+									items: [],
+								},
+							]
+						: []),
+					{
+						title: dict.vault.vault,
+						url: `/w/${workspacePublicId}/dashboard/platform/vault`,
+						icon: Vault,
+						items: [],
+					},
+					{
+						title: dict.platform.apiKeys,
+						url: `/w/${workspacePublicId}/dashboard/platform/api-keys`,
+						icon: Key,
+						items: [],
+					},
+					{
+						title: dict.platform.webhooks,
+						url: `/w/${workspacePublicId}/dashboard/platform/webhooks`,
+						icon: Webhook,
+						items: [],
+					},
+					{
+						title: dict.platform.syncServices,
+						url: `/w/${workspacePublicId}/dashboard/platform/sync-services`,
+						icon: FolderSync,
+						items: [],
+					},
+				]
 			: []),
 	];
 
 	for (const item of extensionPlatformItems) {
-		navPlatformItems.splice(
-			item.order ?? navPlatformItems.length,
-			0,
-			item,
-		);
+		navPlatformItems.splice(item.order ?? navPlatformItems.length, 0, item);
 	}
 
 	return (

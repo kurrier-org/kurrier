@@ -1,3 +1,1 @@
-export const DISTRIBUTION_SCHEMAS = [
-    "./src/drizzle/schema.ts",
-] as const;
+export const DISTRIBUTION_SCHEMAS = ["./src/drizzle/schema.ts"] as const;

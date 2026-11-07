@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {Users, Plus} from "lucide-react";
+import { Users, Plus } from "lucide-react";
 
 import {
 	SidebarGroup,
@@ -15,7 +15,7 @@ import { useOptionalDictionary } from "@/components/providers/dictionary-provide
 
 export default function ContactsNav({
 	onComplete,
-	workspacePublicId
+	workspacePublicId,
 }: {
 	workspacePublicId: string;
 	onComplete?: () => void;
@@ -33,13 +33,15 @@ export default function ContactsNav({
 			title: dict?.contacts?.allContacts ?? "All contacts",
 			url: `/w/${workspacePublicId}/dashboard/contacts`,
 			icon: Users,
-		}
+		},
 	];
 
 	return (
 		<>
 			<SidebarGroup>
-				<SidebarGroupLabel>{dict?.contacts?.contacts ?? "Contacts"}</SidebarGroupLabel>
+				<SidebarGroupLabel>
+					{dict?.contacts?.contacts ?? "Contacts"}
+				</SidebarGroupLabel>
 				<SidebarMenu>
 					{mainItems.map((item) => (
 						<SidebarMenuItem key={item.title}>
@@ -62,7 +64,9 @@ export default function ContactsNav({
 						</SidebarMenuItem>
 					))}
 				</SidebarMenu>
-				<SidebarGroupLabel>{dict?.contacts?.addressBooks ?? "Address Books"}</SidebarGroupLabel>
+				<SidebarGroupLabel>
+					{dict?.contacts?.addressBooks ?? "Address Books"}
+				</SidebarGroupLabel>
 			</SidebarGroup>
 		</>
 	);

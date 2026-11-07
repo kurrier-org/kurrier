@@ -7,38 +7,38 @@ import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { LabelEntity } from "@db";
 
 type LabelWithCount = LabelEntity & {
-    threadCount?: number;
-    contactCount?: number;
+	threadCount?: number;
+	contactCount?: number;
 };
 
 type GlobalLabelsMap = Map<string, LabelWithCount[]>;
 
-function RenderLabelHomeSidebar({ globalLabels }: { globalLabels: GlobalLabelsMap }) {
-    const { setState } = useDynamicContext();
-    const params = useParams();
+function RenderLabelHomeSidebar({
+	globalLabels,
+}: {
+	globalLabels: GlobalLabelsMap;
+}) {
+	const { setState } = useDynamicContext();
+	const params = useParams();
 
-    const identityPublicId =
-        typeof params.identityPublicId === "string"
-            ? params.identityPublicId
-            : undefined;
+	const identityPublicId =
+		typeof params.identityPublicId === "string"
+			? params.identityPublicId
+			: undefined;
 
-    const labels = useMemo(() => {
-        if (!identityPublicId) return [];
-        return globalLabels.get(identityPublicId) ?? [];
-    }, [globalLabels, identityPublicId]);
+	const labels = useMemo(() => {
+		if (!identityPublicId) return [];
+		return globalLabels.get(identityPublicId) ?? [];
+	}, [globalLabels, identityPublicId]);
 
-    useEffect(() => {
-        setState((prev) => ({
-            ...prev,
-            labels,
-        }));
-    }, [labels, setState]);
+	useEffect(() => {
+		setState((prev) => ({
+			...prev,
+			labels,
+		}));
+	}, [labels, setState]);
 
-    return (
-        <>
-            {identityPublicId && <LabelHome />}
-        </>
-    );
+	return <>{identityPublicId && <LabelHome />}</>;
 }
 
 export default RenderLabelHomeSidebar;

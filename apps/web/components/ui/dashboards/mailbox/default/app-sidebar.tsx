@@ -26,7 +26,7 @@ import { useAppearance } from "@/components/providers/appearance-provider";
 import { useEffect, useMemo } from "react";
 import { Switch } from "@mantine/core";
 import ThemeColorPicker from "@/components/common/theme-color-picker";
-import {FetchIsSignedInResult} from "@/lib/actions/auth";
+import { FetchIsSignedInResult } from "@/lib/actions/auth";
 
 const data = {
 	navMain: [],
@@ -123,9 +123,7 @@ export function AppSidebar({
 						/>
 					</div>
 				</SidebarContent>
-				<SidebarFooter>
-					{/*<NavUser user={user} />*/}
-				</SidebarFooter>
+				<SidebarFooter>{/*<NavUser user={user} />*/}</SidebarFooter>
 			</Sidebar>
 
 			{/* This is the second sidebar */}

@@ -109,15 +109,10 @@ async function reconcileMailboxUids(
 	mailboxId: string,
 	onMissingMessage: (msg: FetchMessageObject) => Promise<void>,
 ) {
-	const uids = await client.search(
-		{ all: true },
-		{ uid: true },
-	);
+	const uids = await client.search({ all: true }, { uid: true });
 
 	if (uids === false) {
-		throw new Error(
-			"IMAP UID search failed; skipping reconciliation",
-		);
+		throw new Error("IMAP UID search failed; skipping reconciliation");
 	}
 
 	const serverUids = new Set<number>(uids);
@@ -133,11 +128,7 @@ async function reconcileMailboxUids(
 	const localUids = new Set(
 		localMessages
 			.map((message) => Number(message.uid))
-			.filter(
-				(uid) =>
-					Number.isSafeInteger(uid) &&
-					uid > 0,
-			),
+			.filter((uid) => Number.isSafeInteger(uid) && uid > 0),
 	);
 
 	const missingUids = [...serverUids]
@@ -177,9 +168,7 @@ async function reconcileMailboxUids(
 
 		if (serverUids.has(uid)) continue;
 
-		const threadId = await MailboxStore.deleteMessage(
-			message.id,
-		);
+		const threadId = await MailboxStore.deleteMessage(message.id);
 
 		console.log(
 			`[imap:reconcile] Deleted missing UID ${uid} from mailbox ${mailboxId}, thread ${threadId}`,
@@ -236,9 +225,7 @@ export async function syncMailbox(opts: {
 			);
 
 		if (!sync) {
-			throw new Error(
-				`mailbox_sync row missing for mailboxId=${mailboxId}`,
-			);
+			throw new Error(`mailbox_sync row missing for mailboxId=${mailboxId}`);
 		}
 
 		let lastSeen = Number(sync.lastSeenUid || 0);
@@ -279,10 +266,7 @@ export async function syncMailbox(opts: {
 				.set({
 					uidValidity: serverUidValidity,
 					lastSeenUid: 0,
-					backfillCursorUid: Math.max(
-						0,
-						(box.uidNext ?? 1) - 1,
-					),
+					backfillCursorUid: Math.max(0, (box.uidNext ?? 1) - 1),
 					highestModseq: null,
 					phase: "BACKFILL",
 					error: null,
@@ -291,15 +275,10 @@ export async function syncMailbox(opts: {
 				.where(eq(mailboxSync.id, sync.id));
 		}
 
-		const currentTop = Math.max(
-			0,
-			(box.uidNext ?? 1) - 1,
-		);
+		const currentTop = Math.max(0, (box.uidNext ?? 1) - 1);
 
 		const serverModseq = box.highestModseq;
-		const storedModseq = uidValidityChanged
-			? null
-			: sync.highestModseq;
+		const storedModseq = uidValidityChanged ? null : sync.highestModseq;
 
 		const modseqChanged =
 			serverModseq == null ||
@@ -311,7 +290,6 @@ export async function syncMailbox(opts: {
 
 			if (reconcile || modseqChanged) {
 				console.info("[imap:flags] syncing", {
-
 					path,
 					reconcile,
 					serverModseq: serverModseq?.toString(),
@@ -328,26 +306,15 @@ export async function syncMailbox(opts: {
 						: undefined,
 				);
 			} else {
-
 				console.info("[imap:flags] skipped (MODSEQ unchanged)", {
 					path,
 					modseq: serverModseq?.toString(),
 				});
-
 			}
 
 			if (reconcile) {
-				await reconcileMailboxUids(
-					client,
-					mailboxId,
-					(msg) =>
-						onMessage(
-							msg,
-							path,
-							identityId,
-							workspaceId,
-							mailboxId,
-						),
+				await reconcileMailboxUids(client, mailboxId, (msg) =>
+					onMessage(msg, path, identityId, workspaceId, mailboxId),
 				);
 			}
 
@@ -370,10 +337,7 @@ export async function syncMailbox(opts: {
 		let start = lastSeen + 1;
 
 		while (start <= currentTop) {
-			const end = Math.min(
-				currentTop,
-				start + window - 1,
-			);
+			const end = Math.min(currentTop, start + window - 1);
 
 			const range = `${start}:${end}`;
 
@@ -405,17 +369,10 @@ export async function syncMailbox(opts: {
 					mailboxId,
 					path,
 					uid: msg.uid,
-					messageId:
-						msg.envelope?.messageId ?? null,
+					messageId: msg.envelope?.messageId ?? null,
 				});
 
-				await onMessage(
-					msg,
-					path,
-					identityId,
-					workspaceId,
-					mailboxId,
-				);
+				await onMessage(msg, path, identityId, workspaceId, mailboxId);
 
 				if (msg.uid && msg.uid > maxUid) {
 					maxUid = msg.uid;

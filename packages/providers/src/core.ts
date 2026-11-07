@@ -33,10 +33,9 @@ export const RawSmtpConfigSchema = z
 			.transform((v) => v === "true")
 			.optional(),
 	})
-	.refine(
-		(r) => Boolean(r.SMTP_PASSWORD || r.SMTP_ACCESS_TOKEN),
-		{ message: "SMTP password or access token is required" },
-	)
+	.refine((r) => Boolean(r.SMTP_PASSWORD || r.SMTP_ACCESS_TOKEN), {
+		message: "SMTP password or access token is required",
+	})
 	.transform((r) => ({
 		host: r.SMTP_HOST,
 		port: r.SMTP_PORT,
@@ -44,25 +43,25 @@ export const RawSmtpConfigSchema = z
 		// auth: { user: r.SMTP_USERNAME, pass: r.SMTP_PASSWORD },
 		auth: r.SMTP_ACCESS_TOKEN
 			? {
-				type: "OAuth2" as const,
-				user: r.SMTP_USERNAME,
-				accessToken: r.SMTP_ACCESS_TOKEN,
-			}
+					type: "OAuth2" as const,
+					user: r.SMTP_USERNAME,
+					accessToken: r.SMTP_ACCESS_TOKEN,
+				}
 			: {
-				user: r.SMTP_USERNAME,
-				pass: r.SMTP_PASSWORD!,
-			},
+					user: r.SMTP_USERNAME,
+					pass: r.SMTP_PASSWORD!,
+				},
 		pool: r.SMTP_POOL,
 
 		imap:
 			r.IMAP_HOST && r.IMAP_PORT && r.IMAP_USERNAME && r.IMAP_PASSWORD
 				? {
-					host: r.IMAP_HOST,
-					port: r.IMAP_PORT,
-					user: r.IMAP_USERNAME,
-					pass: r.IMAP_PASSWORD,
-					secure: r.IMAP_SECURE ?? true,
-				}
+						host: r.IMAP_HOST,
+						port: r.IMAP_PORT,
+						user: r.IMAP_USERNAME,
+						pass: r.IMAP_PASSWORD,
+						secure: r.IMAP_SECURE ?? true,
+					}
 				: undefined,
 	}));
 
@@ -220,16 +219,16 @@ export type DownloadResult = {
 
 export type UploadUrlResult =
 	| {
-	ok: true;
-	message: string;
-	meta: any;
-	data: {
-		url: string;
-		expiresIn: number;
-		method: "PUT";
-		headers: Record<string, string>;
-	};
-}
+			ok: true;
+			message: string;
+			meta: any;
+			data: {
+				url: string;
+				expiresIn: number;
+				method: "PUT";
+				headers: Record<string, string>;
+			};
+	  }
 	| { ok: false; message: string; meta?: any };
 
 export type AddFolderResult = {
@@ -327,7 +326,6 @@ export const RawJmapConfigSchema = z
 
 export type JmapConfig = z.infer<typeof RawJmapConfigSchema>;
 
-
 export type MailboxFlag = "seen" | "flagged" | "answered";
 
 export type MailboxFlagOperation =
@@ -351,10 +349,7 @@ export interface MailboxProvider {
 		uids: number[];
 	}): Promise<Map<number, number> | undefined>;
 
-	deleteMessages(input: {
-		mailboxPath: string;
-		uids: number[];
-	}): Promise<void>;
+	deleteMessages(input: { mailboxPath: string; uids: number[] }): Promise<void>;
 
 	createFolder(input: { path: string }): Promise<void>;
 

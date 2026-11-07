@@ -2,12 +2,12 @@ import { defineEventHandler, readBody } from "h3";
 import {
 	apiSuccess,
 	apiError,
-	validateApiKey, validateIdentityOwnership,
+	validateApiKey,
+	validateIdentityOwnership,
 } from "../../../../../lib/api-helpers";
 import { db, WebhookCreateSchema, WebhookInsertEntity, webhooks } from "@db";
 
 export default defineEventHandler(async (event) => {
-
 	const { ownerId } = await validateApiKey(event);
 	const body = await readBody(event).catch(() => ({}));
 	const parsed = WebhookCreateSchema.safeParse(body);
@@ -17,7 +17,12 @@ export default defineEventHandler(async (event) => {
 			message: issue.message,
 			code: issue.code,
 		}));
-		return apiError(400, "INVALID_REQUEST_BODY", "Invalid request body", issues);
+		return apiError(
+			400,
+			"INVALID_REQUEST_BODY",
+			"Invalid request body",
+			issues,
+		);
 	}
 	const data = parsed.data;
 	if (!data.url) {
@@ -50,5 +55,4 @@ export default defineEventHandler(async (event) => {
 		.values(insertPayload as WebhookInsertEntity)
 		.returning();
 	return apiSuccess(created);
-
 });

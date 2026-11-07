@@ -48,12 +48,12 @@ export async function createAddressBookViaHttp(
         <card:addressbook/>
       </d:resourcetype>
       ${
-		description
-			? `<card:addressbook-description>${escapeXml(
-				description,
-			)}</card:addressbook-description>`
-			: ""
-	}
+				description
+					? `<card:addressbook-description>${escapeXml(
+							description,
+						)}</card:addressbook-description>`
+					: ""
+			}
     </d:prop>
   </d:set>
 </d:mkcol>`;
@@ -110,17 +110,17 @@ export async function createCalendarViaHttp(
         <c:calendar/>
       </d:resourcetype>
       ${
-		timezone
-			? `<c:calendar-timezone>${escapeXml(timezone)}</c:calendar-timezone>`
-			: ""
-	}
+				timezone
+					? `<c:calendar-timezone>${escapeXml(timezone)}</c:calendar-timezone>`
+					: ""
+			}
       ${
-		description
-			? `<c:calendar-description>${escapeXml(
-				description,
-			)}</c:calendar-description>`
-			: ""
-	}
+				description
+					? `<c:calendar-description>${escapeXml(
+							description,
+						)}</c:calendar-description>`
+					: ""
+			}
     </d:prop>
   </d:set>
 </c:mkcalendar>`;
@@ -143,7 +143,6 @@ export async function createCalendarViaHttp(
 	return { ok: true, status: res.status };
 }
 
-
 async function davDeleteCollection(opts: BaseOpts) {
 	const { davBaseUrl, username, password, collectionPath } = opts;
 
@@ -160,7 +159,9 @@ async function davDeleteCollection(opts: BaseOpts) {
 
 	if (![200, 202, 204, 404].includes(res.status)) {
 		const text = await res.text().catch(() => "");
-		throw new Error(`DAV DELETE failed (${res.status} ${res.statusText}): ${text}`);
+		throw new Error(
+			`DAV DELETE failed (${res.status} ${res.statusText}): ${text}`,
+		);
 	}
 
 	return { ok: true, status: res.status };

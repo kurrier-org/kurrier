@@ -74,7 +74,9 @@ function LabelHoverButtons({
 					<TextInput
 						size="xs"
 						radius="md"
-						placeholder={dict?.mailbox?.searchLabelsPlaceholder ?? "Search labels…"}
+						placeholder={
+							dict?.mailbox?.searchLabelsPlaceholder ?? "Search labels…"
+						}
 						value={query}
 						onChange={(event) => setQuery(event.currentTarget.value)}
 					/>

@@ -3,13 +3,12 @@ import {
 	apiSuccess,
 	apiError,
 	validateApiKey,
-	validateIdentityOwnership
+	validateIdentityOwnership,
 } from "../../../../../lib/api-helpers";
 import { db, identities, IdentityCreate, IdentityUpdateSchema } from "@db";
 import { eq } from "drizzle-orm";
 
 export default defineEventHandler(async (event) => {
-
 	const { ownerId } = await validateApiKey(event);
 	const id = getRouterParam(event, "id");
 	if (!id) {
@@ -23,7 +22,12 @@ export default defineEventHandler(async (event) => {
 			message: issue.message,
 			code: issue.code,
 		}));
-		return apiError(400, "INVALID_REQUEST_BODY", "Invalid request body", issues);
+		return apiError(
+			400,
+			"INVALID_REQUEST_BODY",
+			"Invalid request body",
+			issues,
+		);
 	}
 	await validateIdentityOwnership({
 		identityId: String(id),
@@ -35,5 +39,4 @@ export default defineEventHandler(async (event) => {
 		.where(eq(identities.id, String(id)))
 		.returning();
 	return apiSuccess(updated);
-
 });

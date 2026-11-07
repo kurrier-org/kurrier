@@ -47,10 +47,7 @@ function AddGuests({
 		return map;
 	}, [attendeeContacts]);
 
-
-
 	const persistedAttendees = state.calendarEventAttendees?.[editEventId] || [];
-
 
 	const initialGuests = useMemo<UiGuest[]>(
 		() =>
@@ -129,7 +126,9 @@ function AddGuests({
 
 	return (
 		<>
-			<div className="text-sm my-1.5 font-medium">{dict?.calendar?.addGuests ?? "Add guests"}</div>
+			<div className="text-sm my-1.5 font-medium">
+				{dict?.calendar?.addGuests ?? "Add guests"}
+			</div>
 
 			<SearchableContacts onChange={handleAddGuest} />
 
@@ -145,7 +144,10 @@ function AddGuests({
 			<div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
 				<Users size={14} className="shrink-0" />
 				<span className="font-medium">
-					{format?.message(guestCount, dict?.calendar?.guestsCount ?? { other: "{count} guests" }) ?? `${guestCount} guests`}
+					{format?.message(
+						guestCount,
+						dict?.calendar?.guestsCount ?? { other: "{count} guests" },
+					) ?? `${guestCount} guests`}
 				</span>
 			</div>
 		</>

@@ -121,12 +121,12 @@ function buildTree(
 }
 
 function IdentityExtraCounts({
-								 identity,
-								 scheduledDraftsPromise,
-								 snoozedThreadsPromise,
-								 workspacePublicId,
-								 currentSlug,
-							 }: {
+	identity,
+	scheduledDraftsPromise,
+	snoozedThreadsPromise,
+	workspacePublicId,
+	currentSlug,
+}: {
 	identity: IdentityEntity;
 	scheduledDraftsPromise: Promise<DraftMessageEntity[]>;
 	snoozedThreadsPromise: Promise<{ threads: MailboxThreadEntity[] }>;
@@ -180,13 +180,13 @@ function IdentityExtraCounts({
 }
 
 export default function IdentityMailboxesList({
-												  identityMailboxes,
-												  unreadCounts,
-												  scheduledDraftsPromise,
-												  snoozedThreadsPromise,
-												  workspacePublicId,
-												  onComplete,
-											  }: {
+	identityMailboxes,
+	unreadCounts,
+	scheduledDraftsPromise,
+	snoozedThreadsPromise,
+	workspacePublicId,
+	onComplete,
+}: {
 	identityMailboxes: FetchIdentityMailboxListResult;
 	unreadCounts: FetchMailboxUnreadCountsResult;
 	scheduledDraftsPromise: Promise<DraftMessageEntity[]>;
@@ -214,11 +214,11 @@ export default function IdentityMailboxesList({
 	const router = useRouter();
 
 	const Item = ({
-					  m,
-					  identityPublicId,
-					  identity,
-					  level = 0,
-				  }: {
+		m,
+		identityPublicId,
+		identity,
+		level = 0,
+	}: {
 		m: TreeMailbox;
 		identityPublicId: string;
 		identity: IdentityEntity;
@@ -271,7 +271,7 @@ export default function IdentityMailboxesList({
 									? "text-brand dark:text-white bg-brand-100 dark:bg-neutral-800 hover:text-brand hover:bg-brand-100"
 									: "",
 								!m.selectable &&
-								"opacity-60 pointer-events-none cursor-default",
+									"opacity-60 pointer-events-none cursor-default",
 							)}
 							style={{ paddingLeft: 8 + level * 8 }}
 						>

@@ -1,64 +1,64 @@
 {
-  "common": {
-    "whatsNew": "Novidades",
-    "release": "Versão",
-    "seeWhatsNew": "Veja as novidades da versão mais recente do Kurrier.",
-    "dismiss": "Fechar novidades"
-  },
-  "releases": {
-    "v4_4_0": {
-      "title": "Mais conectado, mais confiável",
-      "description": "Conecte contas do Microsoft 365, aproveite uma sincronização de e-mails mais confiável e gerencie seus arquivos com mais facilidade no Drive.",
-      "features": {
-        "microsoft365": {
-          "title": "Suporte ao Microsoft 365",
-          "description": "Conecte contas de e-mail da Microsoft com segurança via OAuth e gerencie-as junto aos seus outros provedores."
-        },
-        "imapSync": {
-          "title": "Sincronização de e-mails mais confiável",
-          "description": "Melhorias nas atualizações em tempo real, na descoberta de pastas e na recuperação de conexões IMAP interrompidas."
-        },
-        "drive": {
-          "title": "Um Drive ainda mais completo",
-          "description": "Envie arquivos arrastando e soltando, visualize imagens e PDFs e compartilhe arquivos com links de download que expiram."
-        }
-      }
-    },
-    "v4_2_0": {
-      "title": "Assinaturas de e-mail",
-      "description": "Crie assinaturas profissionais para cada identidade e use-as diretamente no editor de mensagens do Kurrier.",
-      "features": {
-        "emailSignatures": {
-          "title": "Assinaturas para cada identidade",
-          "description": "Crie várias assinaturas e escolha padrões diferentes para novas mensagens, respostas e encaminhamentos."
-        },
-        "composer": {
-          "title": "Integração com o editor",
-          "description": "Visualize sua assinatura enquanto escreve e altere ou remova a assinatura rapidamente antes de enviar."
-        },
-        "responsiveUi": {
-          "title": "Editor de assinaturas responsivo",
-          "description": "Crie e gerencie assinaturas com um editor simplificado que funciona em computadores e telas menores."
-        }
-      }
-    },
-    "v4_1_0": {
-      "title": "Um Kurrier ainda melhor",
-      "description": "Esta versão traz melhorias na confiabilidade do e-mail, no editor de mensagens, nos layouts responsivos e no gerenciamento do espaço de trabalho.",
-      "features": {
-        "mailReliability": {
-          "title": "Sincronização de e-mail mais confiável",
-          "description": "Recuperação de conexões IMAP e sincronização de caixas de correio aprimoradas em conexões de longa duração."
-        },
-        "composer": {
-          "title": "Editor de mensagens aprimorado",
-          "description": "Uma experiência de composição mais refinada em computadores e dispositivos móveis."
-        },
-        "responsiveUi": {
-          "title": "Melhor experiência responsiva",
-          "description": "As visualizações de e-mail e as telas do espaço de trabalho agora se adaptam melhor a telas menores."
-        }
-      }
-    }
-  }
+	"common": {
+		"whatsNew": "Novidades",
+		"release": "Versão",
+		"seeWhatsNew": "Veja as novidades da versão mais recente do Kurrier.",
+		"dismiss": "Fechar novidades"
+	},
+	"releases": {
+		"v4_4_0": {
+			"title": "Mais conectado, mais confiável",
+			"description": "Conecte contas do Microsoft 365, aproveite uma sincronização de e-mails mais confiável e gerencie seus arquivos com mais facilidade no Drive.",
+			"features": {
+				"microsoft365": {
+					"title": "Suporte ao Microsoft 365",
+					"description": "Conecte contas de e-mail da Microsoft com segurança via OAuth e gerencie-as junto aos seus outros provedores."
+				},
+				"imapSync": {
+					"title": "Sincronização de e-mails mais confiável",
+					"description": "Melhorias nas atualizações em tempo real, na descoberta de pastas e na recuperação de conexões IMAP interrompidas."
+				},
+				"drive": {
+					"title": "Um Drive ainda mais completo",
+					"description": "Envie arquivos arrastando e soltando, visualize imagens e PDFs e compartilhe arquivos com links de download que expiram."
+				}
+			}
+		},
+		"v4_2_0": {
+			"title": "Assinaturas de e-mail",
+			"description": "Crie assinaturas profissionais para cada identidade e use-as diretamente no editor de mensagens do Kurrier.",
+			"features": {
+				"emailSignatures": {
+					"title": "Assinaturas para cada identidade",
+					"description": "Crie várias assinaturas e escolha padrões diferentes para novas mensagens, respostas e encaminhamentos."
+				},
+				"composer": {
+					"title": "Integração com o editor",
+					"description": "Visualize sua assinatura enquanto escreve e altere ou remova a assinatura rapidamente antes de enviar."
+				},
+				"responsiveUi": {
+					"title": "Editor de assinaturas responsivo",
+					"description": "Crie e gerencie assinaturas com um editor simplificado que funciona em computadores e telas menores."
+				}
+			}
+		},
+		"v4_1_0": {
+			"title": "Um Kurrier ainda melhor",
+			"description": "Esta versão traz melhorias na confiabilidade do e-mail, no editor de mensagens, nos layouts responsivos e no gerenciamento do espaço de trabalho.",
+			"features": {
+				"mailReliability": {
+					"title": "Sincronização de e-mail mais confiável",
+					"description": "Recuperação de conexões IMAP e sincronização de caixas de correio aprimoradas em conexões de longa duração."
+				},
+				"composer": {
+					"title": "Editor de mensagens aprimorado",
+					"description": "Uma experiência de composição mais refinada em computadores e dispositivos móveis."
+				},
+				"responsiveUi": {
+					"title": "Melhor experiência responsiva",
+					"description": "As visualizações de e-mail e as telas do espaço de trabalho agora se adaptam melhor a telas menores."
+				}
+			}
+		}
+	}
 }

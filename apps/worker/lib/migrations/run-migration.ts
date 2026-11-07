@@ -1,13 +1,16 @@
-import {addressBooks, davAccounts, db, getSecretAdmin, labels} from "@db";
-import {and, eq} from "drizzle-orm";
+import { addressBooks, davAccounts, db, getSecretAdmin, labels } from "@db";
+import { and, eq } from "drizzle-orm";
 import { LabelScope } from "@schema";
 import { createAccount } from "../../lib/dav/dav-create-account";
-import {createAddressBookViaHttp} from "../../lib/dav/dav-http";
-import {davAddressbooks, davDb} from "../../lib/dav/dav-schema";
+import { createAddressBookViaHttp } from "../../lib/dav/dav-http";
+import { davAddressbooks, davDb } from "../../lib/dav/dav-schema";
 import { kurrierServer } from "@distribution/kurrier-server";
 
 const seedFavoriteLabel = async (userId: string, workspaceId: string) => {
-	console.log(`Seeding favorite label for user ${userId} in workspace ${workspaceId}`, workspaceId);
+	console.log(
+		`Seeding favorite label for user ${userId} in workspace ${workspaceId}`,
+		workspaceId,
+	);
 	const [existing] = await db
 		.select({ id: labels.id })
 		.from(labels)
@@ -44,7 +47,6 @@ export async function ensureDefaultDavAccountForWorkspace(opts: {
 	const { workspaceId, ownerId, email } = opts;
 
 	return await createAccount(ownerId, workspaceId, email);
-
 }
 
 export async function ensureDefaultAddressBookForUser(opts: {
@@ -85,10 +87,10 @@ export async function ensureDefaultAddressBookForUser(opts: {
 			workspaceId,
 			davAccountId: davAccount.id,
 			name,
-			slug
+			slug,
 		})
 		.onConflictDoNothing()
-		.returning()
+		.returning();
 
 	if (!newBook) throw new Error("Address book missing after insert");
 
@@ -124,21 +126,23 @@ export async function ensureDefaultAddressBookForUser(opts: {
 			davAddressBookId: davBook.id,
 			davSyncToken: String(davBook.synctoken),
 		})
-		.where(eq(addressBooks.id, newBook.id))
+		.where(eq(addressBooks.id, newBook.id));
 
 	return { ok: true };
-
 }
-
 
 export async function runMigrationsForWorkspace(
 	userId: string,
 	workspaceId: string,
-	email: string
+	email: string,
 ) {
 	await seedFavoriteLabel(userId, workspaceId);
-	await ensureDefaultDavAccountForWorkspace({ ownerId: userId, workspaceId, email });
-	await ensureDefaultAddressBookForUser({ownerId: userId, workspaceId});
+	await ensureDefaultDavAccountForWorkspace({
+		ownerId: userId,
+		workspaceId,
+		email,
+	});
+	await ensureDefaultAddressBookForUser({ ownerId: userId, workspaceId });
 	await kurrierServer.hooks.run("workspace.afterCreate", {
 		userId,
 		workspaceId,

@@ -1,6 +1,6 @@
 import { pgTable, serial, integer, text } from "drizzle-orm/pg-core";
 import postgres from "postgres";
-import { drizzle } from 'drizzle-orm/postgres-js';
+import { drizzle } from "drizzle-orm/postgres-js";
 
 import { customType } from "drizzle-orm/pg-core";
 
@@ -17,7 +17,6 @@ export const bytea = customType<{ data: Buffer; driverData: Buffer }>({
 });
 
 import crypto from "node:crypto";
-
 
 export const davAddressbooks = pgTable("addressbooks", {
 	id: serial("id").primaryKey(),

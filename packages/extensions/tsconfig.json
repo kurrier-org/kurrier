@@ -11,7 +11,7 @@
 			"@common": ["../../packages/common/src/index.ts"],
 			"@common/*": ["../../packages/common/src/*"],
 			"@distribution": ["../../packages/distribution/src/index.ts"],
-			"@distribution/*": ["../../packages/distribution/src/*"],
+			"@distribution/*": ["../../packages/distribution/src/*"]
 		},
 		"lib": ["ES2021.String"]
 	},

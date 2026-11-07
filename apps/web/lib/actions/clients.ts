@@ -1,27 +1,25 @@
-import {currentSession, isSignedIn} from "@/lib/actions/auth";
-import {createDrizzleClientInstance, workspaceMembers, workspaces} from "@db";
-import {cookies} from "next/headers";
-import {and, eq, or} from "drizzle-orm";
-
+import { currentSession, isSignedIn } from "@/lib/actions/auth";
+import { createDrizzleClientInstance, workspaceMembers, workspaces } from "@db";
+import { cookies } from "next/headers";
+import { and, eq, or } from "drizzle-orm";
 
 export const getWorkspaceId = async () => {
-	const cookieStore = await cookies()
-	const id = cookieStore.get('workspaceId');
-	return String(id?.value)
+	const cookieStore = await cookies();
+	const id = cookieStore.get("workspaceId");
+	return String(id?.value);
 };
 
 export const getWorkspacePublicId = async () => {
-	const cookieStore = await cookies()
-	const id = cookieStore.get('workspacePublicId');
-	return String(id?.value)
+	const cookieStore = await cookies();
+	const id = cookieStore.get("workspacePublicId");
+	return String(id?.value);
 };
 
 export const getWorkspaceRole = async () => {
-	const cookieStore = await cookies()
-	const id = cookieStore.get('workspaceRole');
-	return String(id?.value)
+	const cookieStore = await cookies();
+	const id = cookieStore.get("workspaceRole");
+	return String(id?.value);
 };
-
 
 export const rlsClient = async () => {
 	const cookieStore = await cookies();
@@ -42,17 +40,11 @@ export const rlsClientForWorkspace = async (workspaceId: string) => {
 	const rows = await admin
 		.select({ id: workspaces.id })
 		.from(workspaces)
-		.leftJoin(
-			workspaceMembers,
-			eq(workspaceMembers.workspaceId, workspaces.id),
-		)
+		.leftJoin(workspaceMembers, eq(workspaceMembers.workspaceId, workspaces.id))
 		.where(
 			and(
 				eq(workspaces.id, workspaceId),
-				or(
-					eq(workspaces.ownerId, userId),
-					eq(workspaceMembers.userId, userId),
-				),
+				or(eq(workspaces.ownerId, userId), eq(workspaceMembers.userId, userId)),
 			),
 		)
 		.limit(1);

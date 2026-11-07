@@ -47,14 +47,17 @@ async function DriveDashboard({ children }: { children: React.ReactNode }) {
 					</Suspense>
 				}
 				sidebarTopContent={
-				<>
-					<Suspense fallback={<div className="h-9" />} key={workspacePublicId}>
-						<WorkspaceLogo />
-					</Suspense>
-					<div className="-mt-1">
-						<NewUploadButton className="hidden md:inline-flex" />
-					</div>
-				</>
+					<>
+						<Suspense
+							fallback={<div className="h-9" />}
+							key={workspacePublicId}
+						>
+							<WorkspaceLogo />
+						</Suspense>
+						<div className="-mt-1">
+							<NewUploadButton className="hidden md:inline-flex" />
+						</div>
+					</>
 				}
 			/>
 

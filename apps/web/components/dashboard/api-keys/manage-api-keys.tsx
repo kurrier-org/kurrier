@@ -19,12 +19,7 @@ import ContentPlaceholder from "@/components/common/content-placeholder";
 import { ReusableForm } from "@/components/common/reusable-form";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	addApiKey,
 	type FetchUserAPIKeysResult,
@@ -34,12 +29,7 @@ function ScopeBadges({ scopes }: { scopes: readonly string[] }) {
 	return (
 		<div className="flex flex-wrap gap-1.5">
 			{scopes.map((scope) => (
-				<Badge
-					key={scope}
-					variant="light"
-					radius="sm"
-					size="sm"
-				>
+				<Badge key={scope} variant="light" radius="sm" size="sm">
 					{scope}
 				</Badge>
 			))}
@@ -121,9 +111,7 @@ function ApiScopeSummary({ name }: { name: string }) {
 								</div>
 
 								<div className="min-w-0">
-									<p className="text-sm font-medium">
-										{scope.title}
-									</p>
+									<p className="text-sm font-medium">{scope.title}</p>
 
 									<code className="mt-1 block text-[11px] text-muted-foreground">
 										{scope.value}
@@ -143,8 +131,8 @@ function ApiScopeSummary({ name }: { name: string }) {
 }
 
 export default function ManageApiKeys({
-										  apiKeysList,
-									  }: {
+	apiKeysList,
+}: {
 	apiKeysList: FetchUserAPIKeysResult;
 }) {
 	const dict = useOptionalDictionary();
@@ -218,12 +206,9 @@ export default function ManageApiKeys({
 							action={addApiKey}
 							fields={fields}
 							submitButtonProps={{
-								submitLabel:
-									dict?.platform?.createKey ?? "Create Key",
-								wrapperClasses:
-									"mt-5 flex justify-end",
-								className:
-									"!min-h-11 !w-full sm:!min-h-10 sm:!w-auto sm:!px-6",
+								submitLabel: dict?.platform?.createKey ?? "Create Key",
+								wrapperClasses: "mt-5 flex justify-end",
+								className: "!min-h-11 !w-full sm:!min-h-10 sm:!w-auto sm:!px-6",
 								fullWidth: false,
 							}}
 						/>
@@ -251,9 +236,7 @@ export default function ManageApiKeys({
 				{apiKeysList.length === 0 ? (
 					<ContentPlaceholder
 						icon={<KeyRound className="size-5" />}
-						title={
-							dict?.platform?.noApiKeysYet ?? "No API keys yet."
-						}
+						title={dict?.platform?.noApiKeysYet ?? "No API keys yet."}
 						className="min-h-64 py-10"
 					/>
 				) : (
@@ -304,13 +287,10 @@ export default function ManageApiKeys({
 										type="button"
 										variant="outline"
 										className="mt-4 h-11 w-full"
-										onClick={() =>
-											handleCopy(key.vault.rawKey)
-										}
+										onClick={() => handleCopy(key.vault.rawKey)}
 									>
 										<Copy className="size-4" />
-										{dict?.platform?.copyApiKey ??
-											"Copy API Key"}
+										{dict?.platform?.copyApiKey ?? "Copy API Key"}
 									</Button>
 								</article>
 							))}
@@ -319,84 +299,70 @@ export default function ManageApiKeys({
 						<div className="hidden overflow-x-auto lg:block">
 							<table className="w-full text-sm">
 								<thead>
-								<tr className="border-b bg-muted/20 text-left text-xs text-muted-foreground">
-									<th className="px-6 py-3 font-medium">
-										{dict?.platform?.name ?? "Name"}
-									</th>
+									<tr className="border-b bg-muted/20 text-left text-xs text-muted-foreground">
+										<th className="px-6 py-3 font-medium">
+											{dict?.platform?.name ?? "Name"}
+										</th>
 
-									<th className="px-5 py-3 font-medium">
-										{dict?.platform?.keyId ?? "Key ID"}
-									</th>
+										<th className="px-5 py-3 font-medium">
+											{dict?.platform?.keyId ?? "Key ID"}
+										</th>
 
-									<th className="px-5 py-3 font-medium">
-										{dict?.platform?.scopes ?? "Scopes"}
-									</th>
+										<th className="px-5 py-3 font-medium">
+											{dict?.platform?.scopes ?? "Scopes"}
+										</th>
 
-									<th className="px-5 py-3 font-medium">
-										{dict?.platform?.created ??
-											"Created"}
-									</th>
+										<th className="px-5 py-3 font-medium">
+											{dict?.platform?.created ?? "Created"}
+										</th>
 
-									<th className="px-6 py-3 text-right font-medium">
-										{dict?.platform?.actions ??
-											"Actions"}
-									</th>
-								</tr>
+										<th className="px-6 py-3 text-right font-medium">
+											{dict?.platform?.actions ?? "Actions"}
+										</th>
+									</tr>
 								</thead>
 
 								<tbody>
-								{apiKeysList.map((key) => (
-									<tr
-										key={key.id}
-										className="border-b last:border-0"
-									>
-										<td className="px-6 py-4">
-											<div className="flex items-center gap-3">
-												<div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
-													<KeyRound className="size-4 text-muted-foreground" />
+									{apiKeysList.map((key) => (
+										<tr key={key.id} className="border-b last:border-0">
+											<td className="px-6 py-4">
+												<div className="flex items-center gap-3">
+													<div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
+														<KeyRound className="size-4 text-muted-foreground" />
+													</div>
+
+													<span className="font-medium">{key.name}</span>
 												</div>
+											</td>
 
-												<span className="font-medium">
-														{key.name}
-													</span>
-											</div>
-										</td>
+											<td className="px-5 py-4">
+												<code className="inline-block max-w-52 truncate rounded-md bg-muted/40 px-2.5 py-1.5 font-mono text-xs">
+													{key.id}
+												</code>
+											</td>
 
-										<td className="px-5 py-4">
-											<code className="inline-block max-w-52 truncate rounded-md bg-muted/40 px-2.5 py-1.5 font-mono text-xs">
-												{key.id}
-											</code>
-										</td>
+											<td className="px-5 py-4">
+												<ScopeBadges scopes={key.scopes} />
+											</td>
 
-										<td className="px-5 py-4">
-											<ScopeBadges
-												scopes={key.scopes}
-											/>
-										</td>
+											<td className="whitespace-nowrap px-5 py-4 text-muted-foreground">
+												{fmtTemporal(key.createdAt)}
+											</td>
 
-										<td className="whitespace-nowrap px-5 py-4 text-muted-foreground">
-											{fmtTemporal(key.createdAt)}
-										</td>
-
-										<td className="px-6 py-4 text-right">
-											<Button
-												type="button"
-												variant="outline"
-												size="sm"
-												className="h-9 whitespace-nowrap"
-												onClick={() =>
-													handleCopy(
-														key.vault.rawKey,
-													)
-												}
-											>
-												<Copy className="size-4" />
-												{dict?.platform?.copyApiKey ??
-													"Copy API Key"}
-											</Button>
-										</td>
-									</tr>
-								))}
+											<td className="px-6 py-4 text-right">
+												<Button
+													type="button"
+													variant="outline"
+													size="sm"
+													className="h-9 whitespace-nowrap"
+													onClick={() => handleCopy(key.vault.rawKey)}
+												>
+													<Copy className="size-4" />
+													{dict?.platform?.copyApiKey ?? "Copy API Key"}
+												</Button>
+											</td>
+										</tr>
+									))}
 								</tbody>
 							</table>
 						</div>
@@ -406,7 +372,6 @@ export default function ManageApiKeys({
 		</div>
 	);
 }
-
 
 // "use client";
 //

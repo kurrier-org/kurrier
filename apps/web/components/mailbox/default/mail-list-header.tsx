@@ -36,12 +36,12 @@ import {
 } from "@/lib/actions/mailbox";
 
 function MailListHeader({
-							mailboxThreads,
-							mailboxSync,
-							publicConfig,
-							identityMailboxes,
-							activeMailbox,
-						}: {
+	mailboxThreads,
+	mailboxSync,
+	publicConfig,
+	identityMailboxes,
+	activeMailbox,
+}: {
 	mailboxThreads: FetchMailboxThreadsResult;
 	publicConfig: PublicConfig;
 	identityMailboxes: FetchIdentityMailboxListResult;
@@ -68,8 +68,7 @@ function MailListHeader({
 
 	const hasUnread = mailboxThreads.some(
 		(thread) =>
-			state?.selectedThreadIds?.has(thread.threadId) &&
-			thread.unreadCount > 0,
+			state?.selectedThreadIds?.has(thread.threadId) && thread.unreadCount > 0,
 	);
 
 	const readOperation = hasUnread ? "read" : "unread";
@@ -177,10 +176,9 @@ function MailListHeader({
 							notify={{
 								kind: "toast",
 								successMessage: isTrash
-									? dict?.mailbox?.threadDeletedForever ??
-									"Thread deleted forever"
-									: dict?.mailbox?.movedToTrash ??
-									"Messages moved to Trash",
+									? (dict?.mailbox?.threadDeletedForever ??
+										"Thread deleted forever")
+									: (dict?.mailbox?.movedToTrash ?? "Messages moved to Trash"),
 								toastProps: { position: "bottom-left" },
 							}}
 						>
@@ -192,11 +190,7 @@ function MailListHeader({
 									value={threadId}
 								/>
 							))}
-							<input
-								type="hidden"
-								name="mailboxId"
-								value={activeMailbox.id}
-							/>
+							<input type="hidden" name="mailboxId" value={activeMailbox.id} />
 						</ReusableFormButton>
 
 						<ReusableFormButton
@@ -207,11 +201,11 @@ function MailListHeader({
 								color: "gray",
 								size: "compact-sm",
 								title: hasUnread
-									? dict?.mailbox?.markRead ?? "Mark as read"
-									: dict?.mailbox?.markAsUnread ?? "Mark as unread",
+									? (dict?.mailbox?.markRead ?? "Mark as read")
+									: (dict?.mailbox?.markAsUnread ?? "Mark as unread"),
 								"aria-label": hasUnread
-									? dict?.mailbox?.markRead ?? "Mark as read"
-									: dict?.mailbox?.markAsUnread ?? "Mark as unread",
+									? (dict?.mailbox?.markRead ?? "Mark as read")
+									: (dict?.mailbox?.markAsUnread ?? "Mark as unread"),
 								children: hasUnread ? (
 									<MailOpen size={16} />
 								) : (
@@ -227,16 +221,8 @@ function MailListHeader({
 									value={threadId}
 								/>
 							))}
-							<input
-								type="hidden"
-								name="mailboxId"
-								value={activeMailbox.id}
-							/>
-							<input
-								type="hidden"
-								name="op"
-								value={readOperation}
-							/>
+							<input type="hidden" name="mailboxId" value={activeMailbox.id} />
+							<input type="hidden" name="op" value={readOperation} />
 						</ReusableFormButton>
 					</div>
 

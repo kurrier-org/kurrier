@@ -1,29 +1,42 @@
 "use server";
 
 import {
-	apiKeys, createSecret, davAccounts,
-	db, deleteSecretAdmin, draftMessages, driveEntries,
+	apiKeys,
+	createSecret,
+	davAccounts,
+	db,
+	deleteSecretAdmin,
+	draftMessages,
+	driveEntries,
 	driveVolumes,
-	getSecret, googleAccounts,
+	getSecret,
+	googleAccounts,
 	identities,
 	IdentityCreate,
 	IdentityEntity,
 	IdentityInsertSchema,
-	mailboxes, messageAttachments,
-	messages, microsoftAccounts,
+	mailboxes,
+	messageAttachments,
+	messages,
+	microsoftAccounts,
 	providers,
 	providerSecrets,
 	secretsMeta,
 	smtpAccounts,
 	smtpAccountSecrets,
-	updateSecret, WebhookInsertEntity, webhooks, workspaceMembers,
+	updateSecret,
+	WebhookInsertEntity,
+	webhooks,
+	workspaceMembers,
 } from "@db";
 import {
 	apiScopeList,
-	CustomEmailProviderCredentialsSchema, CustomEmailProviderSchema,
+	CustomEmailProviderCredentialsSchema,
+	CustomEmailProviderSchema,
 	defaultImapQuota,
 	DomainIdentityFormSchema,
-	FormState, getCustomEmailProviders,
+	FormState,
+	getCustomEmailProviders,
 	getPublicEnv,
 	handleAction,
 	MailboxKindDisplay,
@@ -35,35 +48,52 @@ import {
 	SYSTEM_MAILBOXES,
 } from "@schema";
 import { currentSession, isSignedIn } from "@/lib/actions/auth";
-import {and, count, eq, sql, gte, desc, sum, countDistinct, isNull} from "drizzle-orm";
+import {
+	and,
+	count,
+	eq,
+	sql,
+	gte,
+	desc,
+	sum,
+	countDistinct,
+	isNull,
+} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { decode } from "decode-formdata";
 import { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import {
 	createMailer,
 	createStore,
-	DomainIdentity, gmailClientForGoogleAccount,
+	DomainIdentity,
+	gmailClientForGoogleAccount,
 	VerifyResult,
 } from "@providers";
 import { parseSecret } from "@/lib/utils";
 import { z } from "zod";
 import slugify from "@sindresorhus/slugify";
-import {getWorkspaceId, getWorkspaceRole, rlsClient} from "@/lib/actions/clients";
+import {
+	getWorkspaceId,
+	getWorkspaceRole,
+	rlsClient,
+} from "@/lib/actions/clients";
 import { v4 as uuidv4 } from "uuid";
-import {backfillGoogleMailboxes, backfillMailboxes, clearImapClients} from "@/lib/actions/mailbox";
+import {
+	backfillGoogleMailboxes,
+	backfillMailboxes,
+	clearImapClients,
+} from "@/lib/actions/mailbox";
 import { kvGet } from "@common";
 import { nanoid } from "nanoid";
 import { getRedis } from "@/lib/actions/get-redis";
-import {
-	checkDefaultWorkspaceIdentity,
-} from "@/lib/actions/workspace";
-import {workspaceIdentityMembers} from "@db";
+import { checkDefaultWorkspaceIdentity } from "@/lib/actions/workspace";
+import { workspaceIdentityMembers } from "@db";
 import { DISTRIBUTION_CONFIG } from "@distribution/config";
 import {
 	createEmailIdentity,
 	createSMTPAccount,
 	updateSMTPAccount,
-	verifySMTPAccount
+	verifySMTPAccount,
 } from "@/lib/actions/email-identity";
 import { access } from "@/lib/actions/shared";
 
@@ -89,17 +119,13 @@ export async function upsertProviderAccount(
 		const data = decode(formData);
 		const workspaceId = await getWorkspaceId();
 
-
 		const { canCreateProvider, reason } = await access("canCreateProvider");
 		if (!canCreateProvider) {
 			return {
 				success: false,
-				error:
-					reason ??
-					"dashboard.providerCreationDisabled",
+				error: reason ?? "dashboard.providerCreationDisabled",
 			};
 		}
-
 
 		const parsed = ProviderAccountFormSchema.parse(data);
 
@@ -158,9 +184,7 @@ export async function upsertSMTPAccount(
 		const parsed = SmtpAccountFormSchema.parse(data);
 
 		const input = {
-			label: parsed.label
-				? String(parsed.label)
-				: undefined,
+			label: parsed.label ? String(parsed.label) : undefined,
 			ulid: String(parsed.ulid),
 			required: parsed.required,
 			optional: parsed.optional,
@@ -168,9 +192,9 @@ export async function upsertSMTPAccount(
 
 		const result = parsed.accountId
 			? await updateSMTPAccount({
-				...input,
-				accountId: String(parsed.accountId),
-			})
+					...input,
+					accountId: String(parsed.accountId),
+				})
 			: await createSMTPAccount(input);
 
 		if (!result.success) {
@@ -318,11 +342,11 @@ export async function connectCustomEmailProvider(
 }
 
 export async function fetchDecryptedSecrets({
-												linkTable,
-												foreignCol,
-												secretIdCol,
-												parentId,
-											}: {
+	linkTable,
+	foreignCol,
+	secretIdCol,
+	parentId,
+}: {
 	linkTable: PgTable;
 	foreignCol: PgColumn;
 	secretIdCol: PgColumn;
@@ -390,13 +414,13 @@ export const deleteSmtpAccount = async (id: string): Promise<FormState> => {
 		const rls = await rlsClient();
 
 		await rls(async (tx) => {
-			const [accountSecret] = await tx.select().from(smtpAccountSecrets).where(eq(
-				smtpAccountSecrets.accountId,
-				id
-			))
+			const [accountSecret] = await tx
+				.select()
+				.from(smtpAccountSecrets)
+				.where(eq(smtpAccountSecrets.accountId, id));
 			if (accountSecret) {
 				await deleteSecretAdmin(accountSecret.secretId);
-				await tx.delete(smtpAccounts).where(eq(smtpAccounts.id, id))
+				await tx.delete(smtpAccounts).where(eq(smtpAccounts.id, id));
 			}
 		});
 		revalidatePath(DASHBOARD_PATH);
@@ -410,9 +434,7 @@ export const deleteSmtpAccount = async (id: string): Promise<FormState> => {
 export const verifySmtpAccount = async (
 	smtpSecret: FetchDecryptedSecretsResultRow,
 ): Promise<FormState<VerifyResult>> => {
-	const result = await verifySMTPAccount(
-		String(smtpSecret.linkRow?.accountId),
-	);
+	const result = await verifySMTPAccount(String(smtpSecret.linkRow?.accountId));
 	revalidatePath(DASHBOARD_PATH);
 	return result;
 };
@@ -502,10 +524,10 @@ export async function addNewDomainIdentity(
 			status: identity.status,
 			incomingDomain: String(parsed?.incomingDomain) === "true",
 			dnsRecords: identity.dns ?? undefined,
-			metaData: identity.meta ?? undefined
+			metaData: identity.meta ?? undefined,
 		} satisfies z.infer<typeof IdentityInsertSchema>;
 		const [domainIdentity] = await rls(async (tx) => {
-			return tx.insert(identities).values(payload as IdentityCreate)
+			return tx.insert(identities).values(payload as IdentityCreate);
 		});
 		// await addIdentityOwnerGrant(domainIdentity)
 		revalidatePath(DASHBOARD_PATH);
@@ -601,10 +623,7 @@ export const initializeMailboxes = async (
 	if (emailIdentity.kind !== "email") return;
 
 	if ((emailIdentity.metaData as any)?.provider === "google") {
-		await backfillGoogleMailboxes(
-			emailIdentity.id,
-			emailIdentity.workspaceId,
-		);
+		await backfillGoogleMailboxes(emailIdentity.id, emailIdentity.workspaceId);
 		return;
 	}
 
@@ -612,10 +631,7 @@ export const initializeMailboxes = async (
 		emailIdentity.smtpAccountId ||
 		(emailIdentity.metaData as any)?.provider === "microsoft"
 	) {
-		await backfillMailboxes(
-			emailIdentity.id,
-			emailIdentity.workspaceId,
-		);
+		await backfillMailboxes(emailIdentity.id, emailIdentity.workspaceId);
 		return;
 	}
 
@@ -633,16 +649,19 @@ export const initializeMailboxes = async (
 	await rls(async (tx) => {
 		await tx.insert(mailboxes).values(rows).onConflictDoNothing().returning();
 		const { davQueue } = await getRedis();
-		await davQueue.add("dav:create-identity", { identityId: emailIdentity.id, userId, workspaceId }, { jobId: `identity-dav-bootstrap-${emailIdentity.id}` });
-		return
+		await davQueue.add(
+			"dav:create-identity",
+			{ identityId: emailIdentity.id, userId, workspaceId },
+			{ jobId: `identity-dav-bootstrap-${emailIdentity.id}` },
+		);
+		return;
 	});
 	return rows;
 };
 
-
 const assignWorkspaceMembersToIdentity = async (
 	identity: IdentityEntity,
-	list: string
+	list: string,
 ) => {
 	const rls = await rlsClient();
 
@@ -654,18 +673,23 @@ const assignWorkspaceMembersToIdentity = async (
 			listIds.map((userId) => ({
 				identityId: identity.id,
 				userId,
-			}))
-		)
+			})),
+		),
 	);
 };
 
 export const assignIdentityToAllWorkspaceMembers = async (
-	identity: IdentityEntity
+	identity: IdentityEntity,
 ) => {
 	const rls = await rlsClient();
 
-	const members = await rls((tx) => tx.select().from(workspaceMembers).where(eq(workspaceMembers.workspaceId, identity.workspaceId)));
-	const listIds = members.map(m => m.userId);
+	const members = await rls((tx) =>
+		tx
+			.select()
+			.from(workspaceMembers)
+			.where(eq(workspaceMembers.workspaceId, identity.workspaceId)),
+	);
+	const listIds = members.map((m) => m.userId);
 	if (!listIds.length) return;
 
 	await rls((tx) =>
@@ -673,8 +697,8 @@ export const assignIdentityToAllWorkspaceMembers = async (
 			listIds.map((userId) => ({
 				identityId: identity.id,
 				userId,
-			}))
-		)
+			})),
+		),
 	);
 };
 
@@ -705,29 +729,29 @@ export async function addNewEmailIdentity(
 
 			const account = isMicrosoft
 				? (
-					await db
-						.select()
-						.from(microsoftAccounts)
-						.where(
-							and(
-								eq(microsoftAccounts.id, accountId),
-								eq(microsoftAccounts.workspaceId, workspaceId),
-							),
-						)
-						.limit(1)
-				)[0]
+						await db
+							.select()
+							.from(microsoftAccounts)
+							.where(
+								and(
+									eq(microsoftAccounts.id, accountId),
+									eq(microsoftAccounts.workspaceId, workspaceId),
+								),
+							)
+							.limit(1)
+					)[0]
 				: (
-					await db
-						.select()
-						.from(googleAccounts)
-						.where(
-							and(
-								eq(googleAccounts.id, accountId),
-								eq(googleAccounts.workspaceId, workspaceId),
-							),
-						)
-						.limit(1)
-				)[0];
+						await db
+							.select()
+							.from(googleAccounts)
+							.where(
+								and(
+									eq(googleAccounts.id, accountId),
+									eq(googleAccounts.workspaceId, workspaceId),
+								),
+							)
+							.limit(1)
+					)[0];
 
 			if (!account) {
 				return {
@@ -767,15 +791,15 @@ export async function addNewEmailIdentity(
 					sharedWithWorkspace,
 					...(isMicrosoft
 						? {
-							microsoft: {
-								microsoftAccountId: account.id,
-							},
-						}
+								microsoft: {
+									microsoftAccountId: account.id,
+								},
+							}
 						: {
-							gmail: {
-								googleAccountId: account.id,
-							},
-						}),
+								gmail: {
+									googleAccountId: account.id,
+								},
+							}),
 				},
 			});
 
@@ -835,9 +859,7 @@ export async function addNewEmailIdentity(
 		if (data.smtpAccountId) {
 			const result = await createEmailIdentity({
 				email: String(data.value),
-				displayName: data.displayName
-					? String(data.displayName)
-					: undefined,
+				displayName: data.displayName ? String(data.displayName) : undefined,
 				smtpAccountId: String(data.smtpAccountId),
 				dailyQuota: Number(data.dailyQuota) || defaultImapQuota,
 			});
@@ -970,13 +992,12 @@ export const testSendingEmail = async (
 
 export const fetchUserIdentities = async () => {
 	const workspaceId = await getWorkspaceId();
-	return db.select()
+	return db
+		.select()
 		.from(identities)
 		.leftJoin(smtpAccounts, eq(identities.smtpAccountId, smtpAccounts.id))
 		.leftJoin(providers, eq(identities.providerId, providers.id))
-		.where(and(
-			eq(identities.workspaceId, workspaceId)
-		))
+		.where(and(eq(identities.workspaceId, workspaceId)));
 };
 
 export const deleteDomainIdentity = async (
@@ -1017,7 +1038,10 @@ export const deleteDomainIdentity = async (
 	});
 };
 
-const enqueueIdentityCleanup = async (identityId: string, workspaceId: string) => {
+const enqueueIdentityCleanup = async (
+	identityId: string,
+	workspaceId: string,
+) => {
 	const { davQueue } = await getRedis();
 
 	await davQueue.add(
@@ -1061,7 +1085,6 @@ export const deleteEmailIdentity = async (
 				})
 				.where(eq(googleAccounts.identityId, identity.id));
 		} else if (isMicrosoft) {
-
 			await clearImapClients(identity.id);
 			await db
 				.update(microsoftAccounts)
@@ -1093,14 +1116,10 @@ export const deleteEmailIdentity = async (
 
 		await enqueueIdentityCleanup(identity.id, identity.workspaceId);
 
-		await db
-			.delete(identities)
-			.where(eq(identities.id, identity.id));
+		await db.delete(identities).where(eq(identities.id, identity.id));
 
 		try {
-			await db
-				.delete(identities)
-				.where(eq(identities.id, identity.id));
+			await db.delete(identities).where(eq(identities.id, identity.id));
 		} catch (error: any) {
 			console.error("Identity deletion failed:", error);
 			console.error("Postgres cause:", error?.cause);
@@ -1135,9 +1154,14 @@ export const verifyProviderAccount = async (
 			data.verified = res.ok;
 
 			const session = await currentSession();
-			await updateSecret(session, workspaceId, String(providerSecret?.linkRow?.secretId), {
-				value: JSON.stringify(data),
-			});
+			await updateSecret(
+				session,
+				workspaceId,
+				String(providerSecret?.linkRow?.secretId),
+				{
+					value: JSON.stringify(data),
+				},
+			);
 
 			if (res.ok) {
 				const rls = await rlsClient();
@@ -1161,9 +1185,14 @@ export const verifyProviderAccount = async (
 			const data = providerSecret.parsedSecret;
 			data.verified = res.ok;
 			const session = await currentSession();
-			await updateSecret(session, workspaceId,  String(providerSecret?.linkRow?.secretId), {
-				value: JSON.stringify(data),
-			});
+			await updateSecret(
+				session,
+				workspaceId,
+				String(providerSecret?.linkRow?.secretId),
+				{
+					value: JSON.stringify(data),
+				},
+			);
 
 			if (res.ok) {
 				const rls = await rlsClient();
@@ -1189,9 +1218,14 @@ export const verifyProviderAccount = async (
 			data.verified = res.ok;
 
 			const session = await currentSession();
-			await updateSecret(session, workspaceId, String(providerSecret?.linkRow?.secretId), {
-				value: JSON.stringify(data),
-			});
+			await updateSecret(
+				session,
+				workspaceId,
+				String(providerSecret?.linkRow?.secretId),
+				{
+					value: JSON.stringify(data),
+				},
+			);
 
 			if (res.ok) {
 				const rls = await rlsClient();
@@ -1216,9 +1250,14 @@ export const verifyProviderAccount = async (
 			data.verified = res.ok;
 
 			const session = await currentSession();
-			await updateSecret(session, workspaceId, String(providerSecret?.linkRow?.secretId), {
-				value: JSON.stringify(data),
-			});
+			await updateSecret(
+				session,
+				workspaceId,
+				String(providerSecret?.linkRow?.secretId),
+				{
+					value: JSON.stringify(data),
+				},
+			);
 
 			if (res.ok) {
 				const rls = await rlsClient();
@@ -1243,9 +1282,14 @@ export const verifyProviderAccount = async (
 			data.verified = res.ok;
 
 			const session = await currentSession();
-			await updateSecret(session, workspaceId, String(providerSecret?.linkRow?.secretId), {
-				value: JSON.stringify(data),
-			});
+			await updateSecret(
+				session,
+				workspaceId,
+				String(providerSecret?.linkRow?.secretId),
+				{
+					value: JSON.stringify(data),
+				},
+			);
 
 			if (res.ok) {
 				const rls = await rlsClient();
@@ -1312,7 +1356,9 @@ export const getDashboardStats = async () => {
 
 				tx.select({ bytes: sum(messages.sizeBytes) }).from(messages),
 
-				tx.select({ bytes: sum(messageAttachments.sizeBytes) }).from(messageAttachments),
+				tx
+					.select({ bytes: sum(messageAttachments.sizeBytes) })
+					.from(messageAttachments),
 			]);
 
 			let connectedProviders = null as number | null;
@@ -1391,7 +1437,7 @@ export const getDashboardStats = async () => {
 				attachmentBytes,
 				driveStorageBytes,
 				totalStorageBytes,
-				storageBytesUsed: totalStorageBytes
+				storageBytesUsed: totalStorageBytes,
 			};
 		});
 
@@ -1473,7 +1519,7 @@ export const fetchUserAPIKeys = async () => {
 			})
 			.from(apiKeys)
 			.leftJoin(secretsMeta, eq(apiKeys.secretId, secretsMeta.id))
-			.orderBy(desc(apiKeys.createdAt))
+			.orderBy(desc(apiKeys.createdAt)),
 	);
 
 	const userApiKeys = await Promise.all(
@@ -1495,13 +1541,14 @@ export type FetchUserAPIKeysResult = Awaited<
 	ReturnType<typeof fetchUserAPIKeys>
 >;
 
-
-
 export const regenerateDavPassword = async () => {
 	const { davEvents, davQueue } = await getRedis();
 	const user = await isSignedIn();
 	const workspaceId = await getWorkspaceId();
-	const job = await davQueue.add("dav:update-password", { userId: user?.id, workspaceId });
+	const job = await davQueue.add("dav:update-password", {
+		userId: user?.id,
+		workspaceId,
+	});
 	await job.waitUntilFinished(davEvents);
 	revalidatePath("/w/[workspaceId]/dashboard/platform/sync-services");
 	return job.returnvalue;
@@ -1513,15 +1560,14 @@ export async function addNewVolume(_prev: FormState, formData: FormData) {
 			throw new Error("Drive is disabled");
 		}
 
-		const { canCreateStorageVolume, reason } =
-			await access("canCreateStorageVolume");
+		const { canCreateStorageVolume, reason } = await access(
+			"canCreateStorageVolume",
+		);
 
 		if (!canCreateStorageVolume) {
 			return {
 				success: false,
-				error:
-					reason ??
-					"dashboard.storageVolumeCreationDisabled",
+				error: reason ?? "dashboard.storageVolumeCreationDisabled",
 			};
 		}
 
@@ -1529,9 +1575,7 @@ export async function addNewVolume(_prev: FormState, formData: FormData) {
 		const data = decode(formData);
 		const user = await isSignedIn();
 
-		const label = String(
-			data.volumeName || data.bucketName || "",
-		).trim();
+		const label = String(data.volumeName || data.bucketName || "").trim();
 
 		if (!label) {
 			return {
@@ -1586,7 +1630,6 @@ export async function addNewVolume(_prev: FormState, formData: FormData) {
 	});
 }
 
-
 export const fetchUserWebhooks = async () => {
 	const rls = await rlsClient();
 
@@ -1594,8 +1637,7 @@ export const fetchUserWebhooks = async () => {
 		tx
 			.select()
 			.from(webhooks)
-			.leftJoin(identities, eq(webhooks.identityId, identities.id))
-
+			.leftJoin(identities, eq(webhooks.identityId, identities.id)),
 	);
 
 	return hookRows;
@@ -1604,8 +1646,6 @@ export const fetchUserWebhooks = async () => {
 export type FetchUserWebhooksResult = Awaited<
 	ReturnType<typeof fetchUserWebhooks>
 >;
-
-
 
 export async function addWebhook(
 	_prev: FormState,
@@ -1621,9 +1661,7 @@ export async function addWebhook(
 
 		const rls = await rlsClient();
 		await rls((tx) =>
-			tx
-				.insert(webhooks)
-				.values(insertPayload as WebhookInsertEntity)
+			tx.insert(webhooks).values(insertPayload as WebhookInsertEntity),
 		);
 		revalidatePath(DASHBOARD_PATH);
 
@@ -1651,7 +1689,6 @@ export const deleteWebhook = async (
 		};
 	});
 };
-
 
 export const fetchUserDavAccountForWorkspace = async () => {
 	const rls = await rlsClient();
@@ -1687,22 +1724,16 @@ export const fetchUserDavAccountForWorkspace = async () => {
 	};
 };
 
-
-
 export async function fetchGoogleAccounts() {
 	const rls = await rlsClient();
 	return rls((tx) =>
-		tx
-			.select()
-			.from(googleAccounts)
-			.orderBy(desc(googleAccounts.createdAt)),
+		tx.select().from(googleAccounts).orderBy(desc(googleAccounts.createdAt)),
 	);
 }
 export type FetchGoogleAccountsResult = Awaited<
 	ReturnType<typeof fetchGoogleAccounts>
 >;
 export type FetchGoogleAccountsResultRow = FetchGoogleAccountsResult[number];
-
 
 export const verifyGoogleAccount = async (googleAccountId: string) => {
 	return handleAction(async () => {
@@ -1749,14 +1780,14 @@ export const verifyGoogleAccount = async (googleAccountId: string) => {
 	});
 };
 
-
 // Providers whose identities are simple "one email value, one provider row
 // per workspace" records with no domain/OAuth flow of their own — currently
 // `inbound` (generates a `slug@inbound.kurrier` address from a label) and
 // `mailtrap` (takes a real external address as-is). Shared by the three
 // functions below instead of duplicating near-identical CRUD per provider.
 const SIMPLE_EMAIL_IDENTITY_PROVIDERS = ["inbound", "mailtrap"] as const;
-type SimpleEmailIdentityProvider = (typeof SIMPLE_EMAIL_IDENTITY_PROVIDERS)[number];
+type SimpleEmailIdentityProvider =
+	(typeof SIMPLE_EMAIL_IDENTITY_PROVIDERS)[number];
 
 function isSimpleEmailIdentityProvider(
 	v: unknown,
@@ -1793,7 +1824,9 @@ export async function createProviderIdentity(
 			value = `${slug}@inbound.kurrier`;
 			displayName = label;
 		} else {
-			value = String(data.value || "").trim().toLowerCase();
+			value = String(data.value || "")
+				.trim()
+				.toLowerCase();
 			if (!value || !value.includes("@")) {
 				return { success: false, error: "A valid email address is required" };
 			}
@@ -1886,7 +1919,6 @@ export async function createProviderIdentity(
 	});
 }
 
-
 export const fetchProviderIdentities = async (
 	providerType: SimpleEmailIdentityProvider,
 ) => {
@@ -1900,18 +1932,17 @@ export const fetchProviderIdentities = async (
 			.from(identities)
 			.innerJoin(providers, eq(identities.providerId, providers.id))
 			.where(
-				and(
-					eq(identities.kind, "email"),
-					eq(providers.type, providerType),
-				),
+				and(eq(identities.kind, "email"), eq(providers.type, providerType)),
 			)
 			.orderBy(desc(identities.createdAt)),
 	);
 };
 
-export type FetchProviderIdentitiesResult = Awaited<ReturnType<typeof fetchProviderIdentities>>;
-export type FetchProviderIdentitiesResultRow = FetchProviderIdentitiesResult[number];
-
+export type FetchProviderIdentitiesResult = Awaited<
+	ReturnType<typeof fetchProviderIdentities>
+>;
+export type FetchProviderIdentitiesResultRow =
+	FetchProviderIdentitiesResult[number];
 
 export const deleteProviderIdentity = async (
 	identityId: string,
@@ -1930,10 +1961,7 @@ export const deleteProviderIdentity = async (
 				.from(identities)
 				.innerJoin(providers, eq(identities.providerId, providers.id))
 				.where(
-					and(
-						eq(identities.id, identityId),
-						eq(providers.type, providerType),
-					),
+					and(eq(identities.id, identityId), eq(providers.type, providerType)),
 				)
 				.limit(1),
 		);
@@ -1945,15 +1973,10 @@ export const deleteProviderIdentity = async (
 			};
 		}
 
-		await enqueueIdentityCleanup(
-			identity.identity.id,
-			workspaceId,
-		);
+		await enqueueIdentityCleanup(identity.identity.id, workspaceId);
 
 		await rls((tx) =>
-			tx
-				.delete(identities)
-				.where(eq(identities.id, identity.identity.id)),
+			tx.delete(identities).where(eq(identities.id, identity.identity.id)),
 		);
 
 		revalidatePath(DASHBOARD_PATH);
@@ -1965,7 +1988,6 @@ export const deleteProviderIdentity = async (
 		};
 	});
 };
-
 
 // Back-compat wrappers around the generic functions above, keeping the
 // original "inbound"-specific names/signatures so InboundCard/
@@ -1988,7 +2010,6 @@ export type FetchInboundIdentitiesResultRow = FetchProviderIdentitiesResultRow;
 
 export const deleteInboundIdentity = async (identityId: string) =>
 	deleteProviderIdentity(identityId, "inbound");
-
 
 export type GoogleOAuthConfig = {
 	clientId: string;
@@ -2083,8 +2104,7 @@ export async function hasGoogleOAuthConfig(): Promise<boolean> {
 	}
 
 	return Boolean(
-		process.env.GOOGLE_MAIL_CLIENT_ID &&
-		process.env.GOOGLE_MAIL_CLIENT_SECRET,
+		process.env.GOOGLE_MAIL_CLIENT_ID && process.env.GOOGLE_MAIL_CLIENT_SECRET,
 	);
 }
 
@@ -2112,12 +2132,9 @@ export async function saveGoogleOAuthConfig(
 		if (!canCreateProvider) {
 			return {
 				success: false,
-				error:
-					reason ??
-					"dashboard.providerCreationDisabled",
+				error: reason ?? "dashboard.providerCreationDisabled",
 			};
 		}
-
 
 		const rls = await rlsClient();
 
@@ -2143,7 +2160,7 @@ export async function saveGoogleOAuthConfig(
 		if (existing) {
 			await updateSecret(session, workspaceId, existing.id, {
 				value,
-				description: "Google Mail OAuth credentials"
+				description: "Google Mail OAuth credentials",
 			});
 		} else {
 			await createSecret(session, workspaceId, {
@@ -2158,11 +2175,10 @@ export async function saveGoogleOAuthConfig(
 
 		return {
 			success: true,
-			message: "Google Mail OAuth configuration saved."
+			message: "Google Mail OAuth configuration saved.",
 		};
 	});
 }
-
 
 export async function saveMailtrapCredentials(
 	_prev: FormState,
@@ -2193,12 +2209,9 @@ export async function saveMailtrapCredentials(
 		if (!canCreateProvider) {
 			return {
 				success: false,
-				error:
-					reason ??
-					"dashboard.providerCreationDisabled",
+				error: reason ?? "dashboard.providerCreationDisabled",
 			};
 		}
-
 
 		const rls = await rlsClient();
 
@@ -2239,7 +2252,6 @@ export async function saveMailtrapCredentials(
 		};
 	});
 }
-
 
 // Mailtrap API helpers for verifying the connection and listing inboxes
 const MAILTRAP_TIMEOUT_MS = 10_000; // 10 seconds
@@ -2320,19 +2332,19 @@ export const verifyMailtrapConnection = async (
 
 				res = inboxes.length
 					? {
-						ok: true,
-						message: `Found ${inboxes.length} inbound inbox(es)${
-							truncated ? " (showing the first few folders)" : ""
-						}: ${inboxes.map((i) => `${i.address} (${i.name})`).join(", ")}`,
-						meta: { inboxes },
-					}
+							ok: true,
+							message: `Found ${inboxes.length} inbound inbox(es)${
+								truncated ? " (showing the first few folders)" : ""
+							}: ${inboxes.map((i) => `${i.address} (${i.name})`).join(", ")}`,
+							meta: { inboxes },
+						}
 					: {
-						ok: true,
-						message: truncated
-							? `Token is valid, but no inbound inboxes were found in the first ${MAILTRAP_MAX_FOLDERS_CHECKED} folders; additional folders were not checked.`
-							: "Token is valid, but no inbound inboxes exist on this account yet.",
-						meta: { inboxes: [] },
-					};
+							ok: true,
+							message: truncated
+								? `Token is valid, but no inbound inboxes were found in the first ${MAILTRAP_MAX_FOLDERS_CHECKED} folders; additional folders were not checked.`
+								: "Token is valid, but no inbound inboxes exist on this account yet.",
+							meta: { inboxes: [] },
+						};
 			} catch (err: any) {
 				res = {
 					ok: false,
@@ -2411,12 +2423,12 @@ export async function saveCustomEmailProvider(
 			},
 			...(imapHost
 				? {
-					imap: {
-						host: imapHost,
-						port: imapPort,
-						secure: imapSecure,
-					},
-				}
+						imap: {
+							host: imapHost,
+							port: imapPort,
+							secure: imapSecure,
+						},
+					}
 				: {}),
 		});
 
@@ -2452,10 +2464,7 @@ export async function saveCustomEmailProvider(
 				.where(
 					and(
 						eq(secretsMeta.workspaceId, workspaceId),
-						eq(
-							secretsMeta.name,
-							CUSTOM_EMAIL_PROVIDERS_SECRET_NAME,
-						),
+						eq(secretsMeta.name, CUSTOM_EMAIL_PROVIDERS_SECRET_NAME),
 						eq(secretsMeta.managedBy, "user"),
 					),
 				)
@@ -2487,7 +2496,6 @@ export async function saveCustomEmailProvider(
 	});
 }
 
-
 export async function deleteCustomEmailProvider(
 	providerId: string,
 ): Promise<FormState> {
@@ -2516,10 +2524,7 @@ export async function deleteCustomEmailProvider(
 				.where(
 					and(
 						eq(secretsMeta.workspaceId, workspaceId),
-						eq(
-							secretsMeta.name,
-							CUSTOM_EMAIL_PROVIDERS_SECRET_NAME,
-						),
+						eq(secretsMeta.name, CUSTOM_EMAIL_PROVIDERS_SECRET_NAME),
 						eq(secretsMeta.managedBy, "user"),
 					),
 				)
@@ -2569,7 +2574,6 @@ export type FetchMicrosoftAccountsResult = Awaited<
 export type FetchMicrosoftAccountsResultRow =
 	FetchMicrosoftAccountsResult[number];
 
-
 export async function disconnectMicrosoftAccount(
 	accountId: string,
 ): Promise<FormState> {
@@ -2600,7 +2604,8 @@ export async function disconnectMicrosoftAccount(
 		if (account.identityId) {
 			return {
 				success: false,
-				error: "Remove the linked email identity before disconnecting this Microsoft account.",
+				error:
+					"Remove the linked email identity before disconnecting this Microsoft account.",
 			};
 		}
 

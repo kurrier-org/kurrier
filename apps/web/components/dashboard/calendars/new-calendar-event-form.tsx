@@ -39,12 +39,11 @@ function NewCalendarEventForm({
 	const { state } = useDynamicContext<CalendarState>();
 	const dayjsTz = getDayjsTz(state.defaultCalendar.timezone);
 	const editEvent = state.activePopoverEditEvent;
-	const defaultOrganizer =
-		state.defaultCalendar.identityId
-			? state.organizers.find(
-			(o) => o.value === state.defaultCalendar.identityId,
-		) ?? null
-			: null;
+	const defaultOrganizer = state.defaultCalendar.identityId
+		? (state.organizers.find(
+				(o) => o.value === state.defaultCalendar.identityId,
+			) ?? null)
+		: null;
 
 	const [selectedOrganizer, setSelectedOrganizer] =
 		useState<CalendarOrganizerType | null>(
@@ -142,7 +141,11 @@ function NewCalendarEventForm({
 			wrapperClasses: "col-span-12",
 			props: {
 				defaultChecked: !!editEvent?.isAllDay,
-				label: <div className="text-sm -mt-0.5">{dict?.calendar?.allDay ?? "All day"}</div>,
+				label: (
+					<div className="text-sm -mt-0.5">
+						{dict?.calendar?.allDay ?? "All day"}
+					</div>
+				),
 				size: "xs",
 				onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
 					setIsAllDay(event.currentTarget.checked);
@@ -186,12 +189,14 @@ function NewCalendarEventForm({
 						wrapperClasses: "col-span-12",
 						bottomStartPrefix: (
 							<span className={"text-xxs"}>
-								{dict?.calendar?.organizerNameHelp ?? "This name will be shown in calendar invites and saved for this email identity."}
+								{dict?.calendar?.organizerNameHelp ??
+									"This name will be shown in calendar invites and saved for this email identity."}
 							</span>
 						),
 						props: {
 							required: true,
-							placeholder: dict?.calendar?.organizerNamePlaceholder ?? "e.g. John Doe",
+							placeholder:
+								dict?.calendar?.organizerNamePlaceholder ?? "e.g. John Doe",
 							autoComplete: "off",
 						},
 					} as const,
@@ -216,7 +221,10 @@ function NewCalendarEventForm({
 			props: {
 				defaultChecked: false,
 				label: (
-					<div className={"text-sm -mt-0.5"}>{dict?.calendar?.sendEmailNotifications ?? "Send email notifications"}</div>
+					<div className={"text-sm -mt-0.5"}>
+						{dict?.calendar?.sendEmailNotifications ??
+							"Send email notifications"}
+					</div>
 				),
 				size: "xs",
 			},
@@ -266,7 +274,11 @@ function NewCalendarEventForm({
 			{state.organizers.length === 0 ? (
 				<>
 					<Alert icon={<IconAlertCircle />} variant={"filled"}>
-						{dict?.calendar?.noOrganizersFound ?? "No organizers(Email Identities) found."} <br /> {dict?.calendar?.noOrganizersFoundHelp ?? "Please add atleast one email identity to create calendar events."}
+						{dict?.calendar?.noOrganizersFound ??
+							"No organizers(Email Identities) found."}{" "}
+						<br />{" "}
+						{dict?.calendar?.noOrganizersFoundHelp ??
+							"Please add atleast one email identity to create calendar events."}
 					</Alert>
 				</>
 			) : (
@@ -275,7 +287,9 @@ function NewCalendarEventForm({
 					fields={fields}
 					onSuccess={onCompleted}
 					submitButtonProps={{
-						submitLabel: editEvent ? (dict?.calendar?.updateEvent ?? "Update event") : (dict?.calendar?.createEvent ?? "Create event"),
+						submitLabel: editEvent
+							? (dict?.calendar?.updateEvent ?? "Update event")
+							: (dict?.calendar?.createEvent ?? "Create event"),
 						wrapperClasses: "mt-4",
 						fullWidth: true,
 					}}

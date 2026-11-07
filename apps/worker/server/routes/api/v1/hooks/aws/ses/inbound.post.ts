@@ -11,13 +11,12 @@ import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { simpleParser } from "mailparser";
 import { eq } from "drizzle-orm";
 import { parseAndStoreEmail } from "../../../../../../../lib/message-payload-parser";
-import {MessageValidator} from "aws-sns-validator";
+import { MessageValidator } from "aws-sns-validator";
 const snsValidator = new MessageValidator();
 async function verifySnsMessage(message: unknown): Promise<void> {
 	await snsValidator.validate(message as Record<string, unknown>);
 }
 function isSafeSnsSubscribeUrl(value: unknown): value is string {
-
 	if (typeof value !== "string") return false;
 	try {
 		const url = new URL(value);
@@ -31,7 +30,6 @@ function isSafeSnsSubscribeUrl(value: unknown): value is string {
 	} catch {
 		return false;
 	}
-
 }
 
 export default defineEventHandler(async (event) => {
@@ -43,7 +41,6 @@ export default defineEventHandler(async (event) => {
 
 		// 1) One-time SNS handshake
 		if (sns?.Type === "SubscriptionConfirmation" && sns.SubscribeURL) {
-
 			if (!isSafeSnsSubscribeUrl(sns.SubscribeURL)) {
 				throw new Error("Invalid SNS SubscribeURL");
 			}
@@ -115,10 +112,10 @@ export default defineEventHandler(async (event) => {
 
 			if (!inbox)
 				// throw new Error("No inbox mailbox found for identity " + identityId);
-				return
+				return;
 			if (!spamMb)
 				// throw new Error("No spam mailbox found for identity " + identityId);
-				return
+				return;
 			if (!provider) throw new Error("No provider found for id " + providerId);
 
 			let providerSaysSpam = false;
@@ -156,7 +153,6 @@ export default defineEventHandler(async (event) => {
 				rawStorageKey: key, // S3 key
 				emlKey: emlId,
 			});
-
 
 			// Optional: fetch the raw RFC822 now (you can move this to a worker if preferred)
 			// const obj = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));

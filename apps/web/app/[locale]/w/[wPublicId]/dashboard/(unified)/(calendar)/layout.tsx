@@ -86,21 +86,24 @@ async function CalendarDashboard({
 					</Suspense>
 				}
 				sidebarTopContent={
-				<>
-					<Suspense fallback={<div className="h-9" />} key={workspacePublicId}>
-						<WorkspaceLogo />
-					</Suspense>
-					<Suspense fallback={<Loading />}>
-						{defaultCalendar && (
-							<div className="-mt-1">
-								<NewEventButton
-									workspacePublicId={workspacePublicId}
-									className="hidden md:inline-flex"
-								/>
-							</div>
-						)}
-					</Suspense>
-				</>
+					<>
+						<Suspense
+							fallback={<div className="h-9" />}
+							key={workspacePublicId}
+						>
+							<WorkspaceLogo />
+						</Suspense>
+						<Suspense fallback={<Loading />}>
+							{defaultCalendar && (
+								<div className="-mt-1">
+									<NewEventButton
+										workspacePublicId={workspacePublicId}
+										className="hidden md:inline-flex"
+									/>
+								</div>
+							)}
+						</Suspense>
+					</>
 				}
 			/>
 

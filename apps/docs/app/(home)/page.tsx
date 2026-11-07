@@ -42,7 +42,6 @@ export default function HomePage() {
 				</div>
 			</div>
 
-
 			<div className="my-12 flex flex-col items-center gap-6 px-4 text-center">
 				<Button asChild size="lg">
 					<Link href="/docs">Read the docs</Link>
@@ -78,8 +77,6 @@ export default function HomePage() {
 			{/*		<Link href={"/docs"}>Read the docs</Link>*/}
 			{/*	</Button>*/}
 			{/*</div>*/}
-
-
 
 			{/*<div className={"flex justify-center -mt-10"}>*/}
 			{/*	<Button*/}

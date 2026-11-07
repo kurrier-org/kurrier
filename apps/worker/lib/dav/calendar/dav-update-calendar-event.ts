@@ -2,14 +2,17 @@ import {
 	db,
 	calendarEvents,
 	calendars,
-	calendarEventAttendees, davAccounts, secretsMeta, getSecretAdmin,
+	calendarEventAttendees,
+	davAccounts,
+	secretsMeta,
+	getSecretAdmin,
 } from "@db";
 import { eq } from "drizzle-orm";
 import { getDayjsTz } from "@common";
 import { buildICalEvent } from "./dav-build-cal-event";
 import { getRedis } from "../../../lib/get-redis";
 import DigestFetch from "digest-fetch";
-import {normalizeEtag} from "../../../lib/dav/sync/dav-sync-db";
+import { normalizeEtag } from "../../../lib/dav/sync/dav-sync-db";
 
 async function updateCalendarObjectViaHttp(opts: {
 	icalData: string;
@@ -20,8 +23,15 @@ async function updateCalendarObjectViaHttp(opts: {
 	davUri: string;
 	etag?: string | null;
 }) {
-	const { icalData, davBaseUrl, username, password, calendarSlug, davUri, etag } =
-		opts;
+	const {
+		icalData,
+		davBaseUrl,
+		username,
+		password,
+		calendarSlug,
+		davUri,
+		etag,
+	} = opts;
 
 	const client = new DigestFetch(username, password);
 	const digestFetch = client.fetch.bind(client);
@@ -65,9 +75,6 @@ async function updateCalendarObjectViaHttp(opts: {
 	return { etag: normalizeEtag(newEtag) };
 }
 
-
-
-
 export const updateCalendarEvent = async (
 	eventId: string,
 	notifyAttendees: boolean,
@@ -102,8 +109,6 @@ export const updateCalendarEvent = async (
 	const password = secret?.vault?.decrypted_secret;
 	if (!password) return null;
 
-
-
 	const guests = await db
 		.select()
 		.from(calendarEventAttendees)
@@ -123,7 +128,6 @@ export const updateCalendarEvent = async (
 		davUri,
 		etag: event.davEtag,
 	});
-
 
 	await db
 		.update(calendarEvents)

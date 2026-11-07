@@ -6,10 +6,10 @@ import { createMailboxFolder } from "./create-folder";
 import { deleteMailboxFolder } from "./delete-folder";
 
 export const MailboxStore = {
-    setFlags: setMailboxFlagsState,
-    moveMessages: moveMailboxMessages,
-    deleteMessages: deleteMailboxMessages,
-    deleteMessage: deleteMailboxMessage,
-    createFolder: createMailboxFolder,
-    deleteFolder: deleteMailboxFolder,
+	setFlags: setMailboxFlagsState,
+	moveMessages: moveMailboxMessages,
+	deleteMessages: deleteMailboxMessages,
+	deleteMessage: deleteMailboxMessage,
+	createFolder: createMailboxFolder,
+	deleteFolder: deleteMailboxFolder,
 };

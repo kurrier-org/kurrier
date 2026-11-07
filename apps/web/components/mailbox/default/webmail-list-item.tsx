@@ -9,8 +9,10 @@ import type {
 	FetchMailboxThreadLabelsResult,
 } from "@/lib/actions/labels";
 import {
-	type FetchMailboxThreadsResult, setReadStatus,
-	toggleStar, trashThreads,
+	type FetchMailboxThreadsResult,
+	setReadStatus,
+	toggleStar,
+	trashThreads,
 } from "@/lib/actions/mailbox";
 
 type Props = {
@@ -29,16 +31,16 @@ import ThreadLabelHoverButtons from "@/components/dashboard/labels/thread-label-
 import SnoozeMail from "@/components/mailbox/default/snooze-mail";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
-import {ReusableFormButton} from "@/components/common/reusable-form-button";
+import { ReusableFormButton } from "@/components/common/reusable-form-button";
 
 export default function WebmailListItem({
-											mailboxThreadItem,
-											activeMailbox,
-											identityPublicId,
-											globalLabels,
-											labelsByThreadId,
-											workspacePublicId,
-										}: Props) {
+	mailboxThreadItem,
+	activeMailbox,
+	identityPublicId,
+	globalLabels,
+	labelsByThreadId,
+	workspacePublicId,
+}: Props) {
 	const dict = useOptionalDictionary();
 
 	function formatDateLabel(input?: string | number | Date) {
@@ -225,7 +227,6 @@ export default function WebmailListItem({
 					/>
 				)}
 
-
 				<ReusableFormButton
 					action={toggleStar}
 					actionIcon
@@ -241,7 +242,11 @@ export default function WebmailListItem({
 						),
 					}}
 				>
-					<input type="hidden" name="threadId" value={mailboxThreadItem.threadId} />
+					<input
+						type="hidden"
+						name="threadId"
+						value={mailboxThreadItem.threadId}
+					/>
 					<input type="hidden" name="mailboxId" value={activeMailbox.id} />
 					<input
 						type="hidden"
@@ -320,7 +325,11 @@ export default function WebmailListItem({
 							children: <Mail size={16} />,
 						}}
 					>
-						<input type="hidden" name="threadId" value={mailboxThreadItem.threadId} />
+						<input
+							type="hidden"
+							name="threadId"
+							value={mailboxThreadItem.threadId}
+						/>
 						<input type="hidden" name="mailboxId" value={activeMailbox.id} />
 						<input type="hidden" name="op" value="unread" />
 					</ReusableFormButton>
@@ -338,7 +347,11 @@ export default function WebmailListItem({
 							children: <MailOpen size={16} />,
 						}}
 					>
-						<input type="hidden" name="threadId" value={mailboxThreadItem.threadId} />
+						<input
+							type="hidden"
+							name="threadId"
+							value={mailboxThreadItem.threadId}
+						/>
 						<input type="hidden" name="mailboxId" value={activeMailbox.id} />
 						<input type="hidden" name="op" value="read" />
 					</ReusableFormButton>
@@ -362,11 +375,16 @@ export default function WebmailListItem({
 					}}
 					notify={{
 						kind: "toast",
-						successMessage: dict?.mailbox?.movedToTrash ?? "Messages moved to Trash",
+						successMessage:
+							dict?.mailbox?.movedToTrash ?? "Messages moved to Trash",
 						toastProps: { position: "bottom-left" },
 					}}
 				>
-					<input type="hidden" name="threadId" value={mailboxThreadItem.threadId} />
+					<input
+						type="hidden"
+						name="threadId"
+						value={mailboxThreadItem.threadId}
+					/>
 					<input type="hidden" name="mailboxId" value={activeMailbox.id} />
 				</ReusableFormButton>
 			</div>

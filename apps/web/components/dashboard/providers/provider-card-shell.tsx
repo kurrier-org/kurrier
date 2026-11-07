@@ -14,10 +14,10 @@ type Props = {
 };
 
 export default async function ProviderCardShell({
-													userProviders,
-													mode,
-													spec,
-												}: Props) {
+	userProviders,
+	mode,
+	spec,
+}: Props) {
 	const userProvider = userProviders.find((p) => p.type === spec.key);
 
 	if (!userProvider) {

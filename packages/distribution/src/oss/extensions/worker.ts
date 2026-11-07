@@ -1,3 +1,1 @@
-export {
-    workerExtensions as extensions,
-} from "../../../../oss/src/extensions/worker";
+export { workerExtensions as extensions } from "../../../../oss/src/extensions/worker";

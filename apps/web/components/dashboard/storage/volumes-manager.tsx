@@ -14,11 +14,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { SyncProvidersRow } from "@/lib/actions/dashboard";
 
 function SectionHeader({
-						   title,
-						   count,
-						   action,
-						   subtitle,
-					   }: {
+	title,
+	count,
+	action,
+	subtitle,
+}: {
 	title: string;
 	count?: number;
 	subtitle?: string;
@@ -37,17 +37,11 @@ function SectionHeader({
 				</div>
 
 				{subtitle ? (
-					<p className="mt-1 text-xs text-muted-foreground">
-						{subtitle}
-					</p>
+					<p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
 				) : null}
 			</div>
 
-			{action ? (
-				<div className="w-full sm:ml-4 sm:w-auto">
-					{action}
-				</div>
-			) : null}
+			{action ? <div className="w-full sm:ml-4 sm:w-auto">{action}</div> : null}
 		</div>
 	);
 }
@@ -77,11 +71,11 @@ function VolumeStatusPill() {
 }
 
 export default function VolumesManager({
-										   userProviders,
-										   volumes,
-										   workspacePublicId,
-										   canCreateVolume,
-									   }: {
+	userProviders,
+	volumes,
+	workspacePublicId,
+	canCreateVolume,
+}: {
 	userProviders: SyncProvidersRow[];
 	volumes: DriveVolumeEntity[];
 	workspacePublicId: string;
@@ -105,9 +99,7 @@ export default function VolumesManager({
 			size: "lg",
 			children: (
 				<div className="p-2">
-					<AddVolumeForm
-						onCompleted={() => modals.close(openModalId)}
-					/>
+					<AddVolumeForm onCompleted={() => modals.close(openModalId)} />
 				</div>
 			),
 		});
@@ -144,13 +136,11 @@ export default function VolumesManager({
 									className="gap-2"
 									disabled={!canCreateVolume}
 									aria-label={
-										dict?.platform?.createVolumeAriaLabel ??
-										"Create volume"
+										dict?.platform?.createVolumeAriaLabel ?? "Create volume"
 									}
 								>
 									<Plus className="size-4" />
-									{dict?.platform?.createVolume ??
-										"Create Volume"}
+									{dict?.platform?.createVolume ?? "Create Volume"}
 								</Button>
 							}
 						/>
@@ -161,15 +151,12 @@ export default function VolumesManager({
 							<div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
 								{volumes.map((v) => {
 									const volumeProvider = userProviders.find(
-										(provider) =>
-											provider.id === v.providerId,
+										(provider) => provider.id === v.providerId,
 									);
 
 									const providerType =
 										volumeProvider?.type ??
-										(v.kind === "cloud"
-											? "s3"
-											: "local");
+										(v.kind === "cloud" ? "s3" : "local");
 
 									return (
 										<div
@@ -182,12 +169,9 @@ export default function VolumesManager({
 
 													<div className="min-w-0">
 														<div className="truncate font-semibold text-brand-foreground flex gap-2 flex-wrap items-center">
-															<span>
-																{v.label}
-															</span>
+															<span>{v.label}</span>
 															<span className="text-xxs text-muted-foreground font-normal">
-																·{" "}
-																{providerType?.toUpperCase()}
+																· {providerType?.toUpperCase()}
 															</span>
 														</div>
 
@@ -196,21 +180,14 @@ export default function VolumesManager({
 
 															{v.createdAt ? (
 																<span className="text-xs text-muted-foreground">
-																	{dict?.platform
-																			?.createdColonPrefix ??
+																	{dict?.platform?.createdColonPrefix ??
 																		"Created:"}{" "}
 																	{new Intl.DateTimeFormat(
-																		dict?.locale ??
-																		"en",
+																		dict?.locale ?? "en",
 																		{
-																			dateStyle:
-																				"medium",
+																			dateStyle: "medium",
 																		},
-																	).format(
-																		new Date(
-																			v.createdAt,
-																		),
-																	)}
+																	).format(new Date(v.createdAt))}
 																</span>
 															) : null}
 														</div>
@@ -220,16 +197,13 @@ export default function VolumesManager({
 
 											<div className="flex gap-2 sm:gap-3 w-full sm:w-auto flex-wrap">
 												<Button
-													leftSection={
-														<IconDatabaseShare className="size-4" />
-													}
+													leftSection={<IconDatabaseShare className="size-4" />}
 													size="xs"
 													className="flex-1 sm:flex-none"
 													href={`/w/${workspacePublicId}/dashboard/drive/volumes/${v.publicId}`}
 													component={Link}
 												>
-													{dict?.platform?.view ??
-														"View"}
+													{dict?.platform?.view ?? "View"}
 												</Button>
 											</div>
 										</div>

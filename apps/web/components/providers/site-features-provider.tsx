@@ -8,9 +8,9 @@ type SiteFeatures = typeof DISTRIBUTION_CONFIG.features;
 const SiteFeaturesContext = createContext<SiteFeatures | undefined>(undefined);
 
 export function SiteFeaturesProvider({
-										 value,
-										 children,
-									 }: {
+	value,
+	children,
+}: {
 	value: SiteFeatures;
 	children: React.ReactNode;
 }) {

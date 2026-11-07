@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { cookies } from "next/headers";
 import "../globals.css";
-import {getPublicEnv, WORKSPACE_THEME_COOKIE} from "@schema";
+import { getPublicEnv, WORKSPACE_THEME_COOKIE } from "@schema";
 import {
 	MODE_COOKIE,
 	RESOLVED_COOKIE,
@@ -17,18 +17,15 @@ import { ConfigProvider } from "@/components/providers/config-provider";
 import { SiteFeaturesProvider } from "@/components/providers/site-features-provider";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
-import {
-	MantineProvider,
-	mantineHtmlProps,
-} from "@mantine/core";
+import { MantineProvider, mantineHtmlProps } from "@mantine/core";
 import { DatesProvider } from "@mantine/dates";
 import { ModalsProvider } from "@mantine/modals";
 import { DictionaryProvider } from "@/components/providers/dictionary-provider";
 import { getDictionary, hasLocale } from "@/lib/dictionaries";
 import { DAYJS_LOCALES } from "@/lib/locale";
 import { createMantineTheme } from "@/lib/mantine-theme";
-import {DISTRIBUTION_CONFIG} from "@distribution/config";
-import {WorkspaceMantineProvider} from "@/components/providers/workspace-mantine-provider";
+import { DISTRIBUTION_CONFIG } from "@distribution/config";
+import { WorkspaceMantineProvider } from "@/components/providers/workspace-mantine-provider";
 
 const jakartaSans = Plus_Jakarta_Sans({
 	variable: "--font-sans",
@@ -58,8 +55,7 @@ export default async function RootLayout({
 	const lang = hasLocale(urlLocale) ? urlLocale : "en";
 	const jar = await cookies();
 	const theme: ThemeName = ThemeNameSchema.catch("indigo").parse(
-		jar.get(WORKSPACE_THEME_COOKIE)?.value ??
-		jar.get(THEME_COOKIE)?.value,
+		jar.get(WORKSPACE_THEME_COOKIE)?.value ?? jar.get(THEME_COOKIE)?.value,
 	);
 	const mode: ThemeMode = ThemeModeSchema.catch("system").parse(
 		jar.get(MODE_COOKIE)?.value,

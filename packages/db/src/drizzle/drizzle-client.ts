@@ -25,26 +25,29 @@ export function createDrizzle<Database extends PgDatabase<any, any, any>>(
 	return {
 		admin,
 		rls: (async (transaction, ...rest) => {
-			return client.transaction(async (tx) => {
-				const claims: Token = {
-					...token,
-					workspace_id: ctx.workspaceId ?? token.workspace_id,
-				};
+			return client.transaction(
+				async (tx) => {
+					const claims: Token = {
+						...token,
+						workspace_id: ctx.workspaceId ?? token.workspace_id,
+					};
 
-				if (claims.sub) {
-					await tx.execute(
-						sql`select set_config('request.jwt.claim.sub', ${claims.sub}, true)`
-					);
-				}
+					if (claims.sub) {
+						await tx.execute(
+							sql`select set_config('request.jwt.claim.sub', ${claims.sub}, true)`,
+						);
+					}
 
-				if (claims.workspace_id) {
-					await tx.execute(
-						sql`select set_config('request.jwt.claim.workspace_id', ${claims.workspace_id}, true)`
-					);
-				}
+					if (claims.workspace_id) {
+						await tx.execute(
+							sql`select set_config('request.jwt.claim.workspace_id', ${claims.workspace_id}, true)`,
+						);
+					}
 
-				return transaction(tx);
-			}, ...rest);
+					return transaction(tx);
+				},
+				...rest,
+			);
 		}) as typeof client.transaction,
 	};
 }

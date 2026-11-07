@@ -379,8 +379,8 @@
 	"customProviderMailboxIdentityHelp": "Kurrier автоматически создаст почтовый адрес и начнёт синхронизацию его ящиков.",
 	"customProviderDisplayNamePlaceholder": "Ваше имя",
 	"customProviderDisplayNameHelp": "Отображается получателям отправленных вами писем.",
-  	"noDomainsYet": "Доменов пока нет — добавьте первый, чтобы начать.",
-  	"noEmailAddressesYet": "Адресов электронной почты пока нет — добавьте первый, чтобы начать.",
+	"noDomainsYet": "Доменов пока нет — добавьте первый, чтобы начать.",
+	"noEmailAddressesYet": "Адресов электронной почты пока нет — добавьте первый, чтобы начать.",
 
 	"workspaceColor": "Цвет рабочего пространства",
 	"neutral": "Нейтральный",

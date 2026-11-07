@@ -18,7 +18,7 @@ import ICAL from "ical.js";
 import { normalizeEtag } from "../sync/dav-sync-db";
 import { getDayjsTz } from "@common";
 import { CalendarEventStatusType } from "@schema";
-import {syncEventAttendeesFromVevent} from "../../../lib/dav/calendar/dav-event-helpers";
+import { syncEventAttendeesFromVevent } from "../../../lib/dav/calendar/dav-event-helpers";
 
 const fetchIcsData = async (obj: DavCalendarObjectEntity) => {
 	const bytes = obj.calendardata as Uint8Array;

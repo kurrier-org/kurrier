@@ -10,8 +10,8 @@ import {
 	ButtonProps,
 	ActionIconProps,
 } from "@mantine/core";
-import {NotifyProps} from "@/components/common/reusable-form";
-import {toast} from "sonner";
+import { NotifyProps } from "@/components/common/reusable-form";
+import { toast } from "sonner";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import { resolveDictMessage } from "@/lib/resolve-dict-message";
 
@@ -30,17 +30,17 @@ type ReusableFormButtonProps = {
 };
 
 export function ReusableFormButton({
-									   action,
-									   children,
-									   buttonProps = {},
-									   actionIconProps = {},
-									   formWrapperClasses = "",
-									   actionIcon = false,
-									   label = "Submit",
-									   formKey,
-									   onSuccess,
-									   notify = { kind: "alert" },
-								   }: ReusableFormButtonProps) {
+	action,
+	children,
+	buttonProps = {},
+	actionIconProps = {},
+	formWrapperClasses = "",
+	actionIcon = false,
+	label = "Submit",
+	formKey,
+	onSuccess,
+	notify = { kind: "alert" },
+}: ReusableFormButtonProps) {
 	const [formState, formAction, isPending] = useActionState<
 		FormState,
 		FormData
@@ -88,7 +88,14 @@ export function ReusableFormButton({
 
 		const err = resolvedError ?? notify?.errorMessage;
 		if (err) toast.error(err, notify?.toastProps);
-	}, [notifyKind, isPending, formState, notify, resolvedMessage, resolvedError]);
+	}, [
+		notifyKind,
+		isPending,
+		formState,
+		notify,
+		resolvedMessage,
+		resolvedError,
+	]);
 
 	return (
 		<Form

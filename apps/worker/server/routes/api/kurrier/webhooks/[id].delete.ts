@@ -5,10 +5,9 @@ import {
 	validateApiKey,
 } from "../../../../../lib/api-helpers";
 import { db, webhooks } from "@db";
-import {and, eq} from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 export default defineEventHandler(async (event) => {
-
 	const { ownerId } = await validateApiKey(event);
 	const id = getRouterParam(event, "id");
 	if (!id) {
@@ -29,5 +28,4 @@ export default defineEventHandler(async (event) => {
 		id: existing.id,
 		deleted: true,
 	});
-
 });

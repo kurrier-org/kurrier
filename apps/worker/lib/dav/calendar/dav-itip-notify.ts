@@ -14,11 +14,13 @@ import { extension } from "mime-types";
 import { getDayjsTz } from "@common";
 import { getRedis } from "../../../lib/get-redis";
 import { customAlphabet } from "nanoid";
-import {s3} from "../../../lib/create-s3-client";
-import {PutObjectCommand} from "@aws-sdk/client-s3";
+import { s3 } from "../../../lib/create-s3-client";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 const cleanId = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 6);
 
-export async function ensureIcalUid(event: CalendarEventEntity): Promise<string> {
+export async function ensureIcalUid(
+	event: CalendarEventEntity,
+): Promise<string> {
 	if (event.icalUid && event.icalUid.trim()) return event.icalUid.trim();
 
 	const uid = `${event.id}@kurrier`;
@@ -361,7 +363,7 @@ const enqueEmail = async ({
 					Key: path,
 					Body: buffer,
 					ContentType: file.contentType,
-				})
+				}),
 			);
 
 			storedAttachments.push({
@@ -376,7 +378,6 @@ const enqueEmail = async ({
 			console.error("S3 upload failed", e);
 		}
 	}
-
 
 	const payload: any = {
 		newMessageId,

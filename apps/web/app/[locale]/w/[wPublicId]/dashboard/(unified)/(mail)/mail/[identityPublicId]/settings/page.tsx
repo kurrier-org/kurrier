@@ -48,12 +48,12 @@ async function SettingsGeneralContent({ params }: PageProps) {
 			.select()
 			.from(identities)
 			.where(eq(identities.publicId, paramsResolved.identityPublicId))
-			.limit(1)
+			.limit(1),
 	);
 
 	const updateName = async (
 		_prev: FormState,
-		formData: FormData
+		formData: FormData,
 	): Promise<FormState> => {
 		"use server";
 
@@ -69,7 +69,7 @@ async function SettingsGeneralContent({ params }: PageProps) {
 						displayName: decodedForm.displayName as string,
 						updatedAt: new Date(),
 					})
-					.where(eq(identities.id, decodedForm.id as string))
+					.where(eq(identities.id, decodedForm.id as string)),
 			);
 
 			revalidatePath(String(decodedForm.pathname));

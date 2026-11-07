@@ -82,7 +82,7 @@ export function setSidebarWidth(width: string) {
 	el.style.setProperty("--sidebar-width", width);
 }
 
-export function withLocale(locale: string, path: string,) {
+export function withLocale(locale: string, path: string) {
 	if (path.startsWith("/")) {
 		return `/${locale}${path}`;
 	}
@@ -90,7 +90,7 @@ export function withLocale(locale: string, path: string,) {
 }
 
 export const bytesToGb = (bytes: number) => {
-	return (bytes ?? 0) / (1024 ** 3)
+	return (bytes ?? 0) / 1024 ** 3;
 };
 
 export function formatBytes(bytes?: number | null) {

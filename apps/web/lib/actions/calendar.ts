@@ -1,5 +1,5 @@
 "use server";
-import {getWorkspaceId, rlsClient} from "@/lib/actions/clients";
+import { getWorkspaceId, rlsClient } from "@/lib/actions/clients";
 import {
 	addressBooks,
 	CalendarEventAttendeeEntity,
@@ -9,7 +9,8 @@ import {
 	CalendarEventUpdateSchema,
 	calendars,
 	contacts,
-	identities, MessageAttachmentEntity,
+	identities,
+	MessageAttachmentEntity,
 } from "@db";
 import {
 	and,
@@ -21,7 +22,9 @@ import {
 	ilike,
 	sql,
 	isNull,
-	not, desc, isNotNull
+	not,
+	desc,
+	isNotNull,
 } from "drizzle-orm";
 import {
 	AllDayFragment,
@@ -29,7 +32,8 @@ import {
 	CalendarViewType,
 	ComposeContact,
 	EventSlotFragment,
-	FormState, getServerEnv,
+	FormState,
+	getServerEnv,
 	handleAction,
 	SlotKey,
 	ViewParams,
@@ -42,11 +46,10 @@ import { dayjsExtended, getDayjsTz } from "@common/day-js-extended";
 import { calendarEventAttendees } from "@db";
 import { PgTransaction } from "drizzle-orm/pg-core";
 import { RRule } from "rrule";
-import {GetObjectCommand} from "@aws-sdk/client-s3";
-import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
-import {s3} from "@/lib/create-s3-client";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { s3 } from "@/lib/create-s3-client";
 const { S3_BUCKET } = getServerEnv();
-
 
 export const fetchDefaultCalendar = async (calendarPublicId?: string) => {
 	const rls = await rlsClient();
@@ -56,11 +59,13 @@ export const fetchDefaultCalendar = async (calendarPublicId?: string) => {
 			tx
 				.select()
 				.from(calendars)
-				.where(and(
-					eq(calendars.publicId, calendarPublicId),
-					isNotNull(calendars.identityId)
-				))
-				.limit(1)
+				.where(
+					and(
+						eq(calendars.publicId, calendarPublicId),
+						isNotNull(calendars.identityId),
+					),
+				)
+				.limit(1),
 		);
 
 		return cal ?? null;
@@ -71,12 +76,11 @@ export const fetchDefaultCalendar = async (calendarPublicId?: string) => {
 			.select()
 			.from(calendars)
 			.where(isNotNull(calendars.identityId))
-			.orderBy(desc(calendars.createdAt))
+			.orderBy(desc(calendars.createdAt)),
 	);
 
 	return visibleCalendars[0] ?? null;
 };
-
 
 export async function fetchEventAttendees(
 	eventIds: string[],
@@ -87,9 +91,7 @@ export async function fetchEventAttendees(
 		tx
 			.select()
 			.from(calendarEventAttendees)
-			.where(and(
-				inArray(calendarEventAttendees.eventId, eventIds)
-			)),
+			.where(and(inArray(calendarEventAttendees.eventId, eventIds))),
 	);
 	const result: Record<string, CalendarEventAttendeeEntity[]> = {};
 
@@ -107,13 +109,10 @@ export type FetchEventAttendeesResult = Awaited<
 	ReturnType<typeof fetchEventAttendees>
 >;
 
-
 export const fetchOrganizers = async () => {
 	const rls = await rlsClient();
 
-	const allIdentities = await rls((tx) =>
-		tx.select().from(identities)
-	);
+	const allIdentities = await rls((tx) => tx.select().from(identities));
 
 	return allIdentities.map((identity) => ({
 		value: identity.id,
@@ -123,7 +122,6 @@ export const fetchOrganizers = async () => {
 			: identity.value,
 	}));
 };
-
 
 type UiGuest = {
 	email: string;
@@ -147,15 +145,13 @@ type SyncEventAttendeesArgs = {
 	attendeePayload: AttendeePayload | null;
 };
 
-
-
 export async function syncEventAttendees({
-											 tx,
-											 eventId,
-											 organizerEmail,
-											 organizerName,
-											 attendeePayload,
-										 }: SyncEventAttendeesArgs) {
+	tx,
+	eventId,
+	organizerEmail,
+	organizerName,
+	attendeePayload,
+}: SyncEventAttendeesArgs) {
 	if (!attendeePayload) return;
 
 	const allGuests: UiGuest[] = [
@@ -413,9 +409,9 @@ export async function getRangeForCalendarView(
 	const base: Dayjs =
 		params?.year && params?.month && params?.day
 			? dayjsTz()
-				.year(params.year)
-				.month(params.month - 1)
-				.date(params.day)
+					.year(params.year)
+					.month(params.month - 1)
+					.date(params.day)
 			: dayjsTz();
 
 	let from: Dayjs;
@@ -571,9 +567,7 @@ export const deleteCalendarEvent = async (id: string): Promise<FormState> => {
 	});
 };
 
-export const searchContactsForCompose = async (
-	searchValue: string,
-) => {
+export const searchContactsForCompose = async (searchValue: string) => {
 	const q = searchValue.trim();
 	if (!q) return [];
 
@@ -592,10 +586,7 @@ export const searchContactsForCompose = async (
 				profilePictureXs: contacts.profilePictureXs,
 			})
 			.from(contacts)
-			.innerJoin(
-				addressBooks,
-				eq(contacts.addressBookId, addressBooks.id),
-			)
+			.innerJoin(addressBooks, eq(contacts.addressBookId, addressBooks.id))
 			.where(
 				or(
 					ilike(contacts.firstName, prefix),
@@ -622,7 +613,7 @@ export const searchContactsForCompose = async (
 					Key: String(row.profilePictureXs),
 				});
 				avatarUrl = await getSignedUrl(s3, command, {
-					expiresIn: 60
+					expiresIn: 60,
 				});
 			}
 			suggestions.push({
@@ -637,11 +628,7 @@ export const searchContactsForCompose = async (
 	return suggestions.slice(0, 20);
 };
 
-
-
-export const getContactsForAttendeeIds = async (
-	attendeeIds: string[],
-) => {
+export const getContactsForAttendeeIds = async (attendeeIds: string[]) => {
 	if (!attendeeIds?.length) return [];
 
 	const rls = await rlsClient();
@@ -680,9 +667,9 @@ export const getContactsForAttendeeIds = async (
 		FROM jsonb_array_elements(${contacts.emails}) AS e
 				WHERE lower(e->>'address') IN (${sql.join(
 					emails.map((e) => sql`${e}`),
-					sql`,`
+					sql`,`,
 				)})
-				)`
+				)`,
 			),
 	);
 
@@ -709,8 +696,8 @@ export const getContactsForAttendeeIds = async (
 
 		const fullName = relatedContact
 			? [relatedContact.firstName, relatedContact.lastName]
-				.filter(Boolean)
-				.join(" ")
+					.filter(Boolean)
+					.join(" ")
 			: null;
 
 		let avatarUrl: string | null = null;
@@ -736,8 +723,6 @@ export const getContactsForAttendeeIds = async (
 
 	return results;
 };
-
-
 
 export type FetchContactsForAttendeesResult = Awaited<
 	ReturnType<typeof getContactsForAttendeeIds>
@@ -1016,7 +1001,7 @@ const isCalendar = (a: MessageAttachmentEntity) => {
 	return (
 		ct.includes("text/calendar") ||
 		ct.includes("application/ics") ||
-		ct.includes("application/octet-stream") && fn.endsWith(".ics") ||
+		(ct.includes("application/octet-stream") && fn.endsWith(".ics")) ||
 		fn.endsWith(".ics") ||
 		fn.endsWith(".calendar")
 	);
@@ -1040,9 +1025,7 @@ export async function fetchEventPreviewItems(
 		Key: String(messageAttachment.path),
 	});
 	const response = await s3.send(command);
-	const rawICS = response.Body
-		? await response.Body.transformToString()
-		: null;
+	const rawICS = response.Body ? await response.Body.transformToString() : null;
 
 	const uid = rawICS ? extractIcalUid(rawICS) : null;
 	const rls = await rlsClient();
@@ -1051,7 +1034,7 @@ export async function fetchEventPreviewItems(
 		tx
 			.select()
 			.from(calendarEvents)
-			.where(eq(calendarEvents.icalUid, String(uid)),)
+			.where(eq(calendarEvents.icalUid, String(uid))),
 	);
 
 	if (!calendarEvent) {
@@ -1062,18 +1045,17 @@ export async function fetchEventPreviewItems(
 		tx
 			.select()
 			.from(calendarEventAttendees)
-			.where(eq(calendarEventAttendees.eventId, calendarEvent.id))
+			.where(eq(calendarEventAttendees.eventId, calendarEvent.id)),
 	);
 
 	const [identity] = await rls((tx) =>
 		tx
 			.select()
 			.from(identities)
-			.where(eq(identities.publicId, identityPublicId))
+			.where(eq(identities.publicId, identityPublicId)),
 	);
 
-	return { calendarEvent, attendees, identity }
-
+	return { calendarEvent, attendees, identity };
 }
 
 export type FetchEventPreviewItemsResult = Awaited<

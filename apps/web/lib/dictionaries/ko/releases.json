@@ -1,64 +1,64 @@
 {
-  "common": {
-    "whatsNew": "새로운 기능",
-    "release": "릴리스",
-    "seeWhatsNew": "최신 Kurrier 릴리스의 새로운 기능을 확인하세요.",
-    "dismiss": "새로운 기능 닫기"
-  },
-  "releases": {
-    "v4_4_0": {
-      "title": "더욱 연결되고 안정적인 Kurrier",
-      "description": "Microsoft 365 계정을 연결하고, 더욱 안정적인 이메일 동기화와 개선된 Drive 기능을 경험해 보세요.",
-      "features": {
-        "microsoft365": {
-          "title": "Microsoft 365 지원",
-          "description": "OAuth를 통해 Microsoft 이메일 계정을 안전하게 연결하고 기존 이메일 제공업체와 함께 관리하세요."
-        },
-        "imapSync": {
-          "title": "더욱 안정적인 이메일 동기화",
-          "description": "실시간 업데이트, 메일함 검색 및 중단된 IMAP 연결의 복구 기능이 개선되었습니다."
-        },
-        "drive": {
-          "title": "더욱 강력해진 Drive",
-          "description": "파일을 드래그 앤 드롭으로 업로드하고, 이미지와 PDF를 미리 보고, 만료되는 다운로드 링크로 파일을 공유하세요."
-        }
-      }
-    },
-    "v4_2_0": {
-      "title": "이메일 서명",
-      "description": "각 이메일 계정의 서명을 만들고 Kurrier 작성기에서 바로 사용하세요.",
-      "features": {
-        "emailSignatures": {
-          "title": "계정별 이메일 서명",
-          "description": "여러 개의 서명을 만들고 새 메시지와 답장 및 전달에 사용할 기본 서명을 각각 선택하세요."
-        },
-        "composer": {
-          "title": "작성기 통합",
-          "description": "메일을 작성하면서 서명을 미리 보고, 보내기 전에 다른 서명으로 전환하거나 제거하세요."
-        },
-        "responsiveUi": {
-          "title": "반응형 서명 편집기",
-          "description": "데스크톱과 작은 화면 모두에서 편리하게 사용할 수 있는 간결한 편집기로 서명을 만들고 관리하세요."
-        }
-      }
-    },
-    "v4_1_0": {
-      "title": "더 나아진 Kurrier",
-      "description": "메일 안정성, 작성기, 반응형 레이아웃 및 워크스페이스 관리 전반이 개선되었습니다.",
-      "features": {
-        "mailReliability": {
-          "title": "더욱 안정적인 메일 동기화",
-          "description": "장시간 연결에서 IMAP 복구 및 메일함 동기화가 개선되었습니다."
-        },
-        "composer": {
-          "title": "개선된 메일 작성기",
-          "description": "데스크톱과 모바일에서 더욱 세련된 메일 작성 환경을 제공합니다."
-        },
-        "responsiveUi": {
-          "title": "향상된 반응형 환경",
-          "description": "메일 보기와 워크스페이스 화면이 작은 디스플레이에 더욱 자연스럽게 맞춰집니다."
-        }
-      }
-    }
-  }
+	"common": {
+		"whatsNew": "새로운 기능",
+		"release": "릴리스",
+		"seeWhatsNew": "최신 Kurrier 릴리스의 새로운 기능을 확인하세요.",
+		"dismiss": "새로운 기능 닫기"
+	},
+	"releases": {
+		"v4_4_0": {
+			"title": "더욱 연결되고 안정적인 Kurrier",
+			"description": "Microsoft 365 계정을 연결하고, 더욱 안정적인 이메일 동기화와 개선된 Drive 기능을 경험해 보세요.",
+			"features": {
+				"microsoft365": {
+					"title": "Microsoft 365 지원",
+					"description": "OAuth를 통해 Microsoft 이메일 계정을 안전하게 연결하고 기존 이메일 제공업체와 함께 관리하세요."
+				},
+				"imapSync": {
+					"title": "더욱 안정적인 이메일 동기화",
+					"description": "실시간 업데이트, 메일함 검색 및 중단된 IMAP 연결의 복구 기능이 개선되었습니다."
+				},
+				"drive": {
+					"title": "더욱 강력해진 Drive",
+					"description": "파일을 드래그 앤 드롭으로 업로드하고, 이미지와 PDF를 미리 보고, 만료되는 다운로드 링크로 파일을 공유하세요."
+				}
+			}
+		},
+		"v4_2_0": {
+			"title": "이메일 서명",
+			"description": "각 이메일 계정의 서명을 만들고 Kurrier 작성기에서 바로 사용하세요.",
+			"features": {
+				"emailSignatures": {
+					"title": "계정별 이메일 서명",
+					"description": "여러 개의 서명을 만들고 새 메시지와 답장 및 전달에 사용할 기본 서명을 각각 선택하세요."
+				},
+				"composer": {
+					"title": "작성기 통합",
+					"description": "메일을 작성하면서 서명을 미리 보고, 보내기 전에 다른 서명으로 전환하거나 제거하세요."
+				},
+				"responsiveUi": {
+					"title": "반응형 서명 편집기",
+					"description": "데스크톱과 작은 화면 모두에서 편리하게 사용할 수 있는 간결한 편집기로 서명을 만들고 관리하세요."
+				}
+			}
+		},
+		"v4_1_0": {
+			"title": "더 나아진 Kurrier",
+			"description": "메일 안정성, 작성기, 반응형 레이아웃 및 워크스페이스 관리 전반이 개선되었습니다.",
+			"features": {
+				"mailReliability": {
+					"title": "더욱 안정적인 메일 동기화",
+					"description": "장시간 연결에서 IMAP 복구 및 메일함 동기화가 개선되었습니다."
+				},
+				"composer": {
+					"title": "개선된 메일 작성기",
+					"description": "데스크톱과 모바일에서 더욱 세련된 메일 작성 환경을 제공합니다."
+				},
+				"responsiveUi": {
+					"title": "향상된 반응형 환경",
+					"description": "메일 보기와 워크스페이스 화면이 작은 디스플레이에 더욱 자연스럽게 맞춰집니다."
+				}
+			}
+		}
+	}
 }

@@ -16,7 +16,7 @@ const { SEARCH_REBUILD_ON_BOOT } = getServerEnv();
 export default defineNitroPlugin(async (nitroApp) => {
 	console.log("[typesense] boot");
 
-	const connection = redisConnection.connection
+	const connection = redisConnection.connection;
 
 	const worker = new Worker(
 		"search-ingest",

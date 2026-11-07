@@ -1,5 +1,5 @@
-import {db, identities, mailboxes, messages} from "@db";
-import {and, eq, isNotNull, or, sql} from "drizzle-orm";
+import { db, identities, mailboxes, messages } from "@db";
+import { and, eq, isNotNull, or, sql } from "drizzle-orm";
 import {
 	initSmtpClient,
 	canAttemptImapConnection,
@@ -10,7 +10,7 @@ import { deltaFetch } from "../../lib/imap/imap-delta-fetch";
 import { canSyncIdentity } from "../access";
 import { kurrierServer } from "@distribution/kurrier-server";
 import { MailboxStore } from "@providers";
-import {getRedis} from "../../lib/get-redis";
+import { getRedis } from "../../lib/get-redis";
 
 const MAX_RECONNECT_ATTEMPTS = 5;
 const RECONNECT_BACKOFFS_MS = [5000, 10000, 20000, 40000, 80000];
@@ -114,8 +114,6 @@ async function handleFlagsUpdate(
 	);
 }
 
-
-
 function attachRealtimeEventHandlers(
 	identityId: string,
 	client: ImapFlow,
@@ -172,15 +170,11 @@ function attachRealtimeEventHandlers(
 				);
 			} catch (err) {
 				if (!realtimeShuttingDown) {
-					console.error(
-						`[realtime:${identityId}] flags handler failed`,
-						err,
-					);
+					console.error(`[realtime:${identityId}] flags handler failed`, err);
 				}
 			}
 		})();
 	});
-
 
 	client.on("expunge", (ev) => {
 		if (realtimeShuttingDown || stoppedIdentities.has(identityId)) {
@@ -200,7 +194,6 @@ function attachRealtimeEventHandlers(
 	});
 }
 
-
 function clearReconnectTimer(identityId: string) {
 	const timer = reconnectTimers.get(identityId);
 
@@ -209,7 +202,6 @@ function clearReconnectTimer(identityId: string) {
 		reconnectTimers.delete(identityId);
 	}
 }
-
 
 function isReconnectCoolingDown(identityId: string): boolean {
 	const until = reconnectCooldowns.get(identityId);
@@ -243,10 +235,7 @@ function recordRealtimeReconnect(identityId: string): boolean {
 	reconnectHistory.set(identityId, history);
 
 	if (history.length > MAX_HOURLY_RECONNECTS) {
-		reconnectCooldowns.set(
-			identityId,
-			now + RECONNECT_COOLDOWN_MS,
-		);
+		reconnectCooldowns.set(identityId, now + RECONNECT_COOLDOWN_MS);
 
 		clearReconnectTimer(identityId);
 
@@ -299,18 +288,13 @@ function scheduleReconnect(
 	}
 
 	const backoffMs =
-		RECONNECT_BACKOFFS_MS[
-			Math.min(
-				attempts,
-				RECONNECT_BACKOFFS_MS.length - 1,
-			)
-			];
+		RECONNECT_BACKOFFS_MS[Math.min(attempts, RECONNECT_BACKOFFS_MS.length - 1)];
 
 	reconnectAttempts.set(identityId, attempts + 1);
 
 	console.warn(
 		`[realtime:${identityId}] reconnecting in ${backoffMs / 1000}s ` +
-		`(attempt ${attempts + 1}/${MAX_RECONNECT_ATTEMPTS})`,
+			`(attempt ${attempts + 1}/${MAX_RECONNECT_ATTEMPTS})`,
 	);
 
 	const timer = setTimeout(() => {
@@ -330,16 +314,9 @@ function scheduleReconnect(
 			imapInstances,
 			true,
 		).catch((err) => {
-			console.error(
-				`[realtime:${identityId}] reconnect attempt failed`,
-				err,
-			);
+			console.error(`[realtime:${identityId}] reconnect attempt failed`, err);
 
-			scheduleReconnect(
-				identityId,
-				idleImapInstances,
-				imapInstances,
-			);
+			scheduleReconnect(identityId, idleImapInstances, imapInstances);
 		});
 	}, backoffMs);
 
@@ -350,9 +327,7 @@ async function idleForever(
 	identityId: string,
 	client: ImapFlow,
 ): Promise<void> {
-	console.log(
-		`[realtime:${identityId}] entering idle loop`,
-	);
+	console.log(`[realtime:${identityId}] entering idle loop`);
 
 	const shouldContinue = () =>
 		!realtimeShuttingDown &&
@@ -374,23 +349,15 @@ async function idleForever(
 				setTimeout(resolve, 1_000);
 			});
 		} catch (err) {
-			if (
-				!realtimeShuttingDown &&
-				!stoppedIdentities.has(identityId)
-			) {
-				console.error(
-					`[realtime:${identityId}] IDLE failed`,
-					err,
-				);
+			if (!realtimeShuttingDown && !stoppedIdentities.has(identityId)) {
+				console.error(`[realtime:${identityId}] IDLE failed`, err);
 			}
 
 			break;
 		}
 	}
 
-	console.warn(
-		`[realtime:${identityId}] idle loop ended`,
-	);
+	console.warn(`[realtime:${identityId}] idle loop ended`);
 }
 
 async function startRealtimeSyncForIdentity(
@@ -402,32 +369,22 @@ async function startRealtimeSyncForIdentity(
 ) {
 	// let discoveryTimer: NodeJS.Timeout | undefined;
 
-	let lock: Awaited<
-		ReturnType<ImapFlow["getMailboxLock"]>
-	> | null = null;
+	let lock: Awaited<ReturnType<ImapFlow["getMailboxLock"]>> | null = null;
 
 	try {
 		lock = await client.getMailboxLock("INBOX");
 
-		if (
-			realtimeShuttingDown ||
-			stoppedIdentities.has(identityId)
-		) {
+		if (realtimeShuttingDown || stoppedIdentities.has(identityId)) {
 			return;
 		}
 
-		attachRealtimeEventHandlers(
-			identityId,
-			client,
-			imapInstances,
-		);
+		attachRealtimeEventHandlers(identityId, client, imapInstances);
 
 		// const [identity] = await db
 		// 	.select({ workspaceId: identities.workspaceId })
 		// 	.from(identities)
 		// 	.where(eq(identities.id, identityId))
 		// 	.limit(1);
-
 
 		// if (isReconnect && identity) {
 		// 	const { smtpQueue } = await getRedis();
@@ -450,19 +407,10 @@ async function startRealtimeSyncForIdentity(
 		 */
 		reconnectAttempts.set(identityId, 0);
 
-		await idleForever(
-			identityId,
-			client,
-		);
+		await idleForever(identityId, client);
 	} catch (err) {
-		if (
-			!realtimeShuttingDown &&
-			!stoppedIdentities.has(identityId)
-		) {
-			console.error(
-				`[realtime:${identityId}] realtime sync failed`,
-				err,
-			);
+		if (!realtimeShuttingDown && !stoppedIdentities.has(identityId)) {
+			console.error(`[realtime:${identityId}] realtime sync failed`, err);
 		}
 	} finally {
 		// if (discoveryTimer) {
@@ -486,15 +434,8 @@ async function startRealtimeSyncForIdentity(
 			} catch {}
 		}
 
-		if (
-			!realtimeShuttingDown &&
-			!stoppedIdentities.has(identityId)
-		) {
-			scheduleReconnect(
-				identityId,
-				idleImapInstances,
-				imapInstances,
-			);
+		if (!realtimeShuttingDown && !stoppedIdentities.has(identityId)) {
+			scheduleReconnect(identityId, idleImapInstances, imapInstances);
 		}
 	}
 }
@@ -529,9 +470,7 @@ export async function startRealtimeForIdentity(
 	}
 
 	if (!(await canSyncIdentity(identityId))) {
-		console.info(
-			`[realtime:${identityId}] mail sync disabled`,
-		);
+		console.info(`[realtime:${identityId}] mail sync disabled`);
 		return;
 	}
 
@@ -542,19 +481,14 @@ export async function startRealtimeForIdentity(
 		existing?.usable &&
 		(existing as any).__kurrierRealtimeStarted
 	) {
-		console.log(
-			`[realtime:${identityId}] realtime already active`,
-		);
+		console.log(`[realtime:${identityId}] realtime already active`);
 		return;
 	}
 
 	let client: ImapFlow | undefined;
 
 	try {
-		client = await initSmtpClient(
-			identityId,
-			idleImapInstances,
-		);
+		client = await initSmtpClient(identityId, idleImapInstances);
 	} catch (err) {
 		if (!realtimeShuttingDown) {
 			console.error(
@@ -562,20 +496,13 @@ export async function startRealtimeForIdentity(
 				err,
 			);
 
-			scheduleReconnect(
-				identityId,
-				idleImapInstances,
-				imapInstances,
-			);
+			scheduleReconnect(identityId, idleImapInstances, imapInstances);
 		}
 
 		return;
 	}
 
-	if (
-		realtimeShuttingDown ||
-		stoppedIdentities.has(identityId)
-	) {
+	if (realtimeShuttingDown || stoppedIdentities.has(identityId)) {
 		if (client) {
 			try {
 				client.removeAllListeners();
@@ -587,15 +514,9 @@ export async function startRealtimeForIdentity(
 	}
 
 	if (!client?.authenticated || !client?.usable) {
-		console.warn(
-			`[realtime:${identityId}] IMAP client not usable`,
-		);
+		console.warn(`[realtime:${identityId}] IMAP client not usable`);
 
-		scheduleReconnect(
-			identityId,
-			idleImapInstances,
-			imapInstances,
-		);
+		scheduleReconnect(identityId, idleImapInstances, imapInstances);
 
 		return;
 	}
@@ -614,13 +535,10 @@ export async function startRealtimeForIdentity(
 		client,
 		idleImapInstances,
 		imapInstances,
-		isReconnect
+		isReconnect,
 	).catch((err) => {
 		if (!realtimeShuttingDown) {
-			console.error(
-				`[realtime:${identityId}] realtime task failed`,
-				err,
-			);
+			console.error(`[realtime:${identityId}] realtime task failed`, err);
 		}
 	});
 }
@@ -691,11 +609,8 @@ export function beginRealtimeShutdown() {
 	reconnectHistory.clear();
 	reconnectCooldowns.clear();
 
-	console.log(
-		"[realtime] shutdown started; reconnects disabled",
-	);
+	console.log("[realtime] shutdown started; reconnects disabled");
 }
-
 
 export const imapIdleSync = async (
 	idleImapInstances: Map<string, ImapFlow>,
@@ -716,7 +631,7 @@ export const imapIdleSync = async (
 		);
 
 	const hostedIdentityIds =
-		await kurrierServer.hooks.run("imap.listIdentities", {}) ?? [];
+		(await kurrierServer.hooks.run("imap.listIdentities", {})) ?? [];
 
 	const identityIds = new Set([
 		...identityRows.map((identity) => identity.id),
@@ -732,7 +647,7 @@ export const imapIdleSync = async (
 			identityId,
 			idleImapInstances,
 			imapInstances,
-			true
+			true,
 		);
 	}
 };
@@ -756,16 +671,14 @@ export const recoverOfflineRealtime = async (
 		);
 
 	const hostedIdentityIds =
-		await kurrierServer.hooks.run("imap.listIdentities", {}) ?? [];
+		(await kurrierServer.hooks.run("imap.listIdentities", {})) ?? [];
 
 	const identityIds = new Set([
 		...identityRows.map((identity) => identity.id),
 		...hostedIdentityIds,
 	]);
 
-	console.info(
-		`[realtime-recovery] checking ${identityIds.size} identities`,
-	);
+	console.info(`[realtime-recovery] checking ${identityIds.size} identities`);
 
 	for (const identityId of identityIds) {
 		if (realtimeShuttingDown) {
@@ -786,9 +699,7 @@ export const recoverOfflineRealtime = async (
 			continue;
 		}
 
-		console.info(
-			`[realtime-recovery] attempting identity=${identityId}`,
-		);
+		console.info(`[realtime-recovery] attempting identity=${identityId}`);
 
 		await startRealtimeForIdentity(
 			identityId,

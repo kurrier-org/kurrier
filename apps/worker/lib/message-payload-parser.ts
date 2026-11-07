@@ -15,10 +15,10 @@ import { generateSnippet, upsertMailboxThreadItem } from "@common";
 import { randomUUID } from "crypto";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { getRedis } from "../lib/get-redis";
-import {s3} from "../lib/create-s3-client";
-import {PutObjectCommand} from "@aws-sdk/client-s3";
-import {upsertWorkspaceSharedContactFromMessage} from "../lib/message-parser-contacts";
-import {createHash} from "node:crypto";
+import { s3 } from "../lib/create-s3-client";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { upsertWorkspaceSharedContactFromMessage } from "../lib/message-parser-contacts";
+import { createHash } from "node:crypto";
 
 const SEARCH_BATCH_SIZE = 100;
 const WEBHOOK_BATCH_SIZE = 100;
@@ -51,7 +51,12 @@ let rulesBuffer: RulesJob[] = [];
 let flushTimer: any = null;
 
 async function flushBatches() {
-	if (!searchBuffer.length && !webhookBuffer.length && !icsBuffer.length && !rulesBuffer.length)
+	if (
+		!searchBuffer.length &&
+		!webhookBuffer.length &&
+		!icsBuffer.length &&
+		!rulesBuffer.length
+	)
 		return;
 
 	try {
@@ -117,7 +122,7 @@ async function flushBatches() {
 			const jobs = rulesBuffer.map((job) => ({
 				name: "rules:processor",
 				data: {
-					messageId: job.messageId
+					messageId: job.messageId,
 				},
 			}));
 			await commonWorkerQueue.addBulk(jobs);
@@ -148,7 +153,7 @@ function generateFileName(att: Attachment) {
 }
 
 export async function createOrInitializeThread(
-	parsed: ParsedMail & { ownerId: string, workspaceId: string },
+	parsed: ParsedMail & { ownerId: string; workspaceId: string },
 ) {
 	const { ownerId, workspaceId } = parsed;
 	const inReplyTo = parsed.inReplyTo?.trim() || null;
@@ -246,7 +251,6 @@ function getFromAddress(parsed: ParsedMail) {
 	};
 }
 
-
 function isIcsAttachment(att: Attachment) {
 	const ct = (att.contentType || "").toLowerCase();
 	const name = (att.filename || "").toLowerCase();
@@ -261,7 +265,6 @@ function isIcsAttachment(att: Attachment) {
 /**
  * Parse raw email, create thread, insert message + attachments.
  */
-
 
 export async function parseAndStoreEmail(
 	rawEmail: string,
@@ -286,10 +289,10 @@ export async function parseAndStoreEmail(
 	const headers = parsed.headers as Map<string, any>;
 
 	const originalMessageId =
-		parsed.messageId?.trim() ||
-		String(headers.get("message-id") || "").trim();
+		parsed.messageId?.trim() || String(headers.get("message-id") || "").trim();
 
-	const messageId = originalMessageId ||
+	const messageId =
+		originalMessageId ||
 		`<kurrier-${createHash("sha256")
 			.update(rawEmail)
 			.digest("hex")}@internal.kurrier>`;
@@ -309,10 +312,7 @@ export async function parseAndStoreEmail(
 		.select()
 		.from(messages)
 		.where(
-			and(
-				eq(messages.mailboxId, mailboxId),
-				eq(messages.messageId, messageId),
-			),
+			and(eq(messages.mailboxId, mailboxId), eq(messages.messageId, messageId)),
 		)
 		.limit(1);
 
@@ -330,7 +330,6 @@ export async function parseAndStoreEmail(
 				...(incomingMeta.imap ?? {}),
 			},
 		};
-
 
 		const seen = opts.seen ?? existingMessage.seen;
 		const flagged = opts.flagged ?? existingMessage.flagged;
@@ -453,9 +452,7 @@ export async function parseAndStoreEmail(
 			.limit(1);
 
 		if (!existingThreadMessage) {
-			await db
-				.delete(threads)
-				.where(eq(threads.id, thread.id));
+			await db.delete(threads).where(eq(threads.id, thread.id));
 		}
 
 		return null;
@@ -515,8 +512,7 @@ export async function parseAndStoreEmail(
 				Bucket: process.env.S3_BUCKET!,
 				Key: objectPath,
 				Body: attachment.content,
-				ContentType:
-					attachment.contentType || "application/octet-stream",
+				ContentType: attachment.contentType || "application/octet-stream",
 				CacheControl: "public, max-age=31536000",
 			}),
 		);
@@ -528,38 +524,25 @@ export async function parseAndStoreEmail(
 			bucketId: bucket,
 			path: objectPath,
 			filenameOriginal: attachment.filename || null,
-			contentType:
-				attachment.contentType || "application/octet-stream",
-			sizeBytes: Number(
-				attachment.size ??
-				attachment.content?.length ??
-				0,
-			),
+			contentType: attachment.contentType || "application/octet-stream",
+			sizeBytes: Number(attachment.size ?? attachment.content?.length ?? 0),
 			checksum: attachment.checksum || null,
 			cid: attachment.cid || null,
 			isInline:
-				attachment.contentDisposition === "inline" ||
-				!!attachment.cid ||
-				false,
-			disposition:
-				attachment.contentDisposition || "attachment",
+				attachment.contentDisposition === "inline" || !!attachment.cid || false,
+			disposition: attachment.contentDisposition || "attachment",
 		} as MessageAttachmentCreate;
 
-		const parsedRow =
-			MessageAttachmentInsertSchema.parse(candidate);
+		const parsedRow = MessageAttachmentInsertSchema.parse(candidate);
 
 		const [newAttachment] = await db
 			.insert(messageAttachments)
 			.values(parsedRow)
 			.returning();
 
-		if (
-			mode === "live" &&
-			isIcsAttachment(attachment)
-		) {
+		if (mode === "live" && isIcsAttachment(attachment)) {
 			const key =
-				attachment.checksum ||
-				`${attachment.size}:${attachment.contentType}`;
+				attachment.checksum || `${attachment.size}:${attachment.contentType}`;
 
 			if (!seenIcsChecksums.has(key)) {
 				seenIcsChecksums.add(key);
@@ -570,9 +553,7 @@ export async function parseAndStoreEmail(
 					mailboxId,
 				});
 
-				if (
-					icsBuffer.length >= CALENDAR_BATCH_SIZE
-				) {
+				if (icsBuffer.length >= CALENDAR_BATCH_SIZE) {
 					await flushBatches();
 				} else {
 					scheduleFlush();
@@ -583,9 +564,7 @@ export async function parseAndStoreEmail(
 
 	searchBuffer.push({
 		messageId: message.id,
-		contactId: contactId
-			? String(contactId)
-			: null,
+		contactId: contactId ? String(contactId) : null,
 		ownerId,
 	});
 
@@ -618,7 +597,6 @@ export async function parseAndStoreEmail(
 	return message;
 }
 
-
 async function ingestMailSubscriptionFromMessage(opts: {
 	ownerId: string;
 	workspaceId: string;
@@ -629,13 +607,12 @@ async function ingestMailSubscriptionFromMessage(opts: {
 
 	const headers = parsed.headers as Map<string, any>;
 	const list =
-		(headers.get("list") as any) ??
-		(headersJson as any)?.list ??
-		null;
+		(headers.get("list") as any) ?? (headersJson as any)?.list ?? null;
 
 	const rawListId =
-		String(headers.get("list-id") ?? (headersJson as any)?.["list-id"] ?? "")
-			.trim() || null;
+		String(
+			headers.get("list-id") ?? (headersJson as any)?.["list-id"] ?? "",
+		).trim() || null;
 
 	const unsubscribeUrl =
 		(list?.unsubscribe?.url as string | undefined) ||
@@ -646,8 +623,13 @@ async function ingestMailSubscriptionFromMessage(opts: {
 		String(list?.["unsubscribe-post"]?.name ?? "").toLowerCase() || null;
 
 	let unsubscribeMailto: string | null = null;
-	const rawListUnsub = headers.get("list-unsubscribe") ?? (headersJson as any)?.["list-unsubscribe"];
-	if (typeof rawListUnsub === "string" && rawListUnsub.toLowerCase().includes("mailto:")) {
+	const rawListUnsub =
+		headers.get("list-unsubscribe") ??
+		(headersJson as any)?.["list-unsubscribe"];
+	if (
+		typeof rawListUnsub === "string" &&
+		rawListUnsub.toLowerCase().includes("mailto:")
+	) {
 		const m = rawListUnsub.match(/mailto:([^>\s,]+)/i);
 		unsubscribeMailto = (m?.[1] ?? "").trim().toLowerCase() || null;
 	}
@@ -707,7 +689,6 @@ async function ingestMailSubscriptionFromMessage(opts: {
 				lastSeenAt: new Date(),
 			},
 		});
-
 }
 
 function sanitizePostgresValue<T>(value: T): T {
