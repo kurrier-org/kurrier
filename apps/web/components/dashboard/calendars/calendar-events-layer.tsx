@@ -5,7 +5,7 @@ import type { EventSlotRenderFragment, CalendarState } from "@schema";
 import CalendarAddEventPopover from "@/components/dashboard/calendars/calendar-add-event-popover";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
 import { getDayjsTz } from "@common/day-js-extended";
-import { useOptionalI18n } from "@/components/providers/dictionary-provider";
+import { useI18n } from "@/components/providers/dictionary-provider";
 
 type FragmentCellProps = {
 	fragment: EventSlotRenderFragment;
@@ -19,8 +19,7 @@ function FragmentCell({
 	showTitle,
 }: FragmentCellProps) {
 	const { state, setState } = useDynamicContext<CalendarState>();
-	const i18n = useOptionalI18n();
-	const format = i18n?.format;
+	const { format } = useI18n();
 
 	const colCount = fragment.columnCount ?? fallbackCount;
 	const colWidth = 90 / colCount;

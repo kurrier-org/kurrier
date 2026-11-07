@@ -19,7 +19,7 @@ import { usePathname } from "next/navigation";
 import AddGuests from "@/components/dashboard/calendars/add-guests";
 import RecurrenceRulesFormInput from "@/components/dashboard/calendars/recurrence-rules-form-input";
 import { OnCompletedOptions } from "@/components/dashboard/calendars/calendar-add-event-popover";
-import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
+import { useI18n } from "@/components/providers/dictionary-provider";
 
 type NewCalendarEventFormProps = {
 	onCompleted: (
@@ -35,7 +35,7 @@ function NewCalendarEventForm({
 	start,
 	end,
 }: NewCalendarEventFormProps) {
-	const dict = useOptionalDictionary();
+	const { dict, format } = useI18n();
 	const { state } = useDynamicContext<CalendarState>();
 	const dayjsTz = getDayjsTz(state.defaultCalendar.timezone);
 	const editEvent = state.activePopoverEditEvent;
@@ -102,11 +102,16 @@ function NewCalendarEventForm({
 			props: {
 				required: true,
 				className: "w-full",
-				format: "12h",
-				valueFormat: allDay ? "DD MMM" : "DD MMM hh:mm A",
+				valueFormat: allDay
+					? format.dateInputFormat()
+					: format.dateTimeInputFormat(),
 				timePickerProps: allDay
 					? undefined
 					: {
+							format:
+								format.hourCycle() === "h23" || format.hourCycle() === "h24"
+									? "24h"
+									: "12h",
 							minutesStep: 15,
 						},
 				defaultValue: editEvent?.startsAt
@@ -123,11 +128,16 @@ function NewCalendarEventForm({
 			props: {
 				required: true,
 				className: "w-full",
-				format: "12h",
-				valueFormat: allDay ? "DD MMM" : "DD MMM hh:mm A",
+				valueFormat: allDay
+					? format.dateInputFormat()
+					: format.dateTimeInputFormat(),
 				timePickerProps: allDay
 					? undefined
 					: {
+							format:
+								format.hourCycle() === "h23" || format.hourCycle() === "h24"
+									? "24h"
+									: "12h",
 							minutesStep: 15,
 						},
 				defaultValue: editEvent?.endsAt
