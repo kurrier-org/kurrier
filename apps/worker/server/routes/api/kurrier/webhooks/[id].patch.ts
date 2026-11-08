@@ -53,10 +53,25 @@ export default defineEventHandler(async (event) => {
 			workspaceId: apiKey.workspaceId,
 		});
 	}
+
+	const { metaData, ...updates } = parsed.data;
+
+	if (
+		metaData !== undefined &&
+		metaData !== null &&
+		(typeof metaData !== "object" || Array.isArray(metaData))
+	) {
+		return apiError(400, "INVALID_METADATA", "metaData must be an object or null");
+	}
+
 	const [updated] = await db
 		.update(webhooks)
-		.set(parsed.data)
+		.set({
+			...updates,
+			...(metaData !== undefined ? { metaData } : {}),
+		})
 		.where(scope)
 		.returning();
+
 	return apiSuccess(updated);
 });
