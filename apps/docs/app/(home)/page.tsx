@@ -51,13 +51,6 @@ export default function HomePage() {
 					<span>Prefer a hosted version?</span>
 					<span className="mx-2">·</span>
 					<Link
-						href="https://www.kurrier.io"
-						className="font-medium text-foreground underline underline-offset-4"
-					>
-						Kurrier.io
-					</Link>
-					<span className="mx-2">·</span>
-					<Link
 						href="https://www.kurriermail.com"
 						className="font-medium text-foreground underline underline-offset-4"
 					>
