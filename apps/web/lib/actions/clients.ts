@@ -1,7 +1,7 @@
-import { currentSession, isSignedIn } from "@/lib/actions/auth";
 import { createDrizzleClientInstance, workspaceMembers, workspaces } from "@db";
-import { cookies } from "next/headers";
 import { and, eq, or } from "drizzle-orm";
+import { cookies } from "next/headers";
+import { currentSession, isSignedIn } from "@/lib/actions/auth";
 
 export const getWorkspaceId = async () => {
 	const cookieStore = await cookies();
@@ -29,7 +29,7 @@ export const rlsClient = async () => {
 	return rlsClientForWorkspace(workspaceId);
 };
 
-export const rlsClientForWorkspace = async (workspaceId: string) => {
+export const requireWorkspaceAccess = async (workspaceId: string) => {
 	const session = await currentSession();
 	const user = await isSignedIn();
 	const userId = user?.id;
@@ -51,6 +51,11 @@ export const rlsClientForWorkspace = async (workspaceId: string) => {
 
 	if (!rows.length) throw new Error("Workspace not found or no access");
 
+	return session;
+};
+
+export const rlsClientForWorkspace = async (workspaceId: string) => {
+	const session = await requireWorkspaceAccess(workspaceId);
 	const { rls } = await createDrizzleClientInstance(session, {
 		workspaceId,
 	});

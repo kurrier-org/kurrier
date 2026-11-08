@@ -7,16 +7,14 @@ import {
 	listUserManagedSecrets,
 	updateSecret,
 } from "@db";
-
-import { currentSession } from "@/lib/actions/auth";
-import { getWorkspaceId } from "@/lib/actions/clients";
 import { revalidatePath } from "next/cache";
+import { getWorkspaceId, requireWorkspaceAccess } from "@/lib/actions/clients";
 
 const VAULT_PATH = "/w/[workspaceId]/dashboard/platform/vault";
 
 export async function fetchVaultSecrets() {
-	const session = await currentSession();
 	const workspaceId = await getWorkspaceId();
+	const session = await requireWorkspaceAccess(workspaceId);
 
 	const rows = await listUserManagedSecrets(session, workspaceId);
 
@@ -33,8 +31,8 @@ export type FetchVaultSecretsResult = Awaited<
 >;
 
 export async function revealVaultSecret(id: string) {
-	const session = await currentSession();
 	const workspaceId = await getWorkspaceId();
+	const session = await requireWorkspaceAccess(workspaceId);
 
 	const { vault } = await getUserManagedSecret(session, id, workspaceId);
 
@@ -44,8 +42,8 @@ export async function revealVaultSecret(id: string) {
 }
 
 export async function createVaultSecret(formData: FormData) {
-	const session = await currentSession();
 	const workspaceId = await getWorkspaceId();
+	const session = await requireWorkspaceAccess(workspaceId);
 
 	const name = String(formData.get("name") ?? "").trim();
 	const value = String(formData.get("value") ?? "");
@@ -67,8 +65,8 @@ export async function createVaultSecret(formData: FormData) {
 }
 
 export async function updateVaultSecret(id: string, formData: FormData) {
-	const session = await currentSession();
 	const workspaceId = await getWorkspaceId();
+	const session = await requireWorkspaceAccess(workspaceId);
 
 	await getUserManagedSecret(session, id, workspaceId);
 
@@ -90,8 +88,8 @@ export async function updateVaultSecret(id: string, formData: FormData) {
 }
 
 export async function deleteVaultSecret(id: string) {
-	const session = await currentSession();
 	const workspaceId = await getWorkspaceId();
+	const session = await requireWorkspaceAccess(workspaceId);
 
 	await getUserManagedSecret(session, id, workspaceId);
 
