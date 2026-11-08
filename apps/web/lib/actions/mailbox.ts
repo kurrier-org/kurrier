@@ -16,6 +16,7 @@ import {
 	messageAttachments,
 	messages,
 	threads,
+	workspaces,
 } from "@db";
 import {
 	and,
@@ -602,13 +603,27 @@ export const initSearch = async (
 		return { items: [], totalThreads: 0, totalMessages: 0 };
 	}
 
-	const client = getTypeSenseClient();
+	const rls = await rlsClient();
+	const [mailbox] = await rls((tx) =>
+		tx
+			.select({ id: mailboxes.id })
+			.from(mailboxes)
+			.innerJoin(identities, eq(identities.id, mailboxes.identityId))
+			.innerJoin(workspaces, eq(workspaces.id, mailboxes.workspaceId))
+			.where(
+				and(
+					eq(workspaces.publicId, workspacePublicId),
+					eq(identities.workspaceId, mailboxes.workspaceId),
+					eq(identities.publicId, identityPublicId),
+					eq(mailboxes.slug, mailboxSlug),
+				),
+			)
+			.limit(1),
+	);
+	if (!mailbox) throw new Error("Mailbox not found");
 
-	const filters = [
-		`workspacePublicId:=${JSON.stringify(workspacePublicId)}`,
-		`identityPublicId:=${JSON.stringify(identityPublicId)}`,
-		`mailboxSlug:=${JSON.stringify(mailboxSlug)}`,
-	];
+	const client = getTypeSenseClient();
+	const filters = [`mailboxId:=${mailbox.id}`];
 
 	if (hasAttachment) filters.push("hasAttachment:=1");
 	if (onlyUnread) filters.push("unread:=1");
