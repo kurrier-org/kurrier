@@ -248,6 +248,7 @@ export async function resolveApiActor(
 export async function validateIdentityOwnership(opts: {
 	identityId: string;
 	ownerId: string;
+	workspaceId?: string;
 }) {
 	const [identity] = await db
 		.select()
@@ -256,6 +257,9 @@ export async function validateIdentityOwnership(opts: {
 			and(
 				eq(identities.id, opts.identityId),
 				eq(identities.ownerId, opts.ownerId),
+				opts.workspaceId === undefined
+					? undefined
+					: eq(identities.workspaceId, opts.workspaceId),
 			),
 		)
 		.limit(1);

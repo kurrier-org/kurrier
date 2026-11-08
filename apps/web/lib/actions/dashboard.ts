@@ -1660,6 +1660,27 @@ export async function addWebhook(
 		};
 
 		const rls = await rlsClient();
+		if (insertPayload.identityId != null) {
+			const user = await isSignedIn();
+			if (!user) return { success: false, error: "dashboard.notSignedIn" };
+
+			const workspaceId = await getWorkspaceId();
+			const [identity] = await rls((tx) =>
+				tx
+					.select({ id: identities.id })
+					.from(identities)
+					.where(
+						and(
+							eq(identities.id, String(insertPayload.identityId)),
+							eq(identities.ownerId, user.id),
+							eq(identities.workspaceId, workspaceId),
+						),
+					)
+					.limit(1),
+			);
+			if (!identity) throw new Error("Identity not found or access denied");
+		}
+
 		await rls((tx) =>
 			tx.insert(webhooks).values(insertPayload as WebhookInsertEntity),
 		);
