@@ -1,5 +1,11 @@
 # @kurrier/repo
 
+## 4.4.1
+
+### Patch Changes
+
+- [`73252e9`](https://github.com/kurrier-org/kurrier/commit/73252e9788d7773ecd4f3041c6459268d7cb9ad7) Thanks [@krokhale](https://github.com/krokhale)! - Security updates and stability fixes
+
 ## 4.4.0
 
 ### Minor Changes
