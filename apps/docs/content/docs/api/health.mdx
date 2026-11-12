@@ -1,0 +1,53 @@
+---
+title: Health Check
+description: Monitor a running Kurrier instance with the unauthenticated health endpoint
+---
+
+## Overview
+
+Kurrier exposes a lightweight health endpoint for uptime monitors, load balancers, and container orchestrators. Unlike the rest of the API, it does **not** require an API key.
+
+```text
+GET https://your-domain.com/api/health
+```
+
+On every request Kurrier confirms that the web process is responding and runs a trivial connectivity check against each critical dependency:
+
+- **database**: runs `select 1` against PostgreSQL
+- **redis**: opens a short-lived connection and sends `PING`
+
+Each check times out after 3 seconds, so a hung dependency never leaves the probe waiting.
+
+## Responses
+
+When everything is reachable the endpoint returns `200 OK`:
+
+```json
+{
+  "status": "ok",
+  "database": "ok",
+  "redis": "ok"
+}
+```
+
+When a dependency is unavailable it returns `503 Service Unavailable` and marks the failing check:
+
+```json
+{
+  "status": "error",
+  "database": "ok",
+  "redis": "error"
+}
+```
+
+The response only ever contains these three fields. Error details, hostnames, and credentials are never included; failures are written to the server log instead (look for `[health]`).
+
+Responses are sent with `Cache-Control: no-store`. `HEAD /api/health` returns the same status code without a body.
+
+## Example
+
+```bash
+curl -fsS https://your-domain.com/api/health
+```
+
+`curl -f` exits non-zero on a `503`, which makes the command usable directly as a container or cron health check.
