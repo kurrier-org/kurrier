@@ -3,13 +3,7 @@
 import { Button } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import type { ProviderSpec } from "@schema";
-import {
-	CheckCircle2,
-	Edit,
-	ExternalLink,
-	Globe2,
-	Play,
-} from "lucide-react";
+import { CheckCircle2, Edit, ExternalLink, Globe2, Play } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -31,10 +25,10 @@ import { parseSecret } from "@/lib/utils";
 import IsVerifiedStatus from "@/components/dashboard/providers/is-verified-status";
 
 export default function ProviderCard({
-										 spec,
-										 userProvider,
-										 decryptedSecret,
-									 }: {
+	spec,
+	userProvider,
+	decryptedSecret,
+}: {
 	spec: ProviderSpec;
 	userProvider: SyncProvidersRow;
 	decryptedSecret: FetchDecryptedSecretsResult[number];
@@ -50,7 +44,7 @@ export default function ProviderCard({
 	const providerName =
 		(dict?.platform as Record<string, string> | undefined)?.[
 			`providerName${spec.key.charAt(0).toUpperCase()}${spec.key.slice(1)}`
-			] ?? spec.name;
+		] ?? spec.name;
 
 	const openEdit = () => {
 		const openModalId = modals.open({
@@ -65,11 +59,7 @@ export default function ProviderCard({
 			children: (
 				<CardContent className="my-6">
 					<div className="space-y-3">
-						<input
-							type="hidden"
-							name="providerId"
-							value={userProvider.id}
-						/>
+						<input type="hidden" name="providerId" value={userProvider.id} />
 
 						<ProviderEditForm
 							spec={spec}
@@ -155,15 +145,12 @@ export default function ProviderCard({
 				);
 			}
 		} catch (err: unknown) {
-			toast.error(
-				dict?.platform?.verificationError ?? "Verification error",
-				{
-					description:
-						(err instanceof Error ? err.message : undefined) ??
-						dict?.platform?.unexpectedErrorTestingAccount ??
-						"Unexpected error while testing the account.",
-				},
-			);
+			toast.error(dict?.platform?.verificationError ?? "Verification error", {
+				description:
+					(err instanceof Error ? err.message : undefined) ??
+					dict?.platform?.unexpectedErrorTestingAccount ??
+					"Unexpected error while testing the account.",
+			});
 		} finally {
 			setTesting(false);
 		}

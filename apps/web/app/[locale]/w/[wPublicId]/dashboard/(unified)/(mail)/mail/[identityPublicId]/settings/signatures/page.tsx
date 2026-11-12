@@ -52,7 +52,8 @@ async function SignaturesContent({ params }: PageProps) {
 		rlsClient(),
 	]);
 
-	const mailboxDictionary = dict.mailbox as typeof dict.mailbox & SignatureDictionary;
+	const mailboxDictionary = dict.mailbox as typeof dict.mailbox &
+		SignatureDictionary;
 
 	const [identity] = await rls((tx) =>
 		tx
@@ -62,7 +63,7 @@ async function SignaturesContent({ params }: PageProps) {
 			})
 			.from(identities)
 			.where(eq(identities.publicId, resolvedParams.identityPublicId))
-			.limit(1)
+			.limit(1),
 	);
 
 	if (!identity) {

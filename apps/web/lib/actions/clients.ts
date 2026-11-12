@@ -1,28 +1,32 @@
-import {currentSession, isSignedIn} from "@/lib/actions/auth";
-import {createDrizzleClientInstance, workspaceMembers, workspaces, WorkspaceRolesList} from "@db";
-import type {WorkspaceRole} from "@db";
-import {cookies} from "next/headers";
-import {and, eq, or} from "drizzle-orm";
 
+import {
+	createDrizzleClientInstance,
+	workspaceMembers,
+	workspaces,
+	WorkspaceRolesList,
+	type WorkspaceRole,
+} from "@db";
+import { and, eq, or } from "drizzle-orm";
+import { cookies } from "next/headers";
+import { currentSession, isSignedIn } from "@/lib/actions/auth";
 
 export const getWorkspaceId = async () => {
-	const cookieStore = await cookies()
-	const id = cookieStore.get('workspaceId');
-	return String(id?.value)
+	const cookieStore = await cookies();
+	const id = cookieStore.get("workspaceId");
+	return String(id?.value);
 };
 
 export const getWorkspacePublicId = async () => {
-	const cookieStore = await cookies()
-	const id = cookieStore.get('workspacePublicId');
-	return String(id?.value)
+	const cookieStore = await cookies();
+	const id = cookieStore.get("workspacePublicId");
+	return String(id?.value);
 };
 
 export const getWorkspaceRole = async (): Promise<WorkspaceRole | null> => {
-	const cookieStore = await cookies()
-	const role = cookieStore.get('workspaceRole')?.value;
+	const cookieStore = await cookies();
+	const role = cookieStore.get("workspaceRole")?.value;
 	return WorkspaceRolesList.find((r) => r === role) ?? null;
 };
-
 
 export const rlsClient = async () => {
 	const cookieStore = await cookies();
@@ -32,7 +36,7 @@ export const rlsClient = async () => {
 	return rlsClientForWorkspace(workspaceId);
 };
 
-export const rlsClientForWorkspace = async (workspaceId: string) => {
+export const requireWorkspaceAccess = async (workspaceId: string) => {
 	const session = await currentSession();
 	const user = await isSignedIn();
 	const userId = user?.id;
@@ -60,9 +64,97 @@ export const rlsClientForWorkspace = async (workspaceId: string) => {
 
 	if (!rows.length) throw new Error("Workspace not found or no access");
 
+	return session;
+};
+
+export const rlsClientForWorkspace = async (workspaceId: string) => {
+	const session = await requireWorkspaceAccess(workspaceId);
 	const { rls } = await createDrizzleClientInstance(session, {
 		workspaceId,
 	});
 
 	return rls;
 };
+
+
+
+// <<<<<<< HEAD
+// import { createDrizzleClientInstance, workspaceMembers, workspaces } from "@db";
+// import { and, eq, or } from "drizzle-orm";
+// import { cookies } from "next/headers";
+// import { currentSession, isSignedIn } from "@/lib/actions/auth";
+// =======
+// import {currentSession, isSignedIn} from "@/lib/actions/auth";
+// import {createDrizzleClientInstance, workspaceMembers, workspaces, WorkspaceRolesList} from "@db";
+// import type {WorkspaceRole} from "@db";
+// import {cookies} from "next/headers";
+// import {and, eq, or} from "drizzle-orm";
+//
+// >>>>>>> main
+//
+// export const getWorkspaceId = async () => {
+// 	const cookieStore = await cookies();
+// 	const id = cookieStore.get("workspaceId");
+// 	return String(id?.value);
+// };
+//
+// export const getWorkspacePublicId = async () => {
+// 	const cookieStore = await cookies();
+// 	const id = cookieStore.get("workspacePublicId");
+// 	return String(id?.value);
+// };
+//
+// <<<<<<< HEAD
+// export const getWorkspaceRole = async () => {
+// 	const cookieStore = await cookies();
+// 	const id = cookieStore.get("workspaceRole");
+// 	return String(id?.value);
+// =======
+// export const getWorkspaceRole = async (): Promise<WorkspaceRole | null> => {
+// 	const cookieStore = await cookies()
+// 	const role = cookieStore.get('workspaceRole')?.value;
+// 	return WorkspaceRolesList.find((r) => r === role) ?? null;
+// >>>>>>> main
+// };
+//
+// export const rlsClient = async () => {
+// 	const cookieStore = await cookies();
+// 	const workspaceId = cookieStore.get("workspaceId")?.value;
+// 	if (!workspaceId) throw new Error("No workspace selected");
+//
+// 	return rlsClientForWorkspace(workspaceId);
+// };
+//
+// export const requireWorkspaceAccess = async (workspaceId: string) => {
+// 	const session = await currentSession();
+// 	const user = await isSignedIn();
+// 	const userId = user?.id;
+// 	if (!userId) throw new Error("Not authenticated");
+//
+// 	const { admin } = await createDrizzleClientInstance(session, {});
+//
+// 	const rows = await admin
+// 		.select({ id: workspaces.id })
+// 		.from(workspaces)
+// 		.leftJoin(workspaceMembers, eq(workspaceMembers.workspaceId, workspaces.id))
+// 		.where(
+// 			and(
+// 				eq(workspaces.id, workspaceId),
+// 				or(eq(workspaces.ownerId, userId), eq(workspaceMembers.userId, userId)),
+// 			),
+// 		)
+// 		.limit(1);
+//
+// 	if (!rows.length) throw new Error("Workspace not found or no access");
+//
+// 	return session;
+// };
+//
+// export const rlsClientForWorkspace = async (workspaceId: string) => {
+// 	const session = await requireWorkspaceAccess(workspaceId);
+// 	const { rls } = await createDrizzleClientInstance(session, {
+// 		workspaceId,
+// 	});
+//
+// 	return rls;
+// };

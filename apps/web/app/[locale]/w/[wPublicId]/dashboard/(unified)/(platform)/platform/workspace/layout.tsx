@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { getWorkspacePublicId } from "@/lib/actions/clients";
 import { getDictionary } from "@/lib/dictionaries";
-import {fetchWorkspace} from "@/lib/actions/shared";
+import { fetchWorkspace } from "@/lib/actions/shared";
 
 type LayoutProps = {
 	children: ReactNode;

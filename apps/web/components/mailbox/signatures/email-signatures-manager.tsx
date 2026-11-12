@@ -8,384 +8,356 @@ import { EmailEditor } from "@email-editor/react";
 import { ReusableFormButton } from "@/components/common/reusable-form-button";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import {
-    completeEmailAssetUpload,
-    createEmailAssetUploadUrl,
+	completeEmailAssetUpload,
+	createEmailAssetUploadUrl,
 } from "@/lib/actions/uploads-actions";
 import {
-    createEmailSignatureAction,
-    deleteEmailSignatureAction,
-    updateEmailSignatureAction,
-    type DeletedEmailSignatureResult,
-    type EmailSignatureResult,
+	createEmailSignatureAction,
+	deleteEmailSignatureAction,
+	updateEmailSignatureAction,
+	type DeletedEmailSignatureResult,
+	type EmailSignatureResult,
 } from "@/lib/actions/email-signatures";
 
 type EmailSignaturesManagerProps = {
-    identityPublicId: string;
-    initialSignatures: EmailSignatureResult[];
+	identityPublicId: string;
+	initialSignatures: EmailSignatureResult[];
 };
 
 const notification = {
-    kind: "toast",
+	kind: "toast",
 } as const;
 
 const inputClass =
-    "h-10 w-full rounded-md border border-neutral-200 bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-brand/40 dark:border-neutral-800";
+	"h-10 w-full rounded-md border border-neutral-200 bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-brand/40 dark:border-neutral-800";
 
 const secondaryButtonClass =
-    "h-10 rounded-md border border-neutral-200 bg-background px-3 text-sm hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-800 dark:hover:bg-neutral-900";
+	"h-10 rounded-md border border-neutral-200 bg-background px-3 text-sm hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-800 dark:hover:bg-neutral-900";
 
 function sortSignatures(
-    signatures: EmailSignatureResult[]
+	signatures: EmailSignatureResult[],
 ): EmailSignatureResult[] {
-    return signatures
-        .slice()
-        .sort((left, right) => left.name.localeCompare(right.name));
+	return signatures
+		.slice()
+		.sort((left, right) => left.name.localeCompare(right.name));
 }
 
 export default function EmailSignaturesManager({
-                                                   identityPublicId,
-                                                   initialSignatures,
-                                               }: EmailSignaturesManagerProps) {
-    const dict = useOptionalDictionary();
-    const mailbox = dict?.mailbox;
-    const newSignatureName = mailbox?.newSignature ?? "New signature";
+	identityPublicId,
+	initialSignatures,
+}: EmailSignaturesManagerProps) {
+	const dict = useOptionalDictionary();
+	const mailbox = dict?.mailbox;
+	const newSignatureName = mailbox?.newSignature ?? "New signature";
 
-    const firstSignature = initialSignatures[0] ?? null;
+	const firstSignature = initialSignatures[0] ?? null;
 
-    const [signatures, setSignatures] = useState<EmailSignatureResult[]>(
-        sortSignatures(initialSignatures)
-    );
+	const [signatures, setSignatures] = useState<EmailSignatureResult[]>(
+		sortSignatures(initialSignatures),
+	);
 
-    const [publicId, setPublicId] = useState<string | null>(
-        firstSignature?.publicId ?? null
-    );
+	const [publicId, setPublicId] = useState<string | null>(
+		firstSignature?.publicId ?? null,
+	);
 
-    const [name, setName] = useState(
-        firstSignature?.name ?? newSignatureName
-    );
+	const [name, setName] = useState(firstSignature?.name ?? newSignatureName);
 
-    const [document, setDocument] = useState<EmailDocument>(
-        firstSignature?.document ?? createEmailDocument()
-    );
+	const [document, setDocument] = useState<EmailDocument>(
+		firstSignature?.document ?? createEmailDocument(),
+	);
 
-    const [isDefaultForNew, setIsDefaultForNew] = useState(
-        firstSignature?.isDefaultForNew ?? false
-    );
+	const [isDefaultForNew, setIsDefaultForNew] = useState(
+		firstSignature?.isDefaultForNew ?? false,
+	);
 
-    const [isDefaultForReplyForward, setIsDefaultForReplyForward] = useState(
-        firstSignature?.isDefaultForReplyForward ?? false
-    );
+	const [isDefaultForReplyForward, setIsDefaultForReplyForward] = useState(
+		firstSignature?.isDefaultForReplyForward ?? false,
+	);
 
-    const [editorSessionKey, setEditorSessionKey] = useState(0);
+	const [editorSessionKey, setEditorSessionKey] = useState(0);
 
-    const uploadSignatureImage = useCallback(
-        async (file: File): Promise<string> => {
-            const allowedTypes = new Set([
-                "image/jpeg",
-                "image/png",
-                "image/gif",
-                "image/webp",
-            ]);
+	const uploadSignatureImage = useCallback(
+		async (file: File): Promise<string> => {
+			const allowedTypes = new Set([
+				"image/jpeg",
+				"image/png",
+				"image/gif",
+				"image/webp",
+			]);
 
-            if (!allowedTypes.has(file.type)) {
-                throw new Error(
-                    mailbox?.signatureImageTypesError ??
-                    "Only JPEG, PNG, GIF and WebP images are supported."
-                );
-            }
+			if (!allowedTypes.has(file.type)) {
+				throw new Error(
+					mailbox?.signatureImageTypesError ??
+						"Only JPEG, PNG, GIF and WebP images are supported.",
+				);
+			}
 
-            if (file.size > 5 * 1024 * 1024) {
-                throw new Error(
-                    mailbox?.signatureImageSizeError ??
-                    "Images must be smaller than 5 MB."
-                );
-            }
+			if (file.size > 5 * 1024 * 1024) {
+				throw new Error(
+					mailbox?.signatureImageSizeError ??
+						"Images must be smaller than 5 MB.",
+				);
+			}
 
-            const upload = await createEmailAssetUploadUrl({
-                fileName: file.name,
-                contentType: file.type,
-                sizeBytes: file.size,
-            });
+			const upload = await createEmailAssetUploadUrl({
+				fileName: file.name,
+				contentType: file.type,
+				sizeBytes: file.size,
+			});
 
-            const response = await fetch(upload.uploadUrl, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": file.type,
-                },
-                body: file,
-            });
+			const response = await fetch(upload.uploadUrl, {
+				method: "PUT",
+				headers: {
+					"Content-Type": file.type,
+				},
+				body: file,
+			});
 
-            if (!response.ok) {
-                throw new Error(
-                    mailbox?.signatureImageUploadError ??
-                    "Image upload failed."
-                );
-            }
+			if (!response.ok) {
+				throw new Error(
+					mailbox?.signatureImageUploadError ?? "Image upload failed.",
+				);
+			}
 
-            const asset = await completeEmailAssetUpload({
-                publicId: upload.publicId,
-                fileName: file.name,
-            });
+			const asset = await completeEmailAssetUpload({
+				publicId: upload.publicId,
+				fileName: file.name,
+			});
 
-            return asset.url;
-        },
-        [mailbox]
-    );
+			return asset.url;
+		},
+		[mailbox],
+	);
 
-    const selectSignature = (nextPublicId: string) => {
-        const signature = signatures.find(
-            (item) => item.publicId === nextPublicId
-        );
+	const selectSignature = (nextPublicId: string) => {
+		const signature = signatures.find((item) => item.publicId === nextPublicId);
 
-        if (!signature) return;
+		if (!signature) return;
 
-        setPublicId(signature.publicId);
-        setName(signature.name);
-        setDocument(signature.document);
-        setIsDefaultForNew(signature.isDefaultForNew);
-        setIsDefaultForReplyForward(signature.isDefaultForReplyForward);
-        setEditorSessionKey((current) => current + 1);
-    };
+		setPublicId(signature.publicId);
+		setName(signature.name);
+		setDocument(signature.document);
+		setIsDefaultForNew(signature.isDefaultForNew);
+		setIsDefaultForReplyForward(signature.isDefaultForReplyForward);
+		setEditorSessionKey((current) => current + 1);
+	};
 
-    const createNewSignature = () => {
-        setPublicId(null);
-        setName(newSignatureName);
-        setDocument(createEmailDocument());
-        setIsDefaultForNew(false);
-        setIsDefaultForReplyForward(false);
-        setEditorSessionKey((current) => current + 1);
-    };
+	const createNewSignature = () => {
+		setPublicId(null);
+		setName(newSignatureName);
+		setDocument(createEmailDocument());
+		setIsDefaultForNew(false);
+		setIsDefaultForReplyForward(false);
+		setEditorSessionKey((current) => current + 1);
+	};
 
-    const handleSaved = useCallback((signature: EmailSignatureResult) => {
-        setPublicId(signature.publicId);
-        setName(signature.name);
-        setDocument(signature.document);
-        setIsDefaultForNew(signature.isDefaultForNew);
-        setIsDefaultForReplyForward(signature.isDefaultForReplyForward);
+	const handleSaved = useCallback((signature: EmailSignatureResult) => {
+		setPublicId(signature.publicId);
+		setName(signature.name);
+		setDocument(signature.document);
+		setIsDefaultForNew(signature.isDefaultForNew);
+		setIsDefaultForReplyForward(signature.isDefaultForReplyForward);
 
-        setSignatures((current) => {
-            const normalized = current.map((item) => ({
-                ...item,
-                isDefaultForNew: signature.isDefaultForNew
-                    ? item.publicId === signature.publicId
-                    : item.isDefaultForNew,
-                isDefaultForReplyForward: signature.isDefaultForReplyForward
-                    ? item.publicId === signature.publicId
-                    : item.isDefaultForReplyForward,
-            }));
+		setSignatures((current) => {
+			const normalized = current.map((item) => ({
+				...item,
+				isDefaultForNew: signature.isDefaultForNew
+					? item.publicId === signature.publicId
+					: item.isDefaultForNew,
+				isDefaultForReplyForward: signature.isDefaultForReplyForward
+					? item.publicId === signature.publicId
+					: item.isDefaultForReplyForward,
+			}));
 
-            return sortSignatures([
-                signature,
-                ...normalized.filter(
-                    (item) => item.publicId !== signature.publicId
-                ),
-            ]);
-        });
-    }, []);
+			return sortSignatures([
+				signature,
+				...normalized.filter((item) => item.publicId !== signature.publicId),
+			]);
+		});
+	}, []);
 
-    const handleDeleted = useCallback(
-        (deleted: DeletedEmailSignatureResult) => {
-            setSignatures((current) =>
-                current.filter(
-                    (signature) => signature.publicId !== deleted.publicId
-                )
-            );
+	const handleDeleted = useCallback(
+		(deleted: DeletedEmailSignatureResult) => {
+			setSignatures((current) =>
+				current.filter((signature) => signature.publicId !== deleted.publicId),
+			);
 
-            setPublicId(null);
-            setName(newSignatureName);
-            setDocument(createEmailDocument());
-            setIsDefaultForNew(false);
-            setIsDefaultForReplyForward(false);
-            setEditorSessionKey((current) => current + 1);
-        },
-        [newSignatureName]
-    );
+			setPublicId(null);
+			setName(newSignatureName);
+			setDocument(createEmailDocument());
+			setIsDefaultForNew(false);
+			setIsDefaultForReplyForward(false);
+			setEditorSessionKey((current) => current + 1);
+		},
+		[newSignatureName],
+	);
 
-    const saveAction = publicId
-        ? updateEmailSignatureAction
-        : createEmailSignatureAction;
+	const saveAction = publicId
+		? updateEmailSignatureAction
+		: createEmailSignatureAction;
 
-    return (
-        <div className="space-y-5">
-            <div className="grid gap-4 rounded-xl border border-neutral-200 bg-neutral-50/50 p-4 dark:border-neutral-800 dark:bg-neutral-900/40">
-                <div className="flex flex-wrap items-end gap-3">
-                    <label className="grid min-w-56 flex-1 gap-1.5 text-sm">
-                        <span className="font-medium text-neutral-900 dark:text-neutral-100">
-                            {mailbox?.signature ?? "Signature"}
-                        </span>
+	return (
+		<div className="space-y-5">
+			<div className="grid gap-4 rounded-xl border border-neutral-200 bg-neutral-50/50 p-4 dark:border-neutral-800 dark:bg-neutral-900/40">
+				<div className="flex flex-wrap items-end gap-3">
+					<label className="grid min-w-56 flex-1 gap-1.5 text-sm">
+						<span className="font-medium text-neutral-900 dark:text-neutral-100">
+							{mailbox?.signature ?? "Signature"}
+						</span>
 
-                        <select
-                            className={inputClass}
-                            value={publicId ?? ""}
-                            onChange={(event) => {
-                                const value = event.currentTarget.value;
+						<select
+							className={inputClass}
+							value={publicId ?? ""}
+							onChange={(event) => {
+								const value = event.currentTarget.value;
 
-                                if (value) {
-                                    selectSignature(value);
-                                }
-                            }}
-                        >
-                            <option value="">{newSignatureName}</option>
+								if (value) {
+									selectSignature(value);
+								}
+							}}
+						>
+							<option value="">{newSignatureName}</option>
 
-                            {signatures.map((signature) => (
-                                <option
-                                    key={signature.publicId}
-                                    value={signature.publicId}
-                                >
-                                    {signature.name}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
+							{signatures.map((signature) => (
+								<option key={signature.publicId} value={signature.publicId}>
+									{signature.name}
+								</option>
+							))}
+						</select>
+					</label>
 
-                    <button
-                        type="button"
-                        className={secondaryButtonClass}
-                        onClick={createNewSignature}
-                    >
-                        {newSignatureName}
-                    </button>
+					<button
+						type="button"
+						className={secondaryButtonClass}
+						onClick={createNewSignature}
+					>
+						{newSignatureName}
+					</button>
 
-                    <label className="grid min-w-64 flex-[2] gap-1.5 text-sm">
-                        <span className="font-medium text-neutral-900 dark:text-neutral-100">
-                            {mailbox?.signatureName ?? "Signature name"}
-                        </span>
+					<label className="grid min-w-64 flex-[2] gap-1.5 text-sm">
+						<span className="font-medium text-neutral-900 dark:text-neutral-100">
+							{mailbox?.signatureName ?? "Signature name"}
+						</span>
 
-                        <input
-                            type="text"
-                            className={inputClass}
-                            value={name}
-                            maxLength={160}
-                            placeholder={
-                                mailbox?.signatureNamePlaceholder ??
-                                "For example: Work"
-                            }
-                            onChange={(event) =>
-                                setName(event.currentTarget.value)
-                            }
-                        />
-                    </label>
+						<input
+							type="text"
+							className={inputClass}
+							value={name}
+							maxLength={160}
+							placeholder={
+								mailbox?.signatureNamePlaceholder ?? "For example: Work"
+							}
+							onChange={(event) => setName(event.currentTarget.value)}
+						/>
+					</label>
 
-                    <ReusableFormButton
-                        action={saveAction}
-                        label={
-                            publicId
-                                ? (mailbox?.saveChanges ?? "Save changes")
-                                : (mailbox?.createSignature ??
-                                    "Create signature")
-                        }
-                        notify={notification}
-                        onSuccess={handleSaved}
-                    >
-                        <input
-                            type="hidden"
-                            name="publicId"
-                            value={publicId ?? ""}
-                        />
-                        <input
-                            type="hidden"
-                            name="identityPublicId"
-                            value={identityPublicId}
-                        />
-                        <input type="hidden" name="name" value={name} />
-                        <input
-                            type="hidden"
-                            name="document"
-                            value={JSON.stringify(document)}
-                        />
-                        <input
-                            type="hidden"
-                            name="isDefaultForNew"
-                            value={String(isDefaultForNew)}
-                        />
-                        <input
-                            type="hidden"
-                            name="isDefaultForReplyForward"
-                            value={String(isDefaultForReplyForward)}
-                        />
-                    </ReusableFormButton>
+					<ReusableFormButton
+						action={saveAction}
+						label={
+							publicId
+								? (mailbox?.saveChanges ?? "Save changes")
+								: (mailbox?.createSignature ?? "Create signature")
+						}
+						notify={notification}
+						onSuccess={handleSaved}
+					>
+						<input type="hidden" name="publicId" value={publicId ?? ""} />
+						<input
+							type="hidden"
+							name="identityPublicId"
+							value={identityPublicId}
+						/>
+						<input type="hidden" name="name" value={name} />
+						<input
+							type="hidden"
+							name="document"
+							value={JSON.stringify(document)}
+						/>
+						<input
+							type="hidden"
+							name="isDefaultForNew"
+							value={String(isDefaultForNew)}
+						/>
+						<input
+							type="hidden"
+							name="isDefaultForReplyForward"
+							value={String(isDefaultForReplyForward)}
+						/>
+					</ReusableFormButton>
 
-                    {publicId && (
-                        <ReusableFormButton
-                            action={deleteEmailSignatureAction}
-                            label={mailbox?.delete ?? "Delete"}
-                            notify={notification}
-                            onSuccess={handleDeleted}
-                            buttonProps={{
-                                color: "red",
-                                variant: "light",
-                                onClick: (event) => {
-                                    const message = (
-                                        mailbox?.deleteSignatureConfirm ??
-                                        'Delete "{name}"?'
-                                    ).replace("{name}", name);
+					{publicId && (
+						<ReusableFormButton
+							action={deleteEmailSignatureAction}
+							label={mailbox?.delete ?? "Delete"}
+							notify={notification}
+							onSuccess={handleDeleted}
+							buttonProps={{
+								color: "red",
+								variant: "light",
+								onClick: (event) => {
+									const message = (
+										mailbox?.deleteSignatureConfirm ?? 'Delete "{name}"?'
+									).replace("{name}", name);
 
-                                    if (!window.confirm(message)) {
-                                        event.preventDefault();
-                                    }
-                                },
-                            }}
-                        >
-                            <input
-                                type="hidden"
-                                name="publicId"
-                                value={publicId}
-                            />
-                        </ReusableFormButton>
-                    )}
-                </div>
+									if (!window.confirm(message)) {
+										event.preventDefault();
+									}
+								},
+							}}
+						>
+							<input type="hidden" name="publicId" value={publicId} />
+						</ReusableFormButton>
+					)}
+				</div>
 
-                <div className="flex flex-wrap gap-x-8 gap-y-3 border-t border-neutral-200 pt-4 dark:border-neutral-800">
-                    <Switch
-                        checked={isDefaultForNew}
-                        onChange={(event) =>
-                            setIsDefaultForNew(event.currentTarget.checked)
-                        }
-                        label={
-                            mailbox?.defaultSignatureForNew ??
-                            "Use by default for new messages"
-                        }
-                    />
+				<div className="flex flex-wrap gap-x-8 gap-y-3 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+					<Switch
+						checked={isDefaultForNew}
+						onChange={(event) =>
+							setIsDefaultForNew(event.currentTarget.checked)
+						}
+						label={
+							mailbox?.defaultSignatureForNew ??
+							"Use by default for new messages"
+						}
+					/>
 
-                    <Switch
-                        checked={isDefaultForReplyForward}
-                        onChange={(event) =>
-                            setIsDefaultForReplyForward(
-                                event.currentTarget.checked
-                            )
-                        }
-                        label={
-                            mailbox?.defaultSignatureForReplies ??
-                            "Use by default for replies and forwards"
-                        }
-                    />
-                </div>
-            </div>
+					<Switch
+						checked={isDefaultForReplyForward}
+						onChange={(event) =>
+							setIsDefaultForReplyForward(event.currentTarget.checked)
+						}
+						label={
+							mailbox?.defaultSignatureForReplies ??
+							"Use by default for replies and forwards"
+						}
+					/>
+				</div>
+			</div>
 
-            <div>
-                <div className="mb-3">
-                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                        {mailbox?.signatureContent ??
-                            "Signature content"}
-                    </h3>
+			<div>
+				<div className="mb-3">
+					<h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+						{mailbox?.signatureContent ?? "Signature content"}
+					</h3>
 
-                    <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
-                        {mailbox?.signatureContentDescription ??
-                            "This content will be inserted below the message body when the signature is selected."}
-                    </p>
-                </div>
+					<p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
+						{mailbox?.signatureContentDescription ??
+							"This content will be inserted below the message body when the signature is selected."}
+					</p>
+				</div>
 
-                <div className="min-h-[700px]">
-                    <EmailEditor
-                        key={editorSessionKey}
-                        preset="signature"
-                        value={document}
-                        onChange={setDocument}
-                        onImageUpload={uploadSignatureImage}
-                        dictionary={mailbox}
-                    />
-                </div>
-            </div>
-        </div>
-    );
+				<div className="min-h-[700px]">
+					<EmailEditor
+						key={editorSessionKey}
+						preset="signature"
+						value={document}
+						onChange={setDocument}
+						onImageUpload={uploadSignatureImage}
+						dictionary={mailbox}
+					/>
+				</div>
+			</div>
+		</div>
+	);
 }

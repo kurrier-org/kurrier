@@ -15,7 +15,6 @@ import { getDayjsTz } from "@common/day-js-extended";
 import { Dayjs } from "dayjs";
 import { useOptionalI18n } from "@/components/providers/dictionary-provider";
 
-
 function ScheduleSend() {
 	const i18n = useOptionalI18n();
 	const dict = i18n?.dict;
@@ -146,7 +145,12 @@ function ScheduleSend() {
 							}}
 						>
 							<span className={"my-1"}>{preset.label}</span>
-							<span>{format?.date(preset.date.toDate(), { dateStyle: "medium", timeStyle: "short" }) ?? ""}</span>
+							<span>
+								{format?.date(preset.date.toDate(), {
+									dateStyle: "medium",
+									timeStyle: "short",
+								}) ?? ""}
+							</span>
 						</button>
 					);
 				})}
@@ -212,7 +216,10 @@ function ScheduleSend() {
 								</>
 							) : (
 								<span className="text-[11px] leading-none text-white/90">
-									{format?.date(scheduledAt!, { dateStyle: "medium", timeStyle: "short" }) ?? ""}
+									{format?.date(scheduledAt!, {
+										dateStyle: "medium",
+										timeStyle: "short",
+									}) ?? ""}
 								</span>
 							)}
 						</span>
@@ -235,7 +242,10 @@ function ScheduleSend() {
 								leftSection={<Check size={14} />}
 								rightSection={
 									<span className="text-[11px] text-neutral-500">
-										{format?.date(scheduledAt!, { dateStyle: "medium", timeStyle: "short" }) ?? ""}
+										{format?.date(scheduledAt!, {
+											dateStyle: "medium",
+											timeStyle: "short",
+										}) ?? ""}
 									</span>
 								}
 								onClick={() => {}}

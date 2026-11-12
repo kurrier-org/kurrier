@@ -1,29 +1,32 @@
 import { defineNitroPlugin } from "nitropack/runtime";
 import { JobScheduler, Worker } from "bullmq";
 import { redisConnection } from "../../lib/get-redis";
-import {db, mailboxThreads, messages, providers} from "@db";
-import {INBOUND_SPEC, JMAP_SPEC, MAILTRAP_SPEC, PROVIDERS, STORAGE_PROVIDERS} from "@schema";
+import { db, mailboxThreads, messages, providers } from "@db";
+import {
+	INBOUND_SPEC,
+	JMAP_SPEC,
+	MAILTRAP_SPEC,
+	PROVIDERS,
+	STORAGE_PROVIDERS,
+} from "@schema";
 import { kvDel, kvGet, kvSet } from "@common";
 import { processWebhook } from "../../lib/webhooks/message.received";
-import {and, eq, isNull, lte} from "drizzle-orm";
+import { and, eq, isNull, lte } from "drizzle-orm";
 import { processRules } from "../../lib/rules/rules-processor";
 
-import {GetObjectCommand, PutBucketCorsCommand} from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutBucketCorsCommand } from "@aws-sdk/client-s3";
 import { s3 } from "../../lib/create-s3-client";
 import { getServerEnv } from "@schema";
-import {processStorageDeletions} from "../../lib/storage/cleanup";
+import { processStorageDeletions } from "../../lib/storage/cleanup";
 
 export default defineNitroPlugin(async (nitroApp) => {
-	const connection = redisConnection.connection
+	const connection = redisConnection.connection;
 	try {
 		const { S3_BUCKET } = getServerEnv();
 
-		const isProduction =
-			process.env.NODE_ENV === "production";
+		const isProduction = process.env.NODE_ENV === "production";
 
-		const allowedOrigin = isProduction
-			? process.env.WEB_URL
-			: "*";
+		const allowedOrigin = isProduction ? process.env.WEB_URL : "*";
 
 		if (S3_BUCKET && allowedOrigin) {
 			await s3.send(
@@ -32,16 +35,8 @@ export default defineNitroPlugin(async (nitroApp) => {
 					CORSConfiguration: {
 						CORSRules: [
 							{
-								AllowedOrigins: [
-									allowedOrigin,
-								],
-								AllowedMethods: [
-									"GET",
-									"PUT",
-									"POST",
-									"DELETE",
-									"HEAD",
-								],
+								AllowedOrigins: [allowedOrigin],
+								AllowedMethods: ["GET", "PUT", "POST", "DELETE", "HEAD"],
 								AllowedHeaders: ["*"],
 								ExposeHeaders: ["ETag"],
 								MaxAgeSeconds: 3600,
@@ -51,9 +46,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 				}),
 			);
 
-			console.info(
-				"[COMMON] S3 bucket CORS configured",
-			);
+			console.info("[COMMON] S3 bucket CORS configured");
 		}
 	} catch (err: any) {
 		console.error(
@@ -61,8 +54,6 @@ export default defineNitroPlugin(async (nitroApp) => {
 			err?.message ?? err,
 		);
 	}
-
-
 
 	const worker = new Worker(
 		"common-worker",
@@ -73,19 +64,36 @@ export default defineNitroPlugin(async (nitroApp) => {
 					return { success: true };
 				}
 				case "sync-providers": {
-					const { userId, workspaceId } = job.data as { userId: string, workspaceId: string };
-					console.log("[COMMON WORKER] syncing providers for user, workspace", userId, workspaceId);
+					const { userId, workspaceId } = job.data as {
+						userId: string;
+						workspaceId: string;
+					};
+					console.log(
+						"[COMMON WORKER] syncing providers for user, workspace",
+						userId,
+						workspaceId,
+					);
 					await db
 						.insert(providers)
 						.values(
-							[...PROVIDERS, ...STORAGE_PROVIDERS, INBOUND_SPEC, JMAP_SPEC, MAILTRAP_SPEC].map((k) => ({
+							[
+								...PROVIDERS,
+								...STORAGE_PROVIDERS,
+								INBOUND_SPEC,
+								JMAP_SPEC,
+								MAILTRAP_SPEC,
+							].map((k) => ({
 								type: k.key,
 								ownerId: userId,
 								workspaceId: workspaceId,
 							})),
 						)
 						.onConflictDoNothing({
-							target: [providers.ownerId, providers.type, providers.workspaceId],
+							target: [
+								providers.ownerId,
+								providers.type,
+								providers.workspaceId,
+							],
 						})
 						.returning();
 					return { success: true };
@@ -114,9 +122,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 					);
 
 					if (!response.Body) {
-						throw new Error(
-							`Raw email not found in storage: ${rawStorageKey}`,
-						);
+						throw new Error(`Raw email not found in storage: ${rawStorageKey}`);
 					}
 
 					const rawEmail = await response.Body.transformToString();
@@ -212,10 +218,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 		await kvDel("local-tunnel-url");
 		nitroApp.hooks.hookOnce("close", async () => {
 			try {
-				await Promise.allSettled([
-					worker?.close(),
-					scheduler?.close(),
-				]);
+				await Promise.allSettled([worker?.close(), scheduler?.close()]);
 			} catch (err: any) {
 				console.error("Error closing BullMQ resources:", err?.message ?? err);
 			}

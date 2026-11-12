@@ -1,13 +1,9 @@
 import React from "react";
 import { eq } from "drizzle-orm";
-import {getWorkspacePublicId, rlsClient} from "@/lib/actions/clients";
+import { getWorkspacePublicId, rlsClient } from "@/lib/actions/clients";
 import { contacts } from "@db";
 import { ActionIcon } from "@mantine/core";
-import {
-	IconEdit,
-	IconLabelFilled,
-	IconMap,
-} from "@tabler/icons-react";
+import { IconEdit, IconLabelFilled, IconMap } from "@tabler/icons-react";
 import Link from "next/link";
 import DeleteContactButton from "@/components/dashboard/contacts/delete-contact-button";
 import { revalidatePath } from "next/cache";
@@ -17,14 +13,14 @@ import {
 	fetchLabels,
 	toggleFavoriteContact,
 } from "@/lib/actions/labels";
-import {LabelScope} from "@schema";
+import { LabelScope } from "@schema";
 import { Star } from "lucide-react";
 import Form from "next/form";
 import { getCountryDataList, TCountryCode } from "countries-list";
 import ContactListAvatar from "@/components/dashboard/contacts/contact-list-avatar";
-import {getRedis} from "@/lib/actions/get-redis";
-import {isSignedIn} from "@/lib/actions/auth";
-import {generateSignedUrl} from "@common";
+import { getRedis } from "@/lib/actions/get-redis";
+import { isSignedIn } from "@/lib/actions/auth";
+import { generateSignedUrl } from "@common";
 import { getI18n } from "@/lib/dictionaries";
 import { cookies } from "next/headers";
 
@@ -56,7 +52,7 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 	let profilePictureUrl: string | null = null;
 
 	if (contact.profilePicture) {
-		profilePictureUrl = await generateSignedUrl(contact.profilePicture)
+		profilePictureUrl = await generateSignedUrl(contact.profilePicture);
 	}
 
 	const onDeleteAction = async (id: string) => {
@@ -78,7 +74,6 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 		fetchLabels("contact" as LabelScope),
 		fetchContactLabelsByContactIds([contact.id]),
 	]);
-
 
 	const isFavorite = labelsByContactId[contact.id]?.some(
 		(entry) => entry.label.name === "Favorite",
@@ -119,13 +114,17 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 		}
 	}
 
-	const workspacePublicId = await getWorkspacePublicId()
+	const workspacePublicId = await getWorkspacePublicId();
 	return (
 		<div className="flex h-full flex-col">
 			<div className="bg-gradient-to-b from-primary/5 via-background to-background/80 dark:from-primary/15 dark:via-background dark:to-background/40 px-3 py-4 sm:px-6 lg:px-8 shadow-[0_1px_0_rgba(15,23,42,0.04)] dark:shadow-[0_1px_0_rgba(15,23,42,0.6)]">
 				<div className="mx-auto flex max-w-5xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 					<div className="flex items-start gap-4">
-                        <ContactListAvatar signedUrl={profilePictureUrl} alt={contact?.firstName} size={64} />
+						<ContactListAvatar
+							signedUrl={profilePictureUrl}
+							alt={contact?.firstName}
+							size={64}
+						/>
 
 						<div className="min-w-0 flex-1 space-y-1.5">
 							<div className="flex flex-wrap items-center gap-2">
@@ -191,7 +190,9 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 					</div>
 
 					<div className="flex items-center gap-2 sm:self-start">
-						<Link href={`/w/${workspacePublicId}/dashboard/contacts/${contact.publicId}/edit`}>
+						<Link
+							href={`/w/${workspacePublicId}/dashboard/contacts/${contact.publicId}/edit`}
+						>
 							<ActionIcon
 								size="sm"
 								variant="outline"
@@ -377,7 +378,10 @@ async function Page({ params }: { params: { contactsPublicId: string } }) {
 												<span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[10px] text-primary dark:bg-primary/25">
 													●
 												</span>
-												<span>{c.locationPrefix}{idx + 1}</span>
+												<span>
+													{c.locationPrefix}
+													{idx + 1}
+												</span>
 											</div>
 											{lines}
 										</div>

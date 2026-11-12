@@ -25,11 +25,7 @@ type PageParams = Promise<{
 	day: string;
 }>;
 
-async function CalendarContent({
-								   params,
-							   }: {
-	params: PageParams;
-}) {
+async function CalendarContent({ params }: { params: PageParams }) {
 	await connection();
 
 	const resolvedParams = await params;
@@ -42,15 +38,9 @@ async function CalendarContent({
 		(resolvedParams.view as CalendarViewType) || "week";
 
 	const viewParams = {
-		year: resolvedParams.year
-			? Number(resolvedParams.year)
-			: undefined,
-		month: resolvedParams.month
-			? Number(resolvedParams.month)
-			: undefined,
-		day: resolvedParams.day
-			? Number(resolvedParams.day)
-			: undefined,
+		year: resolvedParams.year ? Number(resolvedParams.year) : undefined,
+		month: resolvedParams.month ? Number(resolvedParams.month) : undefined,
+		day: resolvedParams.day ? Number(resolvedParams.day) : undefined,
 	};
 
 	const { from, to } = await getRangeForCalendarView(
@@ -75,15 +65,12 @@ async function CalendarContent({
 		defaultCalendar.timezone,
 	);
 
-	const { timedByDay, allDayByDay } =
-		await eventsByDayWithAllDay(
-			defaultCalendar.timezone,
-			expandedEvents,
-		);
-
-	const masterIds = Array.from(
-		new Set(expandedEvents.map((e) => e.id)),
+	const { timedByDay, allDayByDay } = await eventsByDayWithAllDay(
+		defaultCalendar.timezone,
+		expandedEvents,
 	);
+
+	const masterIds = Array.from(new Set(expandedEvents.map((e) => e.id)));
 
 	const attendees = await fetchEventAttendees(masterIds);
 
@@ -127,11 +114,7 @@ async function CalendarContent({
 	);
 }
 
-function Page({
-				  params,
-			  }: {
-	params: PageParams;
-}) {
+function Page({ params }: { params: PageParams }) {
 	return (
 		<Suspense fallback={<Loading />}>
 			<CalendarContent params={params} />

@@ -5,13 +5,13 @@ import type { ThemeName } from "@schema/types/themes";
 import { useAppearance } from "@/components/providers/appearance-provider";
 
 export default function WorkspaceThemeSync({ theme }: { theme: ThemeName }) {
-    const { setWorkspaceTheme } = useAppearance();
+	const { setWorkspaceTheme } = useAppearance();
 
-    useEffect(() => {
-        setWorkspaceTheme(theme);
+	useEffect(() => {
+		setWorkspaceTheme(theme);
 
-        return () => setWorkspaceTheme(null);
-    }, [theme, setWorkspaceTheme]);
+		return () => setWorkspaceTheme(null);
+	}, [theme, setWorkspaceTheme]);
 
-    return null;
+	return null;
 }

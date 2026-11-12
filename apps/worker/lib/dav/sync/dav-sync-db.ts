@@ -5,12 +5,17 @@ import {
 	contacts,
 	db,
 } from "@db";
-import {and, eq, isNull} from "drizzle-orm";
-import {davAddressbooks, davCards, DavCardsEntity, davDb} from "../dav-schema";
+import { and, eq, isNull } from "drizzle-orm";
+import {
+	davAddressbooks,
+	davCards,
+	DavCardsEntity,
+	davDb,
+} from "../dav-schema";
 import { parseVCardToContact } from "./dav-vcard";
 import { nanoid } from "nanoid";
 import { davParsePhoto } from "./dav-profile-image";
-import {createContact} from "../../../lib/dav/dav-create-contact";
+import { createContact } from "../../../lib/dav/dav-create-contact";
 
 const fetchContactData = async (card: DavCardsEntity) => {
 	const vcardBytes = card.carddata as Uint8Array;
@@ -18,13 +23,16 @@ const fetchContactData = async (card: DavCardsEntity) => {
 };
 
 const createContactFromDav = async ({
-										card,
-										book,
-									}: {
+	card,
+	book,
+}: {
 	card: DavCardsEntity;
 	book: AddressBookEntity;
 }) => {
-	console.log("Creating contact from DAV card:", { uri: card.uri, etag: card.etag });
+	console.log("Creating contact from DAV card:", {
+		uri: card.uri,
+		etag: card.etag,
+	});
 	const parsed = parseVCardToContact(await fetchContactData(card));
 
 	const newContactPublicId = nanoid(10);
@@ -50,10 +58,10 @@ const createContactFromDav = async ({
 };
 
 const updateContact = async ({
-								 card,
-								 book,
-								 localContact,
-							 }: {
+	card,
+	book,
+	localContact,
+}: {
 	card: DavCardsEntity;
 	book: AddressBookEntity;
 	localContact: ContactEntity;
@@ -86,12 +94,7 @@ const syncBook = async (book: AddressBookEntity) => {
 	const unsyncedContacts = await db
 		.select()
 		.from(contacts)
-		.where(
-			and(
-				eq(contacts.addressBookId, book.id),
-				isNull(contacts.davUri)
-			),
-		);
+		.where(and(eq(contacts.addressBookId, book.id), isNull(contacts.davUri)));
 
 	for (const local of unsyncedContacts) {
 		console.log("Pushing local contact to DAV:", local.id);
@@ -128,10 +131,7 @@ const syncBook = async (book: AddressBookEntity) => {
 			.select()
 			.from(contacts)
 			.where(
-				and(
-					eq(contacts.addressBookId, book.id),
-					eq(contacts.davUri, card.uri),
-				),
+				and(eq(contacts.addressBookId, book.id), eq(contacts.davUri, card.uri)),
 			);
 
 		if (localContact) {
@@ -154,14 +154,14 @@ const syncBook = async (book: AddressBookEntity) => {
 		}
 	}
 
-	await db.update(addressBooks)
+	await db
+		.update(addressBooks)
 		.set({ davSyncToken: remoteToken })
 		.where(eq(addressBooks.id, book.id));
 };
 
-
 export const davSyncDb = async () => {
-	const books = await db.select().from(addressBooks)
+	const books = await db.select().from(addressBooks);
 	for (const book of books) {
 		try {
 			await syncBook(book);

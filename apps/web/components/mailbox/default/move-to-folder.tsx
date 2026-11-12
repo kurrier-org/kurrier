@@ -16,9 +16,9 @@ import {
 } from "@/lib/actions/mailbox";
 
 function MoveToFolder({
-						  identityMailboxes,
-						  activeMailbox,
-					  }: {
+	identityMailboxes,
+	activeMailbox,
+}: {
 	identityMailboxes: FetchIdentityMailboxListResult;
 	activeMailbox: MailboxEntity;
 }) {
@@ -36,7 +36,7 @@ function MoveToFolder({
 	const { options: mailboxOptions } = useMailboxOptions({
 		mailboxes,
 		identityLabel:
-			entry?.identity?.value ?? (dict?.mailbox?.folders ?? "Folders"),
+			entry?.identity?.value ?? dict?.mailbox?.folders ?? "Folders",
 	});
 
 	const { state } = useDynamicContext<{
@@ -75,9 +75,7 @@ function MoveToFolder({
 						value={destId}
 						onChange={setDestId}
 						searchable
-						nothingFoundMessage={
-							dict?.mailbox?.noFolders ?? "No folders"
-						}
+						nothingFoundMessage={dict?.mailbox?.noFolders ?? "No folders"}
 					/>
 
 					<div className="flex justify-end gap-2">
@@ -112,11 +110,7 @@ function MoveToFolder({
 								name="fromMailboxId"
 								value={activeMailbox.id}
 							/>
-							<input
-								type="hidden"
-								name="toMailboxId"
-								value={destId ?? ""}
-							/>
+							<input type="hidden" name="toMailboxId" value={destId ?? ""} />
 						</ReusableFormButton>
 					</div>
 				</div>

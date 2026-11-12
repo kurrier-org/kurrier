@@ -3,12 +3,12 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { isSignedIn } from "@/lib/actions/auth";
 import { withLocale } from "@/lib/utils";
-import {DISTRIBUTION_CONFIG} from "@distribution/config";
+import { DISTRIBUTION_CONFIG } from "@distribution/config";
 
 async function AuthenticatedDashboard({
-										  children,
-										  locale,
-									  }: {
+	children,
+	locale,
+}: {
 	children: React.ReactNode;
 	locale: string;
 }) {
@@ -24,9 +24,9 @@ async function AuthenticatedDashboard({
 }
 
 export default async function DashboardLayout({
-												  children,
-												  params,
-											  }: {
+	children,
+	params,
+}: {
 	children: React.ReactNode;
 	params: Promise<{ locale: string }>;
 }) {

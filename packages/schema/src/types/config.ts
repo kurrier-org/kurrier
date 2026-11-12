@@ -15,7 +15,9 @@ export const ZServerConfig = z.object({
 		"DATABASE_RLS_URL must be a valid Postgres connection URL",
 	),
 	JWT_SECRET: z.string("JWT_SECRET must be present"),
-	APP_SECRET_ENCRYPTION_KEY: z.string("APP_SECRET_ENCRYPTION_KEY must be present"),
+	APP_SECRET_ENCRYPTION_KEY: z.string(
+		"APP_SECRET_ENCRYPTION_KEY must be present",
+	),
 	REDIS_PASSWORD: z.string("REDIS_PASSWORD must be present"),
 	REDIS_HOST: z.string("REDIS_HOST must be present"),
 	REDIS_PORT: z.string("REDIS_PORT must be present"),
@@ -37,7 +39,11 @@ export const ZPublicConfig = z.object({
 	WEB_URL: z.string("WEB_URL must be present"),
 	DOCS_URL: z.string().optional(),
 	DAV_URL: z.string("DAV_URL must be present"),
-	DISABLE_SIGNUP: z.string().optional().transform((val) => val === "true").default(false),
+	DISABLE_SIGNUP: z
+		.string()
+		.optional()
+		.transform((val) => val === "true")
+		.default(false),
 });
 
 export type ServerConfig = z.infer<typeof ZServerConfig>;

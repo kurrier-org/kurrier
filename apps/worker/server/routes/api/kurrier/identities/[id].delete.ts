@@ -2,7 +2,8 @@ import { defineEventHandler, getRouterParam } from "h3";
 import {
 	apiSuccess,
 	apiError,
-	validateApiKey, validateIdentityOwnership,
+	validateApiKey,
+	validateIdentityOwnership,
 } from "../../../../../lib/api-helpers";
 import { db, identities } from "@db";
 import { eq } from "drizzle-orm";

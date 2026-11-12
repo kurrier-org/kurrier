@@ -3,7 +3,8 @@ import {
 	AddressObjectJSON,
 	ComposeMode,
 	getServerEnv,
-	MailComposeInput, MailSendInput,
+	MailComposeInput,
+	MailSendInput,
 } from "@schema";
 import { getMessageAddress, getMessageName } from "@common/mail-client";
 import { generateSnippet, upsertMailboxThreadItem } from "@common";
@@ -26,26 +27,25 @@ import {
 	smtpAccountSecrets,
 	threads,
 	getSecretAdmin,
-	jmapAccounts, microsoftAccounts,
+	jmapAccounts,
+	microsoftAccounts,
 } from "@db";
-import {createMailer, getMicrosoftAccessToken} from "@providers";
+import { createMailer, getMicrosoftAccessToken } from "@providers";
 import { and, eq } from "drizzle-orm";
 import addressparser from "addressparser";
 import { getRedis } from "../../lib/get-redis";
-import {GetObjectCommand, PutObjectCommand} from "@aws-sdk/client-s3";
-import {s3} from "../../lib/create-s3-client";
+import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { s3 } from "../../lib/create-s3-client";
 import MailComposer from "nodemailer/lib/mail-composer/index.js";
-import {kurrierServer} from "@distribution/kurrier-server";
+import { kurrierServer } from "@distribution/kurrier-server";
 const connection = {
 	maxRetriesPerRequest: null,
 	password: serverConfig.REDIS_PASSWORD,
 	host: serverConfig.REDIS_HOST || "redis",
 	port: Number(serverConfig.REDIS_PORT || 6379),
-}
+};
 
-type DbTransaction = Parameters<
-	Parameters<typeof db.transaction>[0]
->[0];
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 type AttachmentDownload = {
 	item: ReturnType<typeof MessageAttachmentInsertSchema.parse>;
@@ -66,9 +66,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 				case "send-and-reconcile": {
 					const result = await send(job.data);
 					if (!result.success) {
-						throw new Error(
-							result.error ?? "Failed to send email",
-						);
+						throw new Error(result.error ?? "Failed to send email");
 					}
 					return result;
 				}
@@ -107,7 +105,11 @@ export default defineNitroPlugin(async (nitroApp) => {
 
 	type GetOriginalMessageType = Awaited<ReturnType<typeof getOriginalMessage>>;
 
-	async function ensureThreadId(ownerId: string, workspaceId: string, tx: DbTransaction) {
+	async function ensureThreadId(
+		ownerId: string,
+		workspaceId: string,
+		tx: DbTransaction,
+	) {
 		const [t] = await tx
 			.insert(threads)
 			.values({
@@ -137,8 +139,8 @@ export default defineNitroPlugin(async (nitroApp) => {
 	}
 
 	const processDraft = async ({
-									draftMessageId,
-								}: {
+		draftMessageId,
+	}: {
 		draftMessageId: string;
 	}) => {
 		const [draft] = await db
@@ -209,9 +211,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 				throw new Error("Mailbox or identity not found");
 			}
 
-			const sendWithConnectedProvider = async (
-				input: MailSendInput,
-			) => {
+			const sendWithConnectedProvider = async (input: MailSendInput) => {
 				const providerType = mailbox.provider?.type ?? "smtp";
 				let credentials: Record<string, unknown>;
 
@@ -243,27 +243,17 @@ export default defineNitroPlugin(async (nitroApp) => {
 						.from(jmapAccounts)
 						.where(
 							and(
-								eq(
-									jmapAccounts.identityId,
-									mailbox.identity.id,
-								),
-								eq(
-									jmapAccounts.workspaceId,
-									mailbox.identity.workspaceId,
-								),
+								eq(jmapAccounts.identityId, mailbox.identity.id),
+								eq(jmapAccounts.workspaceId, mailbox.identity.workspaceId),
 							),
 						)
 						.limit(1);
 
 					if (!jmapAccount) {
-						throw new Error(
-							"JMAP account not found for identity",
-						);
+						throw new Error("JMAP account not found for identity");
 					}
 
-					const { vault } = await getSecretAdmin(
-						jmapAccount.tokenSecretId,
-					);
+					const { vault } = await getSecretAdmin(jmapAccount.tokenSecretId);
 
 					credentials = {
 						token: vault.decrypted_secret,
@@ -274,23 +264,19 @@ export default defineNitroPlugin(async (nitroApp) => {
 				} else {
 					const [secrets] = mailbox.identity.providerId
 						? await decryptAdminSecrets({
-							linkTable: providerSecrets,
-							foreignCol: providerSecrets.providerId,
-							secretIdCol: providerSecrets.secretId,
-							ownerId: mailbox.identity.ownerId,
-							parentId: String(
-								mailbox.identity.providerId,
-							),
-						})
+								linkTable: providerSecrets,
+								foreignCol: providerSecrets.providerId,
+								secretIdCol: providerSecrets.secretId,
+								ownerId: mailbox.identity.ownerId,
+								parentId: String(mailbox.identity.providerId),
+							})
 						: await decryptAdminSecrets({
-							linkTable: smtpAccountSecrets,
-							foreignCol: smtpAccountSecrets.accountId,
-							secretIdCol: smtpAccountSecrets.secretId,
-							ownerId: mailbox.identity.ownerId,
-							parentId: String(
-								mailbox.identity.smtpAccountId,
-							),
-						});
+								linkTable: smtpAccountSecrets,
+								foreignCol: smtpAccountSecrets.accountId,
+								secretIdCol: smtpAccountSecrets.secretId,
+								ownerId: mailbox.identity.ownerId,
+								parentId: String(mailbox.identity.smtpAccountId),
+							});
 
 					credentials = secrets?.vault?.decrypted_secret
 						? JSON.parse(secrets.vault.decrypted_secret)
@@ -303,15 +289,11 @@ export default defineNitroPlugin(async (nitroApp) => {
 				);
 			};
 
-
 			const attachmentBlobs = await fetchAttachmentBlobs(
 				decodedForm.attachments as string,
 			);
 
-			function recipientArray(
-				value: unknown,
-				field: string,
-			): string[] {
+			function recipientArray(value: unknown, field: string): string[] {
 				if (
 					value === undefined ||
 					value === null ||
@@ -323,13 +305,8 @@ export default defineNitroPlugin(async (nitroApp) => {
 				const entries = Array.isArray(value) ? value : [value];
 
 				return entries.map((entry, index) => {
-					if (
-						typeof entry !== "string" ||
-						!entry.trim()
-					) {
-						throw new Error(
-							`Invalid ${field} recipient at index ${index}`,
-						);
+					if (typeof entry !== "string" || !entry.trim()) {
+						throw new Error(`Invalid ${field} recipient at index ${index}`);
 					}
 
 					return entry.trim();
@@ -383,15 +360,15 @@ export default defineNitroPlugin(async (nitroApp) => {
 			const references =
 				data.mode === "reply" && origRow?.message
 					? Array.from(
-						new Set(
-							[
-								...(Array.isArray(origRow.message.references)
-									? origRow.message.references
-									: []),
-								origRow.message.messageId ?? null,
-							].filter(Boolean),
-						),
-					).slice(-30)
+							new Set(
+								[
+									...(Array.isArray(origRow.message.references)
+										? origRow.message.references
+										: []),
+									origRow.message.messageId ?? null,
+								].filter(Boolean),
+							),
+						).slice(-30)
 					: [];
 
 			const newMessageBody = MessageInsertSchema.parse({
@@ -436,14 +413,11 @@ export default defineNitroPlugin(async (nitroApp) => {
 				},
 			};
 
-			const hookResult = await kurrierServer.hooks.run(
-				"mail.beforeSend",
-				{
-					workspaceId: mailbox.mailbox.workspaceId,
-					identityId: mailbox.identity.id,
-					input,
-				},
-			);
+			const hookResult = await kurrierServer.hooks.run("mail.beforeSend", {
+				workspaceId: mailbox.mailbox.workspaceId,
+				identityId: mailbox.identity.id,
+				input,
+			});
 
 			if (
 				mailbox.identity.metaData?.provider === "kurrier-mail" &&
@@ -455,7 +429,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 			}
 
 			const mailerResponse =
-				hookResult ?? await sendWithConnectedProvider(input);
+				hookResult ?? (await sendWithConnectedProvider(input));
 
 			if (mailerResponse.success) {
 				const messageId =
@@ -472,7 +446,6 @@ export default defineNitroPlugin(async (nitroApp) => {
 					.insert(messages)
 					.values(parsedMessage as MessageCreate)
 					.returning();
-
 
 				const emlBuffer = await buildEmlBuffer({
 					// messageId: String(mailerResponse.MessageId) || `msg-${Date.now()}`,
@@ -505,9 +478,6 @@ export default defineNitroPlugin(async (nitroApp) => {
 					})
 					.where(eq(messages.id, newMessage.id));
 
-
-
-
 				for (const attachmentBlob of attachmentBlobs) {
 					await tx.insert(messageAttachments).values({
 						...attachmentBlob.item,
@@ -528,7 +498,6 @@ export default defineNitroPlugin(async (nitroApp) => {
 			}
 			return { success: true };
 		});
-
 
 		if (
 			result.success &&
@@ -577,9 +546,9 @@ export default defineNitroPlugin(async (nitroApp) => {
 	};
 
 	const generateMailAttrs = async ({
-										 data,
-										 orig,
-									 }: {
+		data,
+		orig,
+	}: {
 		data: MailComposeInput;
 		orig: GetOriginalMessageType | null;
 	}) => {
@@ -610,12 +579,12 @@ export default defineNitroPlugin(async (nitroApp) => {
 		// Human-friendly fallback
 		const origDateLabel = rawDate
 			? new Date(rawDate).toLocaleString(undefined, {
-				year: "numeric",
-				month: "short",
-				day: "2-digit",
-				hour: "2-digit",
-				minute: "2-digit",
-			})
+					year: "numeric",
+					month: "short",
+					day: "2-digit",
+					hour: "2-digit",
+					minute: "2-digit",
+				})
 			: "";
 
 		const origHtml = hasOrig ? origMsg!.html || origMsg!.textAsHtml || "" : "";
@@ -660,7 +629,6 @@ export default defineNitroPlugin(async (nitroApp) => {
 
 		return { subject, text, html };
 	};
-
 
 	async function streamToBuffer(stream: any): Promise<Buffer> {
 		return await new Promise((resolve, reject) => {
@@ -712,7 +680,9 @@ export default defineNitroPlugin(async (nitroApp) => {
 					return {
 						item,
 						blob: new Blob([uint8], {
-							type: String(attachment.contentType || "application/octet-stream"),
+							type: String(
+								attachment.contentType || "application/octet-stream",
+							),
 						}),
 						name: String(attachment.filenameOriginal || "attachment"),
 						sizeBytes: buffer.length,
@@ -728,7 +698,6 @@ export default defineNitroPlugin(async (nitroApp) => {
 			);
 		}
 	}
-
 
 	async function blobToBuffer(blob: Blob) {
 		return Buffer.from(await blob.arrayBuffer());
@@ -762,7 +731,9 @@ export default defineNitroPlugin(async (nitroApp) => {
 				opts.attachments.map(async (att) => ({
 					filename: att.name,
 					content: await blobToBuffer(att.blob),
-					contentType: String(att.item.contentType || "application/octet-stream"),
+					contentType: String(
+						att.item.contentType || "application/octet-stream",
+					),
 				})),
 			),
 		});

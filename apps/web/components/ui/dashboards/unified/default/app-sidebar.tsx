@@ -1,7 +1,15 @@
 "use client";
 
 import { IconFrame } from "@tabler/icons-react";
-import {Calendar, Contact, HardDrive, Inbox, Mail, Settings2, X} from "lucide-react";
+import {
+	Calendar,
+	Contact,
+	HardDrive,
+	Inbox,
+	Mail,
+	Settings2,
+	X,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";

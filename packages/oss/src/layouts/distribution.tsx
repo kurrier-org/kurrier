@@ -1,5 +1,7 @@
-export function DistributionLayout({ children }: {
-    children: React.ReactNode;
+export function DistributionLayout({
+	children,
+}: {
+	children: React.ReactNode;
 }) {
-    return children;
+	return children;
 }

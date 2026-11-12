@@ -9,112 +9,109 @@ import { DISTRIBUTION_CONFIG } from "@distribution/config";
 const trimSlashes = (s: string) => s.replace(/^\/+|\/+$/g, "");
 
 export async function POST(req: NextRequest) {
-    if (!DISTRIBUTION_CONFIG.features.drive) {
-        return NextResponse.json({ error: "Drive is disabled" }, { status: 404 });
-    }
+	if (!DISTRIBUTION_CONFIG.features.drive) {
+		return NextResponse.json({ error: "Drive is disabled" }, { status: 404 });
+	}
 
-    const formData = await req.formData();
+	const formData = await req.formData();
 
-    const file = formData.get("file") as File | null;
-    const uploadToken = String(formData.get("uploadToken") || "");
+	const file = formData.get("file") as File | null;
+	const uploadToken = String(formData.get("uploadToken") || "");
 
-    if (!file) {
-        return NextResponse.json({ error: "Missing file" }, { status: 400 });
-    }
+	if (!file) {
+		return NextResponse.json({ error: "Missing file" }, { status: 400 });
+	}
 
-    if (!uploadToken) {
-        return NextResponse.json(
-            { error: "Missing upload token" },
-            { status: 400 },
-        );
-    }
+	if (!uploadToken) {
+		return NextResponse.json(
+			{ error: "Missing upload token" },
+			{ status: 400 },
+		);
+	}
 
-    const rls = await rlsClient();
+	const rls = await rlsClient();
 
-    const intent = await rls(async (tx) => {
-        const [row] = await tx
-            .select()
-            .from(driveUploadIntents)
-            .where(
-                and(
-                    eq(driveUploadIntents.token, uploadToken),
-                    isNull(driveUploadIntents.usedAt),
-                    gt(driveUploadIntents.expiresAt, new Date()),
-                ),
-            )
-            .limit(1);
+	const intent = await rls(async (tx) => {
+		const [row] = await tx
+			.select()
+			.from(driveUploadIntents)
+			.where(
+				and(
+					eq(driveUploadIntents.token, uploadToken),
+					isNull(driveUploadIntents.usedAt),
+					gt(driveUploadIntents.expiresAt, new Date()),
+				),
+			)
+			.limit(1);
 
-        return row ?? null;
-    });
+		return row ?? null;
+	});
 
-    if (!intent) {
-        return NextResponse.json(
-            { error: "Invalid or expired upload token" },
-            { status: 403 },
-        );
-    }
+	if (!intent) {
+		return NextResponse.json(
+			{ error: "Invalid or expired upload token" },
+			{ status: 403 },
+		);
+	}
 
-    const volume = await rls(async (tx) => {
-        const [row] = await tx
-            .select()
-            .from(driveVolumes)
-            .where(eq(driveVolumes.id, intent.volumeId))
-            .limit(1);
+	const volume = await rls(async (tx) => {
+		const [row] = await tx
+			.select()
+			.from(driveVolumes)
+			.where(eq(driveVolumes.id, intent.volumeId))
+			.limit(1);
 
-        return row ?? null;
-    });
+		return row ?? null;
+	});
 
-    if (!volume) {
-        return NextResponse.json(
-            { error: "Volume not found" },
-            { status: 404 },
-        );
-    }
+	if (!volume) {
+		return NextResponse.json({ error: "Volume not found" }, { status: 404 });
+	}
 
-    const bucket = String(volume.metaData?.bucket || "");
+	const bucket = String(volume.metaData?.bucket || "");
 
-    if (!bucket) {
-        return NextResponse.json(
-            { error: "Cloud volume missing bucket" },
-            { status: 500 },
-        );
-    }
+	if (!bucket) {
+		return NextResponse.json(
+			{ error: "Cloud volume missing bucket" },
+			{ status: 500 },
+		);
+	}
 
-    const volumePrefix = `drive/workspaces/${volume.workspaceId}/${volume.code}/`;
-    const relativeKey = trimSlashes(intent.targetPath);
-    const key = `${volumePrefix}${relativeKey}`;
+	const volumePrefix = `drive/workspaces/${volume.workspaceId}/${volume.code}/`;
+	const relativeKey = trimSlashes(intent.targetPath);
+	const key = `${volumePrefix}${relativeKey}`;
 
-    const buffer = Buffer.from(await file.arrayBuffer());
+	const buffer = Buffer.from(await file.arrayBuffer());
 
-    await s3.send(
-        new PutObjectCommand({
-            Bucket: bucket,
-            Key: key,
-            Body: buffer,
-            ContentType: file.type || "application/octet-stream",
-            Metadata: {
-                filename: encodeURIComponent(file.name),
-                volumeId: String(volume.id),
-            },
-        }),
-    );
+	await s3.send(
+		new PutObjectCommand({
+			Bucket: bucket,
+			Key: key,
+			Body: buffer,
+			ContentType: file.type || "application/octet-stream",
+			Metadata: {
+				filename: encodeURIComponent(file.name),
+				volumeId: String(volume.id),
+			},
+		}),
+	);
 
-    await rls(async (tx) => {
-        await tx
-            .update(driveUploadIntents)
-            .set({
-                usedAt: new Date(),
-                updatedAt: new Date(),
-            })
-            .where(
-                and(
-                    eq(driveUploadIntents.id, intent.id),
-                    isNull(driveUploadIntents.usedAt),
-                ),
-            );
-    });
+	await rls(async (tx) => {
+		await tx
+			.update(driveUploadIntents)
+			.set({
+				usedAt: new Date(),
+				updatedAt: new Date(),
+			})
+			.where(
+				and(
+					eq(driveUploadIntents.id, intent.id),
+					isNull(driveUploadIntents.usedAt),
+				),
+			);
+	});
 
-    return NextResponse.json({
-        ok: true,
-    });
+	return NextResponse.json({
+		ok: true,
+	});
 }

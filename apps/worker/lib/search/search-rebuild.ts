@@ -1,7 +1,14 @@
-import { db, messages, mailboxThreads, mailboxes, identities, workspaces } from "@db";
+import {
+	db,
+	messages,
+	mailboxThreads,
+	mailboxes,
+	identities,
+	workspaces,
+} from "@db";
 import { messagesSearchSchema } from "@schema";
 import { getMessageAddress, getMessageName } from "@common/mail-client";
-import {and, asc, eq, gt} from "drizzle-orm";
+import { and, asc, eq, gt } from "drizzle-orm";
 import client from "../../lib/get-typesense";
 import { toSearchDoc } from "./search-common";
 
@@ -16,7 +23,6 @@ export const rebuild = async () => {
 
 	await client.collections().create(messagesSearchSchema);
 	console.info("[typesense] created collection messages");
-
 
 	let lastId: string | null = null;
 	let imported = 0;
@@ -95,9 +101,11 @@ export const rebuild = async () => {
 			});
 		});
 
-
 		try {
-			await client.collections("messages").documents().import(docs, { action: "upsert" });
+			await client
+				.collections("messages")
+				.documents()
+				.import(docs, { action: "upsert" });
 		} catch (err: any) {
 			if (!Array.isArray(err.importResults)) throw err;
 
@@ -110,7 +118,6 @@ export const rebuild = async () => {
 
 			console.error("[typesense] failed documents", failed);
 		}
-
 
 		imported += docs.length;
 		lastId = batch[batch.length - 1].m.id;

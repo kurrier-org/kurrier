@@ -1,9 +1,4 @@
-import {
-	db,
-	identities,
-	mailboxes,
-	mailboxSync
-} from "@db";
+import { db, identities, mailboxes, mailboxSync } from "@db";
 import { and, eq } from "drizzle-orm";
 import { parseAndStoreEmail } from "../message-payload-parser";
 import { initSmtpClient } from "./imap-client";
@@ -21,9 +16,7 @@ async function runDeltaFetch(
 	const client = await initSmtpClient(identityId, imapInstances);
 
 	if (!client?.authenticated || !client?.usable) {
-		console.warn(
-			`[deltaFetch:${identityId}] IMAP client not usable`,
-		);
+		console.warn(`[deltaFetch:${identityId}] IMAP client not usable`);
 		return;
 	}
 
@@ -37,9 +30,7 @@ async function runDeltaFetch(
 	const workspaceId = identity?.workspaceId;
 
 	if (!ownerId || !workspaceId) {
-		console.warn(
-			`[deltaFetch:${identityId}] identity missing owner/workspace`,
-		);
+		console.warn(`[deltaFetch:${identityId}] identity missing owner/workspace`);
 		return;
 	}
 
@@ -60,15 +51,15 @@ async function runDeltaFetch(
 			)
 			.limit(1);
 
-		console.log(`[deltaFetch:${identityId}] mailbox=${row.name} sync=${!!syncRow}`);
+		console.log(
+			`[deltaFetch:${identityId}] mailbox=${row.name} sync=${!!syncRow}`,
+		);
 
 		if (!syncRow) {
 			continue;
 		}
 
-		const path = String(
-			(row.metaData as any)?.imap?.path ?? row.name,
-		);
+		const path = String((row.metaData as any)?.imap?.path ?? row.name);
 
 		if (!path) {
 			continue;
@@ -124,18 +115,14 @@ export const deltaFetch = async (
 	console.info(`[deltaFetch:${identityId}] invoked`);
 
 	if (!(await canSyncIdentity(identityId))) {
-		console.info(
-			`[IMAP] delta sync disabled identity=${identityId}`,
-		);
+		console.info(`[IMAP] delta sync disabled identity=${identityId}`);
 		return;
 	}
 
 	const existing = runningDeltaFetches.get(identityId);
 
 	if (existing) {
-		console.log(
-			`[deltaFetch:${identityId}] waiting for existing sync`,
-		);
+		console.log(`[deltaFetch:${identityId}] waiting for existing sync`);
 
 		await existing;
 
@@ -150,15 +137,13 @@ export const deltaFetch = async (
 		return existing;
 	}
 
-	const running = runDeltaFetch(
-		identityId,
-		imapInstances,
-		options
-	).finally(() => {
-		if (runningDeltaFetches.get(identityId) === running) {
-			runningDeltaFetches.delete(identityId);
-		}
-	});
+	const running = runDeltaFetch(identityId, imapInstances, options).finally(
+		() => {
+			if (runningDeltaFetches.get(identityId) === running) {
+				runningDeltaFetches.delete(identityId);
+			}
+		},
+	);
 
 	runningDeltaFetches.set(identityId, running);
 

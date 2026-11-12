@@ -18,13 +18,28 @@ import {
 	useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar as MantineAvatar } from "@mantine/core";
-import {FetchIsSignedInResult, getGravatarUrl, signOut} from "@/lib/actions/auth";
+import {
+	FetchIsSignedInResult,
+	getGravatarUrl,
+	signOut,
+} from "@/lib/actions/auth";
 import { useEffect, useState } from "react";
-import {FetchWorkspacesResult, switchWorkSpace} from "@/lib/actions/workspace";
+import {
+	FetchWorkspacesResult,
+	switchWorkSpace,
+} from "@/lib/actions/workspace";
 import { LanguageSwitcherSubmenu } from "@/components/common/language-switcher";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
-export function NavUser({ workspacePublicId, user, userWorkspaces }: { workspacePublicId: string | undefined, user: FetchIsSignedInResult, userWorkspaces: FetchWorkspacesResult }) {
+export function NavUser({
+	workspacePublicId,
+	user,
+	userWorkspaces,
+}: {
+	workspacePublicId: string | undefined;
+	user: FetchIsSignedInResult;
+	userWorkspaces: FetchWorkspacesResult;
+}) {
 	const { isMobile } = useSidebar();
 	const dict = useOptionalDictionary();
 	const [gravatarUrl, setGravatarUrl] = useState<string | null>(null);
@@ -92,15 +107,20 @@ export function NavUser({ workspacePublicId, user, userWorkspaces }: { workspace
 									return (
 										<li
 											key={userWorkspace.workspaces.id}
-											onClick={() => switchWorkSpace(userWorkspace.workspaces.publicId, userWorkspace.workspaces.id)}
+											onClick={() =>
+												switchWorkSpace(
+													userWorkspace.workspaces.publicId,
+													userWorkspace.workspaces.id,
+												)
+											}
 											className={`
           cursor-pointer rounded-md px-3 py-2 text-sm
           transition-colors
           ${
-												isSelected
-													? "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
-													: "text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
-											}
+						isSelected
+							? "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+							: "text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
+					}
           focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
         `}
 										>
@@ -111,7 +131,6 @@ export function NavUser({ workspacePublicId, user, userWorkspaces }: { workspace
 									);
 								})}
 							</ul>
-
 						</DropdownMenuLabel>
 						<DropdownMenuSeparator />
 						<LanguageSwitcherSubmenu />

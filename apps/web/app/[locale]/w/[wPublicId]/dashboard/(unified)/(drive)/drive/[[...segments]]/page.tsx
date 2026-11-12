@@ -13,8 +13,8 @@ import {
 import { getDictionary, type Locale } from "@/lib/dictionaries";
 
 export default async function Page({
-									   params,
-								   }: {
+	params,
+}: {
 	params: Promise<{ locale: Locale; segments?: string[] }>;
 }) {
 	const { locale, segments } = await params;

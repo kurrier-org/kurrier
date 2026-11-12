@@ -42,7 +42,6 @@ export default function HomePage() {
 				</div>
 			</div>
 
-
 			<div className="my-12 flex flex-col items-center gap-6 px-4 text-center">
 				<Button asChild size="lg">
 					<Link href="/docs">Read the docs</Link>
@@ -50,13 +49,6 @@ export default function HomePage() {
 
 				<div className="text-sm text-neutral-600">
 					<span>Prefer a hosted version?</span>
-					<span className="mx-2">·</span>
-					<Link
-						href="https://www.kurrier.io"
-						className="font-medium text-foreground underline underline-offset-4"
-					>
-						Kurrier.io
-					</Link>
 					<span className="mx-2">·</span>
 					<Link
 						href="https://www.kurriermail.com"
@@ -78,8 +70,6 @@ export default function HomePage() {
 			{/*		<Link href={"/docs"}>Read the docs</Link>*/}
 			{/*	</Button>*/}
 			{/*</div>*/}
-
-
 
 			{/*<div className={"flex justify-center -mt-10"}>*/}
 			{/*	<Button*/}

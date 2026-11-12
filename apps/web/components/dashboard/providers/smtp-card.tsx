@@ -12,8 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { FetchDecryptedSecretsResult } from "@/lib/actions/dashboard";
 
 export default function SMTPCard({
-									 smtpSecrets,
-								 }: {
+	smtpSecrets,
+}: {
 	smtpSecrets: FetchDecryptedSecretsResult;
 }) {
 	const dict = useOptionalDictionary();
@@ -75,8 +75,7 @@ export default function SMTPCard({
 						<div className="flex flex-col items-center gap-4 rounded-lg border border-dashed bg-muted/20 px-4 py-6 text-center">
 							<div>
 								<div className="text-sm font-medium text-foreground">
-									{dict?.platform?.noSmtpAccountsYet ??
-										"No SMTP accounts yet"}
+									{dict?.platform?.noSmtpAccountsYet ?? "No SMTP accounts yet"}
 								</div>
 
 								<div className="mt-1 text-xs leading-5 text-muted-foreground">

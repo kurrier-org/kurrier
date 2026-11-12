@@ -30,10 +30,7 @@ type DriveEntryProps = {
 	view?: "grid" | "list";
 };
 
-export default function DriveEntry({
-									   entry,
-									   view = "grid",
-								   }: DriveEntryProps) {
+export default function DriveEntry({ entry, view = "grid" }: DriveEntryProps) {
 	return <DriveTile entry={entry} view={view} />;
 }
 
@@ -218,10 +215,7 @@ function DriveTile({ entry, view = "grid" }: DriveEntryProps) {
 								)}
 
 								{lastModified && (
-									<span
-										className="truncate"
-										suppressHydrationWarning
-									>
+									<span className="truncate" suppressHydrationWarning>
 										{formatLastModified(lastModified, locale)}
 									</span>
 								)}

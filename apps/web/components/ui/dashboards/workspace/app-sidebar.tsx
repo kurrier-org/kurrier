@@ -21,7 +21,7 @@ import { Switch } from "@mantine/core";
 import { IconMoonStars, IconSun } from "@tabler/icons-react";
 import { useAppearance } from "@/components/providers/appearance-provider";
 import ThemeColorPicker from "@/components/common/theme-color-picker";
-import {FetchIsSignedInResult} from "@/lib/actions/auth";
+import { FetchIsSignedInResult } from "@/lib/actions/auth";
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
 	publicConfig: PublicConfig;
@@ -106,9 +106,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
 					<ThemeColorPicker />
 				</div>
 			</SidebarContent>
-			<SidebarFooter>
-				{/*<NavUser user={user} />*/}
-			</SidebarFooter>
+			<SidebarFooter>{/*<NavUser user={user} />*/}</SidebarFooter>
 		</Sidebar>
 	);
 }

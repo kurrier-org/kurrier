@@ -106,12 +106,14 @@ function ExternalEventView() {
 
 	const dateLabel =
 		start && end
-			? `${format?.date(start.toDate(), {
+			? `${
+					format?.date(start.toDate(), {
 						weekday: "short",
 						day: "numeric",
 						month: "short",
 						timeZone: state.defaultCalendar.timezone,
-					}) ?? ""} · ${format?.time(start.toDate(), { timeZone: state.defaultCalendar.timezone }) ?? ""} – ${format?.time(end.toDate(), { timeZone: state.defaultCalendar.timezone }) ?? ""} (${start.format("z")})`
+					}) ?? ""
+				} · ${format?.time(start.toDate(), { timeZone: state.defaultCalendar.timezone }) ?? ""} – ${format?.time(end.toDate(), { timeZone: state.defaultCalendar.timezone }) ?? ""} (${start.format("z")})`
 			: "";
 
 	const organizerLabel =

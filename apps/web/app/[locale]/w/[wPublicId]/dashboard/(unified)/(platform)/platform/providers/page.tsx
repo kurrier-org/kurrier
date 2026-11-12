@@ -17,7 +17,8 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
 	fetchCustomEmailProviders,
 	fetchDecryptedSecrets,
-	fetchGoogleAccounts, fetchMicrosoftAccounts,
+	fetchGoogleAccounts,
+	fetchMicrosoftAccounts,
 	fetchProviderIdentities,
 	hasGoogleOAuthConfig,
 	syncProviders,
@@ -26,8 +27,8 @@ import { fetchJmapAccounts } from "@/lib/actions/jmap-actions";
 import { getDictionary } from "@/lib/dictionaries";
 
 export default async function ProvidersPage({
-												params,
-											}: {
+	params,
+}: {
 	params: Promise<{ locale: string }>;
 }) {
 	const { locale } = await params;
@@ -124,8 +125,8 @@ export default async function ProvidersPage({
 										</p>
 
 										<p className="mt-1 text-xs text-muted-foreground">
-											Add a provider to make its server settings available to this
-											workspace.
+											Add a provider to make its server settings available to
+											this workspace.
 										</p>
 									</div>
 								</div>

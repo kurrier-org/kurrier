@@ -1,4 +1,4 @@
-import { db, mailboxes, MessageEntity, webhooks } from "@db";
+import { db, type MessageEntity, mailboxes, webhooks } from "@db";
 import { and, eq, isNull, or, sql } from "drizzle-orm";
 
 export const processWebhook = async ({
@@ -20,6 +20,8 @@ export const processWebhook = async ({
 		.from(webhooks)
 		.where(
 			and(
+				eq(webhooks.workspaceId, mailbox.workspaceId),
+				eq(webhooks.ownerId, mailbox.ownerId),
 				or(
 					eq(webhooks.identityId, mailbox.identityId),
 					isNull(webhooks.identityId),

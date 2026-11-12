@@ -80,7 +80,9 @@ function rowToDoc(row: JoinedRow) {
 	});
 }
 
-async function fetchJoinedByMessageId(messageId: string): Promise<JoinedRow | null> {
+async function fetchJoinedByMessageId(
+	messageId: string,
+): Promise<JoinedRow | null> {
 	const rows = await db
 		.select({
 			m: messages,
@@ -161,7 +163,10 @@ export async function indexManyMessages(messageIds: string[]) {
 	if (!docs.length) return;
 
 	await ensureCollection();
-	await client.collections("messages").documents().import(docs, { action: "upsert" });
+	await client
+		.collections("messages")
+		.documents()
+		.import(docs, { action: "upsert" });
 }
 
 export async function deleteMessage(messageId: string) {
@@ -207,5 +212,8 @@ export async function refreshThread(threadId: string) {
 	const docs = rows.map(rowToDoc);
 
 	await ensureCollection();
-	await client.collections("messages").documents().import(docs, { action: "upsert" });
+	await client
+		.collections("messages")
+		.documents()
+		.import(docs, { action: "upsert" });
 }

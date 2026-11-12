@@ -12,7 +12,10 @@ import {
 	TextEditorHandle,
 } from "@/components/mailbox/default/editor/rich-text-editor";
 import Form from "next/form";
-import {FetchIdentityMailboxListResult, sendMail} from "@/lib/actions/mailbox";
+import {
+	FetchIdentityMailboxListResult,
+	sendMail,
+} from "@/lib/actions/mailbox";
 import type { FormState, PublicConfig } from "@schema";
 import { DynamicContextProvider } from "@/hooks/use-dynamic-context";
 import { toast } from "sonner";
@@ -42,7 +45,7 @@ const EmailEditor = forwardRef<EmailEditorHandle, Props>(
 			showEditorMode,
 			sentMailboxId,
 			handleClose,
-			identityMailboxes
+			identityMailboxes,
 		},
 		ref,
 	) => {
@@ -81,12 +84,17 @@ const EmailEditor = forwardRef<EmailEditorHandle, Props>(
 			}
 		}, [formState]);
 
-
 		return (
 			<>
 				<div className={"mt-4"} tabIndex={-1}>
 					<DynamicContextProvider
-						initialState={{ isPending, message, publicConfig, showEditorMode, identityMailboxes}}
+						initialState={{
+							isPending,
+							message,
+							publicConfig,
+							showEditorMode,
+							identityMailboxes,
+						}}
 						syncOnChange
 					>
 						<Form action={formAction}>

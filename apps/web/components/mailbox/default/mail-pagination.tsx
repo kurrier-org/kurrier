@@ -1,8 +1,8 @@
 "use client";
-import React, {use, useEffect, useState} from "react";
+import React, { use, useEffect, useState } from "react";
 import { Pagination } from "@mantine/core";
 import { useParams, usePathname, useRouter } from "next/navigation";
-import {FetchMailboxResult} from "@/lib/actions/mailbox";
+import { FetchMailboxResult } from "@/lib/actions/mailbox";
 
 function MailPagination({
 	// count,
@@ -10,7 +10,7 @@ function MailPagination({
 	workspacePublicId,
 	identityPublicId,
 	fetchMailboxPromise,
-	page
+	page,
 }: {
 	// count: number;
 	// mailboxSlug: string | null;
@@ -19,7 +19,7 @@ function MailPagination({
 	fetchMailboxPromise: Promise<FetchMailboxResult>;
 	page?: number;
 }) {
-	const {count, activeMailbox} = use(fetchMailboxPromise)
+	const { count, activeMailbox } = use(fetchMailboxPromise);
 	const mailboxSlug = activeMailbox?.slug || null;
 	const [activePage, setPage] = useState(page || 1);
 	const router = useRouter();

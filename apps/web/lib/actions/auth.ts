@@ -3,7 +3,12 @@
 import * as crypto from "node:crypto";
 import { APP_VERSION } from "@common";
 import { db, identities, users, workspaceMembers, workspaces } from "@db";
-import {type FormState, getPublicEnv, getServerEnv, handleAction} from "@schema";
+import {
+	type FormState,
+	getPublicEnv,
+	getServerEnv,
+	handleAction,
+} from "@schema";
 import argon2 from "argon2";
 import { Queue, QueueEvents } from "bullmq";
 import { decode } from "decode-formdata";
@@ -223,9 +228,7 @@ export async function signup(
 		await signInUserAndRedirect(user, locale);
 
 		return { success: true, message: "auth.welcome" };
-
-	})
-
+	});
 }
 
 export type TokenClaims = JWTPayload & {

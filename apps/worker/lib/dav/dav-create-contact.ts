@@ -49,7 +49,6 @@ export async function createContactViaHttp(opts: {
 	return { etag };
 }
 
-
 export const createContact = async (contactId: string, ownerId: string) => {
 	const [contact] = await db
 		.select()
@@ -61,7 +60,7 @@ export const createContact = async (contactId: string, ownerId: string) => {
 	const [book] = await db
 		.select()
 		.from(addressBooks)
-		.where(eq(addressBooks.ownerId, ownerId),);
+		.where(eq(addressBooks.ownerId, ownerId));
 
 	if (!book) return;
 

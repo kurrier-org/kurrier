@@ -2,7 +2,7 @@ import React from "react";
 import NewContactForm from "@/components/dashboard/contacts/new-contact-form";
 import { decode } from "decode-formdata";
 import { FormState, getPublicEnv, handleAction } from "@schema";
-import {getWorkspacePublicId, rlsClient} from "@/lib/actions/clients";
+import { getWorkspacePublicId, rlsClient } from "@/lib/actions/clients";
 import {
 	addressBooks,
 	ContactCreate,
@@ -11,12 +11,12 @@ import {
 } from "@db";
 import { isSignedIn } from "@/lib/actions/auth";
 import { revalidatePath } from "next/cache";
-import {getRedis} from "@/lib/actions/get-redis";
+import { getRedis } from "@/lib/actions/get-redis";
 
 async function Page() {
 	const user = await isSignedIn();
 	const publicConfig = getPublicEnv();
-	const workspacePublicId = await getWorkspacePublicId()
+	const workspacePublicId = await getWorkspacePublicId();
 	const createContactAction = async (_prev: FormState, formData: FormData) => {
 		"use server";
 		return handleAction(async () => {

@@ -6,7 +6,10 @@ import "dayjs/locale/pl";
 import "dayjs/locale/pt-br";
 import "dayjs/locale/ru";
 import type { Dictionary } from "@/lib/dictionaries";
-import { createLocaleFormatter, type LocaleFormatter } from "@/lib/locale-format";
+import {
+	createLocaleFormatter,
+	type LocaleFormatter,
+} from "@/lib/locale-format";
 import { DAYJS_LOCALES } from "@/lib/locale";
 
 type I18n = {
@@ -28,9 +31,7 @@ export function DictionaryProvider({
 	}, [dict.locale]);
 
 	return (
-		<Ctx.Provider
-			value={{ dict, format: createLocaleFormatter(dict.locale) }}
-		>
+		<Ctx.Provider value={{ dict, format: createLocaleFormatter(dict.locale) }}>
 			{children}
 		</Ctx.Provider>
 	);
@@ -56,8 +57,7 @@ export function useOptionalDictionary() {
 /** Returns the dictionary and locale formatter for client components. */
 export function useI18n() {
 	const ctx = useContext(Ctx);
-	if (!ctx)
-		throw new Error("useI18n must be used within <DictionaryProvider>");
+	if (!ctx) throw new Error("useI18n must be used within <DictionaryProvider>");
 	return ctx;
 }
 

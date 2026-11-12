@@ -11,7 +11,6 @@ import { CalendarClock, Clock4, X } from "lucide-react";
 import { snoozeThread } from "@/lib/actions/mailbox";
 import { useOptionalI18n } from "@/components/providers/dictionary-provider";
 
-
 type Props = {
 	mailboxThreadId: string;
 	activeMailboxId: string;
@@ -168,7 +167,12 @@ export default function SnoozeMail({
 						onClick={() => commit(preset.date.toDate())}
 					>
 						<span className="my-1">{preset.label}</span>
-						<span>{format?.date(preset.date.toDate(), { dateStyle: "medium", timeStyle: "short" }) ?? ""}</span>
+						<span>
+							{format?.date(preset.date.toDate(), {
+								dateStyle: "medium",
+								timeStyle: "short",
+							}) ?? ""}
+						</span>
 					</button>
 				))}
 

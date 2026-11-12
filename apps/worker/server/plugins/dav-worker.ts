@@ -1,4 +1,4 @@
-import {JobScheduler, Worker} from "bullmq";
+import { JobScheduler, Worker } from "bullmq";
 import { defineNitroPlugin } from "nitropack/runtime";
 import { redisConnection } from "../../lib/get-redis";
 import { createCalendarEvent } from "../../lib/dav/calendar/dav-create-calendar-event";
@@ -8,16 +8,16 @@ import { davItipProcessor } from "../../lib/dav/calendar/dav-itip-processor";
 import { davItipNotify } from "../../lib/dav/calendar/dav-itip-notify";
 import { davItipReply } from "../../lib/dav/calendar/dav-itip-reply";
 import { davCreateCalendarForIdentity } from "../../lib/dav/calendar/dav-create-addressbook-calendar-for-identity";
-import {davIdentityCleanup} from "../../lib/dav/dav-share-identity";
-import {createContact} from "../../lib/dav/dav-create-contact";
-import {updatePassword} from "../../lib/dav/dav-update-password";
-import {davSyncDb} from "../../lib/dav/sync/dav-sync-db";
-import {pushUpdateContact} from "../../lib/dav/dav-update-contact";
-import {deleteContact} from "../../lib/dav/dav-delete-contact";
-import {davSyncCalendarsDb} from "../../lib/dav/calendar/dav-sync-calendar-db";
+import { davIdentityCleanup } from "../../lib/dav/dav-share-identity";
+import { createContact } from "../../lib/dav/dav-create-contact";
+import { updatePassword } from "../../lib/dav/dav-update-password";
+import { davSyncDb } from "../../lib/dav/sync/dav-sync-db";
+import { pushUpdateContact } from "../../lib/dav/dav-update-contact";
+import { deleteContact } from "../../lib/dav/dav-delete-contact";
+import { davSyncCalendarsDb } from "../../lib/dav/calendar/dav-sync-calendar-db";
 
 export default defineNitroPlugin(async (nitroApp) => {
-	const connection = redisConnection.connection
+	const connection = redisConnection.connection;
 
 	const worker = new Worker(
 		"dav-worker",
@@ -67,7 +67,6 @@ export default defineNitroPlugin(async (nitroApp) => {
 				case "dav:update-password":
 					return updatePassword(job.data.userId, job.data.workspaceId);
 
-
 				case "dav:sync":
 					console.log("[DAV WORKER] Starting DAV sync job:", job.id);
 					await davSyncDb();
@@ -116,7 +115,6 @@ export default defineNitroPlugin(async (nitroApp) => {
 		{ connection, concurrency: 1 },
 	);
 
-
 	const scheduler = new JobScheduler("dav-worker", { connection });
 	await scheduler.upsertJobScheduler(
 		"dav-sync-scheduler",
@@ -138,14 +136,11 @@ export default defineNitroPlugin(async (nitroApp) => {
 		console.error(`DAV job ${job?.id} (${job?.name}) failed: ${err.message}`);
 	});
 
-
 	nitroApp.hooks.hookOnce("close", async () => {
 		console.info("Closing nitro server...");
 		console.info("Shutting down dav worker!");
 		try {
-			await Promise.allSettled([
-				worker?.close(),
-			]);
+			await Promise.allSettled([worker?.close()]);
 		} catch (err: any) {
 			console.error("Error closing BullMQ resources:", err?.message ?? err);
 		}

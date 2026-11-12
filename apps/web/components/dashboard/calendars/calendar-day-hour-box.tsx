@@ -4,7 +4,7 @@ import { Dayjs } from "dayjs";
 import CalendarBoxIndicatorLayer from "@/components/dashboard/calendars/calendar-box-indicator-layer";
 import CalendarAddEventPopover from "@/components/dashboard/calendars/calendar-add-event-popover";
 import { useDynamicContext } from "@/hooks/use-dynamic-context";
-import type {CalendarState} from "@schema";
+import type { CalendarState } from "@schema";
 
 export default function CalendarDayHourBox({
 	day,

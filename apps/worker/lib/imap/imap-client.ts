@@ -12,10 +12,12 @@ import { getMicrosoftAccessToken } from "@providers";
 
 const MAX_AUTH_FAILURES = 3;
 const MAX_CONNECTION_FAILURES = 5;
+const CONNECTION_COOLDOWN_MS = 60_000;
 
 type ConnectionFailure = {
 	count: number;
 	authentication: boolean;
+	retryAfter?: number;
 };
 
 const connectionFailures = new Map<string, ConnectionFailure>();
@@ -28,14 +30,16 @@ const pendingConnections = new WeakMap<
 export const canAttemptImapConnection = (identityId: string): boolean => {
 	const failure = connectionFailures.get(identityId);
 
-	if (!failure) {
+	if (!failure) return true;
+
+	if (failure.retryAfter) {
+		if (Date.now() < failure.retryAfter) return false;
+
+		connectionFailures.delete(identityId);
 		return true;
 	}
 
-	return failure.count <
-		(failure.authentication
-			? MAX_AUTH_FAILURES
-			: MAX_CONNECTION_FAILURES);
+	return true;
 };
 
 export const resetImapConnectionFailures = (identityId: string): void => {
@@ -47,24 +51,28 @@ const recordImapConnectionFailure = (
 	err: unknown,
 ): void => {
 	const authentication =
-		(err as { authenticationFailed?: boolean } | null)
-			?.authenticationFailed === true;
+		(err as { authenticationFailed?: boolean } | null)?.authenticationFailed ===
+		true;
 
 	const previous = connectionFailures.get(identityId);
 
 	const count =
-		previous?.authentication === authentication
-			? previous.count + 1
-			: 1;
+		previous?.authentication === authentication ? previous.count + 1 : 1;
+
+	const limit = authentication ? MAX_AUTH_FAILURES : MAX_CONNECTION_FAILURES;
+
+	const retryAfter =
+		count >= limit ? Date.now() + CONNECTION_COOLDOWN_MS : undefined;
 
 	connectionFailures.set(identityId, {
 		count,
 		authentication,
+		retryAfter,
 	});
 
-	if (!canAttemptImapConnection(identityId)) {
+	if (retryAfter) {
 		console.warn(
-			`[IMAP:${identityId}] retry limit reached (${authentication ? "authentication" : "connection"}, ${count} failures)`,
+			`[IMAP:${identityId}] ${authentication ? "authentication" : "connection"} failures reached ${count}; retrying after cooldown`,
 		);
 	}
 };
@@ -111,11 +119,7 @@ const createImapClient = async (
 		.where(eq(microsoftAccounts.identityId, identityId))
 		.limit(1);
 
-	if (
-		!hostedCredentials &&
-		!identity.smtpAccountId &&
-		!microsoftAccount
-	) {
+	if (!hostedCredentials && !identity.smtpAccountId && !microsoftAccount) {
 		return;
 	}
 
@@ -137,9 +141,7 @@ const createImapClient = async (
 	}
 
 	if (!credentials && microsoftAccount) {
-		const accessToken = await getMicrosoftAccessToken(
-			microsoftAccount.id,
-		);
+		const accessToken = await getMicrosoftAccessToken(microsoftAccount.id);
 
 		credentials = {
 			IMAP_HOST: "outlook.office365.com",
@@ -159,21 +161,20 @@ const createImapClient = async (
 		port: Number(credentials.IMAP_PORT),
 		disableCompression: true,
 		secure:
-			credentials.IMAP_SECURE === "true" ||
-			credentials.IMAP_SECURE === true,
+			credentials.IMAP_SECURE === "true" || credentials.IMAP_SECURE === true,
 		tls:
 			hostedCredentials && process.env.NODE_ENV === "production"
 				? { servername: "mx.kurriermail.com" }
 				: undefined,
 		auth: credentials.IMAP_ACCESS_TOKEN
 			? {
-				user: credentials.IMAP_USERNAME,
-				accessToken: credentials.IMAP_ACCESS_TOKEN,
-			}
+					user: credentials.IMAP_USERNAME,
+					accessToken: credentials.IMAP_ACCESS_TOKEN,
+				}
 			: {
-				user: credentials.IMAP_USERNAME,
-				pass: credentials.IMAP_PASSWORD,
-			},
+					user: credentials.IMAP_USERNAME,
+					pass: credentials.IMAP_PASSWORD,
+				},
 		socketTimeout: 10 * 60_000,
 		logger: {
 			error() {},

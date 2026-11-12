@@ -4,6 +4,6 @@ export { DISTRIBUTION_LAYOUTS } from "./layouts";
 export { DISTRIBUTION_SCHEMAS } from "./schemas";
 export { DISTRIBUTION_ACCESS } from "./register/access";
 export type {
-    DistributionAccess,
-    WorkspaceAccess,
+	DistributionAccess,
+	WorkspaceAccess,
 } from "./access";

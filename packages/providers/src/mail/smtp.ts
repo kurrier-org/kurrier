@@ -24,14 +24,14 @@ export class SmtpMailer implements Mailer {
 
 		this.imapClient = cfg.imap
 			? new ImapFlow({
-				host: cfg.imap.host,
-				port: cfg.imap.port,
-				secure: cfg.imap.secure,
-				auth: {
-					user: cfg.imap.user,
-					pass: cfg.imap.pass,
-				},
-			})
+					host: cfg.imap.host,
+					port: cfg.imap.port,
+					secure: cfg.imap.secure,
+					auth: {
+						user: cfg.imap.user,
+						pass: cfg.imap.pass,
+					},
+				})
 			: null;
 	}
 
@@ -106,8 +106,7 @@ export class SmtpMailer implements Mailer {
 				to,
 				subject: opts?.subject ?? "Test email",
 				text:
-					opts?.body ??
-					"This is a test email from your configured provider.",
+					opts?.body ?? "This is a test email from your configured provider.",
 			});
 
 			return true;
@@ -186,12 +185,8 @@ export class SmtpMailer implements Mailer {
 			const attachments = await Promise.all(
 				(opts.attachments ?? []).map(async (attachment) => ({
 					filename: attachment.name,
-					content: Buffer.from(
-						await attachment.content.arrayBuffer(),
-					),
-					contentType:
-						attachment.contentType ||
-						"application/octet-stream",
+					content: Buffer.from(await attachment.content.arrayBuffer()),
+					contentType: attachment.contentType || "application/octet-stream",
 				})),
 			);
 
@@ -202,8 +197,7 @@ export class SmtpMailer implements Mailer {
 			}
 
 			if (opts.references?.length) {
-				headers["References"] =
-					opts.references.join(" ");
+				headers["References"] = opts.references.join(" ");
 			}
 
 			const info = await this.transporter.sendMail({

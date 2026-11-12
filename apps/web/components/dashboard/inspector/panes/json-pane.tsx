@@ -5,179 +5,172 @@ import { Check, Clipboard, Braces } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
-import {
-    InspectorPlaceholder,
-} from "@/components/dashboard/inspector/inspector-bar";
+import { InspectorPlaceholder } from "@/components/dashboard/inspector/inspector-bar";
 import type { MessageEntity } from "@db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 type JsonPaneProps = {
-    message?: MessageEntity;
+	message?: MessageEntity;
 };
 
 function createNormalizedMessageJson(message: MessageEntity) {
-    return {
-        id: message.id,
-        publicId: message.publicId,
-        messageId: message.messageId,
-        threadId: message.threadId,
-        workspaceId: message.workspaceId,
-        mailboxId: message.mailboxId,
-        ownerId: message.ownerId,
+	return {
+		id: message.id,
+		publicId: message.publicId,
+		messageId: message.messageId,
+		threadId: message.threadId,
+		workspaceId: message.workspaceId,
+		mailboxId: message.mailboxId,
+		ownerId: message.ownerId,
 
-        from: message.from,
-        to: message.to,
-        cc: message.cc,
-        bcc: message.bcc,
-        replyTo: message.replyTo,
-        deliveredTo: message.deliveredTo,
+		from: message.from,
+		to: message.to,
+		cc: message.cc,
+		bcc: message.bcc,
+		replyTo: message.replyTo,
+		deliveredTo: message.deliveredTo,
 
-        subject: message.subject,
-        snippet: message.snippet,
-        text: message.text,
-        html: message.html,
-        textAsHtml: message.textAsHtml,
+		subject: message.subject,
+		snippet: message.snippet,
+		text: message.text,
+		html: message.html,
+		textAsHtml: message.textAsHtml,
 
-        date: message.date,
-        createdAt: message.createdAt,
-        updatedAt: message.updatedAt,
+		date: message.date,
+		createdAt: message.createdAt,
+		updatedAt: message.updatedAt,
 
-        inReplyTo: message.inReplyTo,
-        references: message.references,
+		inReplyTo: message.inReplyTo,
+		references: message.references,
 
-        priority: message.priority,
-        state: message.state,
+		priority: message.priority,
+		state: message.state,
 
-        seen: message.seen,
-        answered: message.answered,
-        flagged: message.flagged,
-        draft: message.draft,
-        hasAttachments: message.hasAttachments,
+		seen: message.seen,
+		answered: message.answered,
+		flagged: message.flagged,
+		draft: message.draft,
+		hasAttachments: message.hasAttachments,
 
-        sizeBytes: message.sizeBytes,
-        rawStorageKey: message.rawStorageKey,
+		sizeBytes: message.sizeBytes,
+		rawStorageKey: message.rawStorageKey,
 
-        headers: message.headersJson,
-        metaData: message.metaData,
-    };
+		headers: message.headersJson,
+		metaData: message.metaData,
+	};
 }
 
-export default function JsonPane({
-                                     message,
-                                 }: JsonPaneProps) {
-    const dict = useOptionalDictionary();
-    const [copied, setCopied] = useState(false);
+export default function JsonPane({ message }: JsonPaneProps) {
+	const dict = useOptionalDictionary();
+	const [copied, setCopied] = useState(false);
 
-    const json = useMemo(() => {
-        if (!message) return "";
+	const json = useMemo(() => {
+		if (!message) return "";
 
-        return JSON.stringify(
-            createNormalizedMessageJson(message),
-            null,
-            2,
-        );
-    }, [message]);
+		return JSON.stringify(createNormalizedMessageJson(message), null, 2);
+	}, [message]);
 
-    const copyJson = async () => {
-        if (!json) return;
+	const copyJson = async () => {
+		if (!json) return;
 
-        await navigator.clipboard.writeText(json);
+		await navigator.clipboard.writeText(json);
 
-        setCopied(true);
+		setCopied(true);
 
-        window.setTimeout(() => {
-            setCopied(false);
-        }, 1_500);
-    };
+		window.setTimeout(() => {
+			setCopied(false);
+		}, 1_500);
+	};
 
-    if (!message) {
-        return (
-            <InspectorPlaceholder
-                title={dict?.mailbox?.tabJson ?? "JSON"}
-                description={dict?.mailbox?.jsonPlaceholder ?? "The normalized Kurrier message object will be shown here."}
-            >
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                    {dict?.mailbox?.noMessageSelected ?? "No message selected."}
-                </div>
-            </InspectorPlaceholder>
-        );
-    }
+	if (!message) {
+		return (
+			<InspectorPlaceholder
+				title={dict?.mailbox?.tabJson ?? "JSON"}
+				description={
+					dict?.mailbox?.jsonPlaceholder ??
+					"The normalized Kurrier message object will be shown here."
+				}
+			>
+				<div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+					{dict?.mailbox?.noMessageSelected ?? "No message selected."}
+				</div>
+			</InspectorPlaceholder>
+		);
+	}
 
-    return (
-        <InspectorPlaceholder
-            title={dict?.mailbox?.tabJson ?? "JSON"}
-            description={dict?.mailbox?.jsonDescription ?? "The normalized Kurrier message object."}
-        >
-            <div className="flex h-full min-h-0 w-full flex-col gap-4 overflow-hidden p-4">
-                <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Badge
-                            variant="secondary"
-                            className="gap-1.5"
-                        >
-                            <Braces className="size-3" />
-                            {dict?.mailbox?.normalizedMessage ?? "Normalized message"}
-                        </Badge>
+	return (
+		<InspectorPlaceholder
+			title={dict?.mailbox?.tabJson ?? "JSON"}
+			description={
+				dict?.mailbox?.jsonDescription ??
+				"The normalized Kurrier message object."
+			}
+		>
+			<div className="flex h-full min-h-0 w-full flex-col gap-4 overflow-hidden p-4">
+				<div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
+					<div className="flex flex-wrap items-center gap-2">
+						<Badge variant="secondary" className="gap-1.5">
+							<Braces className="size-3" />
+							{dict?.mailbox?.normalizedMessage ?? "Normalized message"}
+						</Badge>
 
-                        <span className="text-xs text-muted-foreground">
-							{dict?.mailbox?.parsedDatabaseRepresentation ?? "Parsed database representation"}
+						<span className="text-xs text-muted-foreground">
+							{dict?.mailbox?.parsedDatabaseRepresentation ??
+								"Parsed database representation"}
 						</span>
-                    </div>
+					</div>
 
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={copyJson}
-                    >
-                        {copied ? (
-                            <Check className="mr-2 size-4" />
-                        ) : (
-                            <Clipboard className="mr-2 size-4" />
-                        )}
+					<Button type="button" variant="outline" size="sm" onClick={copyJson}>
+						{copied ? (
+							<Check className="mr-2 size-4" />
+						) : (
+							<Clipboard className="mr-2 size-4" />
+						)}
 
-                        {copied ? (dict?.mailbox?.copied ?? "Copied") : (dict?.mailbox?.copyJson ?? "Copy JSON")}
-                    </Button>
-                </div>
+						{copied
+							? (dict?.mailbox?.copied ?? "Copied")
+							: (dict?.mailbox?.copyJson ?? "Copy JSON")}
+					</Button>
+				</div>
 
-                <div className="min-h-0 flex-1 overflow-hidden rounded-xl border bg-[#171717]">
-                    <div className="h-full overflow-auto">
-                        <SyntaxHighlighter
-                            language="json"
-                            style={oneDark}
-                            showLineNumbers
-                            wrapLongLines
-                            customStyle={{
-                                margin: 0,
-                                minHeight: "100%",
-                                background: "transparent",
-                                padding: "1rem",
-                                fontSize: "13px",
-                                lineHeight: "1.55",
-                            }}
-                            lineNumberStyle={{
-                                minWidth: "2.5rem",
-                                paddingRight: "1rem",
-                                color: "#71717a",
-                                userSelect: "none",
-                            }}
-                            codeTagProps={{
-                                style: {
-                                    fontFamily:
-                                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                                    whiteSpace: "pre-wrap",
-                                    overflowWrap: "anywhere",
-                                    wordBreak: "break-word",
-                                },
-                            }}
-                        >
-                            {json}
-                        </SyntaxHighlighter>
-                    </div>
-                </div>
-            </div>
-        </InspectorPlaceholder>
-    );
+				<div className="min-h-0 flex-1 overflow-hidden rounded-xl border bg-[#171717]">
+					<div className="h-full overflow-auto">
+						<SyntaxHighlighter
+							language="json"
+							style={oneDark}
+							showLineNumbers
+							wrapLongLines
+							customStyle={{
+								margin: 0,
+								minHeight: "100%",
+								background: "transparent",
+								padding: "1rem",
+								fontSize: "13px",
+								lineHeight: "1.55",
+							}}
+							lineNumberStyle={{
+								minWidth: "2.5rem",
+								paddingRight: "1rem",
+								color: "#71717a",
+								userSelect: "none",
+							}}
+							codeTagProps={{
+								style: {
+									fontFamily:
+										"ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+									whiteSpace: "pre-wrap",
+									overflowWrap: "anywhere",
+									wordBreak: "break-word",
+								},
+							}}
+						>
+							{json}
+						</SyntaxHighlighter>
+					</div>
+				</div>
+			</div>
+		</InspectorPlaceholder>
+	);
 }

@@ -2,24 +2,27 @@
 
 import { isSignedIn } from "@/lib/actions/auth";
 import {
-	driveEntries, driveUploadIntents, DriveVolumeEntity,
-	driveVolumes
+	driveEntries,
+	driveUploadIntents,
+	DriveVolumeEntity,
+	driveVolumes,
 } from "@db";
 import { rlsClient } from "@/lib/actions/clients";
 import { DriveRouteContext, FormState, handleAction } from "@schema";
 import { decode } from "decode-formdata";
 import { revalidatePath } from "next/cache";
-import {and, eq, sql} from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import {
 	DeleteObjectCommand,
 	DeleteObjectsCommand,
-	GetObjectCommand, HeadObjectCommand,
+	GetObjectCommand,
+	HeadObjectCommand,
 	ListObjectsV2Command,
-	PutObjectCommand
+	PutObjectCommand,
 } from "@aws-sdk/client-s3";
-import {s3} from "@/lib/create-s3-client";
-import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
+import { s3 } from "@/lib/create-s3-client";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { DISTRIBUTION_CONFIG } from "@distribution/config";
 import { createHash, randomBytes } from "node:crypto";
 import { driveShareLinks } from "@db";
@@ -100,7 +103,6 @@ const joinUiFolderPath = (withinPath: string, name: string) => {
 	const out = `${base}${leaf}`;
 	return ensureTrailingSlash(out.startsWith("/") ? out : `/${out}`);
 };
-
 
 export async function addNewFolder(
 	_prev: FormState,
@@ -234,8 +236,6 @@ export async function addNewFolder(
 	});
 }
 
-
-
 function getVolumePrefix(volume: DriveVolumeEntity) {
 	return `drive/workspaces/${volume.workspaceId}/${volume.code}/`;
 }
@@ -287,9 +287,7 @@ export async function fetchCloudListPath(ctx: DriveRouteContext) {
 			throw new Error("Drive listing ended without a continuation token");
 		}
 
-		continuationToken = res.IsTruncated
-			? res.NextContinuationToken
-			: undefined;
+		continuationToken = res.IsTruncated ? res.NextContinuationToken : undefined;
 	} while (continuationToken);
 
 	const now = new Date();
@@ -318,11 +316,14 @@ export async function fetchCloudListPath(ctx: DriveRouteContext) {
 
 		// ...(res.Contents ?? [])
 		...contents
-			.filter((o) => o.Key && o.Key !== s3Prefix && !String(o.Key).endsWith("/"))
+			.filter(
+				(o) => o.Key && o.Key !== s3Prefix && !String(o.Key).endsWith("/"),
+			)
 			.map((o) => {
 				const key = String(o.Key);
 				const relativeKey = key.replace(volumePrefix, "");
-				const name = relativeKey.split("/").filter(Boolean).pop() || relativeKey;
+				const name =
+					relativeKey.split("/").filter(Boolean).pop() || relativeKey;
 
 				return {
 					ownerId: volume.ownerId,
@@ -387,7 +388,7 @@ export async function getCloudUploadUrl(
 		filename: string;
 		sizeBytes?: number;
 		contentType?: string | null;
-	}
+	},
 ) {
 	assertDriveEnabled();
 
@@ -404,7 +405,7 @@ export async function getCloudUploadUrl(
 			.select()
 			.from(driveVolumes)
 			.where(eq(driveVolumes.publicId, publicId))
-			.limit(1)
+			.limit(1),
 	);
 
 	if (!volume || volume.ownerId !== String(user.id)) {
@@ -436,7 +437,9 @@ export async function getCloudUploadUrl(
 	if (
 		withinSegments.some(
 			(segment) =>
-				segment === "." || segment === ".." || /[\\\u0000-\u001f]/.test(segment)
+				segment === "." ||
+				segment === ".." ||
+				/[\\\u0000-\u001f]/.test(segment),
 		)
 	) {
 		throw new Error("Invalid folder path");
@@ -455,7 +458,7 @@ export async function getCloudUploadUrl(
 			targetPath: fullPath,
 			singleUse: true,
 			expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-		})
+		}),
 	);
 
 	const contentType = input.contentType || "application/octet-stream";
@@ -471,7 +474,7 @@ export async function getCloudUploadUrl(
 				volumeId: String(volume.id),
 			},
 		}),
-		{ expiresIn: 60 * 5 }
+		{ expiresIn: 60 * 5 },
 	);
 
 	return {
@@ -488,8 +491,6 @@ export async function getCloudUploadUrl(
 		},
 	};
 }
-
-
 
 export async function getDriveDownloadUrl(entryId: string) {
 	assertDriveEnabled();
@@ -512,7 +513,6 @@ export async function getDriveDownloadUrl(entryId: string) {
 		}),
 		{ expiresIn: 60 * 5 },
 	);
-
 }
 
 export async function deleteDriveEntry(entryId: string) {
@@ -521,7 +521,11 @@ export async function deleteDriveEntry(entryId: string) {
 		const rls = await rlsClient();
 
 		const [entry] = await rls((tx) =>
-			tx.select().from(driveEntries).where(eq(driveEntries.id, entryId)).limit(1),
+			tx
+				.select()
+				.from(driveEntries)
+				.where(eq(driveEntries.id, entryId))
+				.limit(1),
 		);
 
 		if (!entry) throw new Error("Missing drive entry");
@@ -618,14 +622,13 @@ export async function deleteDriveEntry(entryId: string) {
 	});
 }
 
-
 export async function getDrivePreviewUrl(entryId: string) {
 	assertDriveEnabled();
 
 	const rls = await rlsClient();
 
 	const [entry] = await rls((tx) =>
-		tx.select().from(driveEntries).where(eq(driveEntries.id, entryId)).limit(1)
+		tx.select().from(driveEntries).where(eq(driveEntries.id, entryId)).limit(1),
 	);
 
 	if (!entry || entry.type !== "file") {
@@ -637,7 +640,7 @@ export async function getDrivePreviewUrl(entryId: string) {
 			.select()
 			.from(driveVolumes)
 			.where(eq(driveVolumes.id, entry.volumeId))
-			.limit(1)
+			.limit(1),
 	);
 
 	if (!volume) {
@@ -655,7 +658,7 @@ export async function getDrivePreviewUrl(entryId: string) {
 		new HeadObjectCommand({
 			Bucket: bucket,
 			Key: key,
-		})
+		}),
 	);
 
 	const mimeType = object.ContentType?.split(";")[0]?.trim().toLowerCase();
@@ -681,12 +684,11 @@ export async function getDrivePreviewUrl(entryId: string) {
 			ResponseContentType: mimeType,
 			ResponseContentDisposition: "inline",
 		}),
-		{ expiresIn: 60 * 5 }
+		{ expiresIn: 60 * 5 },
 	);
 
 	return { url, mimeType };
 }
-
 
 const shareDurations = {
 	"1h": 60 * 60 * 1000,
@@ -796,10 +798,7 @@ export async function listDriveShareLinks(entryId: string) {
 	});
 }
 
-export async function revokeDriveShareLink(
-	entryId: string,
-	linkId: string,
-) {
+export async function revokeDriveShareLink(entryId: string, linkId: string) {
 	assertDriveEnabled();
 
 	const rls = await rlsClient();

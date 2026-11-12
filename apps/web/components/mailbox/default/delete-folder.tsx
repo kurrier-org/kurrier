@@ -4,9 +4,9 @@ import { Menu } from "@mantine/core";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function DeleteMailboxFolder({
-								 identityPublicId,
-								 mailboxId,
-							 }: {
+	identityPublicId,
+	mailboxId,
+}: {
 	identityPublicId: string;
 	mailboxId: string;
 }) {
@@ -32,7 +32,9 @@ function DeleteMailboxFolder({
 				closeMenuOnClick={false}
 				className={uiDeleted ? "hidden" : ""}
 			>
-				{loading ? (dict?.mailbox?.deletingEllipsis ?? "Deleting...") : (dict?.mailbox?.delete ?? "Delete")}
+				{loading
+					? (dict?.mailbox?.deletingEllipsis ?? "Deleting...")
+					: (dict?.mailbox?.delete ?? "Delete")}
 			</Menu.Item>
 		</>
 	);

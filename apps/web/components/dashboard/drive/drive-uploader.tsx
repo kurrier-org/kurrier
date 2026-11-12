@@ -36,7 +36,6 @@ type DriveUploaderProps = {
 	uploadStrategy?: UploadStrategy;
 };
 
-
 const dropUploaders = new Set<symbol>();
 
 const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
@@ -49,7 +48,7 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 		const inputRef = useRef<HTMLInputElement | null>(null);
 		const dropIdRef = useRef<symbol>(Symbol("drive-uploader"));
 		const enqueueFilesRef = useRef<(files: File[]) => Promise<void>>(
-			async () => {}
+			async () => {},
 		);
 
 		const [items, setItems] = useState<UploadItem[]>([]);
@@ -87,13 +86,13 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 					inputRef.current?.click();
 				},
 			}),
-			[canUpload]
+			[canUpload],
 		);
 
 		async function startUpload(itemId: string, file: File) {
 			if (!ctx?.driveVolume || ctx.scope !== "cloud") {
 				throw new Error(
-					dict?.drive?.missingCloudVolume ?? "Missing cloud volume"
+					dict?.drive?.missingCloudVolume ?? "Missing cloud volume",
 				);
 			}
 
@@ -121,13 +120,13 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 				prev.map((item) =>
 					item.id === itemId
 						? {
-							...item,
-							xhr,
-							state: "uploading",
-							progress: 0,
-						}
-						: item
-				)
+								...item,
+								xhr,
+								state: "uploading",
+								progress: 0,
+							}
+						: item,
+				),
 			);
 
 			xhr.upload.onprogress = (event) => {
@@ -135,13 +134,13 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 
 				const progress = Math.max(
 					0,
-					Math.min(100, Math.round((event.loaded / event.total) * 100))
+					Math.min(100, Math.round((event.loaded / event.total) * 100)),
 				);
 
 				setItems((prev) =>
 					prev.map((item) =>
-						item.id === itemId ? { ...item, progress } : item
-					)
+						item.id === itemId ? { ...item, progress } : item,
+					),
 				);
 			};
 
@@ -152,24 +151,24 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 							prev.map((item) =>
 								item.id === itemId
 									? {
-										...item,
-										progress: 100,
-										state: "done",
-									}
-									: item
-							)
+											...item,
+											progress: 100,
+											state: "done",
+										}
+									: item,
+							),
 						);
 					} else {
 						setItems((prev) =>
 							prev.map((item) =>
 								item.id === itemId
 									? {
-										...item,
-										state: "error",
-										error: `HTTP ${xhr.status}`,
-									}
-									: item
-							)
+											...item,
+											state: "error",
+											error: `HTTP ${xhr.status}`,
+										}
+									: item,
+							),
 						);
 					}
 				});
@@ -181,12 +180,12 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 						prev.map((item) =>
 							item.id === itemId
 								? {
-									...item,
-									state: "error",
-									error: dict?.drive?.networkError ?? "Network error",
-								}
-								: item
-						)
+										...item,
+										state: "error",
+										error: dict?.drive?.networkError ?? "Network error",
+									}
+								: item,
+						),
 					);
 				});
 			};
@@ -195,8 +194,8 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 				finalizeOnce(() => {
 					setItems((prev) =>
 						prev.map((item) =>
-							item.id === itemId ? { ...item, state: "canceled" } : item
-						)
+							item.id === itemId ? { ...item, state: "canceled" } : item,
+						),
 					);
 				});
 			};
@@ -211,13 +210,13 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 				}
 
 				const hasContentType = Object.keys(headers).some(
-					(key) => key.toLowerCase() === "content-type"
+					(key) => key.toLowerCase() === "content-type",
 				);
 
 				if (!hasContentType) {
 					xhr.setRequestHeader(
 						"Content-Type",
-						file.type || "application/octet-stream"
+						file.type || "application/octet-stream",
 					);
 				}
 
@@ -253,15 +252,15 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 						prev.map((current) =>
 							current.id === item.id
 								? {
-									...current,
-									state: "error",
-									error:
-										error instanceof Error
-											? error.message
-											: dict?.drive?.uploadFailed ?? "Upload failed",
-								}
-								: current
-						)
+										...current,
+										state: "error",
+										error:
+											error instanceof Error
+												? error.message
+												: (dict?.drive?.uploadFailed ?? "Upload failed"),
+									}
+								: current,
+						),
 					);
 				});
 			}
@@ -352,7 +351,7 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 				}
 
 				return prev.map((current) =>
-					current.id === id ? { ...current, state: "canceled" } : current
+					current.id === id ? { ...current, state: "canceled" } : current,
 				);
 			});
 		}
@@ -361,7 +360,7 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 			(item) =>
 				item.state === "uploading" ||
 				item.state === "queued" ||
-				item.state === "error"
+				item.state === "error",
 		);
 
 		return (
@@ -433,7 +432,7 @@ const DriveUploader = forwardRef<DriveUploaderHandle, DriveUploaderProps>(
 				)}
 			</div>
 		);
-	}
+	},
 );
 
 export default DriveUploader;

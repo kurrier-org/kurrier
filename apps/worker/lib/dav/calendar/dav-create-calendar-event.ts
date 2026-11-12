@@ -2,14 +2,17 @@ import {
 	db,
 	calendarEvents,
 	calendars,
-	calendarEventAttendees, davAccounts, secretsMeta, getSecretAdmin,
+	calendarEventAttendees,
+	davAccounts,
+	secretsMeta,
+	getSecretAdmin,
 } from "@db";
 import { eq } from "drizzle-orm";
 import { getDayjsTz } from "@common";
 import { buildICalEvent } from "./dav-build-cal-event";
 import { getRedis } from "../../../lib/get-redis";
 import DigestFetch from "digest-fetch";
-import {normalizeEtag} from "../../../lib/dav/sync/dav-sync-db";
+import { normalizeEtag } from "../../../lib/dav/sync/dav-sync-db";
 
 async function createCalendarObjectViaHttp(opts: {
 	icalData: string;
@@ -79,8 +82,6 @@ export const createCalendarEvent = async (
 
 	if (!secretRow?.metaId) return;
 
-
-
 	const secret = await getSecretAdmin(String(secretRow.metaId));
 	const password = secret?.vault?.decrypted_secret;
 	if (!password) return;
@@ -89,7 +90,6 @@ export const createCalendarEvent = async (
 		.select()
 		.from(calendarEventAttendees)
 		.where(eq(calendarEventAttendees.eventId, event.id));
-
 
 	const dayjsTz = getDayjsTz(calendar.timezone || "UTC");
 	const icalData = buildICalEvent(event, dayjsTz, guests);

@@ -77,7 +77,7 @@ async function SettingsLayoutContent({ children, params }: LayoutProps) {
 			.select()
 			.from(identities)
 			.where(eq(identities.publicId, paramsResolved.identityPublicId))
-			.limit(1)
+			.limit(1),
 	);
 
 	const identityLabel = identity?.value;

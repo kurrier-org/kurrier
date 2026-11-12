@@ -8,7 +8,8 @@ import {
 	Menu,
 	Modal,
 	Select,
-	TextInput, Tooltip,
+	TextInput,
+	Tooltip,
 } from "@mantine/core";
 import { Copy, Download, Link2, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -27,8 +28,8 @@ import {
 type ActiveLinks = Awaited<ReturnType<typeof listDriveShareLinks>>;
 
 export default function DriveEntryOptions({
-											  entry,
-										  }: {
+	entry,
+}: {
 	entry: DriveEntryEntity;
 }) {
 	const dict = useOptionalDictionary();
@@ -59,8 +60,7 @@ export default function DriveEntryOptions({
 			.catch(() => {
 				if (!canceled) {
 					toast.error(
-						dict?.drive?.shareLinkError ??
-						"Could not manage share links.",
+						dict?.drive?.shareLinkError ?? "Could not manage share links.",
 					);
 				}
 			})
@@ -127,9 +127,7 @@ export default function DriveEntryOptions({
 				...current,
 			]);
 
-			toast.success(
-				dict?.drive?.shareLinkCreated ?? "Share link created",
-			);
+			toast.success(dict?.drive?.shareLinkCreated ?? "Share link created");
 		} catch {
 			toast.error(
 				dict?.drive?.shareLinkError ?? "Could not manage share links.",
@@ -144,9 +142,7 @@ export default function DriveEntryOptions({
 
 		try {
 			await navigator.clipboard.writeText(createdLink.url);
-			toast.success(
-				dict?.drive?.shareLinkCopied ?? "Link copied",
-			);
+			toast.success(dict?.drive?.shareLinkCopied ?? "Link copied");
 		} catch {
 			toast.error(
 				dict?.drive?.shareLinkError ?? "Could not manage share links.",
@@ -157,8 +153,7 @@ export default function DriveEntryOptions({
 	const revokeLink = async (linkId: string) => {
 		if (
 			!window.confirm(
-				dict?.drive?.revokeShareLinkConfirm ??
-				"Revoke this share link?",
+				dict?.drive?.revokeShareLinkConfirm ?? "Revoke this share link?",
 			)
 		) {
 			return;
@@ -169,17 +164,13 @@ export default function DriveEntryOptions({
 		try {
 			await revokeDriveShareLink(entry.id, linkId);
 
-			setLinks((current) =>
-				current.filter((link) => link.id !== linkId),
-			);
+			setLinks((current) => current.filter((link) => link.id !== linkId));
 
 			if (createdLink?.id === linkId) {
 				setCreatedLink(null);
 			}
 
-			toast.success(
-				dict?.drive?.shareLinkRevoked ?? "Share link revoked",
-			);
+			toast.success(dict?.drive?.shareLinkRevoked ?? "Share link revoked");
 		} catch {
 			toast.error(
 				dict?.drive?.shareLinkError ?? "Could not manage share links.",
@@ -199,11 +190,7 @@ export default function DriveEntryOptions({
 			<div className="absolute right-3 top-3 z-10">
 				<Menu shadow="md" width={180} position="bottom-end">
 					<Menu.Target>
-						<ActionIcon
-							variant="subtle"
-							color="gray"
-							aria-label="File options"
-						>
+						<ActionIcon variant="subtle" color="gray" aria-label="File options">
 							<X className="sr-only" />
 							<MoreVerticalIcon />
 						</ActionIcon>
@@ -248,28 +235,19 @@ export default function DriveEntryOptions({
 				<div className="space-y-5">
 					<div className="flex items-end gap-2">
 						<Select
-							label={
-								dict?.drive?.shareLinkDuration ??
-								"Link expires after"
-							}
+							label={dict?.drive?.shareLinkDuration ?? "Link expires after"}
 							data={[
 								{
 									value: "1h",
-									label:
-										dict?.drive?.shareOneHour ??
-										"1 hour",
+									label: dict?.drive?.shareOneHour ?? "1 hour",
 								},
 								{
 									value: "1d",
-									label:
-										dict?.drive?.shareOneDay ??
-										"1 day",
+									label: dict?.drive?.shareOneDay ?? "1 day",
 								},
 								{
 									value: "7d",
-									label:
-										dict?.drive?.shareSevenDays ??
-										"7 days",
+									label: dict?.drive?.shareSevenDays ?? "7 days",
 								},
 							]}
 							value={duration}
@@ -319,18 +297,14 @@ export default function DriveEntryOptions({
 
 					<div>
 						<h3 className="mb-2 text-sm font-medium">
-							{dict?.drive?.activeShareLinks ??
-								"Active links"}
+							{dict?.drive?.activeShareLinks ?? "Active links"}
 						</h3>
 
 						{loadingLinks ? (
-							<p className="text-sm text-muted-foreground">
-								…
-							</p>
+							<p className="text-sm text-muted-foreground">…</p>
 						) : links.length === 0 ? (
 							<p className="text-sm text-muted-foreground">
-								{dict?.drive?.noActiveShareLinks ??
-									"No active links."}
+								{dict?.drive?.noActiveShareLinks ?? "No active links."}
 							</p>
 						) : (
 							<div className="space-y-2">
@@ -341,24 +315,13 @@ export default function DriveEntryOptions({
 									>
 										<div className="min-w-0 text-sm">
 											<span className="text-muted-foreground">
-												{dict?.drive
-														?.shareLinkExpires ??
-													"Expires"}{" "}
+												{dict?.drive?.shareLinkExpires ?? "Expires"}{" "}
 											</span>
 											<span>
-												{new Intl.DateTimeFormat(
-													undefined,
-													{
-														dateStyle:
-															"medium",
-														timeStyle:
-															"short",
-													},
-												).format(
-													new Date(
-														link.expiresAt,
-													),
-												)}
+												{new Intl.DateTimeFormat(undefined, {
+													dateStyle: "medium",
+													timeStyle: "short",
+												}).format(new Date(link.expiresAt))}
 											</span>
 										</div>
 
@@ -366,14 +329,8 @@ export default function DriveEntryOptions({
 											color="red"
 											variant="subtle"
 											loading={revokingId === link.id}
-											aria-label={
-												dict?.drive
-													?.revokeShareLink ??
-												"Revoke link"
-											}
-											onClick={() =>
-												void revokeLink(link.id)
-											}
+											aria-label={dict?.drive?.revokeShareLink ?? "Revoke link"}
+											onClick={() => void revokeLink(link.id)}
 										>
 											<X size={16} />
 										</ActionIcon>

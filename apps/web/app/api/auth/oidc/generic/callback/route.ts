@@ -4,13 +4,7 @@ import crypto from "node:crypto";
 import { cookies } from "next/headers";
 import { connection, NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
-import {
-	authAccounts,
-	authProviders,
-	db,
-	users,
-	workspaces,
-} from "@db";
+import { authAccounts, authProviders, db, users, workspaces } from "@db";
 import {
 	createSessionForUser,
 	createUserWithWorkspace,

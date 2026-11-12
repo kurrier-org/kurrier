@@ -10,7 +10,7 @@ export const providersList = [
 	"s3",
 	"inbound",
 	"jmap",
-	"mailtrap"
+	"mailtrap",
 ] as const;
 export const ProvidersEnum = z.enum(providersList);
 export type Providers = z.infer<typeof ProvidersEnum>;
@@ -71,8 +71,7 @@ export const GOOGLE_SPEC = {
 	name: ProviderLabels.google,
 	docsUrl: "https://developers.google.com/gmail/api",
 	requiredEnv: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"],
-	help:
-		"Connect Gmail or Google Workspace accounts using OAuth. No app passwords or SMTP credentials required.",
+	help: "Connect Gmail or Google Workspace accounts using OAuth. No app passwords or SMTP credentials required.",
 };
 
 export const SMTP_SPEC = {
@@ -112,31 +111,25 @@ export const STORAGE_PROVIDERS: ProviderSpec[] = [
 export const INBOUND_SPEC = {
 	key: "inbound" as const,
 	name: ProviderLabels.inbound,
-	help:
-		"Receive email directly through Kurrier’s API without configuring an external mail provider.",
+	help: "Receive email directly through Kurrier’s API without configuring an external mail provider.",
 };
 
 export type JmapPreset = {
-
 	key: string;
 	name: string;
 	sessionUrl: string;
 	docsUrl: string;
 	help: string;
-
 };
 
 export const JMAP_PRESETS = {
-
 	fastmail: {
 		key: "fastmail",
 		name: "Fastmail",
 		sessionUrl: "https://api.fastmail.com/jmap/session",
 		docsUrl: "https://www.fastmail.com/dev/",
-		help:
-			"Connect Fastmail using an API token and sync mail through JMAP Core, Mail, and Submission.",
+		help: "Connect Fastmail using an API token and sync mail through JMAP Core, Mail, and Submission.",
 	},
-
 } satisfies Record<string, JmapPreset>;
 
 export type JmapPresetKey = keyof typeof JMAP_PRESETS;
@@ -144,13 +137,13 @@ export type JmapPresetKey = keyof typeof JMAP_PRESETS;
 export const JMAP_SPEC = {
 	key: "jmap" as const,
 	name: ProviderLabels.jmap,
-	help:
-		"Connect accounts from JMAP-compatible mail providers using a session endpoint and API token.",
+	help: "Connect accounts from JMAP-compatible mail providers using a session endpoint and API token.",
 };
 
-export const jmapPresetList = Object.keys(
-	JMAP_PRESETS,
-) as [JmapPresetKey, ...JmapPresetKey[]];
+export const jmapPresetList = Object.keys(JMAP_PRESETS) as [
+	JmapPresetKey,
+	...JmapPresetKey[],
+];
 
 export const MAILTRAP_SPEC = {
 	key: "mailtrap" as const,

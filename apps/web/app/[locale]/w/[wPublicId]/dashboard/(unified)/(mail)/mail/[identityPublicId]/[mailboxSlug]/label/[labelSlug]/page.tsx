@@ -8,7 +8,7 @@ import { getPublicEnv } from "@schema";
 import LabelPagination from "@/components/dashboard/labels/label-pagination";
 import { IconLabelFilled } from "@tabler/icons-react";
 import { PAGE_SIZE } from "@common/mail-client";
-import {getWorkspacePublicId} from "@/lib/actions/clients";
+import { getWorkspacePublicId } from "@/lib/actions/clients";
 import WebmailListLabelSearch from "@/components/mailbox/default/webmail-list-label-search";
 
 export default async function LabelPage({
@@ -40,12 +40,12 @@ export default async function LabelPage({
 		identityPublicId,
 		mailboxSlug,
 		labelSlug,
-		page
+		page,
 	);
 
 	const labelsByThreadId = await fetchMailboxThreadLabels(mailboxThreads);
 	const label = globalLabels.find((l) => l.slug === labelSlug);
-	const workspacePublicId = await getWorkspacePublicId()
+	const workspacePublicId = await getWorkspacePublicId();
 
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-4 mb-12">

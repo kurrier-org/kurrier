@@ -5,14 +5,18 @@ import { rlsClient } from "@/lib/actions/clients";
 import {
 	db,
 	DraftMessageInsertSchema,
-	draftMessages, emailSignatures,
+	draftMessages,
+	emailSignatures,
 	identities,
 	mailboxes,
-	mailboxSync, MailboxThreadEntity,
-	mailboxThreads, mailSubscriptions,
+	mailboxSync,
+	MailboxThreadEntity,
+	mailboxThreads,
+	mailSubscriptions,
 	messageAttachments,
 	messages,
 	threads,
+	workspaces,
 } from "@db";
 import {
 	and,
@@ -45,12 +49,16 @@ import { PAGE_SIZE } from "@common/mail-client";
 import { getRedis } from "@/lib/actions/get-redis";
 import dayjs from "dayjs";
 
-import {GetObjectCommand} from "@aws-sdk/client-s3";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { s3 } from "@/lib/create-s3-client";
 import { isGmailIdentity } from "@common";
-import {access} from "@/lib/actions/shared";
-import {EmailDocument, renderEmailFragment, renderEmailText} from "@email-editor";
+import { access } from "@/lib/actions/shared";
+import {
+	EmailDocument,
+	renderEmailFragment,
+	renderEmailText,
+} from "@email-editor";
 
 let typeSenseClient: Client | null = null;
 function getTypeSenseClient(): Client {
@@ -77,7 +85,6 @@ function getTypeSenseClient(): Client {
 	return typeSenseClient;
 }
 
-
 export const fetchMailbox = cache(
 	async (identityPublicId: string, mailboxSlug = "inbox") => {
 		const rls = await rlsClient();
@@ -87,7 +94,7 @@ export const fetchMailbox = cache(
 				.select()
 				.from(identities)
 				.where(eq(identities.publicId, identityPublicId))
-				.limit(1)
+				.limit(1),
 		);
 
 		if (!identity) throw new Error("Identity not found");
@@ -97,7 +104,7 @@ export const fetchMailbox = cache(
 				tx
 					.select()
 					.from(mailboxes)
-					.where(eq(mailboxes.identityId, identity.id))
+					.where(eq(mailboxes.identityId, identity.id)),
 			),
 
 			rls((tx) =>
@@ -107,10 +114,10 @@ export const fetchMailbox = cache(
 					.where(
 						and(
 							eq(mailboxes.identityId, identity.id),
-							eq(mailboxes.slug, mailboxSlug)
-						)
+							eq(mailboxes.slug, mailboxSlug),
+						),
 					)
-					.limit(1)
+					.limit(1),
 			).then((rows) => rows[0]),
 		]);
 
@@ -121,7 +128,7 @@ export const fetchMailbox = cache(
 				tx
 					.select({ count: count() })
 					.from(messages)
-					.where(eq(messages.mailboxId, activeMailbox.id))
+					.where(eq(messages.mailboxId, activeMailbox.id)),
 			).then((rows) => rows[0]),
 
 			rls((tx) =>
@@ -129,7 +136,7 @@ export const fetchMailbox = cache(
 					.select()
 					.from(mailboxSync)
 					.where(eq(mailboxSync.mailboxId, activeMailbox.id))
-					.limit(1)
+					.limit(1),
 			).then((rows) => rows[0] ?? null),
 		]);
 
@@ -140,17 +147,10 @@ export const fetchMailbox = cache(
 			count: Number(messagesCountRow?.count ?? 0),
 			mailboxSync: sync,
 		};
-	}
+	},
 );
 
-
-
-
-export type FetchMailboxResult = Awaited<
-	ReturnType<typeof fetchMailbox>
->;
-
-
+export type FetchMailboxResult = Awaited<ReturnType<typeof fetchMailbox>>;
 
 export const fetchIdentityMailboxList = cache(async () => {
 	const rls = await rlsClient();
@@ -212,52 +212,45 @@ export const fetchIdentityMailboxList = cache(async () => {
 	return Object.values(byIdentity);
 });
 
-
 export type FetchIdentityMailboxListResult = Awaited<
 	ReturnType<typeof fetchIdentityMailboxList>
 >;
 
-export const fetchMailboxUnreadCounts = cache(
-	async () => {
-		const rls = await rlsClient();
-		const now = new Date();
+export const fetchMailboxUnreadCounts = cache(async () => {
+	const rls = await rlsClient();
+	const now = new Date();
 
-		const unreadAgg = await rls((tx) =>
-			tx
-				.select({
-					mailboxId: mailboxThreads.mailboxId,
-					unreadThreads: sql<number>`
+	const unreadAgg = await rls((tx) =>
+		tx
+			.select({
+				mailboxId: mailboxThreads.mailboxId,
+				unreadThreads: sql<number>`
 						count(*) FILTER (WHERE ${mailboxThreads.unreadCount} > 0)
 					`,
-					unreadTotal: sql<number>`
+				unreadTotal: sql<number>`
 						coalesce(sum(${mailboxThreads.unreadCount}), 0)
 					`,
-				})
-				.from(mailboxThreads)
-				.where(
-					or(
-						isNull(mailboxThreads.snoozedUntil),
-						lte(mailboxThreads.snoozedUntil, now)
-					)
-				)
-				.groupBy(mailboxThreads.mailboxId)
-		);
+			})
+			.from(mailboxThreads)
+			.where(
+				or(
+					isNull(mailboxThreads.snoozedUntil),
+					lte(mailboxThreads.snoozedUntil, now),
+				),
+			)
+			.groupBy(mailboxThreads.mailboxId),
+	);
 
-		return new Map<
-			string,
-			{ unreadThreads: number; unreadTotal: number }
-		>(
-			unreadAgg.map((a) => [
-				a.mailboxId,
-				{
-					unreadThreads: Number(a.unreadThreads ?? 0),
-					unreadTotal: Number(a.unreadTotal ?? 0),
-				},
-			])
-		);
-	}
-);
-
+	return new Map<string, { unreadThreads: number; unreadTotal: number }>(
+		unreadAgg.map((a) => [
+			a.mailboxId,
+			{
+				unreadThreads: Number(a.unreadThreads ?? 0),
+				unreadTotal: Number(a.unreadTotal ?? 0),
+			},
+		]),
+	);
+});
 
 export type FetchMailboxUnreadCountsResult = Awaited<
 	ReturnType<typeof fetchMailboxUnreadCounts>
@@ -306,41 +299,28 @@ export const revalidateMailbox = async (path: string) => {
 	revalidatePath(path);
 };
 
-const isSignaturePublicId = (
-	value: string,
-) =>
+const isSignaturePublicId = (value: string) =>
 	/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
 		value,
 	);
-
-
-
 
 export async function sendMail(
 	_prev: FormState,
 	formData: FormData,
 ): Promise<FormState> {
-	const decodedForm =
-		decode(formData) as any;
+	const decodedForm = decode(formData) as any;
 
 	const rls = await rlsClient();
 
-	const identity = await rls(
-		async (tx) => {
-			const [identity] = await tx
-				.select()
-				.from(identities)
-				.where(
-					eq(
-						identities.publicId,
-						decodedForm.identityPublicId,
-					),
-				)
-				.limit(1);
+	const identity = await rls(async (tx) => {
+		const [identity] = await tx
+			.select()
+			.from(identities)
+			.where(eq(identities.publicId, decodedForm.identityPublicId))
+			.limit(1);
 
-			return identity;
-		},
-	);
+		return identity;
+	});
 
 	if (!identity) {
 		return {
@@ -349,251 +329,159 @@ export async function sendMail(
 		};
 	}
 
-	const boxes = await rls(
-		async (tx) =>
-			tx
-				.select()
-				.from(mailboxes)
-				.where(
-					eq(
-						mailboxes.identityId,
-						identity.id,
-					),
-				),
+	const boxes = await rls(async (tx) =>
+		tx.select().from(mailboxes).where(eq(mailboxes.identityId, identity.id)),
 	);
 
-	const sentMailbox = boxes.find(
-		(box) => box.kind === "sent",
-	);
+	const sentMailbox = boxes.find((box) => box.kind === "sent");
 
-	const inboxMailbox = boxes.find(
-		(box) => box.kind === "inbox",
-	);
+	const inboxMailbox = boxes.find((box) => box.kind === "inbox");
 
-	if (
-		!sentMailbox ||
-		!inboxMailbox
-	) {
+	if (!sentMailbox || !inboxMailbox) {
 		return {
 			success: false,
-			error:
-				"Required mailboxes (inbox and sent) not found for the identity.",
+			error: "Required mailboxes (inbox and sent) not found for the identity.",
 		};
 	}
 
-	decodedForm.sentMailboxId =
-		sentMailbox.id;
-	decodedForm.mailboxId =
-		inboxMailbox.id;
-	decodedForm.identityId =
-		identity.id;
+	decodedForm.sentMailboxId = sentMailbox.id;
+	decodedForm.mailboxId = inboxMailbox.id;
+	decodedForm.identityId = identity.id;
 
 	decodedForm.appendToSent =
 		identity.metaData?.provider === "kurrier-mail" ||
 		(!!identity.smtpAccountId && !identity.providerId);
 
-	if (
-		toArray(
-			decodedForm.to as any,
-		).length === 0
-	) {
+	if (toArray(decodedForm.to as any).length === 0) {
 		return {
 			success: false,
-			error:
-				"Please provide at least one recipient in the To field.",
+			error: "Please provide at least one recipient in the To field.",
 		};
 	}
 
 	const signaturePublicId =
-		typeof decodedForm.signaturePublicId ===
-		"string"
+		typeof decodedForm.signaturePublicId === "string"
 			? decodedForm.signaturePublicId.trim()
 			: "";
 
 	if (signaturePublicId) {
-		if (
-			!isSignaturePublicId(
-				signaturePublicId,
-			)
-		) {
+		if (!isSignaturePublicId(signaturePublicId)) {
 			return {
 				success: false,
-				error:
-					"Invalid email signature.",
+				error: "Invalid email signature.",
 			};
 		}
 
-		const signature = await rls(
-			async (tx) => {
-				const [result] = await tx
-					.select({
-						document:
-						emailSignatures.document,
-					})
-					.from(emailSignatures)
-					.where(
-						and(
-							eq(
-								emailSignatures.publicId,
-								signaturePublicId,
-							),
-							eq(
-								emailSignatures.identityId,
-								identity.id,
-							),
-						),
-					)
-					.limit(1);
+		const signature = await rls(async (tx) => {
+			const [result] = await tx
+				.select({
+					document: emailSignatures.document,
+				})
+				.from(emailSignatures)
+				.where(
+					and(
+						eq(emailSignatures.publicId, signaturePublicId),
+						eq(emailSignatures.identityId, identity.id),
+					),
+				)
+				.limit(1);
 
-				return result;
-			},
-		);
+			return result;
+		});
 
 		if (!signature) {
 			return {
 				success: false,
-				error:
-					"Email signature not found for this identity.",
+				error: "Email signature not found for this identity.",
 			};
 		}
 
-		const signatureDocument =
-			signature.document as unknown as EmailDocument;
+		const signatureDocument = signature.document as unknown as EmailDocument;
 
-		const signatureHtml =
-			renderEmailFragment(
-				signatureDocument,
-			).trim();
+		const signatureHtml = renderEmailFragment(signatureDocument).trim();
 
-		const signatureText =
-			renderEmailText(
-				signatureDocument,
-			).trim();
+		const signatureText = renderEmailText(signatureDocument).trim();
 
 		const messageHtml =
-			typeof decodedForm.html ===
-			"string"
-				? decodedForm.html
-				: "";
+			typeof decodedForm.html === "string" ? decodedForm.html : "";
 
 		const messageText =
-			typeof decodedForm.text ===
-			"string"
-				? decodedForm.text
-				: "";
+			typeof decodedForm.text === "string" ? decodedForm.text : "";
 
 		if (signatureHtml) {
 			decodedForm.html = [
 				messageHtml,
-				messageHtml.trim()
-					? "<br>"
-					: "",
+				messageHtml.trim() ? "<br>" : "",
 				`<div data-kurrier-signature="true">${signatureHtml}</div>`,
 			].join("");
 		}
 
 		if (signatureText) {
-			decodedForm.text = [
-				messageText.trimEnd(),
-				signatureText,
-			]
+			decodedForm.text = [messageText.trimEnd(), signatureText]
 				.filter(Boolean)
 				.join("\n\n");
 		}
 	}
 
 	/*
-     * The payload now contains the rendered
-     * signature. Scheduled mail therefore
-     * preserves the signature as it appeared
-     * when the message was scheduled.
-     */
-	const scheduledAtRaw =
-		decodedForm.scheduledAt
-			? String(
-				decodedForm.scheduledAt,
-			)
-			: "";
+	 * The payload now contains the rendered
+	 * signature. Scheduled mail therefore
+	 * preserves the signature as it appeared
+	 * when the message was scheduled.
+	 */
+	const scheduledAtRaw = decodedForm.scheduledAt
+		? String(decodedForm.scheduledAt)
+		: "";
 
 	if (scheduledAtRaw) {
-		const scheduledAt = dayjs(
-			scheduledAtRaw,
-		);
+		const scheduledAt = dayjs(scheduledAtRaw);
 
 		if (!scheduledAt.isValid()) {
 			return {
 				success: false,
-				error:
-					"Invalid scheduled time.",
+				error: "Invalid scheduled time.",
 			};
 		}
 
-		const parsed =
-			DraftMessageInsertSchema.safeParse(
-				{
-					identityId:
-					identity.id,
-					mailboxId:
-					decodedForm.mailboxId,
-					payload:
-					decodedForm,
-					status: "scheduled",
-					scheduledAt:
-						scheduledAt.toDate(),
-				},
-			);
+		const parsed = DraftMessageInsertSchema.safeParse({
+			identityId: identity.id,
+			mailboxId: decodedForm.mailboxId,
+			payload: decodedForm,
+			status: "scheduled",
+			scheduledAt: scheduledAt.toDate(),
+		});
 
 		if (!parsed.success) {
 			return {
 				success: false,
-				error:
-					"There was an error trying to schedule your mail.",
+				error: "There was an error trying to schedule your mail.",
 			};
 		}
 
-		const row = await rls(
-			async (tx) => {
-				const [created] =
-					await tx
-						.insert(
-							draftMessages,
-						)
-						.values(
-							parsed.data,
-						)
-						.returning({
-							id: draftMessages.id,
-							scheduledAt:
-							draftMessages.scheduledAt,
-						});
+		const row = await rls(async (tx) => {
+			const [created] = await tx
+				.insert(draftMessages)
+				.values(parsed.data)
+				.returning({
+					id: draftMessages.id,
+					scheduledAt: draftMessages.scheduledAt,
+				});
 
-				return created ?? null;
-			},
-		);
+			return created ?? null;
+		});
 
-		if (
-			!row?.id ||
-			!row.scheduledAt
-		) {
+		if (!row?.id || !row.scheduledAt) {
 			return {
 				success: false,
-				error:
-					"Failed to schedule your mail.",
+				error: "Failed to schedule your mail.",
 			};
 		}
 
-		const {
-			sendMailQueue,
-		} = await getRedis();
+		const { sendMailQueue } = await getRedis();
 
 		const delay = Math.max(
 			0,
-			Number(
-				new Date(
-					row.scheduledAt,
-				),
-			) -
-			Number(new Date()),
+			Number(new Date(row.scheduledAt)) - Number(new Date()),
 		);
 
 		await sendMailQueue.add(
@@ -607,8 +495,10 @@ export async function sendMail(
 			},
 		);
 
-		revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
-
+		revalidatePath(
+			"/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]",
+			"page",
+		);
 
 		return {
 			success: true,
@@ -618,16 +508,9 @@ export async function sendMail(
 		};
 	}
 
-	const {
-		sendMailQueue,
-		sendMailEvents,
-	} = await getRedis();
+	const { sendMailQueue, sendMailEvents } = await getRedis();
 
-	const job =
-		await sendMailQueue.add(
-			"send-and-reconcile",
-			decodedForm,
-		);
+	const job = await sendMailQueue.add("send-and-reconcile", decodedForm);
 
 	try {
 		return await job.waitUntilFinished(sendMailEvents);
@@ -636,18 +519,12 @@ export async function sendMail(
 		return {
 			success: false,
 			error:
-				error instanceof Error
-					? error.message
-					: "Could not send your email.",
+				error instanceof Error ? error.message : "Could not send your email.",
 		};
 	}
 }
 
-export const deltaFetch = async ({
-									 identityId,
-								 }: {
-	identityId: string;
-}) => {
+export const deltaFetch = async ({ identityId }: { identityId: string }) => {
 	const [identity] = await db
 		.select()
 		.from(identities)
@@ -695,7 +572,7 @@ export const deltaFetch = async ({
 		return;
 	}
 
-	if (isImap){
+	if (isImap) {
 		const { smtpQueue, smtpEvents } = await getRedis();
 		const job = await smtpQueue.add(
 			"delta-fetch",
@@ -709,7 +586,6 @@ export const deltaFetch = async ({
 
 		await job.waitUntilFinished(smtpEvents);
 	}
-
 };
 
 export const initSearch = async (
@@ -727,28 +603,45 @@ export const initSearch = async (
 		return { items: [], totalThreads: 0, totalMessages: 0 };
 	}
 
-	const client = getTypeSenseClient();
+	const rls = await rlsClient();
+	const [mailbox] = await rls((tx) =>
+		tx
+			.select({ id: mailboxes.id })
+			.from(mailboxes)
+			.innerJoin(identities, eq(identities.id, mailboxes.identityId))
+			.innerJoin(workspaces, eq(workspaces.id, mailboxes.workspaceId))
+			.where(
+				and(
+					eq(workspaces.publicId, workspacePublicId),
+					eq(identities.workspaceId, mailboxes.workspaceId),
+					eq(identities.publicId, identityPublicId),
+					eq(mailboxes.slug, mailboxSlug),
+				),
+			)
+			.limit(1),
+	);
+	if (!mailbox) throw new Error("Mailbox not found");
 
-	const filters = [
-		`workspacePublicId:=${JSON.stringify(workspacePublicId)}`,
-		`identityPublicId:=${JSON.stringify(identityPublicId)}`,
-		`mailboxSlug:=${JSON.stringify(mailboxSlug)}`,
-	];
+	const client = getTypeSenseClient();
+	const filters = [`mailboxId:=${mailbox.id}`];
 
 	if (hasAttachment) filters.push("hasAttachment:=1");
 	if (onlyUnread) filters.push("unread:=1");
 	if (starred) filters.push("starred:=1");
 
-	const result = (await client.collections("messages").documents().search({
-		q,
-		query_by: "subject,html,text,snippet,fromName,fromEmail,participants",
-		filter_by: filters.join(" && "),
-		sort_by: "createdAt:desc",
-		group_by: "threadId",
-		group_limit: 1,
-		per_page: PAGE_SIZE,
-		page,
-	})) as any;
+	const result = (await client
+		.collections("messages")
+		.documents()
+		.search({
+			q,
+			query_by: "subject,html,text,snippet,fromName,fromEmail,participants",
+			filter_by: filters.join(" && "),
+			sort_by: "createdAt:desc",
+			group_by: "threadId",
+			group_limit: 1,
+			per_page: PAGE_SIZE,
+			page,
+		})) as any;
 
 	const groups = result?.grouped_hits as
 		| Array<{ group_key: string[]; hits: Array<{ document: any }> }>
@@ -779,14 +672,15 @@ export const initSearch = async (
 	};
 };
 
-
 async function canSyncWorkspace(): Promise<boolean> {
 	const { canSyncMail } = await access("canSyncMail");
 	return canSyncMail;
 }
 
-
-export const backfillMailboxes = async (identityId: string, workspaceId: string) => {
+export const backfillMailboxes = async (
+	identityId: string,
+	workspaceId: string,
+) => {
 	if (!(await canSyncWorkspace())) {
 		console.info(
 			`[backfill:${identityId}] mail sync disabled for workspace ${workspaceId}`,
@@ -855,8 +749,10 @@ export const backfillGoogleMailboxes = async (
 	);
 };
 
-
-export const backfillAccount = async (identityId: string, workspaceId: string) => {
+export const backfillAccount = async (
+	identityId: string,
+	workspaceId: string,
+) => {
 	const { smtpQueue, imapBackfillQueue } = await getRedis();
 	await smtpQueue.add(
 		"imap:start-idle",
@@ -870,7 +766,7 @@ export const backfillAccount = async (identityId: string, workspaceId: string) =
 	);
 	await imapBackfillQueue.add(
 		"imap:backfill-account",
-		{identityId},
+		{ identityId },
 		{
 			removeOnComplete: true,
 			removeOnFail: true,
@@ -905,9 +801,6 @@ export const fetchWebMailThreadDetail = cache(async (threadId: string) => {
 	});
 	return result;
 });
-
-
-
 
 export async function setReadStatus(
 	_prev: FormState,
@@ -945,14 +838,14 @@ export async function setReadStatus(
 			}),
 		);
 
-		revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
+		revalidatePath(
+			"/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]",
+			"page",
+		);
 
 		return { success: true };
 	});
 }
-
-
-
 
 export const moveToTrash = async (
 	threadIds: string | string[],
@@ -988,9 +881,12 @@ export const moveToTrash = async (
 		}),
 	);
 
-	if (refresh) revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
+	if (refresh)
+		revalidatePath(
+			"/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]",
+			"page",
+		);
 };
-
 
 export async function trashThreads(
 	_prev: FormState,
@@ -1009,8 +905,6 @@ export async function trashThreads(
 		return { success: true };
 	});
 }
-
-
 
 export async function toggleStar(
 	_prev: FormState,
@@ -1045,12 +939,14 @@ export async function toggleStar(
 		);
 
 		await job.waitUntilFinished(mailInteractiveEvents);
-		revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
+		revalidatePath(
+			"/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]",
+			"page",
+		);
 
 		return { success: true };
 	});
 }
-
 
 export async function permanentlyDeleteThreads(
 	_prev: FormState,
@@ -1103,7 +999,7 @@ export const fetchMailboxThreads = async (
 				desc(mailboxThreads.threadId),
 			)
 			.offset((safePage - 1) * PAGE_SIZE)
-			.limit(PAGE_SIZE)
+			.limit(PAGE_SIZE),
 	);
 
 	return rows.map((r) => r.thread);
@@ -1177,10 +1073,7 @@ export async function deleteForever(
 				kind: mailboxes.kind,
 			})
 			.from(mailboxes)
-			.innerJoin(
-				identities,
-				eq(mailboxes.identityId, identities.id),
-			)
+			.innerJoin(identities, eq(mailboxes.identityId, identities.id))
 			.where(eq(mailboxes.id, mailboxId))
 			.limit(1),
 	);
@@ -1218,7 +1111,10 @@ export async function deleteForever(
 		await job.waitUntilFinished(mailInteractiveEvents);
 
 		if (refresh) {
-			revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
+			revalidatePath(
+				"/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]",
+				"page",
+			);
 		}
 
 		return;
@@ -1272,10 +1168,12 @@ export async function deleteForever(
 	);
 
 	if (refresh) {
-		revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
+		revalidatePath(
+			"/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]",
+			"page",
+		);
 	}
 }
-
 
 export async function addNewMailboxFolder(
 	_prev: FormState,
@@ -1329,8 +1227,10 @@ export async function addNewMailboxFolder(
 	return { success: true };
 }
 
-
-export async function deleteMailboxFolder({ identityId, mailboxId }: {
+export async function deleteMailboxFolder({
+	identityId,
+	mailboxId,
+}: {
 	identityId: string;
 	mailboxId: string;
 }): Promise<FormState> {
@@ -1357,10 +1257,7 @@ export async function deleteMailboxFolder({ identityId, mailboxId }: {
 		})
 		.from(mailboxes)
 		.where(
-			and(
-				eq(mailboxes.id, mailboxId),
-				eq(mailboxes.identityId, identity.id),
-			),
+			and(eq(mailboxes.id, mailboxId), eq(mailboxes.identityId, identity.id)),
 		)
 		.limit(1);
 
@@ -1386,10 +1283,12 @@ export async function deleteMailboxFolder({ identityId, mailboxId }: {
 
 	await job.waitUntilFinished(mailInteractiveEvents);
 
-	revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
+	revalidatePath(
+		"/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]",
+		"page",
+	);
 	return { success: true };
 }
-
 
 export async function moveToFolder(
 	_prev: FormState,
@@ -1425,12 +1324,14 @@ export async function moveToFolder(
 			jobs.map((job) => job.waitUntilFinished(mailInteractiveEvents)),
 		);
 
-		revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
+		revalidatePath(
+			"/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]",
+			"page",
+		);
 
 		return { success: true };
 	});
 }
-
 
 export const clearImapClients = async (identityId: string) => {
 	const { smtpQueue } = await getRedis();
@@ -1446,7 +1347,6 @@ export const clearImapClients = async (identityId: string) => {
 	);
 };
 
-
 export const fetchScheduledDraftCounts = async () => {
 	const rls = await rlsClient();
 
@@ -1454,14 +1354,11 @@ export const fetchScheduledDraftCounts = async () => {
 		tx
 			.select()
 			.from(draftMessages)
-			.where(
-				eq(draftMessages.status, "scheduled")
-			)
+			.where(eq(draftMessages.status, "scheduled")),
 	);
 
 	return rows;
 };
-
 
 export const fetchScheduledDrafts = async (identityPublicId: string) => {
 	const rls = await rlsClient();
@@ -1498,7 +1395,10 @@ export async function deleteScheduledDraft(
 				.where(eq(draftMessages.id, String(decodedForm.draftId)));
 		});
 
-		revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
+		revalidatePath(
+			"/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]",
+			"page",
+		);
 		return { success: true };
 	});
 }
@@ -1529,20 +1429,24 @@ export async function snoozeThread(input: {
 				.returning();
 		});
 
-		revalidatePath("/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]", "page");
+		revalidatePath(
+			"/[locale]/w/[workspacePublicId]/dashboard/mail/[identityPublicId]",
+			"page",
+		);
 		return { success: true };
 	});
 }
 
-export const fetchIdentitySnoozedThreads = async (): Promise<{ threads: MailboxThreadEntity[] }> => {
+export const fetchIdentitySnoozedThreads = async (): Promise<{
+	threads: MailboxThreadEntity[];
+}> => {
 	const rls = await rlsClient();
 	const now = new Date();
 
 	const rows = await rls((tx) =>
-
 		tx
 			.select({
-				thread: mailboxThreads
+				thread: mailboxThreads,
 			})
 			.from(mailboxThreads)
 			.where(
@@ -1554,14 +1458,13 @@ export const fetchIdentitySnoozedThreads = async (): Promise<{ threads: MailboxT
 			.orderBy(
 				desc(mailboxThreads.snoozedUntil),
 				desc(mailboxThreads.lastActivityAt),
-			)
-	)
+			),
+	);
 
 	return {
 		threads: rows.map((r) => r.thread),
 	};
 };
-
 
 function subscriptionKeyFromHeadersJson(headersJson: any) {
 	const list = headersJson?.list ?? null;
@@ -1642,7 +1545,6 @@ export type FetchThreadMailSubsResult = Awaited<
 	ReturnType<typeof fetchThreadMailSubscriptions>
 >;
 
-
 export async function oneClickUnsubscribe(
 	_prev: FormState,
 	formData: FormData,
@@ -1655,7 +1557,8 @@ export async function oneClickUnsubscribe(
 			.from(mailSubscriptions)
 			.where(and(eq(mailSubscriptions.id, id)))
 			.limit(1);
-		if (!sub?.unsubscribeHttpUrl) return { success: false, error: "mailbox.subscriptionNotFound" };
+		if (!sub?.unsubscribeHttpUrl)
+			return { success: false, error: "mailbox.subscriptionNotFound" };
 		await fetch(sub.unsubscribeHttpUrl, {
 			method: "POST",
 			headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -1673,7 +1576,4 @@ export async function oneClickUnsubscribe(
 		revalidatePath(String(decodedForm.pathname));
 		return { success: true };
 	});
-
-
-
 }

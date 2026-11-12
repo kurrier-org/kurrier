@@ -1,16 +1,17 @@
 import { createError, defineEventHandler } from "h3";
-import {EmailSendSchema, getServerEnv} from "@schema";
+import { EmailSendSchema, getServerEnv } from "@schema";
 import { db, mailboxes } from "@db";
 import { and, eq } from "drizzle-orm";
 import { getRedis } from "../../../../../lib/get-redis";
 import { s3 } from "../../../../../lib/create-s3-client";
 import {
 	apiSuccess,
-	validateApiKey, validateIdentityOwnership,
+	validateApiKey,
+	validateIdentityOwnership,
 	validateJSONBody,
 } from "../../../../../lib/api-helpers";
 import { extension } from "mime-types";
-import {PutObjectCommand} from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 export default defineEventHandler(async (event) => {
 	const { ownerId } = await validateApiKey(event);
@@ -33,7 +34,10 @@ export default defineEventHandler(async (event) => {
 	}
 
 	const data = parsed.data;
-	const identity = await validateIdentityOwnership({identityId: data.identityId, ownerId: ownerId});
+	const identity = await validateIdentityOwnership({
+		identityId: data.identityId,
+		ownerId: ownerId,
+	});
 	const id = crypto.randomUUID();
 	if (!identity) {
 		throw createError({
@@ -65,7 +69,7 @@ export default defineEventHandler(async (event) => {
 		messageMailboxId: "",
 		sentMailboxId: String(sentMailbox.id),
 		mailboxId: String(sentMailbox.id),
-		mode: "compose"
+		mode: "compose",
 	} as any;
 
 	const { S3_BUCKET } = getServerEnv();

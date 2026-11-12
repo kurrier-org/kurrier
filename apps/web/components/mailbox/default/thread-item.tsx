@@ -19,16 +19,16 @@ import {
 } from "@/lib/actions/mailbox";
 
 export default async function ThreadItem({
-											 message,
-											 threadIndex,
-											 numberOfMessages,
-											 threadId,
-											 activeMailboxId,
-											 identityPublicId,
-											 mailSubscription,
-											 allLabels,
-											 labelsByThreadId,
-										 }: {
+	message,
+	threadIndex,
+	numberOfMessages,
+	threadId,
+	activeMailboxId,
+	identityPublicId,
+	mailSubscription,
+	allLabels,
+	labelsByThreadId,
+}: {
 	message: MessageEntity;
 	threadIndex: number;
 	numberOfMessages: number;

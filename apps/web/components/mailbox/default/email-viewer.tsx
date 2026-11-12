@@ -2,17 +2,8 @@
 
 import type { MessageEntity } from "@db";
 import { ActionIcon, Button } from "@mantine/core";
-import {
-	Ellipsis,
-	EyeOff,
-	ImageOff,
-} from "lucide-react";
-import {
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
+import { Ellipsis, EyeOff, ImageOff } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
@@ -99,25 +90,19 @@ const escapeText = (value: string) =>
 		return replacements[character] ?? character;
 	});
 
-const isRemoteUrl = (value: string) =>
-	/^https?:\/\//i.test(value.trim());
+const isRemoteUrl = (value: string) => /^https?:\/\//i.test(value.trim());
 
 const hasRemoteSrcset = (value: string) =>
-	value
-		.split(",")
-		.some((candidate) => {
-			const url = candidate.trim().split(/\s+/)[0] ?? "";
-			return isRemoteUrl(url);
-		});
+	value.split(",").some((candidate) => {
+		const url = candidate.trim().split(/\s+/)[0] ?? "";
+		return isRemoteUrl(url);
+	});
 
 const prepareHtml = (
 	sanitizedHtml: string,
 	allowRemoteImages: boolean,
 ): PreparedHtml => {
-	const doc = new DOMParser().parseFromString(
-		sanitizedHtml,
-		"text/html",
-	);
+	const doc = new DOMParser().parseFromString(sanitizedHtml, "text/html");
 
 	let hasRemoteImages = false;
 
@@ -172,25 +157,18 @@ const prepareHtml = (
 	};
 };
 
-export default function EmailViewer({
-										message,
-									}: {
-	message: MessageEntity;
-}) {
+export default function EmailViewer({ message }: { message: MessageEntity }) {
 	const dict = useOptionalDictionary();
 	const hostRef = useRef<HTMLDivElement>(null);
 
 	const [hideQuotes, setHideQuotes] = useState(true);
 	const [showRemoteImages, setShowRemoteImages] = useState(false);
-	const [prepared, setPrepared] =
-		useState<PreparedHtml>(EMPTY_PREPARED);
+	const [prepared, setPrepared] = useState<PreparedHtml>(EMPTY_PREPARED);
 
 	const senderEmail =
-		message?.from?.value?.[0]?.address?.toLowerCase() ??
-		"unknown";
+		message?.from?.value?.[0]?.address?.toLowerCase() ?? "unknown";
 
-	const remoteImagePreferenceKey =
-		`kurrier:remote-images:${senderEmail}`;
+	const remoteImagePreferenceKey = `kurrier:remote-images:${senderEmail}`;
 
 	const rawHtml = useMemo(() => {
 		if (message.html?.trim()) {
@@ -199,9 +177,7 @@ export default function EmailViewer({
 
 		return `
 			<div class="kurrier-plain-text">
-				${escapeText(
-			(message.text || "No content").toString(),
-		)}
+				${escapeText((message.text || "No content").toString())}
 			</div>
 		`;
 	}, [message.html, message.text]);
@@ -216,26 +192,19 @@ export default function EmailViewer({
 
 		try {
 			setShowRemoteImages(
-				localStorage.getItem(
-					remoteImagePreferenceKey,
-				) === "true",
+				localStorage.getItem(remoteImagePreferenceKey) === "true",
 			);
 		} catch {
 			setShowRemoteImages(false);
 		}
-	}, [
-		message.id,
-		remoteImagePreferenceKey,
-		senderEmail,
-	]);
+	}, [message.id, remoteImagePreferenceKey, senderEmail]);
 
 	useEffect(() => {
 		let cancelled = false;
 
 		const prepare = async () => {
 			try {
-				const { default: DOMPurify } =
-					await import("dompurify");
+				const { default: DOMPurify } = await import("dompurify");
 
 				const sanitized = DOMPurify.sanitize(rawHtml, {
 					USE_PROFILES: {
@@ -243,10 +212,7 @@ export default function EmailViewer({
 					},
 				});
 
-				const result = prepareHtml(
-					sanitized,
-					showRemoteImages,
-				);
+				const result = prepareHtml(sanitized, showRemoteImages);
 
 				if (!cancelled) {
 					setPrepared(result);
@@ -256,10 +222,7 @@ export default function EmailViewer({
 					setPrepared({
 						html: `
 							<div class="kurrier-plain-text">
-								${escapeText(
-							(message.text ||
-								"No content").toString(),
-						)}
+								${escapeText((message.text || "No content").toString())}
 							</div>
 						`,
 						hasRemoteImages: false,
@@ -274,11 +237,7 @@ export default function EmailViewer({
 		return () => {
 			cancelled = true;
 		};
-	}, [
-		rawHtml,
-		showRemoteImages,
-		message.text,
-	]);
+	}, [rawHtml, showRemoteImages, message.text]);
 
 	useEffect(() => {
 		const host = hostRef.current;
@@ -303,10 +262,7 @@ export default function EmailViewer({
 				${prepared.html}
 			</article>
 		`;
-	}, [
-		prepared.html,
-		hideQuotes,
-	]);
+	}, [prepared.html, hideQuotes]);
 
 	const allowRemoteImagesForSender = () => {
 		if (senderEmail === "unknown") {
@@ -315,10 +271,7 @@ export default function EmailViewer({
 		}
 
 		try {
-			localStorage.setItem(
-				remoteImagePreferenceKey,
-				"true",
-			);
+			localStorage.setItem(remoteImagePreferenceKey, "true");
 		} catch {
 			// Preference persistence is optional.
 		}
@@ -328,57 +281,44 @@ export default function EmailViewer({
 
 	return (
 		<div className="mb-24 mt-6 min-w-0 overflow-x-auto">
-			{prepared.hasRemoteImages &&
-				!showRemoteImages && (
-					<div className="mb-4 flex flex-col gap-3 rounded-lg border bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-						<div className="flex min-w-0 items-start gap-3">
-							<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md border bg-background">
-								<ImageOff className="size-4 text-muted-foreground" />
-							</div>
-
-							<div className="min-w-0">
-								<p className="text-sm font-medium">
-									Remote images are blocked
-								</p>
-
-								<p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-									Images from external servers can be used to track when you open a message.
-								</p>
-							</div>
+			{prepared.hasRemoteImages && !showRemoteImages && (
+				<div className="mb-4 flex flex-col gap-3 rounded-lg border bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+					<div className="flex min-w-0 items-start gap-3">
+						<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md border bg-background">
+							<ImageOff className="size-4 text-muted-foreground" />
 						</div>
 
-						<div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-							<Button
-								size="xs"
-								variant="default"
-								onClick={() =>
-									setShowRemoteImages(true)
-								}
-							>
-								{dict?.mailbox
-										?.loadRemoteImagesOnce ??
-									"Load once"}
-							</Button>
+						<div className="min-w-0">
+							<p className="text-sm font-medium">Remote images are blocked</p>
 
-							<Button
-								size="xs"
-								variant="light"
-								onClick={
-									allowRemoteImagesForSender
-								}
-							>
-								{dict?.mailbox
-										?.alwaysLoadForThisSender ??
-									"Always for sender"}
-							</Button>
+							<p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+								Images from external servers can be used to track when you open
+								a message.
+							</p>
 						</div>
 					</div>
-				)}
 
-			<div
-				ref={hostRef}
-				className="block min-w-0 w-full"
-			/>
+					<div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+						<Button
+							size="xs"
+							variant="default"
+							onClick={() => setShowRemoteImages(true)}
+						>
+							{dict?.mailbox?.loadRemoteImagesOnce ?? "Load once"}
+						</Button>
+
+						<Button
+							size="xs"
+							variant="light"
+							onClick={allowRemoteImagesForSender}
+						>
+							{dict?.mailbox?.alwaysLoadForThisSender ?? "Always for sender"}
+						</Button>
+					</div>
+				</div>
+			)}
+
+			<div ref={hostRef} className="block min-w-0 w-full" />
 
 			{prepared.hasQuotes && (
 				<div className="mt-3">
@@ -386,27 +326,13 @@ export default function EmailViewer({
 						type="button"
 						variant="subtle"
 						size="sm"
-						onClick={() =>
-							setHideQuotes(
-								(current) => !current,
-							)
-						}
-						title={
-							hideQuotes
-								? "Show previous emails"
-								: "Hide previous emails"
-						}
+						onClick={() => setHideQuotes((current) => !current)}
+						title={hideQuotes ? "Show previous emails" : "Hide previous emails"}
 						aria-label={
-							hideQuotes
-								? "Show previous emails"
-								: "Hide previous emails"
+							hideQuotes ? "Show previous emails" : "Hide previous emails"
 						}
 					>
-						{hideQuotes ? (
-							<Ellipsis size={17} />
-						) : (
-							<EyeOff size={16} />
-						)}
+						{hideQuotes ? <Ellipsis size={17} /> : <EyeOff size={16} />}
 					</ActionIcon>
 				</div>
 			)}

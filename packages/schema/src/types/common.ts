@@ -23,4 +23,4 @@ export const webHookListOptions = webHookList.map((scope) => ({
 		{
 			"message.received": "message.received",
 		}[scope] ?? scope,
-}))
+}));

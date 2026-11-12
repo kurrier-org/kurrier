@@ -40,7 +40,7 @@ function isSignatureValid(
 type MessageRef = { messageId: string; inboxId: string };
 
 // Payload shape: { events: [{ event, message_id, inbox_id, ... }] }.
-// Mailtrap can batch several events into one webhook call 
+// Mailtrap can batch several events into one webhook call
 // so process them all, but dedupe by message_id to avoid redundant API calls.
 function extractMessageRefs(body: any): MessageRef[] {
 	const events = Array.isArray(body?.events) ? body.events : [body];

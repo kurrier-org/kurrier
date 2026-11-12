@@ -3,5 +3,5 @@ import type { KurrierExtension } from "@extensions";
 import { singleWorkspaceServerExtension } from "./single-workspace/server";
 
 export const serverExtensions = [
-    singleWorkspaceServerExtension,
+	singleWorkspaceServerExtension,
 ] satisfies KurrierExtension[];

@@ -11,9 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { FetchGoogleAccountsResult } from "@/lib/actions/dashboard";
 
 export default function GoogleCard({
-									   googleAccounts,
-									   googleOAuthConfigured,
-								   }: {
+	googleAccounts,
+	googleOAuthConfigured,
+}: {
 	googleAccounts: FetchGoogleAccountsResult;
 	googleOAuthConfigured: boolean;
 }) {
@@ -91,8 +91,7 @@ export default function GoogleCard({
 										href="/api/oauth/google/connect"
 										leftSection={<Plus className="size-4" />}
 									>
-										{dict?.platform?.addGoogleAccount ??
-											"Add Google Account"}
+										{dict?.platform?.addGoogleAccount ?? "Add Google Account"}
 									</Button>
 								</div>
 							) : (

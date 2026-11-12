@@ -74,7 +74,6 @@ export async function updateContactViaHttp(opts: {
 	return { etag: normalizeEtag(newEtag) };
 }
 
-
 // export const updateContact = async (contactId: string, ownerId: string) => {
 export const pushUpdateContact = async (contactId: string, ownerId: string) => {
 	const rows = await db
@@ -100,9 +99,7 @@ export const pushUpdateContact = async (contactId: string, ownerId: string) => {
 	const [book] = await db
 		.select()
 		.from(addressBooks)
-		.where(
-			and(eq(addressBooks.ownerId, ownerId)),
-		)
+		.where(and(eq(addressBooks.ownerId, ownerId)))
 		.limit(1);
 
 	if (!book) return null;

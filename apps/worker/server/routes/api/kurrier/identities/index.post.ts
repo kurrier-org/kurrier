@@ -88,7 +88,10 @@ async function startImapBackfill(identityId: string, workspaceId: string) {
 			},
 		},
 	);
-	await discoverJob.waitUntilFinished(imapDiscoveryEvents, BACKFILL_DISCOVER_TIMEOUT_MS);
+	await discoverJob.waitUntilFinished(
+		imapDiscoveryEvents,
+		BACKFILL_DISCOVER_TIMEOUT_MS,
+	);
 
 	await imapBackfillQueue.add(
 		"imap:backfill-account",

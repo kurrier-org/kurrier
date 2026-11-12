@@ -12,8 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { FetchJmapAccountsResult } from "@/lib/actions/jmap-actions";
 
 export default function JmapCard({
-									 jmapAccounts,
-								 }: {
+	jmapAccounts,
+}: {
 	jmapAccounts: FetchJmapAccountsResult;
 }) {
 	const dict = useOptionalDictionary();

@@ -26,19 +26,19 @@ async function ContactsSidebar() {
 		<AppSidebar
 			workspacePublicId={workspacePublicId}
 			sidebarTopContent={
-			<>
-				<Suspense fallback={<div className="h-9" />} key={workspacePublicId}>
-					<WorkspaceLogo />
-				</Suspense>
-				<Suspense fallback={<Loading />}>
-					<div className="-mt-1">
-						<NewContactButton
-							hideOnMobile
-							workspacePublicId={workspacePublicId}
-						/>
-					</div>
-				</Suspense>
-			</>
+				<>
+					<Suspense fallback={<div className="h-9" />} key={workspacePublicId}>
+						<WorkspaceLogo />
+					</Suspense>
+					<Suspense fallback={<Loading />}>
+						<div className="-mt-1">
+							<NewContactButton
+								hideOnMobile
+								workspacePublicId={workspacePublicId}
+							/>
+						</div>
+					</Suspense>
+				</>
 			}
 			navUserContent={
 				<Suspense fallback={<Loading />}>
@@ -56,9 +56,7 @@ async function ContactsSidebar() {
 							workspacePublicId,
 						}}
 					>
-						<RenderContactsLabelHomeSidebar
-							globalLabels={contactLabels}
-						/>
+						<RenderContactsLabelHomeSidebar globalLabels={contactLabels} />
 					</DynamicContextProvider>
 				</>
 			}
@@ -67,8 +65,8 @@ async function ContactsSidebar() {
 }
 
 export default function DashboardLayout({
-											children,
-										}: {
+	children,
+}: {
 	children: React.ReactNode;
 }) {
 	return (

@@ -13,7 +13,7 @@ import type { BaseFormProps, FormState } from "@schema";
 import { Button as MantineButton, Alert } from "@mantine/core";
 import { IconLoader2 } from "@tabler/icons-react";
 import { ReusableFormItems } from "@/components/common/reusable-form-items";
-import {toast} from "sonner";
+import { toast } from "sonner";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 import { resolveDictMessage } from "@/lib/resolve-dict-message";
 

@@ -64,8 +64,7 @@ export const discoverMailboxes = async (
 
 		const flags = Array.from(mbx.flags ?? []);
 		const selectable =
-			!flags.includes("\\Noselect") &&
-			!flags.includes("\\NonExistent");
+			!flags.includes("\\Noselect") && !flags.includes("\\NonExistent");
 
 		const parentId = await ensureParentChain({
 			identity,
@@ -76,21 +75,18 @@ export const discoverMailboxes = async (
 
 		const existingByPath = await findLocalByPath(identity.id, path);
 
-		const kind = inferKind(
-			mbx.name,
-			mbx.specialUse as string | undefined,
-		);
+		const kind = inferKind(mbx.name, mbx.specialUse as string | undefined);
 
-		const existing = existingByPath ?? (
-			identity.metaData?.provider === "kurrier-mail"
+		const existing =
+			existingByPath ??
+			(identity.metaData?.provider === "kurrier-mail"
 				? locals.find(
-					(local) =>
-						local.kind === kind &&
-						kind !== "custom" &&
-						!(local.metaData as any)?.imap?.path,
-				)
-				: undefined
-		);
+						(local) =>
+							local.kind === kind &&
+							kind !== "custom" &&
+							!(local.metaData as any)?.imap?.path,
+					)
+				: undefined);
 
 		const meta = {
 			...(existing?.metaData ?? {}),
@@ -138,10 +134,7 @@ export const discoverMailboxes = async (
 					mailboxId: row.id,
 					uidValidity: box.uidValidity!,
 					lastSeenUid: 0,
-					backfillCursorUid: Math.max(
-						0,
-						(box.uidNext ?? 1) - 1,
-					),
+					backfillCursorUid: Math.max(0, (box.uidNext ?? 1) - 1),
 					phase: "BACKFILL",
 				});
 			}
@@ -175,10 +168,7 @@ export const discoverMailboxes = async (
 						mailboxId: existing.id,
 						uidValidity: box.uidValidity!,
 						lastSeenUid: 0,
-						backfillCursorUid: Math.max(
-							0,
-							(box.uidNext ?? 1) - 1,
-						),
+						backfillCursorUid: Math.max(0, (box.uidNext ?? 1) - 1),
 						phase: "BACKFILL",
 					});
 				}

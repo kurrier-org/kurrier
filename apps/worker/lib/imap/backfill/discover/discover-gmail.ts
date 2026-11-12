@@ -11,7 +11,11 @@ export function isGmailAccountFromBoxes(boxes: ImapBox[]): boolean {
 	);
 }
 
-export function shouldSyncBox(box: ImapBox, isGmail: boolean, isMicrosoft= false): boolean {
+export function shouldSyncBox(
+	box: ImapBox,
+	isGmail: boolean,
+	isMicrosoft = false,
+): boolean {
 	if (!box.listed) return false;
 	if (box.flags?.has("\\Noselect")) return false;
 
@@ -37,7 +41,7 @@ export function shouldSyncBox(box: ImapBox, isGmail: boolean, isMicrosoft= false
 				"notes",
 				"journal",
 				"conversation history",
-				"outbox"
+				"outbox",
 			].includes(root)
 		) {
 			return false;

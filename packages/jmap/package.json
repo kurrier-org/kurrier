@@ -12,8 +12,6 @@
 	"keywords": [],
 	"author": "Krishna Rokhale",
 	"license": "ISC",
-	"dependencies": {
-	},
-	"devDependencies": {
-	}
+	"dependencies": {},
+	"devDependencies": {}
 }

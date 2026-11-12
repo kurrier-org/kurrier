@@ -1,20 +1,20 @@
 "use client";
 
-import React, {use, useEffect, useState} from "react";
+import React, { use, useEffect, useState } from "react";
 import { DatePicker, type DatePickerProps } from "@mantine/dates";
 import dayjs, { Dayjs } from "dayjs";
 import { setSidebarWidth } from "@/lib/utils";
-import {useParams, usePathname, useRouter} from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { CalendarEntity } from "@db";
 import CalendarSettings from "@/components/dashboard/calendars/calendar-settings";
 import type { CalendarViewType } from "@schema";
-import {Calendar1} from "lucide-react";
+import { Calendar1 } from "lucide-react";
 import {
 	SidebarGroup,
 	SidebarGroupLabel,
 	SidebarMenu,
 	SidebarMenuButton,
-	SidebarMenuItem
+	SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
@@ -22,7 +22,7 @@ import { useOptionalDictionary } from "@/components/providers/dictionary-provide
 function CalendarSideBar({
 	defaultCalendar,
 	workspacePublicId,
-	userCalendarsPromise
+	userCalendarsPromise,
 }: {
 	defaultCalendar: CalendarEntity;
 	workspacePublicId: string;
@@ -73,7 +73,11 @@ function CalendarSideBar({
 		}
 	}, [params.year, params.month, params.day, today]);
 
-	const buildPath = (view: CalendarViewType, d: Dayjs, pathPublicId?: string) => {
+	const buildPath = (
+		view: CalendarViewType,
+		d: Dayjs,
+		pathPublicId?: string,
+	) => {
 		const id = pathPublicId || publicId;
 
 		const year = d.year();
@@ -154,75 +158,75 @@ function CalendarSideBar({
 		calendarPublicId: calendar.publicId,
 	}));
 
+	return (
+		<div className={"flex flex-col gap-6"}>
+			<div className="-my-2 pb-4 flex justify-center items-center bg-white dark:bg-neutral-800 p-2 border-b border-neutral-200 dark:border-neutral-700">
+				<div className="flex justify-center w-full">
+					<div className="w-full rounded-xl bg-white dark:bg-neutral-800">
+						<div className="flex items-center justify-between mb-2 px-1">
+							<span className="text-xs uppercase tracking-wide text-neutral-500 dark:text-brand-foreground font-medium flex items-center gap-0.5">
+								{dict?.calendar?.calendar ?? "Calendar"}
+								<CalendarSettings />
+							</span>
+							<button
+								type="button"
+								className="text-xs font-medium text-brand-600"
+								onClick={goToToday}
+							>
+								{dict?.calendar?.today ?? "Today"}
+							</button>
+						</div>
 
-
-	return <div className={"flex flex-col gap-6"}>
-		<div className="-my-2 pb-4 flex justify-center items-center bg-white dark:bg-neutral-800 p-2 border-b border-neutral-200 dark:border-neutral-700">
-			<div className="flex justify-center w-full">
-				<div className="w-full rounded-xl bg-white dark:bg-neutral-800">
-					<div className="flex items-center justify-between mb-2 px-1">
-						<span className="text-xs uppercase tracking-wide text-neutral-500 dark:text-brand-foreground font-medium flex items-center gap-0.5">
-							{dict?.calendar?.calendar ?? "Calendar"}
-							<CalendarSettings />
-						</span>
-						<button
-							type="button"
-							className="text-xs font-medium text-brand-600"
-							onClick={goToToday}
-						>
-							{dict?.calendar?.today ?? "Today"}
-						</button>
+						<DatePicker
+							size="xs"
+							value={selected ? selected.toDate() : null}
+							onChange={onChange}
+							date={calendarDate}
+							onDateChange={(d) => {
+								if (!d) return;
+								setCalendarDate(dayjs(d).toDate());
+							}}
+							renderDay={dayRenderer}
+							classNames={{
+								calendarHeader: "px-2 pt-1 pb-1",
+								calendarHeaderLevel: "text-sm font-semibold",
+								weekday: "text-sm font-medium text-slate-500",
+								month: "space-y-2",
+							}}
+						/>
 					</div>
-
-					<DatePicker
-						size="xs"
-						value={selected ? selected.toDate() : null}
-						onChange={onChange}
-						date={calendarDate}
-						onDateChange={(d) => {
-							if (!d) return;
-							setCalendarDate(dayjs(d).toDate());
-						}}
-						renderDay={dayRenderer}
-						classNames={{
-							calendarHeader: "px-2 pt-1 pb-1",
-							calendarHeaderLevel: "text-sm font-semibold",
-							weekday: "text-sm font-medium text-slate-500",
-							month: "space-y-2",
-						}}
-					/>
 				</div>
 			</div>
+
+			<SidebarGroup>
+				<SidebarGroupLabel>
+					{dict?.calendar?.myCalendars ?? "My Calendars"}
+				</SidebarGroupLabel>
+				<SidebarMenu>
+					{mainItems.map((item, index) => (
+						<SidebarMenuItem key={index}>
+							<SidebarMenuButton
+								asChild
+								tooltip={item.title}
+								className={
+									"dark:hover:bg-neutral-800 hover:bg-neutral-100 px-2.5 md:px-2 " +
+									(pathName === item.url ||
+									pathName.includes(item.calendarPublicId)
+										? "text-brand dark:text-white bg-brand-100 dark:bg-neutral-800 hover:text-brand hover:bg-brand-100"
+										: "")
+								}
+							>
+								<Link href={item.url}>
+									<item.icon />
+									<span>{item.title}</span>
+								</Link>
+							</SidebarMenuButton>
+						</SidebarMenuItem>
+					))}
+				</SidebarMenu>
+			</SidebarGroup>
 		</div>
-
-
-		<SidebarGroup>
-			<SidebarGroupLabel>{dict?.calendar?.myCalendars ?? "My Calendars"}</SidebarGroupLabel>
-			<SidebarMenu>
-				{mainItems.map((item, index) => (
-					<SidebarMenuItem key={index}>
-						<SidebarMenuButton
-							asChild
-							tooltip={item.title}
-							className={
-								"dark:hover:bg-neutral-800 hover:bg-neutral-100 px-2.5 md:px-2 " +
-								(((pathName === item.url) || (pathName.includes(item.calendarPublicId)))
-									? "text-brand dark:text-white bg-brand-100 dark:bg-neutral-800 hover:text-brand hover:bg-brand-100"
-									: "")
-							}
-						>
-							<Link href={item.url}>
-								<item.icon />
-								<span>{item.title}</span>
-							</Link>
-						</SidebarMenuButton>
-					</SidebarMenuItem>
-				))}
-			</SidebarMenu>
-		</SidebarGroup>
-
-
-	</div>
+	);
 }
 
 export default CalendarSideBar;

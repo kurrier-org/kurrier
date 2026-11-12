@@ -5,9 +5,7 @@ import { parseAndStoreEmail } from "../../message-payload-parser";
 import { initSmtpClient } from "../../../lib/imap/imap-client";
 import { defaultImapQuota } from "@schema";
 import dayjs from "dayjs";
-import {
-	davCreateCalendarForIdentity
-} from "../../../lib/dav/calendar/dav-create-addressbook-calendar-for-identity";
+import { davCreateCalendarForIdentity } from "../../../lib/dav/calendar/dav-create-addressbook-calendar-for-identity";
 
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
@@ -31,7 +29,7 @@ export function getOrInitQuota(
 
 	const quota: IdentityQuota = {
 		limit: dailyLimitBytes,
-		expiresAt: now.add(1, "day").toISOString()
+		expiresAt: now.add(1, "day").toISOString(),
 	};
 
 	identityQuotaMap.set(identityId, quota);
@@ -80,7 +78,7 @@ async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 		window = DEFAULT_WINDOW,
 		politeWaitMs = 0,
 		quota,
-		workspaceId
+		workspaceId,
 	} = opts;
 
 	if (quota.limit <= 0) return;
@@ -117,7 +115,7 @@ async function backfillMailboxFull(opts: BackfillMailboxOpts) {
 	) {
 		throw new Error(
 			`UIDVALIDITY changed during backfill: ${path}. ` +
-			`Stored=${storedUidValidity}, Server=${serverUidValidity}`,
+				`Stored=${storedUidValidity}, Server=${serverUidValidity}`,
 		);
 	}
 
@@ -376,10 +374,7 @@ export async function startBackfillForIdentity(
 		return false;
 	}
 
-	const client = await initSmtpClient(
-		identity.id,
-		imapInstances,
-	);
+	const client = await initSmtpClient(identity.id, imapInstances);
 
 	if (!client?.authenticated || !client?.usable) {
 		return false;
@@ -391,11 +386,7 @@ export async function startBackfillForIdentity(
 		workspaceId: identity.workspaceId,
 	});
 
-	await startFullBackfillForIdentity(
-		client,
-		identity.id,
-		quota,
-	);
+	await startFullBackfillForIdentity(client, identity.id, quota);
 
 	return quota.limit > 0;
 }

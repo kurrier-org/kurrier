@@ -23,7 +23,10 @@ const smtpQueue = new Queue("smtp-worker", redisConnection);
 const smtpEvents = new QueueEvents("smtp-worker", redisConnection);
 
 const mailInteractiveQueue = new Queue("mail-interactive", redisConnection);
-const mailInteractiveEvents = new QueueEvents("mail-interactive", redisConnection);
+const mailInteractiveEvents = new QueueEvents(
+	"mail-interactive",
+	redisConnection,
+);
 
 const gmailQueue = new Queue("gmail-worker", redisConnection);
 const gmailEvents = new QueueEvents("gmail-worker", redisConnection);

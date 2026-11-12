@@ -237,7 +237,6 @@ export function base64ToBlob(base64: string, contentType: string): Blob {
 	return new Blob([bytes], { type: contentType });
 }
 
-
 export const isGmailIdentity = async (identityId: string) => {
 	const [identity] = await db
 		.select({ metaData: identities.metaData })

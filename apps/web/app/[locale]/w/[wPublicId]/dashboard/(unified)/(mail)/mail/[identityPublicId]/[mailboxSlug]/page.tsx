@@ -11,7 +11,7 @@ import {
 	fetchMailbox,
 	fetchMailboxThreads,
 } from "@/lib/actions/mailbox";
-import {navigation} from "next/cache";
+import { navigation } from "next/cache";
 
 async function Page({
 	params,

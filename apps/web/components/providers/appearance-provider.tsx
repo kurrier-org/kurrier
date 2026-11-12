@@ -38,10 +38,10 @@ function applyMode(isDark: boolean) {
 }
 
 export function AppearanceProvider({
-									   children,
-									   initialTheme,
-									   initialMode,
-								   }: {
+	children,
+	initialTheme,
+	initialMode,
+}: {
 	children: React.ReactNode;
 	initialTheme: ThemeName;
 	initialMode: ThemeMode;

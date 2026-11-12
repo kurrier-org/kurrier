@@ -14,18 +14,14 @@ function normalizeLocale(tag: string): string | null {
 
 	const primary = lower.split("-")[0];
 
-	return locales.find(
-		(l) => l.toLowerCase().split("-")[0] === primary,
-	) ?? null;
+	return locales.find((l) => l.toLowerCase().split("-")[0] === primary) ?? null;
 }
 
 function getRedirectLocale(request: NextRequest) {
 	const pathname = request.nextUrl.pathname;
 
 	const pathnameHasLocale = locales.some(
-		(locale) =>
-			pathname === `/${locale}` ||
-			pathname.startsWith(`/${locale}/`),
+		(locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
 	);
 
 	if (pathnameHasLocale) return null;
@@ -46,7 +42,10 @@ function getRedirectLocale(request: NextRequest) {
 export async function proxy(request: NextRequest) {
 	const pathname = request.nextUrl.pathname;
 
-	if ((request.method === "GET" || request.method === "HEAD") && /^\/api\/drive\/share\/[A-Za-z0-9_-]{43}\/?$/.test(pathname)) {
+	if (
+		(request.method === "GET" || request.method === "HEAD") &&
+		/^\/api\/drive\/share\/[A-Za-z0-9_-]{43}\/?$/.test(pathname)
+	) {
 		return NextResponse.next();
 	}
 
@@ -54,14 +53,12 @@ export async function proxy(request: NextRequest) {
 		return await updateSession(request);
 	}
 
-	if ( pathname === "/distribution" || pathname.startsWith("/distribution/")) {
+	if (pathname === "/distribution" || pathname.startsWith("/distribution/")) {
 		return await updateSession(request);
 	}
 
 	const pathnameHasLocale = locales.some(
-		(locale) =>
-			pathname === `/${locale}` ||
-			pathname.startsWith(`/${locale}/`),
+		(locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
 	);
 
 	if (pathnameHasLocale) {
@@ -89,9 +86,7 @@ export async function proxy(request: NextRequest) {
 
 	const url = request.nextUrl.clone();
 	url.pathname =
-		pathname === "/"
-			? "/distribution"
-			: `/distribution${pathname}`;
+		pathname === "/" ? "/distribution" : `/distribution${pathname}`;
 
 	return NextResponse.rewrite(url);
 }

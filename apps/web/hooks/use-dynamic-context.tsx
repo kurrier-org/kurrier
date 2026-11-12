@@ -4,7 +4,8 @@ import React, {
 	useContext,
 	useMemo,
 	useState,
-	type ReactNode, useEffect,
+	type ReactNode,
+	useEffect,
 } from "react";
 
 type Dict = Record<string, unknown>;
@@ -17,10 +18,10 @@ type DynamicContextType<T extends Dict> = {
 const Ctx = createContext<DynamicContextType<any> | null>(null);
 
 export function DynamicContextProvider<T extends Dict>({
-														   children,
-														   initialState,
-														   syncOnChange = false,
-													   }: {
+	children,
+	initialState,
+	syncOnChange = false,
+}: {
 	children: ReactNode;
 	initialState: T;
 	syncOnChange?: boolean;

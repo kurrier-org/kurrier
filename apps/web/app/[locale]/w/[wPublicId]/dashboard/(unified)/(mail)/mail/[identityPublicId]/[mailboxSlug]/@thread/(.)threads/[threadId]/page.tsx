@@ -17,8 +17,8 @@ import {
 import { navigation } from "next/cache";
 
 async function ThreadContent({
-								 params,
-							 }: {
+	params,
+}: {
 	params: Promise<{
 		identityPublicId: string;
 		mailboxSlug: string;
@@ -78,8 +78,8 @@ async function ThreadContent({
 }
 
 function Page({
-				  params,
-			  }: {
+	params,
+}: {
 	params: Promise<{
 		identityPublicId: string;
 		mailboxSlug: string;

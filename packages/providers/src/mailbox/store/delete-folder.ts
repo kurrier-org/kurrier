@@ -2,8 +2,8 @@ import { db, mailboxes, messages, threads } from "@db";
 import { and, eq, inArray, notExists, sql } from "drizzle-orm";
 
 export async function deleteMailboxFolder(mailboxId: string) {
-    return db.transaction(async (tx) => {
-        const affected = await tx.execute(sql<{ thread_id: string }>`
+	return db.transaction(async (tx) => {
+		const affected = await tx.execute(sql<{ thread_id: string }>`
             WITH RECURSIVE folder_tree AS (
                 SELECT id FROM mailboxes WHERE id = ${mailboxId}
                 UNION ALL
@@ -16,29 +16,24 @@ export async function deleteMailboxFolder(mailboxId: string) {
             JOIN folder_tree ft ON msg.mailbox_id = ft.id
         `);
 
+		const threadIds: string[] = affected.map((row) => row.thread_id as string);
 
-        const threadIds: string[] = affected.map(
-            (row) => row.thread_id as string,
-        );
+		await tx.delete(mailboxes).where(eq(mailboxes.id, mailboxId));
 
-        await tx
-            .delete(mailboxes)
-            .where(eq(mailboxes.id, mailboxId));
-
-        if (threadIds.length) {
-            await tx
-                .delete(threads)
-                .where(
-                    and(
-                        inArray(threads.id, threadIds),
-                        notExists(
-                            tx
-                                .select({ one: sql`1` })
-                                .from(messages)
-                                .where(eq(messages.threadId, threads.id)),
-                        ),
-                    ),
-                );
-        }
-    });
+		if (threadIds.length) {
+			await tx
+				.delete(threads)
+				.where(
+					and(
+						inArray(threads.id, threadIds),
+						notExists(
+							tx
+								.select({ one: sql`1` })
+								.from(messages)
+								.where(eq(messages.threadId, threads.id)),
+						),
+					),
+				);
+		}
+	});
 }

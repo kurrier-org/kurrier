@@ -4,9 +4,9 @@ import { singleWorkspaceServerExtension } from "./single-workspace/server";
 import { singleWorkspaceWebExtension } from "./single-workspace/web";
 
 export const serverExtensions = [
-    singleWorkspaceServerExtension,
+	singleWorkspaceServerExtension,
 ] satisfies KurrierExtension[];
 
 export const webExtensions = [
-    singleWorkspaceWebExtension,
+	singleWorkspaceWebExtension,
 ] satisfies KurrierExtension[];

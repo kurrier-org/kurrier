@@ -56,5 +56,10 @@
 	"selectDate": "Select date",
 	"editPrefix": "Edit ",
 	"newContactForm": "New Contact Form",
-  "locationsCount": {"one": "{count} location", "other": "{count} locations", "few": "{count} locations", "many": "{count} locations"}
+	"locationsCount": {
+		"one": "{count} location",
+		"other": "{count} locations",
+		"few": "{count} locations",
+		"many": "{count} locations"
+	}
 }

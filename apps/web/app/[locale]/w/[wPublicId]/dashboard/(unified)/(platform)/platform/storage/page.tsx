@@ -13,8 +13,8 @@ import { access } from "@/lib/actions/shared";
 import { getDictionary } from "@/lib/dictionaries";
 
 export default async function ProvidersPage({
-												params,
-											}: {
+	params,
+}: {
 	params: Promise<{ locale: string }>;
 }) {
 	const { locale } = await params;
@@ -22,9 +22,7 @@ export default async function ProvidersPage({
 	const workspacePublicId = await getWorkspacePublicId();
 
 	if (!DISTRIBUTION_CONFIG.features.drive) {
-		redirect(
-			`/${locale}/w/${workspacePublicId}/dashboard/platform/overview`,
-		);
+		redirect(`/${locale}/w/${workspacePublicId}/dashboard/platform/overview`);
 	}
 
 	const { canCreateStorageVolume } = await access("canCreateStorageVolume");

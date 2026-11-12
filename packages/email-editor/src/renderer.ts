@@ -1,32 +1,32 @@
 import type {
-    ButtonBlock,
-    DividerBlock,
-    EmailBlock,
-    EmailDocument,
-    HeadingBlock,
-    ImageBlock,
-    SpacerBlock,
-    TextBlock,
+	ButtonBlock,
+	DividerBlock,
+	EmailBlock,
+	EmailDocument,
+	HeadingBlock,
+	ImageBlock,
+	SpacerBlock,
+	TextBlock,
 } from "./types";
 
 export type RenderEmailHtmlOptions = {
-    previewText?: string;
+	previewText?: string;
 };
 
 const escapeHtml = (value: string): string =>
-    value
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+	value
+		.replaceAll("&", "&amp;")
+		.replaceAll("<", "&lt;")
+		.replaceAll(">", "&gt;")
+		.replaceAll('"', "&quot;")
+		.replaceAll("'", "&#039;");
 
 const escapeAttribute = escapeHtml;
 
 const renderTextBlock = (block: TextBlock): string => {
-    const { styles } = block;
+	const { styles } = block;
 
-    return `
+	return `
         <tr>
             <td
                 style="
@@ -43,12 +43,10 @@ const renderTextBlock = (block: TextBlock): string => {
     `;
 };
 
-const renderHeadingBlock = (
-    block: HeadingBlock,
-): string => {
-    const { styles } = block;
+const renderHeadingBlock = (block: HeadingBlock): string => {
+	const { styles } = block;
 
-    return `
+	return `
         <tr>
             <td
                 style="
@@ -71,12 +69,10 @@ const renderHeadingBlock = (
     `;
 };
 
-const renderButtonBlock = (
-    block: ButtonBlock,
-): string => {
-    const { styles } = block;
+const renderButtonBlock = (block: ButtonBlock): string => {
+	const { styles } = block;
 
-    return `
+	return `
         <tr>
             <td
                 align="${styles.alignment}"
@@ -93,13 +89,11 @@ const renderButtonBlock = (
                 >
                     <tr>
                         <td
-                            bgcolor="${escapeAttribute(
-        styles.backgroundColor,
-    )}"
+                            bgcolor="${escapeAttribute(styles.backgroundColor)}"
                             style="
                                 background-color: ${escapeAttribute(
-        styles.backgroundColor,
-    )};
+																	styles.backgroundColor,
+																)};
                                 border-radius: ${styles.borderRadius}px;
                             "
                         >
@@ -109,9 +103,7 @@ const renderButtonBlock = (
                                 rel="noopener noreferrer"
                                 style="
                                     display: inline-block;
-                                    color: ${escapeAttribute(
-        styles.color,
-    )};
+                                    color: ${escapeAttribute(styles.color)};
                                     font-size: ${styles.fontSize}px;
                                     font-weight: 600;
                                     text-decoration: none;
@@ -129,16 +121,14 @@ const renderButtonBlock = (
     `;
 };
 
-const renderImageBlock = (
-    block: ImageBlock,
-): string => {
-    if (!block.src) {
-        return "";
-    }
+const renderImageBlock = (block: ImageBlock): string => {
+	if (!block.src) {
+		return "";
+	}
 
-    const { styles } = block;
+	const { styles } = block;
 
-    return `
+	return `
         <tr>
             <td
                 align="${styles.alignment}"
@@ -164,22 +154,14 @@ const renderImageBlock = (
     `;
 };
 
-const renderDividerBlock = (
-    block: DividerBlock,
-): string => {
-    const { styles } = block;
+const renderDividerBlock = (block: DividerBlock): string => {
+	const { styles } = block;
 
-    const width = Math.min(
-        100,
-        Math.max(1, styles.width),
-    );
+	const width = Math.min(100, Math.max(1, styles.width));
 
-    const thickness = Math.max(
-        1,
-        styles.thickness,
-    );
+	const thickness = Math.max(1, styles.thickness);
 
-    return `
+	return `
         <tr>
             <td
                 style="
@@ -201,8 +183,8 @@ const renderDividerBlock = (
                         <td
                             style="
                                 border-top: ${thickness}px ${styles.style} ${escapeAttribute(
-        styles.color,
-    )};
+																	styles.color,
+																)};
                                 font-size: 0;
                                 line-height: 0;
                             "
@@ -216,12 +198,10 @@ const renderDividerBlock = (
     `;
 };
 
-const renderSpacerBlock = (
-    block: SpacerBlock,
-): string => {
-    const height = Math.max(0, block.height);
+const renderSpacerBlock = (block: SpacerBlock): string => {
+	const height = Math.max(0, block.height);
 
-    return `
+	return `
         <tr>
             <td
                 height="${height}"
@@ -238,35 +218,33 @@ const renderSpacerBlock = (
 };
 
 const renderBlock = (block: EmailBlock): string => {
-    switch (block.type) {
-        case "text":
-            return renderTextBlock(block);
+	switch (block.type) {
+		case "text":
+			return renderTextBlock(block);
 
-        case "heading":
-            return renderHeadingBlock(block);
+		case "heading":
+			return renderHeadingBlock(block);
 
-        case "button":
-            return renderButtonBlock(block);
+		case "button":
+			return renderButtonBlock(block);
 
-        case "image":
-            return renderImageBlock(block);
+		case "image":
+			return renderImageBlock(block);
 
-        case "divider":
-            return renderDividerBlock(block);
+		case "divider":
+			return renderDividerBlock(block);
 
-        case "spacer":
-            return renderSpacerBlock(block);
-    }
+		case "spacer":
+			return renderSpacerBlock(block);
+	}
 };
 
-const renderPreviewText = (
-    previewText: string | undefined,
-): string => {
-    if (!previewText?.trim()) {
-        return "";
-    }
+const renderPreviewText = (previewText: string | undefined): string => {
+	if (!previewText?.trim()) {
+		return "";
+	}
 
-    return `
+	return `
         <div
             aria-hidden="true"
             style="
@@ -286,17 +264,12 @@ const renderPreviewText = (
     `;
 };
 
+export const renderEmailFragment = (document: EmailDocument): string => {
+	const { settings } = document;
 
-export const renderEmailFragment = (
-    document: EmailDocument,
-): string => {
-    const { settings } = document;
+	const content = document.blocks.map(renderBlock).join("");
 
-    const content = document.blocks
-        .map(renderBlock)
-        .join("");
-
-    return `
+	return `
         <table
             role="presentation"
             width="${settings.contentWidth}"
@@ -307,14 +280,10 @@ export const renderEmailFragment = (
                 width: 100%;
                 max-width: ${settings.contentWidth}px;
                 background-color: ${escapeAttribute(
-        settings.contentBackgroundColor,
-    )};
-                font-family: ${escapeAttribute(
-        settings.fontFamily,
-    )};
-                color: ${escapeAttribute(
-        settings.textColor,
-    )};
+									settings.contentBackgroundColor,
+								)};
+                font-family: ${escapeAttribute(settings.fontFamily)};
+                color: ${escapeAttribute(settings.textColor)};
             "
         >
             ${content}
@@ -323,19 +292,16 @@ export const renderEmailFragment = (
 };
 
 export const renderEmailHtml = (
-    document: EmailDocument,
-    options: RenderEmailHtmlOptions = {},
+	document: EmailDocument,
+	options: RenderEmailHtmlOptions = {},
 ): string => {
-    const { settings } = document;
+	const { settings } = document;
 
-    const previewText = renderPreviewText(
-        options.previewText,
-    );
+	const previewText = renderPreviewText(options.previewText);
 
-    const content =
-        renderEmailFragment(document);
+	const content = renderEmailFragment(document);
 
-    return `<!doctype html>
+	return `<!doctype html>
 <html lang="en">
     <head>
         <meta charset="utf-8">
@@ -353,9 +319,7 @@ export const renderEmailHtml = (
         style="
             margin: 0;
             padding: 0;
-            background-color: ${escapeAttribute(
-        settings.backgroundColor,
-    )};
+            background-color: ${escapeAttribute(settings.backgroundColor)};
         "
     >
         ${previewText}
@@ -368,9 +332,7 @@ export const renderEmailHtml = (
             border="0"
             style="
                 width: 100%;
-                background-color: ${escapeAttribute(
-        settings.backgroundColor,
-    )};
+                background-color: ${escapeAttribute(settings.backgroundColor)};
             "
         >
             <tr>

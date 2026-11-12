@@ -17,11 +17,11 @@ import {
 import { deleteCustomEmailProvider } from "@/lib/actions/dashboard";
 
 function Endpoint({
-					  icon,
-					  label,
-					  host,
-					  port,
-				  }: {
+	icon,
+	label,
+	host,
+	port,
+}: {
 	icon: React.ReactNode;
 	label: string;
 	host: string;
@@ -43,8 +43,8 @@ function Endpoint({
 }
 
 export default function CustomEmailProviderCard({
-													provider,
-												}: {
+	provider,
+}: {
 	provider: CustomEmailProvider;
 }) {
 	const dict = useOptionalDictionary();
@@ -87,8 +87,8 @@ export default function CustomEmailProviderCard({
 			title: "Remove configured provider",
 			children: (
 				<p className="text-sm text-muted-foreground">
-					This removes the provider preset only. Existing connected
-					mailboxes will continue to work.
+					This removes the provider preset only. Existing connected mailboxes
+					will continue to work.
 				</p>
 			),
 			labels: {
@@ -115,9 +115,7 @@ export default function CustomEmailProviderCard({
 					<Mail className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
 
 					<div className="min-w-0">
-						<CardTitle className="text-lg">
-							{provider.name}
-						</CardTitle>
+						<CardTitle className="text-lg">{provider.name}</CardTitle>
 
 						<CardDescription className="mt-1">
 							{provider.description ??
@@ -132,8 +130,7 @@ export default function CustomEmailProviderCard({
 						? (dict?.platform?.smtpOnlyBadge ?? "SMTP only")
 						: provider.credentialMode === "shared"
 							? (dict?.platform?.sharedLoginBadge ?? "Shared login")
-							: (dict?.platform?.separateLoginsBadge ??
-								"Separate logins")}
+							: (dict?.platform?.separateLoginsBadge ?? "Separate logins")}
 				</span>
 			</CardContent>
 

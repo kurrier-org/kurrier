@@ -4,12 +4,10 @@ import React from "react";
 import { RichTextEditor } from "@mantine/tiptap";
 
 type MailComposerBodyProps = {
-    signatureHtml?: string;
+	signatureHtml?: string;
 };
 
-const createPreviewDocument = (
-    signatureHtml: string,
-) => `<!doctype html>
+const createPreviewDocument = (signatureHtml: string) => `<!doctype html>
 <html>
     <head>
         <meta charset="utf-8" />
@@ -53,62 +51,47 @@ const createPreviewDocument = (
 </html>`;
 
 export default function MailComposerBody({
-                                             signatureHtml = "",
-                                         }: MailComposerBodyProps) {
-    return (
-        <div className="min-h-72">
-            <RichTextEditor.Content
-                className={[
-                    "prose max-w-none px-4 pt-4 text-sm leading-5",
-                    signatureHtml
-                        ? "min-h-[64px] pb-2"
-                        : "min-h-72 pb-4"
-                ].join(" ")}
-            />
+	signatureHtml = "",
+}: MailComposerBodyProps) {
+	return (
+		<div className="min-h-72">
+			<RichTextEditor.Content
+				className={[
+					"prose max-w-none px-4 pt-4 text-sm leading-5",
+					signatureHtml ? "min-h-[64px] pb-2" : "min-h-72 pb-4",
+				].join(" ")}
+			/>
 
-            {signatureHtml && (
-                <div
-                    className="px-4 pb-4"
-                    contentEditable={false}
-                >
-                    <div className="mb-3 w-12 border-t border-neutral-300 dark:border-neutral-700" />
+			{signatureHtml && (
+				<div className="px-4 pb-4" contentEditable={false}>
+					<div className="mb-3 w-12 border-t border-neutral-300 dark:border-neutral-700" />
 
-                    <iframe
-                        title="Email signature preview"
-                        srcDoc={createPreviewDocument(
-                            signatureHtml,
-                        )}
-                        sandbox="allow-same-origin"
-                        tabIndex={-1}
-                        scrolling="no"
-                        className="pointer-events-none block h-20 w-full border-0 bg-transparent"
-                        onLoad={(event) => {
-                            const frame =
-                                event.currentTarget;
+					<iframe
+						title="Email signature preview"
+						srcDoc={createPreviewDocument(signatureHtml)}
+						sandbox="allow-same-origin"
+						tabIndex={-1}
+						scrolling="no"
+						className="pointer-events-none block h-20 w-full border-0 bg-transparent"
+						onLoad={(event) => {
+							const frame = event.currentTarget;
 
-                            const frameDocument =
-                                frame.contentDocument;
+							const frameDocument = frame.contentDocument;
 
-                            if (!frameDocument) {
-                                return;
-                            }
+							if (!frameDocument) {
+								return;
+							}
 
-                            const height = Math.max(
-                                frameDocument.body
-                                    ?.scrollHeight ?? 0,
-                                frameDocument
-                                    .documentElement
-                                    .scrollHeight,
-                            );
+							const height = Math.max(
+								frameDocument.body?.scrollHeight ?? 0,
+								frameDocument.documentElement.scrollHeight,
+							);
 
-                            frame.style.height = `${Math.min(
-                                Math.max(height, 48),
-                                220,
-                            )}px`;
-                        }}
-                    />
-                </div>
-            )}
-        </div>
-    );
+							frame.style.height = `${Math.min(Math.max(height, 48), 220)}px`;
+						}}
+					/>
+				</div>
+			)}
+		</div>
+	);
 }

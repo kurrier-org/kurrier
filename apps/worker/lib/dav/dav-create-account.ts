@@ -5,14 +5,9 @@ import {
 	getSecretAdmin,
 	secretsMeta,
 } from "@db";
-import {and, eq} from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
-import {
-	md5,
-	davDb,
-	davUsers,
-	davPrincipals,
-} from "../../lib/dav/dav-schema";
+import { md5, davDb, davUsers, davPrincipals } from "../../lib/dav/dav-schema";
 
 export type DavUserContext = {
 	userId: string;
@@ -21,7 +16,6 @@ export type DavUserContext = {
 	principalUri: string;
 	davAccount: typeof davAccounts.$inferSelect;
 };
-
 
 async function createDavWorkspaceUser(
 	workspaceId: string,
@@ -35,16 +29,19 @@ async function createDavWorkspaceUser(
 	const [existingDavAccount] = await db
 		.select()
 		.from(davAccounts)
-		.where(and(
-			eq(davAccounts.type, "workspace"),
-			eq(davAccounts.workspaceId, workspaceId)
-		)).limit(1);
+		.where(
+			and(
+				eq(davAccounts.type, "workspace"),
+				eq(davAccounts.workspaceId, workspaceId),
+			),
+		)
+		.limit(1);
 
 	if (existingDavAccount) {
 		const [secretRow] = await db
 			.select({ metaId: secretsMeta.id })
 			.from(secretsMeta)
-			.where(eq(secretsMeta.id, existingDavAccount.secretId))
+			.where(eq(secretsMeta.id, existingDavAccount.secretId));
 
 		const secret = await getSecretAdmin(String(secretRow?.metaId));
 		const existingPassword = secret?.vault?.decrypted_secret;
@@ -122,7 +119,11 @@ async function createDavWorkspaceUser(
 	};
 }
 
-async function createDavUser(userId: string, workspaceId: string, email: string): Promise<DavUserContext> {
+async function createDavUser(
+	userId: string,
+	workspaceId: string,
+	email: string,
+): Promise<DavUserContext> {
 	const davUsername = `kurrier-${workspaceId}-${userId}`;
 	const davPassword = randomUUID();
 	const principalUri = `principals/${davUsername}`;
@@ -142,7 +143,7 @@ async function createDavUser(userId: string, workspaceId: string, email: string)
 			ownerId: userId,
 			secretId: secretIdRow.id,
 			username: davUsername,
-			workspaceId
+			workspaceId,
 		})
 		.returning();
 
@@ -183,19 +184,22 @@ async function createDavUser(userId: string, workspaceId: string, email: string)
 	return { userId, davUsername, davPassword, principalUri, davAccount };
 }
 
-
-
-
-export const createAccount = async (userId: string, workspaceId: string, email: string) => {
+export const createAccount = async (
+	userId: string,
+	workspaceId: string,
+	email: string,
+) => {
 	await createDavWorkspaceUser(workspaceId, userId, email);
 	const [existingDavAccount] = await db
 		.select()
 		.from(davAccounts)
-		.where(and(
-			eq(davAccounts.ownerId, userId),
-			eq(davAccounts.workspaceId, workspaceId),
-			eq(davAccounts.type, "user")
-		))
+		.where(
+			and(
+				eq(davAccounts.ownerId, userId),
+				eq(davAccounts.workspaceId, workspaceId),
+				eq(davAccounts.type, "user"),
+			),
+		)
 		.limit(1);
 
 	if (existingDavAccount) return existingDavAccount;

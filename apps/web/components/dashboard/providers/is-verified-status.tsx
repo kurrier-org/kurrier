@@ -4,9 +4,9 @@ import { BadgeMinus, Verified } from "lucide-react";
 import { useOptionalDictionary } from "@/components/providers/dictionary-provider";
 
 function IsVerifiedStatus({
-							  verified,
-							  statusName,
-						  }: {
+	verified,
+	statusName,
+}: {
 	verified: boolean;
 	statusName?: string;
 }) {

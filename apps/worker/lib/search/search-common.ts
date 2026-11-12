@@ -111,7 +111,6 @@ export function toSearchDoc(
 		identityPublicId: msg.identityPublicId,
 		mailboxSlug: msg.mailboxSlug,
 
-
 		subject: msg.subject ?? "",
 		snippet,
 		text: msg.text ?? "",

@@ -63,7 +63,6 @@ export interface ThreadHit {
 	starred: boolean;
 }
 
-
 export type ToSearchDocInput = {
 	id: string;
 	ownerId: string;

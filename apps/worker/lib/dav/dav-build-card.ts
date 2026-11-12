@@ -2,8 +2,8 @@ import { Buffer } from "node:buffer";
 import { lookup } from "mime-types";
 import { ContactEntity } from "@db";
 import { getCountryDataList } from "countries-list";
-import {GetObjectCommand} from "@aws-sdk/client-s3";
-import {s3} from "../../lib/create-s3-client";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { s3 } from "../../lib/create-s3-client";
 
 function escapeVCardValue(value: string) {
 	return value
@@ -17,7 +17,6 @@ const countryData = getCountryDataList();
 const phoneByCountry = new Map<string, string>(
 	countryData.map((c) => [c.iso2, String(c.phone).split(",")[0].trim()]),
 );
-
 
 async function addPhotoToVCard(lines: string[], contact: ContactEntity) {
 	if (!contact.profilePicture) return;

@@ -13,7 +13,14 @@ import {
 } from "../../lib/imap/imap-idle-sync";
 import { discoverMailboxes } from "../../lib/imap/backfill/discover/discover-mailboxes";
 import { startBackfillForIdentity } from "../../lib/imap/backfill/backfill-full";
-import { db, identities, mailboxes, mailboxSync, messages, providers } from "@db";
+import {
+	db,
+	identities,
+	mailboxes,
+	mailboxSync,
+	messages,
+	providers,
+} from "@db";
 import { eq, and, gt, or, inArray, isNotNull, sql } from "drizzle-orm";
 import { isGmailMailbox, isGmailThread, s3 } from "@common";
 import { moveGmailMail } from "../../lib/gmail/gmail-move";
@@ -32,11 +39,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 	const discoveryImapInstances = new Map<string, ImapFlow>();
 	const backfillImapInstances = new Map<string, ImapFlow>();
 
-	const {
-		searchIngestQueue,
-		smtpQueue,
-		imapBackfillQueue,
-	} = await getRedis();
+	const { searchIngestQueue, smtpQueue, imapBackfillQueue } = await getRedis();
 
 	const connection = redisConnection.connection;
 
@@ -67,10 +70,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 				return { success: true };
 			}
 
-			const client = await initSmtpClient(
-				identityId,
-				discoveryImapInstances,
-			);
+			const client = await initSmtpClient(identityId, discoveryImapInstances);
 
 			if (!client?.authenticated || !client?.usable) {
 				throw new Error(`IMAP unavailable: ${identityId}`);
@@ -157,7 +157,6 @@ export default defineNitroPlugin(async (nitroApp) => {
 				await closeBackfillClient(identityId);
 				throw err;
 			}
-
 
 			return { success: true };
 		},
@@ -297,9 +296,8 @@ export default defineNitroPlugin(async (nitroApp) => {
 					{
 						identityId: job.data.identityId,
 						name: job.data.name,
-						parentId: job.data.parentId === "none"
-							? null
-							: job.data.parentId ?? null,
+						parentId:
+							job.data.parentId === "none" ? null : (job.data.parentId ?? null),
 					},
 					{
 						getIdentity: async (identityId) => {
@@ -365,9 +363,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 				const identityId = job.data.identityId;
 
 				if (!(await canSyncIdentity(identityId))) {
-					console.info(
-						`[SMTP] delta fetch disabled identity=${identityId}`,
-					);
+					console.info(`[SMTP] delta fetch disabled identity=${identityId}`);
 					return { success: true };
 				}
 
@@ -434,9 +430,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 							throw new Error(`EML not found: ${messageId}`);
 						}
 
-						const eml = Buffer.from(
-							await response.Body.transformToByteArray(),
-						);
+						const eml = Buffer.from(await response.Body.transformToByteArray());
 
 						const result = await client.append(path, eml, ["\\Seen"]);
 
@@ -482,9 +476,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 						),
 					);
 
-				console.info(
-					`[IMAP] resuming backfills for ${rows.length} identities`,
-				);
+				console.info(`[IMAP] resuming backfills for ${rows.length} identities`);
 
 				for (const row of rows) {
 					console.info(
@@ -511,10 +503,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 					idleImapInstances,
 					imapInstances,
 				).catch((err) =>
-					console.error(
-						`startRealtimeForIdentity failed ${identityId}`,
-						err,
-					),
+					console.error(`startRealtimeForIdentity failed ${identityId}`, err),
 				);
 			} else if (job.name === "imap:stop-idle") {
 				const identityId = job.data.identityId as string;
@@ -525,10 +514,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 					imapInstances,
 				);
 			} else if (job.name === "imap:realtime-recovery") {
-				await recoverOfflineRealtime(
-					idleImapInstances,
-					imapInstances,
-				);
+				await recoverOfflineRealtime(idleImapInstances, imapInstances);
 
 				return { success: true };
 			} else if (
@@ -548,7 +534,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 					);
 
 				const hostedIdentityIds =
-					await kurrierServer.hooks.run("imap.listIdentities", {}) ?? [];
+					(await kurrierServer.hooks.run("imap.listIdentities", {})) ?? [];
 
 				const identityIds = new Set([
 					...identityRows.map((row) => row.id),
@@ -587,13 +573,10 @@ export default defineNitroPlugin(async (nitroApp) => {
 					);
 
 				const hostedIdentityIds =
-					await kurrierServer.hooks.run("imap.listIdentities", {}) ?? [];
+					(await kurrierServer.hooks.run("imap.listIdentities", {})) ?? [];
 
 				const identityMap = new Map(
-					identityRows.map((identity) => [
-						identity.id,
-						identity.workspaceId,
-					]),
+					identityRows.map((identity) => [identity.id, identity.workspaceId]),
 				);
 
 				if (hostedIdentityIds.length) {
@@ -616,11 +599,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 					}
 
 					try {
-						await pollImapFolders(
-							identityId,
-							workspaceId,
-							imapInstances,
-						);
+						await pollImapFolders(identityId, workspaceId, imapInstances);
 					} catch (err) {
 						console.error(
 							`[IMAP] folder polling failed identity=${identityId}`,
@@ -658,7 +637,6 @@ export default defineNitroPlugin(async (nitroApp) => {
 		},
 		{ override: true },
 	);
-
 
 	await scheduler.upsertJobScheduler(
 		"imap-resume-backfills-scheduler",
@@ -768,10 +746,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 		beginRealtimeShutdown();
 
 		try {
-			const logoutAll = async (
-				label: string,
-				map: Map<string, ImapFlow>,
-			) => {
+			const logoutAll = async (label: string, map: Map<string, ImapFlow>) => {
 				for (const [identityId, client] of map) {
 					try {
 						client.removeAllListeners();

@@ -12,9 +12,9 @@ import { EmailSendSchema } from "@schema";
 import { extension } from "mime-types";
 import { getRedis } from "../../../lib/get-redis";
 import { customAlphabet } from "nanoid";
-import {ensureIcalUid, partstatToIcs} from "./dav-itip-notify";
-import {s3} from "../../../lib/create-s3-client";
-import {PutObjectCommand} from "@aws-sdk/client-s3";
+import { ensureIcalUid, partstatToIcs } from "./dav-itip-notify";
+import { s3 } from "../../../lib/create-s3-client";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 const cleanId = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 6);
 
@@ -292,7 +292,7 @@ const enqueueItipReplyEmail = async ({
 					Key: path,
 					Body: buffer,
 					ContentType: file.contentType,
-				})
+				}),
 			);
 
 			storedAttachments.push({

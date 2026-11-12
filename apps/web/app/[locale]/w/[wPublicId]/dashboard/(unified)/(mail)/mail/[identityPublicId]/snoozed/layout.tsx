@@ -1,4 +1,4 @@
-import React, {ReactNode, Suspense} from "react";
+import React, { ReactNode, Suspense } from "react";
 import MailboxSearchHeader from "@/components/mailbox/mailbox-search-header";
 import Loading from "@/app/loading";
 
@@ -11,11 +11,12 @@ export default async function DashboardLayout({
 	children,
 	params,
 }: LayoutProps) {
-
-    return <>
-		<Suspense fallback={<Loading />}>
-			<MailboxSearchHeader params={params} />
-		</Suspense>
-        {children}
-    </>
+	return (
+		<>
+			<Suspense fallback={<Loading />}>
+				<MailboxSearchHeader params={params} />
+			</Suspense>
+			{children}
+		</>
+	);
 }

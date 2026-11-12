@@ -10,56 +10,45 @@ import { getGenericOidcSettings } from "@/lib/generic-oidc";
 import { withLocale } from "@/lib/utils";
 
 type SignupPageProps = {
-    params: Promise<{ locale: Locale }>;
+	params: Promise<{ locale: Locale }>;
 };
 
 export async function SignupPage(props: SignupPageProps) {
-    const { DISABLE_SIGNUP } = getPublicEnv();
+	const { DISABLE_SIGNUP } = getPublicEnv();
 
-    const googleEnabled =
-        process.env.OIDC_GOOGLE_CLIENT_ID &&
-        process.env.OIDC_GOOGLE_CLIENT_SECRET;
+	const googleEnabled =
+		process.env.OIDC_GOOGLE_CLIENT_ID && process.env.OIDC_GOOGLE_CLIENT_SECRET;
 
-    const genericOidc = getGenericOidcSettings();
-    const nParams = await props.params;
+	const genericOidc = getGenericOidcSettings();
+	const nParams = await props.params;
 
-    if (DISABLE_SIGNUP) {
-        redirect(
-            withLocale(
-                nParams.locale,
-                "/auth/login?message=signup_disabled",
-            ),
-        );
-    }
+	if (DISABLE_SIGNUP) {
+		redirect(withLocale(nParams.locale, "/auth/login?message=signup_disabled"));
+	}
 
-    const dict = await getDictionary(nParams.locale);
+	const dict = await getDictionary(nParams.locale);
 
-    return (
-        <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
-            <div className="flex w-full max-w-sm flex-col gap-6">
-                <div className="flex items-center justify-between">
-                    <Link
-                        href="/"
-                        className="flex items-center gap-2 font-medium"
-                    >
-                        <KurrierLogo size={56} />
-                        <span className="truncate font-medium text-4xl">
-							Kurrier
-						</span>
-                    </Link>
+	return (
+		<div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
+			<div className="flex w-full max-w-sm flex-col gap-6">
+				<div className="flex items-center justify-between">
+					<Link href="/" className="flex items-center gap-2 font-medium">
+						<KurrierLogo size={56} />
+						<span className="truncate font-medium text-4xl">Kurrier</span>
+					</Link>
 
-                    <LanguageSwitcher />
-                </div>
+					<LanguageSwitcher />
+				</div>
 
-                <SignupForm
-                    oidc={{
-                        googleEnabled: !!googleEnabled,
-                        genericEnabled: !!genericOidc,
-                        genericName: genericOidc?.providerName,
-                    }}
-                    dict={dict}
-                />
-            </div>
-        </div>
-    );
+				<SignupForm
+					oidc={{
+						googleEnabled: !!googleEnabled,
+						genericEnabled: !!genericOidc,
+						genericName: genericOidc?.providerName,
+					}}
+					dict={dict}
+				/>
+			</div>
+		</div>
+	);
 }
