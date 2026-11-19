@@ -27,6 +27,7 @@ export function LoginForm({
 	className,
 	oidc,
 	dict,
+	signupEnabled = true,
 	...props
 }: React.ComponentProps<"div"> & {
 	oidc?: {
@@ -34,7 +35,7 @@ export function LoginForm({
 		genericEnabled?: boolean;
 		genericName?: string;
 	};
-} & { dict: Dictionary }) {
+} & { dict: Dictionary; signupEnabled?: boolean }) {
 	const { localLogin } = useSiteFeatures();
 	const oidcEnabled = Boolean(oidc?.googleEnabled || oidc?.genericEnabled);
 	const [formState, formAction, isPending] = useActionState<
@@ -165,15 +166,17 @@ export function LoginForm({
 								</Button>
 							</div>
 
-							<div className="text-center text-sm">
-								{dict.auth.noAccount}{" "}
-								<Link
-									href={`/${dict.locale}/auth/signup`}
-									className="underline underline-offset-4"
-								>
-									{dict.auth.signUp}
-								</Link>
-							</div>
+							{signupEnabled && (
+								<div className="text-center text-sm">
+									{dict.auth.noAccount}{" "}
+									<Link
+										href={`/${dict.locale}/auth/signup`}
+										className="underline underline-offset-4"
+									>
+										{dict.auth.signUp}
+									</Link>
+								</div>
+							)}
 						</div>
 					</Form>
 				</CardContent>
