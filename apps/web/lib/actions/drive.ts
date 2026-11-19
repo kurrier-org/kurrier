@@ -26,7 +26,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { DISTRIBUTION_CONFIG } from "@distribution/config";
 import { createHash, randomBytes } from "node:crypto";
 import { driveShareLinks } from "@db";
-import { gt, isNull } from "drizzle-orm";
+import { gt, isNull, or } from "drizzle-orm";
 
 const trimSlashes = (s: string) => s.replace(/^\/+|\/+$/g, "");
 
@@ -690,10 +690,12 @@ export async function getDrivePreviewUrl(entryId: string) {
 	return { url, mimeType };
 }
 
+// null = the link never expires (stored as a NULL expires_at).
 const shareDurations = {
 	"1h": 60 * 60 * 1000,
 	"1d": 24 * 60 * 60 * 1000,
 	"7d": 7 * 24 * 60 * 60 * 1000,
+	never: null,
 } as const;
 
 export type DriveShareDuration = keyof typeof shareDurations;
@@ -704,16 +706,16 @@ export async function createDriveShareLink(
 ) {
 	assertDriveEnabled();
 
-	const durationMs = shareDurations[duration];
-
 	// Server actions can be called with arbitrary input.
-	if (!durationMs) {
+	if (!Object.hasOwn(shareDurations, duration)) {
 		throw new Error("Invalid share-link duration");
 	}
 
+	const durationMs = shareDurations[duration];
 	const token = randomBytes(32).toString("base64url");
 	const tokenHash = createHash("sha256").update(token).digest("hex");
-	const expiresAt = new Date(Date.now() + durationMs);
+	const expiresAt =
+		durationMs === null ? null : new Date(Date.now() + durationMs);
 	const rls = await rlsClient();
 
 	const link = await rls(async (tx) => {
@@ -754,7 +756,7 @@ export async function createDriveShareLink(
 	return {
 		id: link.id,
 		token,
-		expiresAt: link.expiresAt.toISOString(),
+		expiresAt: link.expiresAt?.toISOString() ?? null,
 	};
 }
 
@@ -785,7 +787,10 @@ export async function listDriveShareLinks(entryId: string) {
 				and(
 					eq(driveShareLinks.entryId, entry.id),
 					isNull(driveShareLinks.revokedAt),
-					gt(driveShareLinks.expiresAt, new Date()),
+					or(
+						isNull(driveShareLinks.expiresAt),
+						gt(driveShareLinks.expiresAt, new Date()),
+					),
 				),
 			)
 			.orderBy(driveShareLinks.createdAt);
@@ -793,7 +798,7 @@ export async function listDriveShareLinks(entryId: string) {
 		return links.map((link) => ({
 			id: link.id,
 			createdAt: link.createdAt.toISOString(),
-			expiresAt: link.expiresAt.toISOString(),
+			expiresAt: link.expiresAt?.toISOString() ?? null,
 		}));
 	});
 }

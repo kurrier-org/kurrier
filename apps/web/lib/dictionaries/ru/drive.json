@@ -59,6 +59,7 @@
 	"shareOneHour": "1 час",
 	"shareOneDay": "1 день",
 	"shareSevenDays": "7 дней",
+	"shareNever": "Бессрочно",
 	"createShareLink": "Создать ссылку",
 	"copyShareLink": "Скопировать ссылку",
 	"shareLinkCopied": "Ссылка скопирована",
@@ -69,6 +70,7 @@
 	"activeShareLinks": "Активные ссылки",
 	"noActiveShareLinks": "Нет активных ссылок.",
 	"shareLinkExpires": "Истекает:",
+	"shareLinkNeverExpires": "Бессрочная ссылка",
 	"revokeShareLink": "Отозвать ссылку",
 	"revokeShareLinkConfirm": "Отозвать эту ссылку для доступа?",
 	"downloadFailed": "Не удалось скачать файл"

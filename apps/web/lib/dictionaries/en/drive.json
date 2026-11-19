@@ -60,6 +60,7 @@
 	"shareOneHour": "1 hour",
 	"shareOneDay": "1 day",
 	"shareSevenDays": "7 days",
+	"shareNever": "Never",
 	"createShareLink": "Create link",
 	"copyShareLink": "Copy link",
 	"shareLinkCopied": "Link copied",
@@ -70,6 +71,7 @@
 	"activeShareLinks": "Active links",
 	"noActiveShareLinks": "No active links.",
 	"shareLinkExpires": "Expires",
+	"shareLinkNeverExpires": "Never expires",
 	"revokeShareLink": "Revoke link",
 	"revokeShareLinkConfirm": "Revoke this share link?",
 	"downloadFailed": "Download Failed"
