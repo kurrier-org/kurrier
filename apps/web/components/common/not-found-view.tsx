@@ -35,6 +35,11 @@ const COPY: Record<Locale, { title: string; body: string; back: string }> = {
 		body: "Страница, которую вы ищете, не существует или была перемещена.",
 		back: "Вернуться в Kurrier",
 	},
+	sl: {
+		title: "Strani ni bilo mogoče najti",
+		body: "Stran, ki jo iščete, ne obstaja ali je bila premaknjena.",
+		back: "Nazaj v Kurrier",
+	},
 };
 
 export default function NotFoundView() {

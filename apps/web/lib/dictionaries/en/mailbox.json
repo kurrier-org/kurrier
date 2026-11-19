@@ -291,24 +291,28 @@
 	"alwaysLoadForThisSender": "Always load for this sender",
 	"attachmentsCount": {
 		"one": "{count} attachment",
+		"two": "{count} attachments",
 		"other": "{count} attachments",
 		"few": "{count} attachments",
 		"many": "{count} attachments"
 	},
 	"headersCount": {
 		"one": "{count} header",
+		"two": "{count} headers",
 		"other": "{count} headers",
 		"few": "{count} headers",
 		"many": "{count} headers"
 	},
 	"deliveryHopsCount": {
 		"one": "{count} delivery hop",
+		"two": "{count} delivery hops",
 		"other": "{count} delivery hops",
 		"few": "{count} delivery hops",
 		"many": "{count} delivery hops"
 	},
 	"deliveryEventsCount": {
 		"one": "{count} delivery event",
+		"two": "{count} delivery events",
 		"other": "{count} delivery events",
 		"few": "{count} delivery events",
 		"many": "{count} delivery events"

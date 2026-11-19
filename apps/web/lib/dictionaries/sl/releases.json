@@ -1,0 +1,64 @@
+{
+	"common": {
+		"whatsNew": "Kaj je novega",
+		"release": "Izdaja",
+		"seeWhatsNew": "Oglejte si, kaj je novega v najnovejši izdaji Kurrier.",
+		"dismiss": "Zapri obvestilo o novostih"
+	},
+	"releases": {
+		"v4_4_0": {
+			"title": "Bolj povezano in zanesljivo",
+			"description": "Povežite račune Microsoft 365, uživajte v zanesljivejši sinhronizaciji e-pošte in lažje delajte z datotekami v Drive.",
+			"features": {
+				"microsoft365": {
+					"title": "Podpora za Microsoft 365",
+					"description": "Varno povežite račune Microsoft e-pošte z OAuth ob obstoječih ponudnikih."
+				},
+				"imapSync": {
+					"title": "Zanesljivejša sinhronizacija e-pošte",
+					"description": "Izboljšane posodobitve v realnem času, odkrivanje poštnih predalov in obnovitev prekinjenih povezav IMAP."
+				},
+				"drive": {
+					"title": "Zmogljivejši Drive",
+					"description": "Povlecite in spustite datoteke, predogledujte slike in datoteke PDF ter delite datoteke s povezavami za prenos, ki potečejo."
+				}
+			}
+		},
+		"v4_2_0": {
+			"title": "E-poštni podpisi",
+			"description": "Ustvarite dodelane podpise za vsako identiteto in jih uporabljajte neposredno v urejevalniku Kurrier.",
+			"features": {
+				"emailSignatures": {
+					"title": "Podpisi za vsako identiteto",
+					"description": "Ustvarite več podpisov in izberite ločene privzete podpise za nova sporočila, odgovore in posredovanja."
+				},
+				"composer": {
+					"title": "Integracija z urejevalnikom",
+					"description": "Med pisanjem si oglejte predogled podpisa ter pred pošiljanjem hitro zamenjajte ali odstranite podpise."
+				},
+				"responsiveUi": {
+					"title": "Odzivni urejevalnik podpisov",
+					"description": "Ustvarite in upravljajte podpise s poenostavljenim urejevalnikom, ki deluje na namiznih računalnikih in manjših zaslonih."
+				}
+			}
+		},
+		"v4_1_0": {
+			"title": "Boljši Kurrier",
+			"description": "Ta izdaja prinaša izboljšave zanesljivosti e-pošte, urejevalnika, odzivnih postavitev in upravljanja delovnih prostorov.",
+			"features": {
+				"mailReliability": {
+					"title": "Zanesljivejša sinhronizacija e-pošte",
+					"description": "Izboljšano obnavljanje povezav IMAP in sinhronizacija poštnih predalov pri dolgotrajnih povezavah."
+				},
+				"composer": {
+					"title": "Izboljšan urejevalnik sporočil",
+					"description": "Bolj dodelana izkušnja pisanja na namiznih računalnikih in mobilnih napravah."
+				},
+				"responsiveUi": {
+					"title": "Boljša prilagoditev manjšim zaslonom",
+					"description": "Pogledi pošte in delovni prostori se zdaj bolje prilagajajo manjšim zaslonom."
+				}
+			}
+		}
+	}
+}

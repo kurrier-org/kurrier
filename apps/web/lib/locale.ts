@@ -15,4 +15,5 @@ export const DAYJS_LOCALES: Record<Locale, string> = {
 	ko: "en",
 	pl: "pl",
 	ru: "ru",
+	sl: "sl",
 };

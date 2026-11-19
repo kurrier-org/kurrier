@@ -24,6 +24,7 @@ const LOCALE_LABELS: Record<Locale, string> = {
 	"pt-BR": "Português (Brasil)",
 	pl: "Polski",
 	ru: "Русский",
+	sl: "Slovenščina",
 };
 
 const locales = LOCALES;

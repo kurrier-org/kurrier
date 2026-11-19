@@ -291,24 +291,28 @@
 	"alwaysLoadForThisSender": "Всегда загружать для этого отправителя",
 	"attachmentsCount": {
 		"one": "{count} вложение",
+		"two": "{count} вложения",
 		"few": "{count} вложения",
 		"many": "{count} вложений",
 		"other": "{count} вложения"
 	},
 	"headersCount": {
 		"one": "{count} заголовок",
+		"two": "{count} заголовка",
 		"few": "{count} заголовка",
 		"many": "{count} заголовков",
 		"other": "{count} заголовка"
 	},
 	"deliveryHopsCount": {
 		"one": "{count} узел доставки",
+		"two": "{count} узла доставки",
 		"few": "{count} узла доставки",
 		"many": "{count} узлов доставки",
 		"other": "{count} узла доставки"
 	},
 	"deliveryEventsCount": {
 		"one": "{count} событие доставки",
+		"two": "{count} события доставки",
 		"few": "{count} события доставки",
 		"many": "{count} событий доставки",
 		"other": "{count} события доставки"

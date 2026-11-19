@@ -81,6 +81,47 @@ so subsequent PRs stay consistent instead of re-deciding it per file.
 | snoozed | odłożone | Use verb „Odłóż” for the action |
 | scheduled | zaplanowane | |
 
+## Slovenian (`sl`)
+
+- **Formality**: address the user with polite *vi* („Vnesite geslo“,
+  „Izberite mapo“), never *ti*.
+- **Buttons and actions**: short imperative as used by major Slovenian UIs:
+  „Shrani“, „Izbriši“, „Pošlji“, „Prekliči“.
+- **Gender**: prefer impersonal or noun constructions over gendered past
+  participles („Sporočilo je bilo poslano“, not „Poslali ste“).
+- **Plurals**: Slovenian has a dual. Fill `one` (1, 101), `two` (2, 102),
+  `few` (3–4, 103–104) and `other` (0, 5+); `many` is never selected by
+  `Intl.PluralRules("sl")`, so it mirrors `other`.
+- **Typography**: quotation marks „…“, en dash with spaces („ – “), decimal
+  comma.
+
+### Fixed terms
+
+| English | Slovenian | Notes |
+|---|---|---|
+| mailbox | poštni predal | „predal“ alone where the mail context is clear |
+| inbox | Prejeto | Folder name; „prejeta pošta“ in sentences |
+| sent / drafts / trash / spam / archive | Poslano / Osnutki / Koš / Neželeno / Arhiv | Folder names |
+| compose | Novo sporočilo | |
+| thread | nit | A group of related messages |
+| identity | identiteta | „e-poštni naslov“ where the UI clearly means the address |
+| workspace | delovni prostor | |
+| draft | osnutek | |
+| label | oznaka | |
+| provider | ponudnik | |
+| attachment | priponka | |
+| contacts / address book | stiki / imenik | |
+| calendar / event | koledar / dogodek | |
+| Drive | Drive | Product area name, kept untranslated |
+| volume | nosilec | Storage root shown in Drive |
+| vault | trezor | |
+| upload / download / share | naloži / prenesi / deli | |
+| webhook | webhook | Kept as established technical usage |
+| API key | ključ API | |
+| snoozed | odloženo | Use verb „Odloži“ for the action |
+| scheduled | načrtovano | |
+| sign in / sign up | prijava / registracija | Buttons: „Prijava“, „Registracija“ |
+
 ## Adding a new locale
 
 1. Create `apps/web/lib/dictionaries/<code>/` with one `.json` file per

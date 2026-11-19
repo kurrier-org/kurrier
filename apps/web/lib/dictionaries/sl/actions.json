@@ -1,0 +1,76 @@
+{
+	"auth": {
+		"missingCredentials": "Manjka e-poštni naslov ali geslo",
+		"invalidCredentials": "Neveljavni podatki za prijavo",
+		"loggedIn": "Prijava je uspela.",
+		"accountAlreadyExists": "Račun s tem e-poštnim naslovom že obstaja",
+		"welcome": "Dobrodošli!",
+		"signupDisabled": "Registracija je trenutno onemogočena. Obrnite se na skrbnika.",
+		"localLoginDisabled": "Lokalna prijava je trenutno onemogočena. Za prijavo uporabite SSO."
+	},
+	"contacts": {
+		"noDefaultAddressBook": "Privzeti imenik za uporabnika ni bil najden."
+	},
+	"calendar": {
+		"missingCalendarId": "Manjka ID koledarja",
+		"failedToPersistEvent": "Dogodka v koledarju ni bilo mogoče shraniti"
+	},
+	"drive": {
+		"folderNameRequired": "Ime mape je obvezno",
+		"missingVolume": "Manjka nosilec",
+		"volumeNotFound": "Nosilec ni bil najden",
+		"invalidVolumeType": "Neveljavna vrsta nosilca",
+		"cloudVolumeMissingBucket": "Oblačnemu nosilcu manjka bucket",
+		"folderCreated": "Mapa je ustvarjena",
+		"deletedFolder": "Mapa je izbrisana",
+		"deletedFile": "Datoteka je izbrisana"
+	},
+	"labels": {
+		"invalidIdentity": "Neveljavna identiteta"
+	},
+	"mailRules": {
+		"nameRequired": "Ime pravila je obvezno.",
+		"priorityNonNegative": "Prioriteta ne sme biti negativna.",
+		"atLeastOneCriteria": "Dodajte vsaj eno polje s pogojem.",
+		"atLeastOneAction": "Izberite vsaj eno dejanje.",
+		"labelIdRequired": "ID oznake je obvezen, ko je omogočeno „Uporabi oznako“.",
+		"duplicateName": "Pravilo s tem imenom za to identiteto že obstaja.",
+		"nameMustBeUnique": "Ime pravila mora biti edinstveno za vsako identiteto.",
+		"validationErrorsOccurred": "Pojavile so se napake pri preverjanju.",
+		"missingRuleId": "Manjka ID pravila"
+	},
+	"mailbox": {
+		"folderNameRequired": "Ime mape je obvezno",
+		"invalidParentFolder": "Neveljavna nadrejena mapa",
+		"subscriptionNotFound": "Naročnina ni bila najdena",
+		"displayNameUpdated": "Prikazno ime je posodobljeno."
+	},
+	"dashboard": {
+		"providerAccountUpdated": "Račun ponudnika je posodobljen",
+		"done": "Opravljeno",
+		"noProviderSecretFound": "Za to izbiro ni bila najdena skrivnost ponudnika",
+		"unsupportedProviderType": "Nepodprta vrsta ponudnika ali manjka ponudnik",
+		"failedToAddIdentity": "Nove identitete ni bilo mogoče dodati",
+		"addedNewIdentity": "Nova identiteta je dodana",
+		"mustAssignAtLeastOneMember": "Dodeliti je treba vsaj enega člana",
+		"notSignedIn": "Niste prijavljeni",
+		"googleAccountNotFound": "Google račun ni bil najden",
+		"googleAccountNotConnected": "Google račun ni povezan",
+		"addedGoogleEmailIdentity": "Identiteta Google e-pošte je dodana",
+		"customProviderUnavailable": "Ta ponudnik e-pošte ni več na voljo. Osvežite stran in poskusite znova.",
+		"displayNameRequired": "Prikazno ime je obvezno",
+		"mailboxAlreadyConnected": "Ta poštni predal je že povezan",
+		"customProviderAccountAdded": "Račun ponudnika je dodan",
+		"customProviderMailboxConnected": "Poštni predal je povezan",
+		"customProviderMailboxSyncing": "Poštni predal je povezan; sinhronizacija se bo nadaljevala v ozadju",
+		"apiKeyCreated": "Ključ API je uspešno ustvarjen",
+		"volumeNameRequired": "Ime nosilca je obvezno",
+		"invalidVolumeName": "Neveljavno ime nosilca",
+		"s3BucketNotConfigured": "S3_BUCKET ni nastavljen",
+		"addedNewVolume": "Nov nosilec je dodan",
+		"webhookCreated": "Webhook je uspešno ustvarjen"
+	},
+	"workspace": {
+		"updated": "Delovni prostor je posodobljen"
+	}
+}

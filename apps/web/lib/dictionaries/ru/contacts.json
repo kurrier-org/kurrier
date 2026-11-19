@@ -58,6 +58,7 @@
 	"newContactForm": "Форма нового контакта",
 	"locationsCount": {
 		"one": "{count} адрес",
+		"two": "{count} адреса",
 		"few": "{count} адреса",
 		"many": "{count} адресов",
 		"other": "{count} адреса"

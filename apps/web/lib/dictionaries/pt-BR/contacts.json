@@ -58,6 +58,7 @@
 	"newContactForm": "Novo formulário de contato",
 	"locationsCount": {
 		"one": "{count} local",
+		"two": "{count} locais",
 		"other": "{count} locais",
 		"few": "{count} locais",
 		"many": "{count} locais"
