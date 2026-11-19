@@ -92,8 +92,9 @@ so subsequent PRs stay consistent instead of re-deciding it per file.
 - **Plurals**: Slovenian has a dual. Fill `one` (1, 101), `two` (2, 102),
   `few` (3–4, 103–104) and `other` (0, 5+); `many` is never selected by
   `Intl.PluralRules("sl")`, so it mirrors `other`.
-- **Typography**: quotation marks „…“, en dash with spaces („ – “), decimal
-  comma.
+- **Typography**: quotation marks „…“, en dash U+2013 with spaces („ – “),
+  never the em dash; decimal comma; a space between a number and its unit
+  („3 d“, „5 min“).
 
 ### Fixed terms
 
@@ -103,7 +104,7 @@ so subsequent PRs stay consistent instead of re-deciding it per file.
 | inbox | Prejeto | Folder name; „prejeta pošta“ in sentences |
 | sent / drafts / trash / spam / archive | Poslano / Osnutki / Koš / Neželeno / Arhiv | Folder names |
 | compose | Novo sporočilo | |
-| thread | nit | A group of related messages |
+| thread | pogovor | A group of related messages, as in Slovenian Gmail; not the technical „nit“ |
 | identity | identiteta | „e-poštni naslov“ where the UI clearly means the address |
 | workspace | delovni prostor | |
 | draft | osnutek | |

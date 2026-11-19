@@ -27,7 +27,7 @@
 	"addressBooks": "Imeniki",
 	"deleteContact": "Izbriši stik",
 	"confirmDeleteContactPrefix": "Ali res želite izbrisati",
-	"confirmDeleteContactSuffix": "? Stik bo trajno odstranjen.",
+	"confirmDeleteContactSuffix": "? Stik bo trajno izbrisan.",
 	"delete": "Izbriši",
 	"cancel": "Prekliči",
 	"createContact": "Ustvari stik",

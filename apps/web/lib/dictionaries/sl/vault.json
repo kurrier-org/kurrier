@@ -19,7 +19,7 @@
 	"copySecret": "Kopiraj skrivnost",
 	"edit": "Uredi",
 	"delete": "Izbriši",
-	"footerNote": "Vrednosti skrivnosti so pred shranjevanjem šifrirane. Integracije lahko sklicujejo na vnose v trezorju, ne da bi v svoji konfiguraciji shranjevale poverilnice.",
+	"footerNote": "Vrednosti skrivnosti so pred shranjevanjem šifrirane. Integracije se lahko sklicujejo na vnose v trezorju, ne da bi v svoji konfiguraciji shranjevale poverilnice.",
 	"editSecretTitle": "Uredi skrivnost",
 	"addSecretTitle": "Dodaj skrivnost",
 	"keyLabel": "Ključ",

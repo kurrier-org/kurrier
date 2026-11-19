@@ -8,7 +8,7 @@
 	"releases": {
 		"v4_4_0": {
 			"title": "Bolj povezano in zanesljivo",
-			"description": "Povežite račune Microsoft 365, uživajte v zanesljivejši sinhronizaciji e-pošte in lažje delajte z datotekami v Drive.",
+			"description": "Povežite račune Microsoft 365, zanesljiveje sinhronizirajte e-pošto in lažje delajte z datotekami v Drive.",
 			"features": {
 				"microsoft365": {
 					"title": "Podpora za Microsoft 365",

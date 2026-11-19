@@ -63,12 +63,12 @@
 		"customProviderAccountAdded": "Račun ponudnika je dodan",
 		"customProviderMailboxConnected": "Poštni predal je povezan",
 		"customProviderMailboxSyncing": "Poštni predal je povezan; sinhronizacija se bo nadaljevala v ozadju",
-		"apiKeyCreated": "Ključ API je uspešno ustvarjen",
+		"apiKeyCreated": "Ključ API je ustvarjen",
 		"volumeNameRequired": "Ime nosilca je obvezno",
 		"invalidVolumeName": "Neveljavno ime nosilca",
 		"s3BucketNotConfigured": "S3_BUCKET ni nastavljen",
 		"addedNewVolume": "Nov nosilec je dodan",
-		"webhookCreated": "Webhook je uspešno ustvarjen"
+		"webhookCreated": "Webhook je ustvarjen"
 	},
 	"workspace": {
 		"updated": "Delovni prostor je posodobljen"
