@@ -1,11 +1,15 @@
-import Link from "next/link";
-import * as React from "react";
-
-import KurrierLogo from "@/components/common/kurrier-logo";
 import { DISTRIBUTION_CONFIG } from "@distribution/config";
+import { getPublicEnv } from "@schema";
+import Link from "next/link";
+import { connection } from "next/server";
+import * as React from "react";
+import KurrierLogo from "@/components/common/kurrier-logo";
 
 export async function RootPage() {
 	const locale = DISTRIBUTION_CONFIG.defaultLocale;
+	// Read DISABLE_SIGNUP at request time, not when the page is prerendered.
+	await connection();
+	const { DISABLE_SIGNUP } = getPublicEnv();
 
 	return (
 		<div className="bg-muted flex min-h-svh items-center justify-center p-6">
@@ -34,12 +38,14 @@ export async function RootPage() {
 							Log in
 						</Link>
 
-						<Link
-							href={`/${locale}/auth/signup`}
-							className="hover:bg-accent hover:text-accent-foreground flex h-10 items-center justify-center rounded-md border bg-background px-4 text-sm font-medium transition-colors"
-						>
-							Create an account
-						</Link>
+						{!DISABLE_SIGNUP && (
+							<Link
+								href={`/${locale}/auth/signup`}
+								className="hover:bg-accent hover:text-accent-foreground flex h-10 items-center justify-center rounded-md border bg-background px-4 text-sm font-medium transition-colors"
+							>
+								Create an account
+							</Link>
+						)}
 					</div>
 				</div>
 
