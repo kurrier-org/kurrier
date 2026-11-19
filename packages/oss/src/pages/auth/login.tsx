@@ -1,11 +1,11 @@
-import { Suspense } from "react";
+import { getPublicEnv } from "@schema";
 import Link from "next/link";
 import * as React from "react";
-
+import { Suspense } from "react";
+import Loading from "@/app/loading";
 import { LoginForm } from "@/components/auth/login-form";
 import KurrierLogo from "@/components/common/kurrier-logo";
 import { LanguageSwitcher } from "@/components/common/language-switcher";
-import Loading from "@/app/loading";
 import { getDictionary, type Locale } from "@/lib/dictionaries";
 import { getGenericOidcSettings } from "@/lib/generic-oidc";
 
@@ -16,6 +16,7 @@ type LoginPageProps = {
 
 async function LoginContent({ params, searchParams }: LoginPageProps) {
 	const [sParams, nParams] = await Promise.all([searchParams, params]);
+	const { DISABLE_SIGNUP } = getPublicEnv();
 
 	const dict = await getDictionary(nParams.locale);
 
@@ -49,6 +50,7 @@ async function LoginContent({ params, searchParams }: LoginPageProps) {
 
 				<LoginForm
 					dict={dict}
+					signupEnabled={!DISABLE_SIGNUP}
 					oidc={{
 						googleEnabled: !!googleEnabled,
 						genericEnabled: !!genericOidc,
