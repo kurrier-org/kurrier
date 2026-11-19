@@ -3,7 +3,7 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { db, driveEntries, driveShareLinks, driveVolumes } from "@db";
 import { DISTRIBUTION_CONFIG } from "@distribution/config";
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull, or } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { s3 } from "@/lib/create-s3-client";
@@ -58,7 +58,10 @@ export async function GET(
 			and(
 				eq(driveShareLinks.tokenHash, tokenHash),
 				isNull(driveShareLinks.revokedAt),
-				gt(driveShareLinks.expiresAt, new Date()),
+				or(
+					isNull(driveShareLinks.expiresAt),
+					gt(driveShareLinks.expiresAt, new Date()),
+				),
 				eq(driveEntries.type, "file"),
 				eq(driveVolumes.kind, "cloud"),
 			),

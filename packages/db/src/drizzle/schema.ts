@@ -2293,9 +2293,10 @@ export const driveShareLinks = pgTable(
 
 		tokenHash: text("token_hash").notNull(),
 
+		// NULL means the link never expires.
 		expiresAt: timestamp("expires_at", {
 			withTimezone: true,
-		}).notNull(),
+		}),
 
 		revokedAt: timestamp("revoked_at", {
 			withTimezone: true,

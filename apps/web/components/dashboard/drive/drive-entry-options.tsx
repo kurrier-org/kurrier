@@ -249,6 +249,10 @@ export default function DriveEntryOptions({
 									value: "7d",
 									label: dict?.drive?.shareSevenDays ?? "7 days",
 								},
+								{
+									value: "never",
+									label: dict?.drive?.shareNever ?? "Never",
+								},
 							]}
 							value={duration}
 							allowDeselect={false}
@@ -314,15 +318,24 @@ export default function DriveEntryOptions({
 										className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
 									>
 										<div className="min-w-0 text-sm">
-											<span className="text-muted-foreground">
-												{dict?.drive?.shareLinkExpires ?? "Expires"}{" "}
-											</span>
-											<span>
-												{new Intl.DateTimeFormat(undefined, {
-													dateStyle: "medium",
-													timeStyle: "short",
-												}).format(new Date(link.expiresAt))}
-											</span>
+											{link.expiresAt ? (
+												<>
+													<span className="text-muted-foreground">
+														{dict?.drive?.shareLinkExpires ?? "Expires"}{" "}
+													</span>
+													<span>
+														{new Intl.DateTimeFormat(undefined, {
+															dateStyle: "medium",
+															timeStyle: "short",
+														}).format(new Date(link.expiresAt))}
+													</span>
+												</>
+											) : (
+												<span className="text-muted-foreground">
+													{dict?.drive?.shareLinkNeverExpires ??
+														"Never expires"}
+												</span>
+											)}
 										</div>
 
 										<ActionIcon

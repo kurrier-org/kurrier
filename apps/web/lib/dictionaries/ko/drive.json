@@ -59,6 +59,7 @@
 	"shareOneHour": "1시간",
 	"shareOneDay": "1일",
 	"shareSevenDays": "7일",
+	"shareNever": "만료 없음",
 	"createShareLink": "링크 만들기",
 	"copyShareLink": "링크 복사",
 	"shareLinkCopied": "링크가 복사되었습니다",
@@ -69,6 +70,7 @@
 	"activeShareLinks": "활성 링크",
 	"noActiveShareLinks": "활성 링크가 없습니다.",
 	"shareLinkExpires": "만료:",
+	"shareLinkNeverExpires": "만료되지 않음",
 	"revokeShareLink": "링크 해제",
 	"revokeShareLinkConfirm": "이 공유 링크를 해제하시겠습니까?",
 	"downloadFailed": "다운로드 실패"
