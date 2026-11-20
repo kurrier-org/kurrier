@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect } from "react";
 import "dayjs/locale/pl";
 import "dayjs/locale/pt-br";
 import "dayjs/locale/ru";
+import "dayjs/locale/sl";
 import type { Dictionary } from "@/lib/dictionaries";
 import {
 	createLocaleFormatter,

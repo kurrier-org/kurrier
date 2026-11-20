@@ -46,6 +46,7 @@
 	"couldNotDeleteSecret": "Não foi possível excluir o segredo",
 	"secretsCount": {
 		"one": "{count} segredo",
+		"two": "{count} segredos",
 		"other": "{count} segredos",
 		"few": "{count} segredos",
 		"many": "{count} segredos"

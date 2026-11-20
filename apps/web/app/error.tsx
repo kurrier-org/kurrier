@@ -42,6 +42,12 @@ const COPY: Record<
 		retry: "Попробовать снова",
 		back: "Вернуться в Kurrier",
 	},
+	sl: {
+		title: "Prišlo je do napake",
+		body: "Prišlo je do nepričakovane napake. Poskusite znova ali se vrnite na začetno stran.",
+		retry: "Poskusi znova",
+		back: "Nazaj v Kurrier",
+	},
 };
 
 export default function GlobalError({

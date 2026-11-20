@@ -46,6 +46,7 @@
 	"couldNotDeleteSecret": "Could not delete secret",
 	"secretsCount": {
 		"one": "{count} secret",
+		"two": "{count} secrets",
 		"other": "{count} secrets",
 		"few": "{count} secrets",
 		"many": "{count} secrets"

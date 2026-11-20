@@ -75,30 +75,35 @@
 	"more": "ещё",
 	"guestsCount": {
 		"one": "{count} гость",
+		"two": "{count} гостя",
 		"few": "{count} гостя",
 		"many": "{count} гостей",
 		"other": "{count} гостя"
 	},
 	"intervalDaysCount": {
 		"one": "день",
+		"two": "дня",
 		"few": "дня",
 		"many": "дней",
 		"other": "дня"
 	},
 	"intervalWeeksCount": {
 		"one": "неделя",
+		"two": "недели",
 		"few": "недели",
 		"many": "недель",
 		"other": "недели"
 	},
 	"intervalMonthsCount": {
 		"one": "месяц",
+		"two": "месяца",
 		"few": "месяца",
 		"many": "месяцев",
 		"other": "месяца"
 	},
 	"intervalYearsCount": {
 		"one": "год",
+		"two": "года",
 		"few": "года",
 		"many": "лет",
 		"other": "года"

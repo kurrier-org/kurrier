@@ -291,24 +291,28 @@
 	"alwaysLoadForThisSender": "Sempre carregar deste remetente",
 	"attachmentsCount": {
 		"one": "{count} anexo",
+		"two": "{count} anexos",
 		"other": "{count} anexos",
 		"few": "{count} anexos",
 		"many": "{count} anexos"
 	},
 	"headersCount": {
 		"one": "{count} cabeçalho",
+		"two": "{count} cabeçalhos",
 		"other": "{count} cabeçalhos",
 		"few": "{count} cabeçalhos",
 		"many": "{count} cabeçalhos"
 	},
 	"deliveryHopsCount": {
 		"one": "{count} salto de entrega",
+		"two": "{count} saltos de entrega",
 		"other": "{count} saltos de entrega",
 		"few": "{count} saltos de entrega",
 		"many": "{count} saltos de entrega"
 	},
 	"deliveryEventsCount": {
 		"one": "{count} evento de entrega",
+		"two": "{count} eventos de entrega",
 		"other": "{count} eventos de entrega",
 		"few": "{count} eventos de entrega",
 		"many": "{count} eventos de entrega"

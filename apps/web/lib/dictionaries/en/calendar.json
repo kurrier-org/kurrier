@@ -75,30 +75,35 @@
 	"more": "more",
 	"guestsCount": {
 		"one": "{count} guest",
+		"two": "{count} guests",
 		"other": "{count} guests",
 		"few": "{count} guests",
 		"many": "{count} guests"
 	},
 	"intervalDaysCount": {
 		"one": "day",
+		"two": "days",
 		"other": "days",
 		"few": "days",
 		"many": "days"
 	},
 	"intervalWeeksCount": {
 		"one": "week",
+		"two": "weeks",
 		"other": "weeks",
 		"few": "weeks",
 		"many": "weeks"
 	},
 	"intervalMonthsCount": {
 		"one": "month",
+		"two": "months",
 		"other": "months",
 		"few": "months",
 		"many": "months"
 	},
 	"intervalYearsCount": {
 		"one": "year",
+		"two": "years",
 		"other": "years",
 		"few": "years",
 		"many": "years"

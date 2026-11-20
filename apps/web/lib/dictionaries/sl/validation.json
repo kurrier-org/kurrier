@@ -1,0 +1,10 @@
+{
+	"mailRules": {
+		"nameRequired": "Ime pravila je obvezno.",
+		"priorityNonNegative": "Prioriteta ne sme biti negativna.",
+		"atLeastOneCriteria": "Dodajte vsaj eno polje s pogojem.",
+		"atLeastOneAction": "Izberite vsaj eno dejanje.",
+		"labelIdRequired": "ID oznake je obvezen, ko je omogočeno „Uporabi oznako“.",
+		"nameMustBeUnique": "Ime pravila mora biti edinstveno za vsako identiteto."
+	}
+}

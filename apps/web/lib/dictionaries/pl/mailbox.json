@@ -291,24 +291,28 @@
 	"alwaysLoadForThisSender": "Zawsze wczytuj dla tego nadawcy",
 	"attachmentsCount": {
 		"one": "{count} załącznik",
+		"two": "{count} załączników",
 		"few": "{count} załączniki",
 		"many": "{count} załączników",
 		"other": "{count} załączników"
 	},
 	"headersCount": {
 		"one": "{count} nagłówek",
+		"two": "{count} nagłówków",
 		"few": "{count} nagłówki",
 		"many": "{count} nagłówków",
 		"other": "{count} nagłówków"
 	},
 	"deliveryHopsCount": {
 		"one": "{count} przeskok dostarczenia",
+		"two": "{count} przeskoków dostarczenia",
 		"few": "{count} przeskoki dostarczenia",
 		"many": "{count} przeskoków dostarczenia",
 		"other": "{count} przeskoków dostarczenia"
 	},
 	"deliveryEventsCount": {
 		"one": "{count} zdarzenie dostarczenia",
+		"two": "{count} zdarzeń dostarczenia",
 		"few": "{count} zdarzenia dostarczenia",
 		"many": "{count} zdarzeń dostarczenia",
 		"other": "{count} zdarzeń dostarczenia"
