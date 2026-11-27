@@ -2431,3 +2431,53 @@ export const microsoftAccounts = pgTable(
 		...workspaceCrudPolicies(t, "microsoft_accounts"),
 	],
 ).enableRLS();
+
+export const vacationSettings = pgTable("vacation_settings", {
+	identityId: uuid("identity_id")
+		.primaryKey()
+		.references(() => identities.id, { onDelete: "cascade" }),
+	workspaceId: uuid("workspace_id")
+		.notNull()
+		.references(() => workspaces.id, { onDelete: "cascade" }),
+	enabled: boolean("enabled").notNull().default(false),
+	subject: text("subject").notNull().default(""),
+	message: text("message").notNull().default(""),
+	startsAt: timestamp("starts_at", { withTimezone: true }),
+	endsAt: timestamp("ends_at", { withTimezone: true }),
+	activatedAt: timestamp("activated_at", { withTimezone: true })
+		.notNull()
+		.defaultNow(),
+	periodId: uuid("period_id").notNull().defaultRandom(),
+}).enableRLS();
+
+export const vacationReplies = pgTable(
+	"vacation_replies",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		identityId: uuid("identity_id")
+			.notNull()
+			.references(() => identities.id, { onDelete: "cascade" }),
+		workspaceId: uuid("workspace_id")
+			.notNull()
+			.references(() => workspaces.id, { onDelete: "cascade" }),
+		periodId: uuid("period_id").notNull(),
+		recipient: text("recipient").notNull(),
+		messageId: uuid("message_id").references(() => messages.id, {
+			onDelete: "set null",
+		}),
+		status: text("status").notNull().default("pending"),
+		providerMessageId: text("provider_message_id"),
+        payload: jsonb("payload"),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		attemptedAt: timestamp("attempted_at", { withTimezone: true }),
+	},
+	(t) => [
+		uniqueIndex("vacation_replies_identity_id_period_id_recipient_key").on(
+			t.identityId,
+			t.periodId,
+			t.recipient,
+		),
+	],
+).enableRLS();

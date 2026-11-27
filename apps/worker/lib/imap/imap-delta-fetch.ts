@@ -86,6 +86,11 @@ async function runDeltaFetch(
 				const flags = msg.flags ?? new Set<string>();
 
 				await parseAndStoreEmail(raw, {
+					vacationSource: {
+						trusted: true,
+						receivedAt:
+							msg.internalDate instanceof Date ? msg.internalDate : undefined,
+					},
 					ownerId,
 					workspaceId,
 					mailboxId: row.id,

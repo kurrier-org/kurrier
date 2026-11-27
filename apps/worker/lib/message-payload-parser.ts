@@ -20,6 +20,8 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { upsertWorkspaceSharedContactFromMessage } from "../lib/message-parser-contacts";
 import { createHash } from "node:crypto";
 
+import { reserveVacationReply } from "./vacation/reserve";
+
 const SEARCH_BATCH_SIZE = 100;
 const WEBHOOK_BATCH_SIZE = 100;
 const RULES_BATCH_SIZE = 100;
@@ -279,6 +281,7 @@ export async function parseAndStoreEmail(
 		answered?: boolean;
 		flagged?: boolean;
 		mode?: "live" | "backfill";
+		vacationSource?: { trusted: boolean; envelopeSender?: string; receivedAt?: Date };
 	},
 ) {
 	const { ownerId, workspaceId, mailboxId, rawStorageKey } = opts;
@@ -432,13 +435,21 @@ export async function parseAndStoreEmail(
 		MessageInsertSchema.parse(decoratedParsed),
 	);
 
-	const [message] = await db
-		.insert(messages)
-		.values(messagePayload as MessageCreate)
-		.onConflictDoNothing({
-			target: [messages.mailboxId, messages.messageId],
-		})
-		.returning();
+	const message = await db.transaction(async (tx) => {
+		const [inserted] = await tx
+			.insert(messages)
+			.values(messagePayload as MessageCreate)
+			.onConflictDoNothing({ target: [messages.mailboxId, messages.messageId] })
+			.returning();
+		if (inserted && mode === "live" && opts.vacationSource?.trusted) {
+			await reserveVacationReply(
+				tx,
+				inserted,
+				opts.vacationSource.envelopeSender,
+			);
+		}
+		return inserted;
+	});
 
 	/**
 	 * Another worker/replay may have inserted the message between our

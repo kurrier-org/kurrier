@@ -1,4 +1,5 @@
 "use client";
+import VacationSettingsButton from "./vacation-settings";
 
 import * as React from "react";
 import { Container } from "@/components/common/containers";
@@ -961,6 +962,10 @@ export default function MailIdentities({
 										</div>
 
 										<div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
+											<VacationSettingsButton
+												identityId={userIdentity.identities.id}
+												email={userIdentity.identities.value}
+											/>
 											{/*<Button*/}
 											{/*	leftSection={<IconSend size={16} />}*/}
 											{/*	size="xs"*/}
