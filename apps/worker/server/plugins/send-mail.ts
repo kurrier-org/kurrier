@@ -1,3 +1,8 @@
+import {
+	deliverVacation,
+	dispatchVacation,
+	vacationHeaders,
+} from "../../lib/vacation/delivery";
 import { defineNitroPlugin } from "nitropack/runtime";
 import {
 	AddressObjectJSON,
@@ -60,6 +65,12 @@ export default defineNitroPlugin(async (nitroApp) => {
 		"send-mail",
 		async (job) => {
 			switch (job.name) {
+				case "send-vacation-reply":
+					return deliverVacation(
+						job.data.replyId,
+						(payload, accepted, priorResponse) =>
+							send(payload, accepted, priorResponse),
+					);
 				case "send-scheduled-draft":
 					await processDraft(job.data);
 					return { success: true };
@@ -190,7 +201,11 @@ export default defineNitroPlugin(async (nitroApp) => {
 		}
 	};
 
-	const send = async (decodedForm: Record<any, unknown>) => {
+	const send = async (
+		decodedForm: Record<any, unknown>,
+		accepted?: (providerId?: string) => Promise<void>,
+		priorResponse?: { success: boolean; error?: string; MessageId?: string },
+	) => {
 		let messageIdToIndex: string | undefined;
 
 		const result = await db.transaction(async (tx) => {
@@ -332,11 +347,18 @@ export default defineNitroPlugin(async (nitroApp) => {
 				origRow = await getOriginalMessage(decodedForm);
 			}
 
-			const { subject, text, html } = await generateMailAttrs({
+			const attrs = await generateMailAttrs({
 				data,
 				orig: origRow,
 			});
 
+			const { subject, text, html } = accepted
+				? {
+						subject: String(decodedForm.subject),
+						text: String(decodedForm.text),
+						html: "",
+					}
+				: attrs;
 			const mailboxIdForMessage = String(decodedForm.sentMailboxId);
 
 			let threadIdForMessage: string;
@@ -389,6 +411,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 				html,
 				ownerId: mailbox.identity.ownerId,
 				seen: true,
+				headersJson: accepted ? vacationHeaders : undefined,
 			});
 			if (decodedForm.apiMessageId) {
 				newMessageBody.id = String(decodedForm.apiMessageId);
@@ -400,6 +423,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 					from: mailbox.identity.value,
 					cc: data.cc ?? [],
 					bcc: data.bcc ?? [],
+					headers: accepted ? vacationHeaders : undefined,
 					subject: String(newMessageBody.subject),
 					text: newMessageBody.text ?? "",
 					html: newMessageBody.html ?? "",
@@ -413,11 +437,13 @@ export default defineNitroPlugin(async (nitroApp) => {
 				},
 			};
 
-			const hookResult = await kurrierServer.hooks.run("mail.beforeSend", {
-				workspaceId: mailbox.mailbox.workspaceId,
-				identityId: mailbox.identity.id,
-				input,
-			});
+			const hookResult = priorResponse
+				? undefined
+				: await kurrierServer.hooks.run("mail.beforeSend", {
+						workspaceId: mailbox.mailbox.workspaceId,
+						identityId: mailbox.identity.id,
+						input,
+					});
 
 			if (
 				mailbox.identity.metaData?.provider === "kurrier-mail" &&
@@ -429,9 +455,10 @@ export default defineNitroPlugin(async (nitroApp) => {
 			}
 
 			const mailerResponse =
-				hookResult ?? (await sendWithConnectedProvider(input));
+				priorResponse ?? hookResult ?? (await sendWithConnectedProvider(input));
 
 			if (mailerResponse.success) {
+				if (accepted) await accepted(mailerResponse.MessageId);
 				const messageId =
 					(decodedForm.rfc822MessageId as string | undefined) ||
 					String(mailerResponse.MessageId);
@@ -448,6 +475,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 					.returning();
 
 				const emlBuffer = await buildEmlBuffer({
+					headers: accepted ? vacationHeaders : undefined,
 					// messageId: String(mailerResponse.MessageId) || `msg-${Date.now()}`,
 					messageId,
 					from: mailbox.identity.value,
@@ -704,6 +732,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 	}
 
 	async function buildEmlBuffer(opts: {
+		headers?: Record<string, string>;
 		messageId: string;
 		from: string;
 		to: string[];
@@ -717,6 +746,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 		attachments: AttachmentDownload[];
 	}) {
 		const composer = new MailComposer({
+			headers: opts.headers,
 			messageId: opts.messageId,
 			from: opts.from,
 			to: opts.to,
@@ -745,6 +775,21 @@ export default defineNitroPlugin(async (nitroApp) => {
 			});
 		});
 	}
+
+	let dispatching = false;
+	const dispatchTimer = setInterval(async () => {
+		if (dispatching) return;
+		dispatching = true;
+		try {
+			const { sendMailQueue } = await getRedis();
+			await dispatchVacation(sendMailQueue);
+		} catch (error) {
+			console.error("[vacation] dispatch failed", error);
+		} finally {
+			dispatching = false;
+		}
+	}, 5000);
+	nitroApp.hooks.hookOnce("close", () => clearInterval(dispatchTimer));
 
 	nitroApp.hooks.hookOnce("close", async () => {
 		console.log("Closing nitro server...");

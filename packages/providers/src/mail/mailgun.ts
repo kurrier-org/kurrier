@@ -302,6 +302,7 @@ export class MailgunMailer implements Mailer {
 	async sendEmail(
 		to: string[],
 		opts: {
+			headers?: Record<string, string>;
 			subject: string;
 			text: string;
 			html: string;
@@ -326,7 +327,12 @@ export class MailgunMailer implements Mailer {
 					: undefined;
 
 			// Mailgun custom headers use the "h:" prefix
-			const headers: Record<string, string> = {};
+			const headers: Record<string, string> = Object.fromEntries(
+				Object.entries(opts.headers ?? {}).map(([name, value]) => [
+					`h:${name}`,
+					value,
+				]),
+			);
 			if (opts.inReplyTo) headers["h:In-Reply-To"] = opts.inReplyTo;
 			if (opts.references?.length)
 				headers["h:References"] = opts.references.join(" ");

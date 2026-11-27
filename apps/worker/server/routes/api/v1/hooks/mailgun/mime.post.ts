@@ -1,4 +1,10 @@
-import { defineEventHandler, readBody } from "h3";
+import { validMailgunSignature } from "../../../../../../lib/vacation/mailgun-signature";
+import {
+	defineEventHandler,
+	readBody,
+	readMultipartFormData,
+	getHeader,
+} from "h3";
 import { simpleParser } from "mailparser";
 import { db, identities, mailboxes } from "@db";
 import { eq } from "drizzle-orm";
@@ -8,7 +14,20 @@ import { getToEmails } from "../sendgrid/inbound.post";
 
 export default defineEventHandler(async (event) => {
 	try {
-		const body = await readBody(event);
+		const multipart = getHeader(event, "content-type")?.startsWith(
+			"multipart/form-data",
+		);
+		const body = multipart
+			? Object.fromEntries(
+					((await readMultipartFormData(event)) ?? [])
+						.filter((part) => part.name)
+						.map((part) => [part.name!, part.data.toString("utf8")]),
+				)
+			: await readBody(event);
+		const trusted = validMailgunSignature(
+			body,
+			process.env.MAILGUN_WEBHOOK_SIGNING_KEY,
+		);
 		const rawMime = body["body-mime"];
 		const parsed = await simpleParser(rawMime);
 
@@ -53,6 +72,11 @@ export default defineEventHandler(async (event) => {
 			mailgunSaysSpam || (spfFail && dkimFail && dmarcFail) || dmarcFail;
 
 		await parseAndStoreEmail(rawMime, {
+			vacationSource: {
+				trusted,
+				envelopeSender:
+					typeof body.sender === "string" ? body.sender : undefined,
+			},
 			ownerId: identity.ownerId,
 			workspaceId: identity.workspaceId,
 			mailboxId: authSaysJunk ? String(spamMb?.id) : String(inbox?.id),

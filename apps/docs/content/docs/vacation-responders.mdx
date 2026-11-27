@@ -1,0 +1,52 @@
+---
+title: Vacation replies
+description: Configure automatic replies for an email identity.
+---
+
+Open **Identities**, choose **Vacation reply** on an email address, and set the
+subject, message, and optional start and end. Dates use your browser's timezone.
+Each sender receives one reply during the active period. Editing the message
+preserves the sender history. Disabling and enabling starts a new period.
+
+SMTP/IMAP and Mailgun identities are supported. Historical synchronization,
+spam, mailing lists, bounces, and automated messages do not trigger replies.
+Other inbound integrations remain ineligible until their authentication and
+header handling have been validated.
+
+For Mailgun, configure its HTTP webhook signing key in the environment shared
+by web and worker processes, then restart both:
+
+```dotenv
+MAILGUN_WEBHOOK_SIGNING_KEY=your-mailgun-http-webhook-signing-key
+```
+
+This is the HTTP webhook signing key from Mailgun, separate from the API key.
+Mailgun's receiving route must forward raw MIME to the publicly reachable
+`/api/v1/hooks/mailgun/mime` endpoint.
+
+Apply database migration `013_migration.sql` before starting the updated worker.
+Existing identities default to disabled.
+
+The worker dispatches durable pending replies every five seconds. If provider
+acceptance is uncertain, it retains the sender reservation and logs the reply
+ID for inspection. An uncertain submission is not automatically resent.
+Accepted submissions can retry sent-copy reconciliation without resending.
+
+## Development checks
+
+Run the unit checks with:
+
+```sh
+pnpm exec tsx --test apps/worker/lib/vacation/eligibility.test.ts
+```
+
+With the local database running and development environment configured, run:
+
+```sh
+pnpm exec dotenvx run -f db/local/.env -- node apps/worker/tests/vacation-database.cjs
+pnpm exec dotenvx run -f db/local/.env -- pnpm exec tsx --tsconfig apps/web/tsconfig.json apps/worker/tests/vacation-delivery.ts
+pnpm exec dotenvx run -f db/local/.env -- pnpm exec tsx --tsconfig apps/web/tsconfig.json apps/worker/tests/vacation-mailgun.ts
+```
+
+Database checks create and remove isolated schemas. Provider contract checks
+use a simulated transport. Confirm real delivery separately using test accounts.
